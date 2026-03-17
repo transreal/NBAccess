@@ -1,0 +1,71 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[      2130,         63]
+NotebookOptionsPosition[      1630,         45]
+NotebookOutlinePosition[      2049,         62]
+CellTagsIndexPosition[      2006,         59]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Design notes", "Section",
+ CellChangeTimes->{{3.9826229394005833`*^9, 3.98262294408243*^9}, {
+  3.982623201331497*^9, 
+  3.9826232064407177`*^9}},ExpressionUUID->"aaa51d95-0277-9249-8532-\
+e1c6ef100aaf"],
+
+Cell["\<\
+NBAccess\:306f\:3001Mathematica\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:4e0a\
+\:3067\:3001Claude Code\:3084\:751f\:6210AI\:3092\:63f4\:7528\:3059\:308b\
+\:4f5c\:696d\:3092\:5b89\:5168\:304b\:3064\:5186\:6ed1\:306b\:884c\:3046\:305f\
+\:3081\:306e\:30ec\:30a4\:30e4\:30fc\:3092\:5f62\:6210\:3059\:308b\:3002
+
+\:60aa\:610f\:3042\:308b\:653b\:6483\:3078\:306e\:30bb\:30ad\:30e5\:30ea\:30c6\
+\:30a3\:3068\:3044\:3046\:3088\:308a\:306f\:3001\:3080\:3057\:308d\:3001\:3046\
+\:3063\:304b\:308a\:79d8\:533f\:3059\:3079\:304d\:30c7\:30fc\:30bf\:3092\:30af\
+\:30e9\:30a6\:30c9AI\:306b\:6295\:5165\:3057\:3066\:3057\:307e\:3046\:30ea\
+\:30b9\:30af\:306e\:4f4e\:6e1b\:3092\:56f3\:308b\:3002\
+\>", "Text",
+ CellChangeTimes->{{3.9826545386082897`*^9, 
+  3.982654715433338*^9}},ExpressionUUID->"01c34be4-c29b-ea43-a7b9-\
+49f48f16bc79"]
+}, Open  ]]
+},
+WindowSize->{886.125, 419.25},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+FrontEndVersion->"14.3 for Microsoft Windows (64-bit) (2025\:5e747\:67088\
+\:65e5)",
+StyleDefinitions->"Normal use.nb",
+ExpressionUUID->"d24db182-8b2e-214b-bc15-7a2898b3d3ea"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[576, 22, 209, 4, 68, "Section",ExpressionUUID->"aaa51d95-0277-9249-8532-e1c6ef100aaf"],
+Cell[788, 28, 826, 14, 119, "Text",ExpressionUUID->"01c34be4-c29b-ea43-a7b9-49f48f16bc79"]
+}, Open  ]]
+}
+]
+*)
+

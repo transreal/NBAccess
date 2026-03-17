@@ -1,0 +1,2411 @@
+(* NBAccess.wl -- Notebook Access Utility Package
+   This file is encoded in UTF-8.
+   Load via: Block[{$CharacterEncoding = "UTF-8"}, Get["NBAccess.wl"]]
+   Or use claudecode.wl which handles encoding automatically. *)
+
+(* ============================================================
+   \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:30a2\:30af\:30bb\:30b9\:30e6\:30fc\:30c6\:30a3\:30ea\:30c6\:30a3\:30d1\:30c3\:30b1\:30fc\:30b8
+   \:30bb\:30eb\:30a4\:30f3\:30c7\:30c3\:30af\:30b9\:30d9\:30fc\:30b9\:3067\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:8aad\:307f\:66f8\:304d\:3068\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30d5\:30a3\:30eb\:30bf\:30ea\:30f3\:30b0\:3092\:63d0\:4f9b\:3059\:308b\:3002
+   ============================================================ *)
+
+BeginPackage["NBAccess`"];
+
+(* ---- オプション名 ---- *)
+(* Decompress: NBAccess 履歴関数のオプション。
+   True (ディフォルト): Diff 差分を復元して平文で返す。
+   False: Diff オブジェクトのまま返す (差分検査用)。
+   注: System`Decompress をオプションラベルとして使用 (シンボルの新規定義はしない)。 *)
+
+PrivacySpec::usage =
+  "PrivacySpec は NBAccess 関数のプライバシーフィルタリングオプション。\n" <>
+  "例: PrivacySpec -> <|\"AccessLevel\" -> 0.5|>\n" <>
+  "  AccessLevel \[LessEqual] セルのプライバシーレベル のセルのみアクセス可能。\n" <>
+  "  0.5: クラウドLLM安全なデータのみ (ディフォルト)\n" <>
+  "  1.0: ローカルLLM環境などすべてのデータ";
+
+(* ---- グローバル変数 ---- *)
+$NBPrivacySpec::usage =
+  "$NBPrivacySpec は NBAccess 関数のディフォルト PrivacySpec。\n" <>
+  "初期値: <|\"AccessLevel\" -> 0.5|> (クラウドLLM安全なデータのみ)。\n" <>
+  "ローカルLLM環境から利用する場合: $NBPrivacySpec = <|\"AccessLevel\" -> 1.0|>";
+
+$NBConfidentialSymbols::usage =
+  "$NBConfidentialSymbols は秘密変数名とプライバシーレベルのテーブル。\n" <>
+  "<|\"変数名\" -> privacyLevel, ...|> の形式。\n" <>
+  "ClaudeCode パッケージが自動的に更新する。";
+
+(* ---- セルユーティリティ API (新規) ---- *)
+NBCellCount::usage =
+  "NBCellCount[nb] はノートブックの全セル数を返す。";
+NBCurrentCellIndex::usage =
+  "NBCurrentCellIndex[nb] は EvaluationCell[] のセルインデックスを返す。\n" <>
+  "見つからない場合は 0 を返す。";
+NBSelectedCellIndices::usage =
+  "NBSelectedCellIndices[nb] は選択中セルのインデックスリストを返す。\n" <>
+  "セルブラケット選択またはカーソル位置のセルを返す。";
+NBCellIndicesByTag::usage =
+  "NBCellIndicesByTag[nb, tag] は指定 CellTags を持つセルのインデックスリストを返す。";
+NBCellIndicesByStyle::usage =
+  "NBCellIndicesByStyle[nb, style] は指定 CellStyle のセルのインデックスリストを返す。\n" <>
+  "NBCellIndicesByStyle[nb, {style1, style2, ...}] は複数スタイルを指定可能。";
+NBDeleteCellsByTag::usage =
+  "NBDeleteCellsByTag[nb, tag] は指定 CellTags を持つセルを全て削除する。";
+NBMoveAfterCell::usage =
+  "NBMoveAfterCell[nb, cellIdx] はセルの後ろにカーソルを移動する。";
+NBCellRead::usage =
+  "NBCellRead[nb, cellIdx] は NotebookRead で Cell 式を返す。";
+NBCellReadInputText::usage =
+  "NBCellReadInputText[nb, cellIdx] は FrontEnd 経由で InputText 形式を取得する。\n" <>
+  "失敗時は NBCellExprToText にフォールバック。";
+NBCellStyle::usage =
+  "NBCellStyle[nb, cellIdx] はセルの CellStyle を返す。";
+NBCellLabel::usage =
+  "NBCellLabel[nb, cellIdx] はセルの CellLabel (例: \"In[3]:=\") を返す。\n" <>
+  "ラベルなしの場合は \"\" を返す。";
+NBCellSetOptions::usage =
+  "NBCellSetOptions[nb, cellIdx, opts] はセルに SetOptions を適用する。";
+NBCellGetTaggingRule::usage =
+  "NBCellGetTaggingRule[nb, cellIdx, path] は TaggingRules のネスト値を返す。\n" <>
+  "例: NBCellGetTaggingRule[nb, 3, {\"claudecode\", \"confidential\"}]";
+NBCellRasterize::usage =
+  "NBCellRasterize[nb, cellIdx, file, opts] はセルを Rasterize して file に保存する。";
+
+NBCellHasImage::usage =
+  "NBCellHasImage[cellExpr] は Cell 式が画像 (RasterBox/GraphicsBox) を含むか判定する。\n" <>
+  "cellExpr は NBCellRead の戻り値を想定。";
+
+(* ---- プライバシー API ---- *)
+NBCellPrivacyLevel::usage =
+  "NBCellPrivacyLevel[nb, cellIdx] はセルのプライバシーレベル (0.0〜1.0) を返す。\n" <>
+  "0.0: 非秘密, 1.0: 秘密 (Confidentialマーク or 秘密変数参照)";
+
+NBIsAccessible::usage =
+  "NBIsAccessible[nb, cellIdx, PrivacySpec -> ps] はセルが指定の\n" <>
+  "PrivacySpec でアクセス可能かどうかを返す (True/False)。";
+
+NBFilterCellIndices::usage =
+  "NBFilterCellIndices[nb, indices, PrivacySpec -> ps] はセルインデックスリストを\n" <>
+  "PrivacySpec でフィルタリングして返す。";
+
+(* ---- テキスト抽出 API ---- *)
+NBCellExprToText::usage =
+  "NBCellExprToText[cellExpr] は NotebookRead の結果 (Cell式) から\n" <>
+  "テキストを抽出する。";
+
+NBCellToText::usage =
+  "NBCellToText[nb, cellIdx] はセルのテキスト内容を返す。";
+
+NBGetCells::usage =
+  "NBGetCells[nb, PrivacySpec -> ps] はノートブック内の全セルインデックスを\n" <>
+  "PrivacySpec でフィルタリングして返す。";
+
+NBGetContext::usage =
+  "NBGetContext[nb, afterIdx, PrivacySpec -> ps] はノートブック内の\n" <>
+  "afterIdx 番目以降のセルから LLM プロンプト用コンテキスト文字列を構築する。\n" <>
+  "PrivacySpec でフィルタリングされる。ディフォルト: AccessLevel 0.5。";
+
+(* ---- 書き込み API ---- *)
+NBWriteText::usage =
+  "NBWriteText[nb, text, style] はノートブックにテキストセルを書き込む。\n" <>
+  "style のディフォルトは \"Text\"。";
+
+NBWriteCode::usage =
+  "NBWriteCode[nb, code] は構文カラーリング付き Input セルを書き込む。";
+
+NBWriteSmartCode::usage =
+  "NBWriteSmartCode[nb, code] は CellPrint[] パターンを自動検出して\n" <>
+  "スマートにセルを書き込む。";
+
+NBWriteInputCellAndMaybeEvaluate::usage =
+  "NBWriteInputCellAndMaybeEvaluate[nb, boxes, autoEvaluate] は\n" <>
+  "現在のカーソル位置の後ろに Input セルを挿入し、カーソルをセル先頭に移動する。\n" <>
+  "autoEvaluate が True の場合はさらに SelectionEvaluate を行う。";
+
+NBInsertTextCells::usage =
+  "NBInsertTextCells[nbFile, name, prompt] は .nb ファイルを非表示で開き、\n" <>
+  "末尾に Subsection セル (name) と Text セル (prompt) を挿入して保存・閉じる。";
+
+(* ---- セルマーク API ---- *)
+NBGetConfidentialTag::usage =
+  "NBGetConfidentialTag[nb, cellIdx] は TaggingRules から機密タグを返す: True/False/Missing[]。";
+
+NBSetConfidentialTag::usage =
+  "NBSetConfidentialTag[nb, cellIdx, val] はセルの機密タグを val (True/False) に設定する。";
+
+NBMarkCellConfidential::usage =
+  "NBMarkCellConfidential[nb, cellIdx] はセルに機密マーク（赤背景 + WarningSign）を付ける。";
+
+NBMarkCellDependent::usage =
+  "NBMarkCellDependent[nb, cellIdx] はセルに依存機密マーク（橙背景 + LockIcon）を付ける。\n" <>
+  "機密変数に依存する計算結果など、間接的に機密なセルに使用する。";
+
+NBUnmarkCell::usage =
+  "NBUnmarkCell[nb, cellIdx] はセルの機密マーク（視覚・タグ）をすべて解除する。";
+
+(* ---- セル内容分析 API (claudecodeから移設) ---- *)
+NBCellUsesConfidentialSymbol::usage =
+  "NBCellUsesConfidentialSymbol[nb, cellIdx] はセルが機密変数を参照しているかを返す。";
+
+NBCellExtractVarNames::usage =
+  "NBCellExtractVarNames[nb, cellIdx] はセル内容から Set/SetDelayed の LHS 変数名を抽出する。";
+
+NBCellExtractAssignedNames::usage =
+  "NBCellExtractAssignedNames[nb, cellIdx] はセル内容から Confidential[] 内の代入先変数名を抽出する。";
+
+NBShouldExcludeFromPrompt::usage =
+  "NBShouldExcludeFromPrompt[nb, cellIdx] はセルがプロンプトから除外すべきかを返す。";
+
+NBIsClaudeFunctionCell::usage =
+  "NBIsClaudeFunctionCell[nb, cellIdx] はセルが Claude 関数呼び出しセルかを返す。";
+
+(* ---- 依存グラフ API ---- *)
+NBAccess`iCellToInputText::usage =
+  "iCellToInputText[cell] は FrontEnd経由でセルの InputText形式を取得する。"
+  "失敗時は NBCellExprToText にフォールバック。";
+
+NBBuildVarDependencies::usage =
+  "NBBuildVarDependencies[nb] はノートブックのInputセルを解析して\n" <>
+  "変数依存関係グラフ <|\"var\" -> {\"dep1\",...}|> を返す。\n" <>
+  "文字列リテラル内の識別子は除外される。";
+
+NBTransitiveDependents::usage =
+  "NBTransitiveDependents[deps, confVars] は deps グラフ上で\n" <>
+  "confVars に直接・間接依存する全変数名リストを返す。";
+
+NBScanDependentCells::usage =
+  "NBScanDependentCells[nb] は依存グラフを使って機密変数に依存するセルに\n" <>
+  "NBMarkCellDependent を適用し、新たにマークしたセル数を返す。\n" <>
+  "Claude関数呼び出しセル (ClaudeQuery 等) は除外される。";
+
+NBFilterHistoryEntry::usage =
+  "NBFilterHistoryEntry[entry, confVars] は履歴エントリ内の response/instruction に現時点の機密変数名または値が含まれる場合に\n" <>
+  "そのフィールドをブロックする。confVars は現在の機密変数名リスト。";
+
+NBDependencyEdges::usage =
+  "NBDependencyEdges[nb] はノートブックの変数依存関係をエッジリストで返す。\n" <>
+  "戻り値: {DirectedEdge[\"dep\", \"var\"], ...}\n" <>
+  "\"dep\" → \"var\" は \"var が dep に依存する\" を意味する。\n" <>
+  "NBDependencyEdges[nb, confVars] は機密変数 confVars に関連するエッジのみ返す。";
+
+NBDebugDependencies::usage =
+  "NBDebugDependencies[nb, confVars] は依存グラフ・推移依存・セルテキストを Print で表示するデバッグ関数。\n" <>
+  "各 Input セルについて InputText 取得結果、代入解析結果、依存判定結果を出力する。";
+
+NBPlotDependencyGraph::usage =
+  "NBPlotDependencyGraph[nb] はノートブックの変数依存関係グラフをプロットする。\n" <>
+  "ノードは変数名・Out[n]で、直接秘密は赤、依存秘密は橙で着色。\n" <>
+  "エッジラベルは依存を定義するセルの In[xx] 番号。\n" <>
+  "オプション PrivacySpec -> <|\"AccessLevel\" -> 1.0|> で表示範囲を制御。";
+
+(* ---- 関数定義解析 ---- *)
+NBGetFunctionGlobalDeps::usage =
+  "NBGetFunctionGlobalDeps[nb] はノートブック内の全関数定義を解析し、\n" <>
+  "各関数が依存している大域変数のリストを返す。\n" <>
+  "戻り値: <|\"関数名\" -> {\"大域変数1\", ...}, ...|>\n" <>
+  "パターン変数とスコーピング局所変数 (Module/Block/With/Function) は除外される。";
+
+(* ---- ノートブック TaggingRules API ---- *)
+NBGetTaggingRule::usage =
+  "NBGetTaggingRule[nb, key] はノートブックの TaggingRules から key の値を返す。\n" <>
+  "NBGetTaggingRule[nb, {key1, key2, ...}] はネストしたパスを指定可能。\n" <>
+  "キーが存在しない場合は Missing[] を返す。";
+
+NBSetTaggingRule::usage =
+  "NBSetTaggingRule[nb, key, value] はノートブックの TaggingRules に key -> value を設定する。\n" <>
+  "NBSetTaggingRule[nb, {key1, key2}, value] はネストしたパスを指定可能。";
+
+NBDeleteTaggingRule::usage =
+  "NBDeleteTaggingRule[nb, key] はノートブックの TaggingRules から key を削除する。";
+
+NBListTaggingRuleKeys::usage =
+  "NBListTaggingRuleKeys[nb] はノートブックの TaggingRules の全キーを返す。\n" <>
+  "NBListTaggingRuleKeys[nb, prefix] は prefix で始まるキーのみ返す。";
+
+(* ---- 汎用履歴データベース API ---- *)
+NBHistoryData::usage =
+  "NBHistoryData[nb, tag] は TaggingRules から履歴データを読み取り、\n" <>
+  "差分圧縮されたエントリを復元して返す。\n" <>
+  "オプション Decompress -> False で Diff オブジェクトのまま返す。\n" <>
+  "戻り値: <|\"header\" -> <|...|>, \"entries\" -> {<|...|>, ...}|>";
+
+NBHistoryRawData::usage =
+  "NBHistoryRawData[nb, tag] は差分圧縮を解除せずに履歴データを返す (内部用)。";
+
+NBHistorySetData::usage =
+  "NBHistorySetData[nb, tag, data] は TaggingRules に履歴データを書き込む。\n" <>
+  "data は <|\"header\" -> ..., \"entries\" -> {...}|> の形式。\n" <>
+  "entries は差分圧縮されていない平文で渡すこと。自動的に圧縮される。";
+
+NBHistoryAppend::usage =
+  "NBHistoryAppend[nb, tag, entry] はエントリを履歴に追加する。\n" <>
+  "差分圧縮: 直前のエントリの fullPrompt/response/code を Diff で圧縮。\n" <>
+  "オプション PrivacySpec -> ps で privacylevel をエントリに記録。";
+
+NBHistoryEntries::usage =
+  "NBHistoryEntries[nb, tag] は差分圧縮を復元した全エントリリストを返す。\n" <>
+  "オプション Decompress -> False で Diff オブジェクトのまま返す。";
+
+NBHistoryUpdateLast::usage =
+  "NBHistoryUpdateLast[nb, tag, updates] は最後のエントリを更新する。\n" <>
+  "updates は <|\"response\" -> ..., \"code\" -> ..., ...|> の形式。";
+
+NBHistoryReadHeader::usage =
+  "NBHistoryReadHeader[nb, tag] は履歴のヘッダー Association を返す。";
+
+NBHistoryWriteHeader::usage =
+  "NBHistoryWriteHeader[nb, tag, header] は履歴のヘッダーを書き込む。";
+
+NBHistoryEntriesWithInherit::usage =
+  "NBHistoryEntriesWithInherit[nb, tag] は親履歴を含む全エントリを返す。\n" <>
+  "header の parent/inherit/created に従って親チェーンを辿る。\n" <>
+  "オプション Decompress -> False で Diff オブジェクトのまま返す。";
+
+NBHistoryListTags::usage =
+  "NBHistoryListTags[nb, prefix] は prefix で始まる履歴タグ一覧を返す。";
+
+NBHistoryDelete::usage =
+  "NBHistoryDelete[nb, tag] は指定タグの履歴を TaggingRules から削除する。";
+
+NBHistoryReplaceEntries::usage =
+  "NBHistoryReplaceEntries[nb, tag, entries] はエントリリスト全体を置換する。\n" <>
+  "コンパクションやバッチ更新に使用する。";
+
+NBHistoryUpdateHeader::usage =
+  "NBHistoryUpdateHeader[nb, tag, updates] はヘッダーにキーを追加・更新する。\n" <>
+  "既存キーは上書き、新規キーは追加される。";
+
+NBHistoryCreate::usage =
+  "NBHistoryCreate[nb, tag, diffFields] は新しい履歴データベースを作成する。\n" <>
+  "diffFields は差分圧縮対象のフィールド名リスト (例: {\"fullPrompt\", \"response\", \"code\"})。\n" <>
+  "NBHistoryCreate[nb, tag, diffFields, headerOverrides] でヘッダーを上書き可能。\n" <>
+  "既存 DB に diffFields がある場合は既存ヘッダーを返す (冪等)。";
+
+(* ---- セッションアタッチメント API ---- *)
+NBHistoryAddAttachment::usage =
+  "NBHistoryAddAttachment[nb, tag, path] はセッションにファイルをアタッチする。\n" <>
+  "ヘッダーの \"attachments\" リストにパスを追加 (重複除去)。";
+
+NBHistoryRemoveAttachment::usage =
+  "NBHistoryRemoveAttachment[nb, tag, path] はセッションからファイルをデタッチする。";
+
+NBHistoryGetAttachments::usage =
+  "NBHistoryGetAttachments[nb, tag] はセッションのアタッチメントリストを返す。";
+
+NBHistoryClearAttachments::usage =
+  "NBHistoryClearAttachments[nb, tag] はセッションの全アタッチメントをクリアする。";
+
+(* ---- API キーアクセサー ---- *)
+NBGetAPIKey::usage =
+  "NBGetAPIKey[provider] は AI プロバイダの API キーを返す。\n" <>
+  "provider: \"anthropic\" | \"openai\" | \"github\"\n" <>
+  "オプション PrivacySpec -> <|\"AccessLevel\" -> 1.0|> (ディフォルト)。\n" <>
+  "SystemCredential へのアクセスを一元管理する。";
+
+(* ---- アクセス可能ディレクトリ API ---- *)
+NBSetAccessibleDirs::usage =
+  "NBSetAccessibleDirs[nb, {dir1, dir2, ...}] \:306f Claude Code \:304c\n" <>
+  "\:53c2\:7167\:53ef\:80fd\:306a\:30c7\:30a3\:30ec\:30af\:30c8\:30ea\:30ea\:30b9\:30c8\:3092 TaggingRules \:306b\:4fdd\:5b58\:3059\:308b\:3002\n" <>
+  "NBSetAccessibleDirs[{dir1, dir2, ...}] \:306f EvaluationNotebook[] \:306b\:4fdd\:5b58\:3059\:308b\:3002";
+
+NBGetAccessibleDirs::usage =
+  "NBGetAccessibleDirs[nb] \:306f\:4fdd\:5b58\:3055\:308c\:305f\:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:30c7\:30a3\:30ec\:30af\:30c8\:30ea\:30ea\:30b9\:30c8\:3092\:8fd4\:3059\:3002\n" <>
+  "NBGetAccessibleDirs[] \:306f EvaluationNotebook[] \:304b\:3089\:53d6\:5f97\:3059\:308b\:3002";
+
+
+NBMoveToEnd::usage =
+  "NBMoveToEnd[nb] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:672b\:5c3e\:306b\:30ab\:30fc\:30bd\:30eb\:3092\:79fb\:52d5\:3059\:308b\:3002";
+
+(* ---- Job \:7ba1\:7406 API: ClaudeQuery/ClaudeEval \:306e\:975e\:540c\:671f\:51fa\:529b\:4f4d\:7f6e\:7ba1\:7406 ---- *)
+NBBeginJob::usage =
+  "NBBeginJob[nb, evalCell] \:306f\:8a55\:4fa1\:30bb\:30eb\:306e\:76f4\:5f8c\:306b3\:3064\:306e\:4e0d\:53ef\:8996\:30b9\:30ed\:30c3\:30c8\:30bb\:30eb\:3092\:633f\:5165\:3057\:30b8\:30e7\:30d6ID\:3092\:8fd4\:3059\:3002\n" <>
+  "evalCell \:304c CellObject \:3067\:306a\:3044\:5834\:5408\:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:672b\:5c3e\:306b\:633f\:5165\:3059\:308b\:3002\n" <>
+  "\:30b9\:30ed\:30c3\:30c81: \:30b7\:30b9\:30c6\:30e0\:30e1\:30c3\:30bb\:30fc\:30b8\:ff08\:30d7\:30ed\:30b0\:30ec\:30b9\:30fb\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:901a\:77e5\:ff09\n" <>
+  "\:30b9\:30ed\:30c3\:30c82: \:5b8c\:4e86\:30e1\:30c3\:30bb\:30fc\:30b8\n" <>
+  "\:30a2\:30f3\:30ab\:30fc: \:30ec\:30b9\:30dd\:30f3\:30b9\:66f8\:304d\:8fbc\:307f\:4f4d\:7f6e\:30de\:30fc\:30ab\:30fc";
+
+NBWriteSlot::usage =
+  "NBWriteSlot[jobId, slotIdx, cellExpr] \:306f\:30b8\:30e7\:30d6\:306e\:30b9\:30ed\:30c3\:30c8\:306b Cell \:5f0f\:3092\:66f8\:304d\:8fbc\:307f\:53ef\:8996\:306b\:3059\:308b\:3002\n" <>
+  "\:540c\:3058\:30b9\:30ed\:30c3\:30c8\:306b\:518d\:5ea6\:66f8\:304d\:8fbc\:3080\:3068\:4e0a\:66f8\:304d\:3055\:308c\:308b\:3002";
+
+NBJobMoveToAnchor::usage =
+  "NBJobMoveToAnchor[jobId] \:306f\:30a2\:30f3\:30ab\:30fc\:30bb\:30eb\:306e\:76f4\:5f8c\:306b\:30ab\:30fc\:30bd\:30eb\:3092\:79fb\:52d5\:3059\:308b\:3002\n" <>
+  "\:30ec\:30b9\:30dd\:30f3\:30b9\:30b3\:30f3\:30c6\:30f3\:30c4\:306e\:66f8\:304d\:8fbc\:307f\:524d\:306b\:547c\:3076\:3002";
+
+NBEndJob::usage =
+  "NBEndJob[jobId] \:306f\:30b8\:30e7\:30d6\:3092\:6b63\:5e38\:7d42\:4e86\:3059\:308b\:3002\n" <>
+  "\:672a\:66f8\:304d\:8fbc\:307f\:30b9\:30ed\:30c3\:30c8\:3068\:30a2\:30f3\:30ab\:30fc\:3092\:524a\:9664\:3057\:30c6\:30fc\:30d6\:30eb\:3092\:30af\:30ea\:30a2\:3059\:308b\:3002";
+
+NBAbortJob::usage =
+  "NBAbortJob[jobId, errorMsg] \:306f\:30a8\:30e9\:30fc\:30e1\:30c3\:30bb\:30fc\:30b8\:3092\:66f8\:304d\:8fbc\:307f\:30b8\:30e7\:30d6\:3092\:7d42\:4e86\:3059\:308b\:3002";
+
+
+
+(* ---- 分離API: claudecodeからの間接アクセス用 ---- *)
+NBBeginJobAtEvalCell::usage =
+  "NBBeginJobAtEvalCell[nb] は EvaluationCell[] を内部取得してその直後にJob スロットを挿入する。\n" <>
+  "claudecode が CellObject を保持する必要がない。";
+
+NBExtractAssignments::usage =
+  "NBExtractAssignments[text] はテキストから Set/SetDelayed の LHS 変数名を抽出する。";
+
+NBSetConfidentialVars::usage =
+  "NBSetConfidentialVars[assoc] は機密変数テーブルを一括設定する。\n" <>
+  "assoc: <|\"varName\" -> True, ...|>";
+
+NBGetConfidentialVars::usage =
+  "NBGetConfidentialVars[] は現在の機密変数テーブルを返す。";
+
+NBClearConfidentialVars::usage =
+  "NBClearConfidentialVars[] は機密変数テーブルをクリアする。";
+
+NBRegisterConfidentialVar::usage =
+  "NBRegisterConfidentialVar[name, level] は機密変数を1つ登録する (level デフォルト 1.0)。";
+
+NBUnregisterConfidentialVar::usage =
+  "NBUnregisterConfidentialVar[name] は機密変数を1つ解除する。";
+
+NBGetPrivacySpec::usage =
+  "NBGetPrivacySpec[] は現在の $NBPrivacySpec を返す。";
+
+NBInstallCellEpilog::usage =
+  "NBInstallCellEpilog[nb, key, expr] はノートブックの CellEpilog に式を設定する。\n" <>
+  "key は識別用文字列。既にインストール済みなら何もしない。";
+
+NBCellEpilogInstalledQ::usage =
+  "NBCellEpilogInstalledQ[nb, key] は CellEpilog が key で既にインストールされているか返す。";
+
+NBEvaluatePreviousCell::usage =
+  "NBEvaluatePreviousCell[nb] は直前のセルを選択して評価する。";
+
+NBInsertInputTemplate::usage =
+  "NBInsertInputTemplate[nb, boxes] は Input セルテンプレートを挿入する。";
+
+NBParentNotebookOfCurrentCell::usage =
+  "NBParentNotebookOfCurrentCell[] は EvaluationCell の親ノートブックを返す。";
+
+$NBSeparationIgnoreList::usage =
+  "$NBSeparationIgnoreList は分離検査 (ClaudeCheckSeparation) で無視する\n" <>
+  "ファイル名またはパッケージ名のリスト。\n" <>
+  "NBAccess と NotebookExtensions はデフォルトで登録済み。\n" <>
+  "例: AppendTo[$NBSeparationIgnoreList, \"MyPackage\"]";
+
+(* ---- 分離API追加: セル書き込み ---- *)
+NBWriteCell::usage =
+  "NBWriteCell[nb, cellExpr] はノートブックに Cell 式を書き込む (After)。\n" <>
+  "NBWriteCell[nb, cellExpr, pos] は pos (After/Before/All) を指定可能。";
+
+NBWritePrintNotice::usage =
+  "NBWritePrintNotice[nb, text, color] はノートブックに通知用 Print セルを書き込む。\n" <>
+  "nb が None の場合は CellPrint を使用 (同期 In/Out 間出力)。";
+
+NBWriteDynamicCell::usage =
+  "NBWriteDynamicCell[nb, dynBoxExpr, tag] はノートブックに Dynamic セルを書き込む。\n" <>
+  "tag が \"\" でない場合は CellTags を設定する。";
+
+NBWriteExternalLanguageCell::usage =
+  "NBWriteExternalLanguageCell[nb, code, lang, autoEvaluate] は ExternalLanguage セルを書き込む。\n" <>
+  "autoEvaluate が True なら直前セルを評価する。";
+
+NBInsertAndEvaluateInput::usage =
+  "NBInsertAndEvaluateInput[nb, boxes] は Input セルを挿入して即座に評価する。";
+
+NBInsertInputAfter::usage =
+  "NBInsertInputAfter[nb, boxes] は Input セルを After に書き込み Before CellContents に移動する。";
+
+NBWriteAnchorAfterEvalCell::usage =
+  "NBWriteAnchorAfterEvalCell[nb, tag] は EvaluationCell 直後に不可視アンカーセルを書き込む。\n" <>
+  "EvaluationCell が取得できない場合はノートブック末尾に書き込む。";
+
+NBInstallConfidentialEpilog::usage =
+  "NBInstallConfidentialEpilog[nb, epilogExpr, checkSymbol] は機密変数追跡用 CellEpilog をインストールする。\n" <>
+  "checkSymbol は FreeQ チェック用のマーカーシンボル。既にインストール済みなら何もしない。";
+
+NBConfidentialEpilogInstalledQ::usage =
+  "NBConfidentialEpilogInstalledQ[nb, checkSymbol] は機密追跡 CellEpilog がインストール済みか返す。\n" <>
+  "checkSymbol は FreeQ チェック用のマーカーシンボル。";
+
+Begin["`Private`"];
+
+(* ============================================================
+   ディフォルト値
+   ============================================================ *)
+
+(* アクセスレベル 0.5 = クラウドLLM安全なデータのみ *)
+If[!AssociationQ[NBAccess`$NBPrivacySpec],
+  NBAccess`$NBPrivacySpec = <|"AccessLevel" -> 0.5|>];
+
+(* 秘密変数名 -> プライバシーレベル (0.0..1.0) *)
+If[!AssociationQ[NBAccess`$NBConfidentialSymbols],
+  NBAccess`$NBConfidentialSymbols = <||>];
+
+(* 分離検査で無視するパッケージ名リスト *)
+If[!ListQ[NBAccess`$NBSeparationIgnoreList],
+  NBAccess`$NBSeparationIgnoreList = {"NBAccess", "NotebookExtensions"}];
+
+(* ============================================================
+   内部ヘルパー: セルインデックス → CellObject 解決
+   ============================================================ *)
+
+iResolveCell[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cells = Quiet[Cells[nb]]},
+    If[!ListQ[cells] || cellIdx < 1 || cellIdx > Length[cells],
+      $Failed, cells[[cellIdx]]]
+  ];
+
+(* ============================================================
+   内部ヘルパー: PrivacySpec 解決
+   ============================================================ *)
+
+iResolvePS[Automatic]       := NBAccess`$NBPrivacySpec;
+iResolvePS[ps_Association]  := ps;
+iResolvePS[_]               := NBAccess`$NBPrivacySpec;
+
+iAccessLevel[ps_] := Lookup[iResolvePS[ps], "AccessLevel", 0.5];
+
+(* ============================================================
+   内部ヘルパー: TaggingRules から秘密タグを読み出す
+   ============================================================ *)
+
+iGetConfTag[cell_CellObject] :=
+  Module[{tags, cc},
+    tags = Quiet[CurrentValue[cell, TaggingRules]];
+    If[!MatchQ[tags, _List | _Association], Return[Missing[]]];
+    cc = Lookup[tags, "claudecode", {}];
+    If[!MatchQ[cc, _List | _Association], Return[Missing[]]];
+    Replace[Lookup[cc, "confidential", Missing[]], Except[True | False] -> Missing[]]
+  ];
+
+(* ============================================================
+   内部ヘルパー: 秘密変数参照チェック (CellObject版、内部用)
+   ============================================================ *)
+
+iCellUsesConfSymbol[nb_NotebookObject, cell_CellObject] :=
+  Module[{text, names},
+    If[Length[NBAccess`$NBConfidentialSymbols] === 0, Return[False]];
+    text = Quiet[NBAccess`NBCellExprToText[Quiet[NotebookRead[cell]]]];
+    If[!StringQ[text] || StringLength[text] === 0, Return[False]];
+    names = Keys[NBAccess`$NBConfidentialSymbols];
+    AnyTrue[names,
+      StringContainsQ[text, RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <> "(?![\\p{L}\\p{N}$])"]] &]
+  ];
+
+(* ============================================================
+   セルユーティリティ API (新規)
+   ============================================================ *)
+
+NBAccess`NBCellCount[nb_NotebookObject] :=
+  Module[{cells = Quiet[Cells[nb]]},
+    If[ListQ[cells], Length[cells], 0]
+  ];
+
+NBAccess`NBCurrentCellIndex[nb_NotebookObject] :=
+  Module[{ec, cells, pos},
+    ec = Quiet[EvaluationCell[]];
+    If[Head[ec] =!= CellObject, Return[0]];
+    cells = Quiet[Cells[nb]];
+    If[!ListQ[cells], Return[0]];
+    pos = First[Flatten[Position[cells, ec]], 0];
+    pos
+  ];
+
+NBAccess`NBSelectedCellIndices[nb_NotebookObject] :=
+  Module[{allCells, sel, selSet, indices},
+    allCells = Quiet[Cells[nb]];
+    If[!ListQ[allCells], Return[{}]];
+    (* まずセルブラケット選択を試みる *)
+    sel = Quiet[SelectedCells[nb]];
+    If[!ListQ[sel] || Length[sel] === 0,
+      (* フォールバック: 現在のカーソル位置のセルを取得 *)
+      Quiet[
+        SelectionMove[nb, All, Cell];
+        sel = SelectedCells[nb];
+        SelectionMove[nb, After, CellContents];
+      ];
+    ];
+    If[!ListQ[sel] || Length[sel] === 0, Return[{}]];
+    selSet = Association[# -> True & /@ sel];
+    indices = Flatten[MapIndexed[
+      If[KeyExistsQ[selSet, #1], First[#2], Nothing] &,
+      allCells]];
+    indices
+  ];
+
+NBAccess`NBCellIndicesByTag[nb_NotebookObject, tag_String] :=
+  Module[{allCells, taggedCells, tagSet},
+    allCells = Quiet[Cells[nb]];
+    If[!ListQ[allCells], Return[{}]];
+    taggedCells = Quiet[Cells[nb, CellTags -> tag]];
+    If[!ListQ[taggedCells] || Length[taggedCells] === 0, Return[{}]];
+    tagSet = Association[# -> True & /@ taggedCells];
+    Flatten[MapIndexed[
+      If[KeyExistsQ[tagSet, #1], First[#2], Nothing] &,
+      allCells]]
+  ];
+
+NBAccess`NBCellIndicesByStyle[nb_NotebookObject, style_String] :=
+  Module[{n},
+    (* Cells[nb, CellStyle -> style] は CellStyle がリスト {"Input"} の場合に
+       マッチしない場合があるため、全セル走査 + NBCellStyle (正規化済み) を使用 *)
+    n = NBAccess`NBCellCount[nb];
+    If[n === 0, Return[{}]];
+    Select[Range[n], NBAccess`NBCellStyle[nb, #] === style &]
+  ];
+
+NBAccess`NBCellIndicesByStyle[nb_NotebookObject, styles_List] :=
+  Module[{n},
+    n = NBAccess`NBCellCount[nb];
+    If[n === 0, Return[{}]];
+    Select[Range[n], MemberQ[styles, NBAccess`NBCellStyle[nb, #]] &]
+  ];
+
+NBAccess`NBDeleteCellsByTag[nb_NotebookObject, tag_String] :=
+  Module[{cells},
+    cells = Quiet[Cells[nb, CellTags -> tag]];
+    If[ListQ[cells] && Length[cells] > 0,
+      Quiet[NotebookDelete /@ cells]]
+  ];
+
+NBAccess`NBMoveAfterCell[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell =!= $Failed,
+      Quiet[SelectionMove[cell, After, Cell]]]
+  ];
+
+NBAccess`NBCellRead[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, $Failed, Quiet[NotebookRead[cell]]]
+  ];
+
+NBAccess`NBCellStyle[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell, s},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[""]];
+    s = Quiet[CurrentValue[cell, CellStyle]];
+    (* CellStyle はリスト {"Input"} または文字列 "Input" を返す場合がある。
+       常に文字列を返すように正規化する *)
+    Which[
+      StringQ[s], s,
+      ListQ[s] && Length[s] > 0, First[s],
+      True, ""
+    ]
+  ];
+
+NBAccess`NBCellLabel[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell, lbl},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[""]];
+    lbl = Quiet[CurrentValue[cell, CellLabel]];
+    If[StringQ[lbl], lbl, ""]
+  ];
+
+NBAccess`NBCellSetOptions[nb_NotebookObject, cellIdx_Integer, opts__] :=
+  Module[{cell},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell =!= $Failed, Quiet[SetOptions[cell, opts]]]
+  ];
+
+NBAccess`NBCellGetTaggingRule[nb_NotebookObject, cellIdx_Integer, path_] :=
+  Module[{cell},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Missing[],
+      Quiet[CurrentValue[cell, Prepend[If[ListQ[path], path, {path}], TaggingRules]]]]
+  ];
+
+NBAccess`NBCellRasterize[nb_NotebookObject, cellIdx_Integer, file_String, opts___] :=
+  Module[{cell},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, $Failed,
+      Quiet[Export[file, Rasterize[cell, opts, ImageResolution -> 144], "PNG"]];
+      If[FileExistsQ[file], file, $Failed]]
+  ];
+
+(* Cell 式が画像を含むか判定 (RasterBox/GraphicsBox の有無) *)
+NBAccess`NBCellHasImage[cellExpr_] :=
+  Length[Cases[cellExpr, _RasterBox | _GraphicsBox, Infinity]] > 0;
+
+NBAccess`NBCellHasImage[$Failed] := False;
+NBAccess`NBCellHasImage[{}] := False;
+
+(* ============================================================
+   セル内容テキスト取得 (InputText 形式)
+   ============================================================ *)
+
+NBAccess`iCellToInputText[cell_CellObject] :=
+  Module[{raw, result},
+    result = Quiet[
+      FrontEndExecute[
+        FrontEnd`ExportPacket[NotebookRead[cell], "InputText"]]];
+    If[MatchQ[result, {_String, ___}] && StringLength[First[result]] > 0,
+      Return[First[result]]];
+    NBAccess`NBCellExprToText[Quiet[NotebookRead[cell]]]
+  ];
+
+NBAccess`NBCellReadInputText[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, "", iCellToInputText[cell]]
+  ];
+
+(* ============================================================
+   プライバシーレベル: 0.0..1.0
+   ============================================================ *)
+
+NBAccess`NBCellPrivacyLevel[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell, tag, depTag},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[0.0]];
+    tag    = iGetConfTag[cell];
+    depTag = Quiet[CurrentValue[cell, {TaggingRules, "claudecode", "dependent"}]];
+    Which[
+      tag === False,                 0.0,
+      TrueQ[depTag],                 0.75,
+      tag === True,                  1.0,
+      iCellUsesConfSymbol[nb, cell], 1.0,
+      True,                          0.0
+    ]
+  ];
+
+(* ============================================================
+   アクセス可能判定関数
+   ============================================================ *)
+
+Options[NBAccess`NBIsAccessible] = {PrivacySpec -> Automatic};
+NBAccess`NBIsAccessible[nb_NotebookObject, cellIdx_Integer,
+    opts:OptionsPattern[]] :=
+  NBAccess`NBCellPrivacyLevel[nb, cellIdx] <= iAccessLevel[OptionValue[PrivacySpec]];
+
+Options[NBAccess`NBFilterCellIndices] = {PrivacySpec -> Automatic};
+NBAccess`NBFilterCellIndices[nb_NotebookObject, indices_List,
+    opts:OptionsPattern[]] :=
+  Select[indices, NBAccess`NBIsAccessible[nb, #, opts] &];
+
+(* ============================================================
+   テキスト抽出関数
+   ============================================================ *)
+
+NBAccess`NBCellExprToText[cellExpr_] :=
+  Module[{cellContent},
+    cellContent = Replace[cellExpr,
+      {Cell[BoxData[bd_],  ___] :> bd,
+       Cell[str_String,    ___] :> str,
+       Cell[TextData[td_], ___] :> td,
+       _                        :> ""}];
+    StringTrim @ StringJoin @ Riffle[
+      Cases[cellContent, tok_String /; StringLength[tok] > 0, Infinity], " "]
+  ];
+
+NBAccess`NBCellToText[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, "",
+      NBAccess`NBCellExprToText[Quiet[NotebookRead[cell]]]]
+  ];
+
+(* ============================================================
+   ノートブック内セル一覧取得 (PrivacySpec フィルタリング付き)
+   ============================================================ *)
+
+Options[NBAccess`NBGetCells] = {PrivacySpec -> Automatic};
+NBAccess`NBGetCells[nb_NotebookObject, opts:OptionsPattern[]] :=
+  Module[{n},
+    n = NBAccess`NBCellCount[nb];
+    If[n === 0, Return[{}]];
+    NBAccess`NBFilterCellIndices[nb, Range[n], opts]
+  ];
+
+(* 機密変数を含む行の処理 *)
+iRedactConfidentialLines[text_String] :=
+  Module[{names, lines, anyRedacted = False, redacted},
+    If[Length[NBAccess`$NBConfidentialSymbols] === 0, Return[{text, False}]];
+    names = Keys[NBAccess`$NBConfidentialSymbols];
+    lines = StringSplit[text, "\n"];
+    redacted = Map[
+      Function[line,
+        Module[{hasConf, lhsMatch},
+          hasConf = AnyTrue[names,
+            StringMatchQ[line, ___ ~~ RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <> "(?![\\p{L}\\p{N}$])"] ~~ ___] &];
+          If[!hasConf, line,
+            anyRedacted = True;
+            lhsMatch = StringCases[line,
+              RegularExpression["^\\s*([\\p{L}$][\\p{L}\\p{N}$]*)\\s*=(?!=)"] -> "$1"];
+            If[Length[lhsMatch] > 0,
+              First[lhsMatch] <> " = (* [機密変数に依存: 値は非表示] *)",
+              "(* [機密変数を含む行: 非表示] *)"]]]],
+      lines];
+    {StringJoin @ Riffle[redacted, "\n"], anyRedacted}
+  ];
+
+Options[NBAccess`NBGetContext] = {PrivacySpec -> Automatic};
+NBAccess`NBGetContext[nb_NotebookObject, afterIdx_Integer,
+    opts:OptionsPattern[]] :=
+  Module[{allCells, nCells, cellPos, inIndices, outIndices,
+          msgIndices, suppressedOutPos,
+          inLines, msgText, outText},
+    allCells = Quiet[Cells[nb]];
+    If[!ListQ[allCells], Return[""]];
+    nCells = Length[allCells];
+    cellPos = Association[MapIndexed[#1 -> First[#2] &, allCells]];
+    (* 全 Input/Code セルインデックスを取得 *)
+    inIndices = Sort[Join[
+      NBAccess`NBCellIndicesByStyle[nb, "Input"],
+      NBAccess`NBCellIndicesByStyle[nb, "Code"]]];
+    outIndices = NBAccess`NBCellIndicesByStyle[nb, "Output"];
+    suppressedOutPos = {};
+    inLines = StringJoin @ Riffle[
+      Map[
+        Function[iIdx,
+          Module[{txt, result, wasRedacted, cellLabel, depTag,
+                  shouldSuppress, nextOutIndices, nextInIdx},
+            txt = ToString[NBAccess`NBCellToText[nb, iIdx]];
+            {result, wasRedacted} = iRedactConfidentialLines[
+              StringTake[txt, UpTo[500]]];
+            cellLabel = NBAccess`NBCellLabel[nb, iIdx];
+            depTag = NBAccess`NBCellGetTaggingRule[nb, iIdx,
+              {"claudecode", "dependent"}];
+            shouldSuppress = wasRedacted || TrueQ[depTag];
+            If[shouldSuppress,
+              nextOutIndices = Select[outIndices, # > iIdx &];
+              If[Length[nextOutIndices] > 0,
+                nextInIdx = SelectFirst[inIndices, # > iIdx &, Infinity];
+                nextOutIndices = Select[nextOutIndices, # < nextInIdx &];
+                suppressedOutPos = Join[suppressedOutPos, nextOutIndices]]];
+            If[cellLabel =!= "",
+              cellLabel <> " " <> result,
+              result]]],
+        inIndices],
+      "\n"];
+    (* Output/Message は afterIdx 以降のみ、かつ機密 Input に対応するものを除外 *)
+    With[{supSet = Association[# -> True & /@ suppressedOutPos],
+          afterPos = afterIdx},
+      outIndices = Select[
+        Select[outIndices, # > afterPos &],
+        !KeyExistsQ[supSet, #] &];
+      msgIndices = Select[
+        Sort[Join[
+          NBAccess`NBCellIndicesByStyle[nb, "Message"],
+          NBAccess`NBCellIndicesByStyle[nb, "MSG"]]],
+        # > afterPos &]];
+    (* プライバシーフィルタ *)
+    With[{safeSet = Association[
+            # -> True & /@ NBAccess`NBFilterCellIndices[nb,
+              Join[outIndices, msgIndices], opts]]},
+      outIndices = Select[outIndices, KeyExistsQ[safeSet, #] &];
+      msgIndices = Select[msgIndices, KeyExistsQ[safeSet, #] &]];
+    msgText = If[Length[msgIndices] > 0,
+      "=== エラーメッセージ ===\n" <>
+        StringJoin[Riffle[
+          ToString[NBAccess`NBCellToText[nb, #]] & /@ msgIndices,
+          "\n"]] <> "\n\n",
+      ""];
+    outText = If[Length[outIndices] > 0,
+      "=== 直近出力（抜粋） ===\n" <>
+        StringJoin[Riffle[
+          Map[Function[oIdx,
+            Module[{outLabel, outTxt},
+              outLabel = NBAccess`NBCellLabel[nb, oIdx];
+              outTxt = StringTake[ToString[NBAccess`NBCellToText[nb, oIdx]], UpTo[200]];
+              If[outLabel =!= "",
+                StringReplace[outLabel, "=" -> "="] <> " " <> outTxt,
+                outTxt]]],
+            Take[outIndices, UpTo[5]]],
+          "\n"]] <> "\n\n",
+      ""];
+    If[StringLength[inLines] > 0,
+      "=== 実行されたコード ===\n" <> inLines <> "\n\n", ""] <>
+    msgText <> outText
+  ];
+
+(* ============================================================
+   書き込み関数
+   ============================================================ *)
+
+NBAccess`NBWriteText[nb_NotebookObject, text_String,
+    style_String:"Text"] :=
+  NotebookWrite[nb, Cell[text, style], After];
+
+NBAccess`NBWriteCode[nb_NotebookObject, code_String] :=
+  Module[{result, box, held, boxes, cell},
+    result = Quiet @ Check[
+      MathLink`CallFrontEnd[
+        FrontEnd`UndocumentedTestFEParserPacket[code, False]],
+      $Failed
+    ];
+    box = Which[
+      MatchQ[result, {_BoxData, ___}],              First[result],
+      MatchQ[result, {Cell[_BoxData, ___], ___}],   First[result][[1]],
+      MatchQ[result, _BoxData],                     result,
+      True,                                         $Failed
+    ];
+    If[box === $Failed,
+      held  = Quiet @ Check[
+        ToExpression[code, InputForm, HoldComplete], $Failed];
+      boxes = If[held === $Failed, $Failed,
+        held /. HoldComplete[e_] :>
+          MakeBoxes[Unevaluated[e], StandardForm]];
+      If[boxes =!= $Failed, box = BoxData[boxes]]
+    ];
+    cell = If[MatchQ[box, _BoxData],
+      Cell[box, "Input"],
+      Cell[code, "Input", CellAutoOverwrite -> True]
+    ];
+    NotebookWrite[nb, cell, After]
+  ];
+
+NBAccess`NBWriteSmartCode[nb_NotebookObject, code_String] :=
+  Module[{trimmed = StringTrim[code], held,
+          cellArgHold, restHold, cellExpr, restBoxes},
+    If[trimmed === "", Return[]];
+    held = Quiet @ Check[
+      ToExpression[trimmed, InputForm, HoldComplete], $Failed];
+
+    iCellFromHold[h_HoldComplete] :=
+      Module[{head},
+        head = Replace[h, HoldComplete[x_] :> Head[x]];
+        If[MemberQ[{Cell, TextCell, ExpressionCell}, head],
+          Quiet @ Check[ReleaseHold[h], $Failed],
+          $Failed]
+      ];
+
+    If[held =!= $Failed,
+      Which[
+        MatchQ[held, HoldComplete[CellPrint[_]]],
+          cellArgHold = held /.
+            HoldComplete[CellPrint[arg_]] :> HoldComplete[arg];
+          cellExpr = iCellFromHold[cellArgHold];
+          If[MatchQ[cellExpr, Cell[__]],
+            NotebookWrite[nb, cellExpr, After];
+            Return[]],
+
+        MatchQ[held, HoldComplete[CompoundExpression[CellPrint[_], __]]],
+          cellArgHold = held /.
+            HoldComplete[CompoundExpression[CellPrint[arg_], rest__]] :>
+              HoldComplete[arg];
+          restHold = held /.
+            HoldComplete[CompoundExpression[CellPrint[arg_], rest__]] :>
+              HoldComplete[CompoundExpression[rest]];
+          cellExpr = iCellFromHold[cellArgHold];
+          If[MatchQ[cellExpr, Cell[__]],
+            NotebookWrite[nb, cellExpr, After];
+            restBoxes = restHold /.
+              HoldComplete[e_] :> MakeBoxes[Unevaluated[e], StandardForm];
+            NotebookWrite[nb, Cell[BoxData[restBoxes], "Input"], After];
+            Return[]]
+      ]
+    ];
+    NBAccess`NBWriteCode[nb, trimmed]
+  ];
+
+(* ============================================================
+   ロード時メッセージ
+   ============================================================ *)
+
+Print[Style["NBAccess パッケージ \[LongDash] ノートブックアクセスユーティリティ (セルインデックス版)", Bold]];
+Print[
+  "  NBCellCount[nb]                      \[RightArrow] セル数\n" <>
+  "  NBCurrentCellIndex[nb]               \[RightArrow] 現在セルインデックス\n" <>
+  "  NBSelectedCellIndices[nb]            \[RightArrow] 選択セルインデックス\n" <>
+  "  NBCellPrivacyLevel[nb, idx]          \[RightArrow] プライバシーレベル (0.0..1.0)\n" <>
+  "  NBIsAccessible[nb, idx, PrivacySpec->ps] \[RightArrow] アクセス可能判定\n" <>
+  "  NBFilterCellIndices[nb, idxs, PrivacySpec->ps] \[RightArrow] プライバシーフィルタ\n" <>
+  "  NBCellToText[nb, idx]                \[RightArrow] セルテキスト抽出\n" <>
+  "  NBCellHasImage[cellExpr]             \[RightArrow] Cell式が画像を含むか判定\n" <>
+  "  NBGetCells[nb, PrivacySpec->ps]      \[RightArrow] 全セルインデックス取得 (フィルタ付き)\n" <>
+  "  NBGetContext[nb, idx, PrivacySpec->ps] \[RightArrow] LLMプロンプト用コンテキスト文字列\n" <>
+  "  NBWriteText[nb, text, style]         \[RightArrow] テキストセル書込\n" <>
+  "  NBWriteCode[nb, code]                \[RightArrow] コードセル書込 (構文カラーリング付き)\n" <>
+  "  NBWriteSmartCode[nb, code]           \[RightArrow] スマートコード書込 (CellPrint対応)\n" <>
+  "  NBWriteInputCellAndMaybeEvaluate[nb, boxes, auto] \[RightArrow] Inputセル挿入+条件付き評価\n" <>
+  "\n--- アクセス可能ディレクトリ API ---\n" <>
+  "  NBSetAccessibleDirs[nb, {dir1,...}] \[RightArrow] Claude Code 参照ディレクトリ設定\n" <>
+  "  NBGetAccessibleDirs[nb]            \[RightArrow] 設定済みディレクトリ取得\n" <>
+  "\n--- 汎用履歴データベース API ---\n" <>
+  "  NBHistoryCreate[nb, tag, diffFields]  \[RightArrow] DB作成 (差分フィールド指定, 冪等)\n" <>
+  "  NBHistoryAppend[nb, tag, entry]      \[RightArrow] エントリ追加 (差分圧縮+privacylevel)\n" <>
+  "  NBHistoryEntries[nb, tag]            \[RightArrow] 全エントリ (復元済み)\n" <>
+  "  NBHistoryUpdateLast[nb, tag, upd]    \[RightArrow] 最終エントリ更新\n" <>
+  "  NBHistoryReadHeader[nb, tag]         \[RightArrow] ヘッダー読取\n" <>
+  "  NBHistoryWriteHeader[nb, tag, hdr]   \[RightArrow] ヘッダー書込\n" <>
+  "  NBHistoryEntriesWithInherit[nb, tag] \[RightArrow] 親チェーン含む全履歴\n" <>
+  "  NBHistoryData[nb, tag]               \[RightArrow] 復元済み全データ\n" <>
+  "  NBHistorySetData[nb, tag, data]      \[RightArrow] 全データ書込 (自動圧縮)\n" <>
+  "  NBHistoryListTags[nb, prefix]        \[RightArrow] タグ一覧\n" <>
+  "  NBHistoryDelete[nb, tag]             \[RightArrow] 履歴削除\n" <>
+  "  NBHistoryReplaceEntries[nb, tag, e]  \[RightArrow] エントリ全置換\n" <>
+  "  NBHistoryUpdateHeader[nb, tag, upd]  \[RightArrow] ヘッダー部分更新\n" <>
+  "  NBHistoryAddAttachment[nb, tag, path] \[RightArrow] アタッチメント追加\n" <>
+  "  NBHistoryGetAttachments[nb, tag]     \[RightArrow] アタッチメント一覧\n" <>
+  "\n$NBPrivacySpec (default): " <>
+    ToString[NBAccess`$NBPrivacySpec] <>
+  "\n$NBConfidentialSymbols: " <>
+    ToString[Length[NBAccess`$NBConfidentialSymbols]] <> " 変数登録済"
+];
+
+(* ============================================================
+   セルマーク関数 (セルインデックス版)
+   ============================================================ *)
+
+NBAccess`NBGetConfidentialTag[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Missing[], iGetConfTag[cell]]
+  ];
+
+NBAccess`NBSetConfidentialTag[nb_NotebookObject, cellIdx_Integer, val_] :=
+  Module[{cell, tags, cc},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[$Failed]];
+    tags = Replace[Quiet[CurrentValue[cell, TaggingRules]],
+             Except[_List | _Association] -> {}];
+    cc   = Replace[Lookup[tags, "claudecode", {}],
+             Except[_List | _Association] -> {}];
+    cc   = If[AssociationQ[cc], Normal[cc], cc];
+    cc   = DeleteCases[cc, "confidential" -> _];
+    cc   = Append[cc, "confidential" -> val];
+    tags = If[AssociationQ[tags], Normal[tags], tags];
+    tags = DeleteCases[tags, "claudecode" -> _];
+    tags = Append[tags, "claudecode" -> cc];
+    Quiet[SetOptions[cell, TaggingRules -> tags]]
+  ];
+
+(* 機密マーク: 赤背景 + WarningSign（直接機密） *)
+NBAccess`$NBConfidentialCellOpts = {
+  Background    -> RGBColor[1, 0.90, 0.90],
+  CellFrame     -> {{2, 2}, {1, 1}},
+  CellFrameColor -> RGBColor[0.75, 0.15, 0.15],
+  CellDingbat  -> Cell["\[WarningSign]",
+    FontColor -> RGBColor[0.75, 0.1, 0.1], FontSize -> 14]
+};
+
+(* 依存機密マーク: 橙背景 + LockIcon *)
+NBAccess`$NBDependentCellOpts = {
+  Background    -> RGBColor[1, 0.95, 0.85],
+  CellFrame     -> {{2, 2}, {1, 1}},
+  CellFrameColor -> RGBColor[0.85, 0.50, 0.10],
+  CellDingbat  -> Cell["\[WarningSign]",
+    FontColor -> RGBColor[0.85, 0.50, 0.10], FontSize -> 12]
+};
+
+NBAccess`NBMarkCellConfidential[nb_NotebookObject, cellIdx_Integer] := (
+  NBAccess`NBSetConfidentialTag[nb, cellIdx, True];
+  NBAccess`NBCellSetOptions[nb, cellIdx, Sequence @@ NBAccess`$NBConfidentialCellOpts]
+);
+
+NBAccess`NBMarkCellDependent[nb_NotebookObject, cellIdx_Integer] := (
+  Module[{cell, tags, cc},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[$Failed]];
+    tags = Replace[Quiet[CurrentValue[cell, TaggingRules]],
+             Except[_List | _Association] -> {}];
+    cc   = Replace[Lookup[tags, "claudecode", {}],
+             Except[_List | _Association] -> {}];
+    cc   = If[AssociationQ[cc], Normal[cc], cc];
+    cc   = DeleteCases[cc, "confidential" -> _ | "dependent" -> _];
+    cc   = Append[cc, "confidential" -> True];
+    cc   = Append[cc, "dependent"    -> True];
+    tags = If[AssociationQ[tags], Normal[tags], tags];
+    tags = DeleteCases[tags, "claudecode" -> _];
+    tags = Append[tags, "claudecode" -> cc];
+    Quiet[SetOptions[cell, TaggingRules -> tags]]
+  ];
+  NBAccess`NBCellSetOptions[nb, cellIdx, Sequence @@ NBAccess`$NBDependentCellOpts]
+);
+
+NBAccess`NBUnmarkCell[nb_NotebookObject, cellIdx_Integer] := (
+  NBAccess`NBSetConfidentialTag[nb, cellIdx, False];
+  Module[{cell, tags, cc},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[$Failed]];
+    tags = Replace[Quiet[CurrentValue[cell, TaggingRules]],
+             Except[_List | _Association] -> {}];
+    cc   = Replace[Lookup[tags, "claudecode", {}],
+             Except[_List | _Association] -> {}];
+    cc   = If[AssociationQ[cc], Normal[cc], cc];
+    cc   = DeleteCases[cc, "dependent" -> _];
+    tags = If[AssociationQ[tags], Normal[tags], tags];
+    tags = DeleteCases[tags, "claudecode" -> _];
+    If[Length[cc] > 0, tags = Append[tags, "claudecode" -> cc]];
+    Quiet[SetOptions[cell, TaggingRules -> tags]]];
+  Module[{cell2 = iResolveCell[nb, cellIdx]},
+    If[cell2 =!= $Failed,
+      Quiet[SetOptions[cell2, {
+        Background     -> Inherited,
+        CellFrame      -> Inherited,
+        CellFrameColor -> Inherited,
+        CellDingbat    -> Inherited
+      }]]]]
+);
+
+(* 依存マークのみリセット（未判定状態に戻す） *)
+iResetDependentMark[nb_NotebookObject, cellIdx_Integer] := (
+  Module[{cell, tags, cc},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[$Failed]];
+    tags = Replace[Quiet[CurrentValue[cell, TaggingRules]],
+             Except[_List | _Association] -> {}];
+    cc   = Replace[Lookup[tags, "claudecode", {}],
+             Except[_List | _Association] -> {}];
+    cc   = If[AssociationQ[cc], Normal[cc], cc];
+    cc   = DeleteCases[cc, "confidential" -> _ | "dependent" -> _];
+    tags = If[AssociationQ[tags], Normal[tags], tags];
+    tags = DeleteCases[tags, "claudecode" -> _];
+    If[Length[cc] > 0, tags = Append[tags, "claudecode" -> cc]];
+    Quiet[SetOptions[cell, TaggingRules -> tags]]];
+  Module[{cell2 = iResolveCell[nb, cellIdx]},
+    If[cell2 =!= $Failed,
+      Quiet[SetOptions[cell2, {
+        Background     -> Inherited,
+        CellFrame      -> Inherited,
+        CellFrameColor -> Inherited,
+        CellDingbat    -> Inherited
+      }]]]]
+);
+
+(* ============================================================
+   セル内容分析 API (claudecodeから移設)
+   ============================================================ *)
+
+(* 秘密変数を参照しているか *)
+NBAccess`NBCellUsesConfidentialSymbol[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[False]];
+    iCellUsesConfSymbol[nb, cell]
+  ];
+
+(* セル内容から Set/SetDelayed の LHS 変数名を抽出 *)
+NBAccess`NBCellExtractVarNames[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell, text, matches},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[{}]];
+    text = Quiet[iCellToInputText[cell]];
+    If[!StringQ[text] || StringLength[text] === 0,
+      text = NBAccess`NBCellExprToText[Quiet[NotebookRead[cell]]]];
+    If[!StringQ[text] || StringLength[text] === 0, Return[{}]];
+    matches = StringCases[text,
+      RegularExpression[
+        "(?:^|;|\\n)\\s*((?:[\\p{L}$][\\p{L}\\p{N}$]*))\\s*:?=(?!=)"
+      ] :> "$1"];
+    DeleteDuplicates[Select[matches,
+      !MemberQ[{"If","Module","With","Block","Do","Table","Map","Select",
+                "Function","While","For","Switch","Which","Return",
+                "Set","SetDelayed","Rule","RuleDelayed"}, #] &]]
+  ];
+
+(* Confidential[] 内の代入先変数名を抽出 *)
+NBAccess`NBCellExtractAssignedNames[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{text, matches},
+    text = NBAccess`NBCellToText[nb, cellIdx];
+    If[!StringQ[text] || StringLength[text] === 0, Return[{}]];
+    matches = StringCases[text,
+      RegularExpression["(?<![\\p{L}\\p{N}$])([\\p{L}$][\\p{L}\\p{N}$]*)\\s*=\\s*Confidential\\b"] :> "$1"];
+    matches = Join[matches, StringCases[text,
+      RegularExpression["Confidential\\s*\\[\\s*([\\p{L}$][\\p{L}\\p{N}$]*)\\s*="] :> "$1"]];
+    DeleteDuplicates[matches]
+  ];
+
+(* プロンプトから除外すべきか *)
+NBAccess`NBShouldExcludeFromPrompt[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{tag, depTag},
+    tag = NBAccess`NBGetConfidentialTag[nb, cellIdx];
+    Which[
+      tag === True, True,
+      tag === False, False,
+      NBAccess`NBCellUsesConfidentialSymbol[nb, cellIdx], True,
+      True, False
+    ]
+  ];
+
+(* Claude 関数呼び出しセルか判定 *)
+$iClaudeFunctions = {"ClaudeQuery","ClaudeEval","ContinueEval",
+                     "ClaudeMath","ClaudeSpec","ClaudeExtractCode","ClaudeExtractAllCode"};
+
+NBAccess`NBIsClaudeFunctionCell[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{text},
+    text = NBAccess`NBCellToText[nb, cellIdx];
+    If[!StringQ[text], Return[False]];
+    AnyTrue[$iClaudeFunctions,
+      StringContainsQ[text, RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <> "\\s*\\["]] &]
+  ];
+
+(* ============================================================
+   依存グラフ: 変数→依存変数セット
+   ============================================================ *)
+
+$iIgnoredIdents = {
+  "If","Module","With","Block","Do","Table","Map","Select","Cases","Position",
+  "Plus","Times","Power","Divide","List","Set","SetDelayed","Rule","RuleDelayed",
+  "True","False","Null","Return","Function","And","Or","Not","All","None",
+  "Integer","Real","String","Symbol","Head","Length","Range","Part","Slot",
+  "Apply","Scan","NestList","Nest","FixedPoint","While","For","Switch","Which",
+  "Print","Throw","Catch","Check","Quiet","Association","Lookup","Keys","Values",
+  "First","Last","Rest","Take","Drop","Append","Prepend","Join","Union",
+  "Intersection","Complement","Sort","Riffle","StringJoin","StringSplit",
+  "ToString","ToExpression","NumberQ","StringQ","ListQ","NumericQ","AtomQ",
+  "Sum","Product","Total","Mean","Max","Min","Abs","Round","Floor","Ceiling",
+  "Sin","Cos","Tan","Exp","Log","Sqrt","N","Re","Im","Conjugate",
+  "Replace","ReplaceAll","ReplaceRepeated","StringReplace","StringCases",
+  "Dimensions","Flatten","Transpose","Reverse","RotateLeft","RotateRight",
+  "DeleteDuplicates","DeleteCases","Select","Pick","Gather","GatherBy",
+  "SortBy","GroupBy","Tally","Counts","Merge","AssociationMap",
+  "KeyValueMap","KeySelect","KeyDrop","KeyTake","KeyExistsQ",
+  "Map","MapAt","MapIndexed","MapThread","Through","Operate",
+  "Fold","FoldList","Accumulate","Inner","Outer",
+  "Import","Export","FileExistsQ","DirectoryQ","FileNames",
+  "DateString","AbsoluteTime","DateObject","Now","Today",
+  "Style","Row","Column","Grid","Graphics","Show","Plot","ListPlot",
+  "Dataset","Normal","Query","Interpreter",
+  "Needs","Get","Begin","End","BeginPackage","EndPackage",
+  "SetAttributes","Attributes","ClearAll","Clear","Remove",
+  "HoldForm","HoldComplete","Hold","Unevaluated","Evaluate","ReleaseHold",
+  "MatchQ","FreeQ","MemberQ","AnyTrue","AllTrue","NoneTrue",
+  "Confidential","MarkConfidential","UnmarkConfidential","IsConfidential"
+};
+
+iStripStrings[text_String] :=
+  StringReplace[text, RegularExpression["\"(?:[^\"\\\\]|\\\\.)*\""] -> " "];
+
+(* ;; (Span) を保護して ; (CompoundExpression) と \n で分割
+   InputText 形式では "1 ;; 2" のようにスペースが入る場合がある。
+   ";" と ";" の間にスペースがあっても Span として保護する。 *)
+$iSpanPlaceholder = "__NBACCESS_SPAN__";
+iSplitStatements[text_String] :=
+  Module[{safe, lines},
+    (* ;; および ; ; （スペース含む）を一括保護 *)
+    safe = StringReplace[text, RegularExpression[";\\s*;"] -> $iSpanPlaceholder];
+    lines = StringSplit[safe, RegularExpression["[;\\n]"]];
+    StringReplace[#, $iSpanPlaceholder -> ";;"] & /@ lines
+  ];
+
+iExtractAssignments[text_String] :=
+  Module[{stripped, unwrapped, lines, result = {}},
+    stripped = iStripStrings[text];
+    (* Confidential[expr] ラッパーを除去して内部の代入を検出 *)
+    unwrapped = StringReplace[stripped,
+      RegularExpression["\\bConfidential\\s*\\["] -> ""];
+    lines = iSplitStatements[unwrapped];
+    Do[
+      Module[{trimmed, lhs, rhs, rhsVars, outRefs},
+        trimmed = StringTrim[line];
+        If[StringMatchQ[trimmed,
+             RegularExpression["[\\p{L}$][\\p{L}\\p{N}$]*\\s*:?=(?!=).*"]],
+          lhs = First[StringCases[trimmed,
+            RegularExpression["^([\\p{L}$][\\p{L}\\p{N}$]*)\\s*:?="] -> "$1"], None];
+          If[lhs =!= None,
+            rhs = StringReplace[trimmed,
+              RegularExpression["^[\\p{L}$][\\p{L}\\p{N}$]*\\s*:?=\\s*"] -> ""];
+            rhsVars = DeleteDuplicates @ Select[
+              StringCases[rhs,
+                RegularExpression["(?<![\\p{L}\\p{N}$])([\\p{L}$][\\p{L}\\p{N}$]*)(?![\\p{L}\\p{N}$])"] -> "$1"],
+              !MemberQ[NBAccess`Private`$iIgnoredIdents, #] &];
+            outRefs = Join[
+              StringCases[rhs, RegularExpression["%([0-9]+)"] -> "Out$1"],
+              StringCases[rhs, RegularExpression["Out\\[([0-9]+)\\]"] -> "Out$1"]];
+            rhsVars = DeleteDuplicates[Join[rhsVars, outRefs]];
+            AppendTo[result, {lhs, rhsVars}]]]],
+      {line, lines}];
+    result
+  ];
+
+(* 関数定義解析 *)
+iIsFuncDefLine[s_String] :=
+  StringMatchQ[s,
+    RegularExpression["[\\p{L}$][\\p{L}\\p{N}$]*\\s*\\x5B[^\\x5D]*_.*"]];
+
+iExtractFuncName[s_String] :=
+  First[StringCases[s,
+    RegularExpression["^\\s*([\\p{L}$][\\p{L}\\p{N}$]*)\\s*\\x5B"] :> "$1"],
+  None];
+
+iExtractPatternVars[lhs_String] :=
+  DeleteDuplicates[StringCases[lhs,
+    RegularExpression["([\\p{L}$][\\p{L}\\p{N}$]*)_"] :> "$1"]];
+
+iExtractScopeVars[rhs_String] :=
+  DeleteDuplicates[Flatten[
+    Map[Function[vl,
+      StringCases[vl,
+        RegularExpression["(?:^|,)\\s*([\\p{L}$][\\p{L}\\p{N}$]*)"] :> "$1"]],
+    StringCases[rhs,
+      RegularExpression[
+        "(?:Module|Block|With|Function)\\s*\\x5B\\s*\\{([^}]*)\\}"] :> "$1"]]
+  ]];
+
+iExtractAllIdents[rhs_String] :=
+  DeleteDuplicates @ Select[
+    StringCases[rhs,
+      RegularExpression[
+        "(?<![\\p{L}\\p{N}$])([\\p{L}$][\\p{L}\\p{N}$]*)(?![\\p{L}\\p{N}$])"]
+        :> "$1"],
+    !MemberQ[$iIgnoredIdents, #] &];
+
+iExtractFuncDefs[text_String] :=
+  Module[{stripped, lines, result = {}, trimmed, funcName,
+          lhsPart, rhsPart, pos, patVars, scopeVars, allIds, globalDeps},
+    stripped = iStripStrings[text];
+    lines = iSplitStatements[stripped];
+    Do[
+      trimmed = StringTrim[line];
+      If[iIsFuncDefLine[trimmed],
+        funcName = iExtractFuncName[trimmed];
+        If[funcName =!= None && !MemberQ[$iIgnoredIdents, funcName],
+          pos = StringPosition[trimmed, ":="];
+          If[Length[pos] > 0,
+            lhsPart = StringTake[trimmed, pos[[1, 1]] - 1];
+            rhsPart = StringTrim[StringDrop[trimmed, pos[[1, 2]]]],
+            pos = StringPosition[trimmed, RegularExpression["=(?!=)"]];
+            If[Length[pos] > 0,
+              lhsPart = StringTake[trimmed, pos[[1, 1]] - 1];
+              rhsPart = StringTrim[StringDrop[trimmed, pos[[1, 2]]]],
+              lhsPart = ""; rhsPart = ""]];
+          If[rhsPart =!= "",
+            patVars   = iExtractPatternVars[lhsPart];
+            scopeVars = iExtractScopeVars[rhsPart];
+            allIds    = iExtractAllIdents[rhsPart];
+            globalDeps = Complement[allIds, patVars, scopeVars, {funcName}];
+            AppendTo[result, {funcName, globalDeps}]]]],
+    {line, lines}];
+    result
+  ];
+
+iIsFuncDefText[text_String] :=
+  Length[iExtractFuncDefs[text]] > 0;
+
+iCellNumber[cell_CellObject] :=
+  Module[{lbl},
+    lbl = Quiet[CurrentValue[cell, CellLabel]];
+    If[!StringQ[lbl], Return[None]];
+    First[StringCases[lbl,
+      RegularExpression["In\\[(\\d+)\\]"] -> "$1"], None]
+  ];
+
+NBAccess`NBGetFunctionGlobalDeps[nb_NotebookObject] :=
+  Module[{inIndices, result = <||>, text, fd},
+    inIndices = NBAccess`NBCellIndicesByStyle[nb, "Input"];
+    Do[
+      text = Quiet[NBAccess`NBCellReadInputText[nb, idx]];
+      If[StringQ[text] && text =!= "",
+        fd = iExtractFuncDefs[text];
+        Do[
+          result[First[f]] = Last[f],
+          {f, fd}]],
+    {idx, inIndices}];
+    result
+  ];
+
+NBAccess`NBBuildVarDependencies[nb_NotebookObject] :=
+  Module[{inIndices, deps = <||>, text, assignments, funcDefs,
+          cellLabel, cellNum, definedVars},
+    inIndices = NBAccess`NBCellIndicesByStyle[nb, "Input"];
+    Do[
+      (* InputText 形式で取得。2D表示 (Sum, Integral等) も正しく変換される *)
+      text = Quiet[NBAccess`NBCellReadInputText[nb, idx]];
+      If[!StringQ[text] || text === "", Continue[]];
+
+      (* --- Variable assignments: var = expr --- *)
+      assignments = iExtractAssignments[text];
+      (* セル番号から Out$n 仮想変数を定義 *)
+      cellLabel = NBAccess`NBCellLabel[nb, idx];
+      cellNum = If[StringQ[cellLabel],
+        First[StringCases[cellLabel,
+          RegularExpression["In\\[(\\d+)\\]"] -> "$1"], None],
+        None];
+      definedVars = Map[First, assignments];
+      If[cellNum =!= None && Length[definedVars] > 0,
+        With[{allRhsVars = DeleteDuplicates[
+                Join @@ Map[Last, assignments]]},
+          deps["Out$" <> cellNum] =
+            DeleteDuplicates[Join[
+              Lookup[deps, "Out$" <> cellNum, {}],
+              allRhsVars]]]];
+      Do[
+        With[{lhs = First[a], rhsVars = Last[a]},
+          deps[lhs] = DeleteDuplicates[
+            Join[Lookup[deps, lhs, {}], rhsVars]]],
+        {a, assignments}];
+
+      (* --- Function definitions: f[x_] := body --- *)
+      funcDefs = iExtractFuncDefs[text];
+      Do[
+        With[{fname = First[fd], globalDeps = Last[fd]},
+          deps[fname] = DeleteDuplicates[
+            Join[Lookup[deps, fname, {}], globalDeps]]],
+        {fd, funcDefs}],
+
+    {idx, inIndices}];
+    deps
+  ];
+
+NBAccess`NBTransitiveDependents[deps_Association, confVars_List] :=
+  Module[{marked = Union[confVars], changed = True},
+    While[changed,
+      changed = False;
+      Do[
+        If[!MemberQ[marked, v] &&
+           Length[Intersection[Lookup[deps, v, {}], marked]] > 0,
+          AppendTo[marked, v];
+          changed = True],
+        {v, Keys[deps]}]];
+    marked
+  ];
+
+NBAccess`NBScanDependentCells[nb_NotebookObject,
+    confVarNames_List, opts:OptionsPattern[]] :=
+  Module[{deps, dependentVars, allDepVars, nCells, inIndices,
+          marked = 0},
+    deps = NBAccess`NBBuildVarDependencies[nb];
+    allDepVars = NBAccess`NBTransitiveDependents[deps, confVarNames];
+    dependentVars = Complement[allDepVars, confVarNames];
+
+    nCells = NBAccess`NBCellCount[nb];
+    If[nCells === 0, Return[0]];
+    inIndices = NBAccess`NBCellIndicesByStyle[nb, "Input"];
+
+    (* Phase 1: 事前クリーニング — 全セルの dependent マークをリセット *)
+    Do[If[TrueQ[NBAccess`NBCellGetTaggingRule[nb, i,
+                  {"claudecode", "dependent"}]],
+        iResetDependentMark[nb, i]],
+    {i, nCells}];
+
+    (* Phase 2: 全セルを順番に走査し Input/Output ペアを検出
+       直前の Input セルが依存秘密 → Output を橙
+       直前の Input セルが直接秘密 → Output を赤
+       
+       この方式により、セルインデックスの "nextOut" 検索の
+       ずれ問題を完全に回避する。 *)
+    Module[{lastInputIdx = 0, lastInputText = "", lastInputTag = Missing[],
+            lastInputDepTag = Missing[], lastInputIsDep = False,
+            lastInputIsDirectConf = False,
+            style, text, assigns},
+      Do[
+        style = NBAccess`NBCellStyle[nb, i];
+        Which[
+          (* Input/Code セル: テキストを解析して依存判定 *)
+          MemberQ[{"Input", "Code"}, style],
+            lastInputIdx = i;
+            lastInputTag = NBAccess`NBGetConfidentialTag[nb, i];
+            lastInputDepTag = NBAccess`NBCellGetTaggingRule[nb, i,
+              {"claudecode", "dependent"}];
+            lastInputIsDirectConf = TrueQ[lastInputTag] && !TrueQ[lastInputDepTag];
+            lastInputIsDep = False;
+            (* 直接秘密・明示非秘密・Claude関数セルはスキップ *)
+            If[!TrueQ[lastInputTag] && lastInputTag =!= False &&
+               !NBAccess`NBIsClaudeFunctionCell[nb, i],
+              text = Quiet[NBAccess`NBCellReadInputText[nb, i]];
+              If[StringQ[text] && text =!= "" && !iIsFuncDefText[text],
+                assigns = iExtractAssignments[text];
+                lastInputIsDep = (
+                  (* 条件1: LHS変数が推移的依存変数 *)
+                  AnyTrue[assigns, MemberQ[dependentVars, First[#]] &] ||
+                  (* 条件2: 代入なし式で機密変数を参照 *)
+                  (Length[assigns] === 0 &&
+                   AnyTrue[allDepVars,
+                     StringContainsQ[iStripStrings[text],
+                       RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
+                         "(?![\\p{L}\\p{N}$])"]] &]) ||
+                  (* 条件3: RHS が機密変数を参照 *)
+                  (Length[assigns] > 0 &&
+                   AnyTrue[assigns,
+                     Function[a,
+                       Length[Intersection[Last[a], allDepVars]] > 0]])
+                );
+                If[lastInputIsDep, marked++]]],
+
+          (* Output/Print セル: 直前の Input に基づいてマーク *)
+          MemberQ[{"Output", "Print"}, style] && lastInputIdx > 0,
+            (* 明示的に非機密マーク（NonConfidential）のセルはスキップ *)
+            If[NBAccess`NBGetConfidentialTag[nb, i] =!= False,
+              Which[
+                (* 直接秘密セルの Output → 赤マーク *)
+                lastInputIsDirectConf,
+                  NBAccess`NBMarkCellConfidential[nb, i],
+                (* 依存秘密セルの Output → 橙マーク *)
+                lastInputIsDep,
+                  NBAccess`NBMarkCellDependent[nb, i]
+              ]
+            ];
+            (* 同じ Input の Output は1回だけマーク *)
+            (* lastInputIdx は変更しない — 複数 Output セルがある場合も対応 *),
+
+          (* それ以外のセル (Text等) は lastInput をリセットしない *)
+          True, Null
+        ],
+      {i, nCells}]];
+
+    marked
+  ];
+
+(* ============================================================
+   依存関係エッジリスト
+   ============================================================ *)
+
+NBAccess`NBDependencyEdges[nb_NotebookObject] :=
+  Module[{deps},
+    deps = NBAccess`NBBuildVarDependencies[nb];
+    DeleteDuplicates @ Flatten[
+      KeyValueMap[
+        Function[{var, depList},
+          DirectedEdge[#, var] & /@ depList],
+        deps]]
+  ];
+
+NBAccess`NBDependencyEdges[nb_NotebookObject, confVars_List] :=
+  Module[{deps, allDepVars, relevantVars, edges},
+    deps = NBAccess`NBBuildVarDependencies[nb];
+    allDepVars = NBAccess`NBTransitiveDependents[deps, confVars];
+    edges = DeleteDuplicates @ Flatten[
+      KeyValueMap[
+        Function[{var, depList},
+          DirectedEdge[#, var] & /@ depList],
+        deps]];
+    (* 機密変数または推移的依存変数が関与するエッジのみ *)
+    Select[edges, MemberQ[allDepVars, #[[1]]] || MemberQ[allDepVars, #[[2]]] &]
+  ];
+
+(* ============================================================
+   包括的デバッグ関数
+   ============================================================ *)
+
+NBAccess`NBDebugDependencies[nb_NotebookObject, confVars_List] :=
+  Module[{deps, allDepVars, dependentVars, inIndices, outIndices, nCells, edges},
+    deps = NBAccess`NBBuildVarDependencies[nb];
+    allDepVars = NBAccess`NBTransitiveDependents[deps, confVars];
+    dependentVars = Complement[allDepVars, confVars];
+    nCells = NBAccess`NBCellCount[nb];
+    inIndices  = NBAccess`NBCellIndicesByStyle[nb, "Input"];
+    outIndices = NBAccess`NBCellIndicesByStyle[nb, "Output"];
+
+    Print[Style["===== 依存グラフ (dep -> var) =====", Bold, Blue]];
+    edges = NBAccess`NBDependencyEdges[nb];
+    Do[Print["  ", e], {e, edges}];
+    If[Length[edges] === 0, Print["  (エッジなし)"]];
+
+    Print[Style["\n===== 機密関連エッジのみ =====", Bold, Red]];
+    Module[{confEdges = NBAccess`NBDependencyEdges[nb, confVars]},
+      Do[Print["  ", e], {e, confEdges}];
+      If[Length[confEdges] === 0, Print["  (エッジなし)"]]];
+
+    Print[Style["\n===== 変数テーブル =====", Bold]];
+    Do[Print["  ", k, " -> deps: ", deps[k]], {k, Keys[deps]}];
+
+    Print[Style["\n===== 直接機密変数 =====", Bold, Red]];
+    Print["  ", confVars];
+
+    Print[Style["\n===== 推移的依存変数 (機密含む) =====", Bold]];
+    Print["  ", allDepVars];
+
+    Print[Style["\n===== 依存のみ (機密除く) =====", Bold, RGBColor[0.85, 0.5, 0.1]]];
+    Print["  ", dependentVars];
+
+    Print[Style["\n===== 関数定義の解析 =====", Bold]];
+    Do[Module[{txt, fd},
+      txt = Quiet[NBAccess`NBCellReadInputText[nb, idx]];
+      If[StringQ[txt],
+        fd = iExtractFuncDefs[txt];
+        If[Length[fd] > 0,
+          Do[Print["  In[", idx, "] ", First[f], " → globalDeps: ", Last[f]],
+          {f, fd}]]]],
+    {idx, inIndices}];
+
+    Print[Style["\n===== 全 Input セル詳細 =====", Bold]];
+    Do[Module[{inputText, boxText, assigns, lhsVars, rhsVars, isDep,
+               nextInI, nextOutI, tag, depTag, confTag},
+      inputText = Quiet[NBAccess`NBCellReadInputText[nb, idx]];
+      boxText   = Quiet[NBAccess`NBCellToText[nb, idx]];
+      tag       = NBAccess`NBGetConfidentialTag[nb, idx];
+      depTag    = NBAccess`NBCellGetTaggingRule[nb, idx, {"claudecode", "dependent"}];
+      confTag   = Which[tag === True, "秘密", tag === False, "非秘密(Unmark済)", True, "未設定"];
+
+      Print[Style["--- セルIndex=" <> ToString[idx] <>
+        " (" <> NBAccess`NBCellLabel[nb, idx] <> ") tag=" <> confTag <> " ---",
+        Bold]];
+      Print["  InputText: ", If[StringQ[inputText], StringTake[inputText, UpTo[120]], "(取得失敗)"]];
+      If[inputText =!= boxText,
+        Print["  BoxText  : ", If[StringQ[boxText], StringTake[boxText, UpTo[120]], "(取得失敗)"]]];
+
+      If[StringQ[inputText] && inputText =!= "",
+        assigns = iExtractAssignments[inputText];
+        Print["  代入解析 : ", assigns];
+        isDep = AnyTrue[assigns, MemberQ[dependentVars, First[#]] &] ||
+          (Length[assigns] === 0 &&
+           AnyTrue[allDepVars,
+             StringContainsQ[NBAccess`Private`iStripStrings[inputText],
+               RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <> "(?![\\p{L}\\p{N}$])"]] &]) ||
+          (Length[assigns] > 0 &&
+           AnyTrue[assigns,
+             Function[a,
+               Length[Intersection[Last[a], allDepVars]] > 0]]);
+        Print["  isDep    : ", isDep];
+        If[isDep,
+          nextInI  = SelectFirst[inIndices, # > idx &, Infinity];
+          nextOutI = SelectFirst[outIndices, # > idx &, None];
+          Print["  nextOut  : idx=", nextOutI,
+            " (nextIn=", If[nextInI === Infinity, "∞", nextInI], ")",
+            " markable=", nextOutI =!= None && nextOutI < nextInI]],
+        Print["  isDep    : (テキスト取得失敗のためスキップ)"]
+      ]],
+    {idx, inIndices}];
+
+    Print[Style["\n===== セル構成 (全 " <> ToString[nCells] <> " セル) =====", Bold]];
+    Do[Module[{style, lbl, tag2},
+      style = ToString[NBAccess`NBCellStyle[nb, i]];
+      lbl   = NBAccess`NBCellLabel[nb, i];
+      tag2  = NBAccess`NBGetConfidentialTag[nb, i];
+      Print["  [", i, "] ", style,
+        If[lbl =!= "", " " <> lbl, ""],
+        If[tag2 === True, " ★秘密", ""],
+        If[TrueQ[NBAccess`NBCellGetTaggingRule[nb, i, {"claudecode", "dependent"}]],
+          " ◆依存秘密", ""]]],
+    {i, nCells}];
+  ];
+
+
+(* ============================================================
+   依存グラフプロット
+   ============================================================ *)
+
+Options[NBAccess`NBPlotDependencyGraph] = {PrivacySpec -> <|"AccessLevel" -> 1.0|>};
+
+NBAccess`NBPlotDependencyGraph[nb_NotebookObject, opts : OptionsPattern[]] :=
+  Module[{accessLevel, allNBs,
+          directConfVars = {}, inCells,
+          deps = <||>, varCellNum = <||>,
+          allEdges, fullGraph,
+          confInGraph, transDepVerts, depOnly,
+          varPrivacy, visibleVars, subg, highlighted,
+          legend},
+
+    accessLevel = iAccessLevel[OptionValue[PrivacySpec]];
+
+    allNBs = Quiet[Notebooks[]];
+    If[ListQ[allNBs],
+      Do[Module[{cells},
+        cells = Quiet[Cells[nbx]];
+        If[ListQ[cells],
+          Do[Module[{tag, depTag, txt, assigns},
+            tag    = iGetConfTag[c];
+            depTag = Quiet[CurrentValue[c,
+                       {TaggingRules, "claudecode", "dependent"}]];
+            If[TrueQ[tag] && !TrueQ[depTag],
+              txt = Quiet[iCellToInputText[c]];
+              If[StringQ[txt],
+                assigns = iExtractAssignments[txt];
+                directConfVars =
+                  Join[directConfVars, Map[First, assigns]]]]],
+          {c, cells}]]],
+      {nbx, allNBs}]];
+    directConfVars = DeleteDuplicates[directConfVars];
+
+    inCells = Module[{idxs = NBAccess`NBCellIndicesByStyle[nb, "Input"],
+                      allC = Quiet[Cells[nb]]},
+                If[!ListQ[allC], {}, allC[[#]] & /@ idxs]];
+    Do[Module[{text, assignments, cNum},
+      text = Quiet[iCellToInputText[c]];
+      If[StringQ[text] && text =!= "",
+        assignments = iExtractAssignments[text];
+        cNum = iCellNumber[c];
+        Do[With[{lhs = First[a], rhs = Last[a]},
+          deps[lhs] = DeleteDuplicates[
+            Join[Lookup[deps, lhs, {}], rhs]];
+          If[cNum =!= None, varCellNum[lhs] = cNum]],
+        {a, assignments}];
+        If[cNum =!= None && Length[assignments] > 0,
+          With[{outKey = "Out$" <> cNum,
+                allRhs = DeleteDuplicates[
+                  Join @@ Map[Last, assignments]]},
+            deps[outKey] = DeleteDuplicates[
+              Join[Lookup[deps, outKey, {}], allRhs]];
+            varCellNum[outKey] = cNum]]]],
+    {c, inCells}];
+
+    With[{refd = DeleteDuplicates[
+            Select[Flatten[Values[deps]],
+              StringMatchQ[#, "Out$" ~~ DigitCharacter ..] &]]},
+      deps = KeyDrop[deps,
+        Complement[
+          Select[Keys[deps],
+            StringMatchQ[#, "Out$" ~~ DigitCharacter ..] &],
+          refd]]];
+
+    allEdges = DeleteDuplicates @ Flatten[
+      KeyValueMap[
+        Function[{var, depList},
+          DirectedEdge[#, var] & /@ depList],
+        deps]];
+
+    If[Length[allEdges] === 0,
+      Return[Style["(エッジなし)", Gray, Italic]]];
+
+    fullGraph = Graph[allEdges,
+      GraphLayout      -> "SpringElectricalEmbedding",
+      VertexSize       -> {"Scaled", 0.008},
+      VertexStyle      -> Directive[
+        EdgeForm[{Thin, GrayLevel[0.55]}],
+        RGBColor[0.85, 0.93, 1.0]],
+      EdgeStyle        -> Directive[GrayLevel[0.5], Arrowheads[0.008]],
+      ImageSize        -> {900, 600},
+      ImagePadding     -> 30];
+
+    confInGraph = Intersection[directConfVars, VertexList[fullGraph]];
+    transDepVerts = If[Length[confInGraph] > 0,
+      VertexOutComponent[fullGraph, confInGraph],
+      {}];
+    depOnly = Complement[transDepVerts, confInGraph];
+
+    varPrivacy = Association[Map[
+      # -> Which[
+        MemberQ[confInGraph, #], 1.0,
+        MemberQ[depOnly, #],    0.75,
+        True,                   0.0] &,
+      VertexList[fullGraph]]];
+
+    visibleVars = Select[VertexList[fullGraph],
+      Lookup[varPrivacy, #, 0.0] <= accessLevel &];
+
+    If[Length[visibleVars] === 0,
+      Return[Style["(表示可能なノードなし)", Gray, Italic]]];
+
+    subg = Subgraph[fullGraph, visibleVars];
+
+    Module[{iDispName, confSet, depSet, pubSet,
+            confLabels, depLabels, pubLabels, allLabels,
+            edgeTooltips},
+
+      iDispName[v_String] :=
+        If[StringMatchQ[v, "Out$" ~~ DigitCharacter ..],
+          "Out[" <> StringDrop[v, 4] <> "]", v];
+
+      confSet = Intersection[confInGraph, visibleVars];
+      depSet  = Intersection[depOnly, visibleVars];
+      pubSet  = Complement[visibleVars, confSet, depSet];
+
+      confLabels = Map[# -> Placed[
+        Style[iDispName[#], Bold, 6, RGBColor[0.7, 0.1, 0.1]], Above] &,
+        confSet];
+      depLabels = Map[# -> Placed[
+        Style[iDispName[#], Bold, 6, RGBColor[0.8, 0.45, 0.05]], Above] &,
+        depSet];
+      pubLabels = Map[# -> Placed[iDispName[#], Tooltip] &, pubSet];
+
+      allLabels = Join[confLabels, depLabels, pubLabels];
+
+      edgeTooltips = DeleteCases[
+        Map[Function[e,
+          With[{cn = Lookup[varCellNum, e[[2]], None]},
+            If[cn =!= None,
+              e -> Placed["In[" <> cn <> "]", Tooltip], Nothing]]],
+        EdgeList[subg]], Nothing];
+
+      highlighted = HighlightGraph[subg,
+        {Style[confSet,
+           Directive[EdgeForm[{Thick, RGBColor[0.70, 0.10, 0.10]}],
+                     RGBColor[1, 0.82, 0.82]]],
+         Style[depSet,
+           Directive[EdgeForm[{Thick, RGBColor[0.80, 0.45, 0.05]}],
+                     RGBColor[1, 0.92, 0.78]]]},
+        GraphHighlightStyle -> "DehighlightFade",
+        VertexLabels -> allLabels,
+        EdgeLabels   -> edgeTooltips,
+        PlotLabel    -> Style[
+          "依存グラフ (AccessLevel\[Equal]" <>
+          ToString[accessLevel] <> ")", Bold, 14]]
+    ];
+
+    legend = SwatchLegend[
+      {RGBColor[1, 0.82, 0.82], RGBColor[1, 0.92, 0.78],
+       RGBColor[0.85, 0.93, 1.0]},
+      {"秘密 (1.0)", "依存秘密 (0.75)", "公開 (0.0)"},
+      LegendMarkerSize -> 18, LabelStyle -> 10];
+
+    Legended[highlighted, Placed[legend, Below]]
+  ];
+
+
+(* ============================================================
+   ノートブック TaggingRules API
+   ノートブックレベルの TaggingRules への読み書きを一元管理する。
+   セッション履歴などの永続データの格納に使用。
+   ============================================================ *)
+
+NBAccess`NBGetTaggingRule[nb_NotebookObject, key_String] :=
+  Module[{val},
+    val = Quiet[CurrentValue[nb, {TaggingRules, key}]];
+    If[val === Inherited || MatchQ[val, _CurrentValue], Missing[], val]
+  ];
+
+NBAccess`NBGetTaggingRule[nb_NotebookObject, path_List] :=
+  Module[{val},
+    val = Quiet[CurrentValue[nb, Prepend[path, TaggingRules]]];
+    If[val === Inherited || MatchQ[val, _CurrentValue], Missing[], val]
+  ];
+
+NBAccess`NBSetTaggingRule[nb_NotebookObject, key_String, value_] :=
+  Quiet[CurrentValue[nb, {TaggingRules, key}] = value];
+
+NBAccess`NBSetTaggingRule[nb_NotebookObject, path_List, value_] :=
+  Quiet[CurrentValue[nb, Prepend[path, TaggingRules]] = value];
+
+NBAccess`NBDeleteTaggingRule[nb_NotebookObject, key_String] :=
+  Module[{tr},
+    tr = Quiet[CurrentValue[nb, TaggingRules]];
+    If[AssociationQ[tr],
+      Quiet[SetOptions[nb, TaggingRules -> KeyDrop[tr, key]]],
+      (* List 形式の TaggingRules *)
+      If[ListQ[tr],
+        Quiet[SetOptions[nb, TaggingRules -> DeleteCases[tr, key -> _]]]]
+    ]
+  ];
+
+NBAccess`NBListTaggingRuleKeys[nb_NotebookObject] :=
+  Module[{tr},
+    tr = Quiet[CurrentValue[nb, TaggingRules]];
+    Which[
+      AssociationQ[tr], Keys[tr],
+      ListQ[tr],        Cases[tr, (k_ -> _) :> k],
+      True,             {}
+    ]
+  ];
+
+NBAccess`NBListTaggingRuleKeys[nb_NotebookObject, prefix_String] :=
+  Select[NBAccess`NBListTaggingRuleKeys[nb],
+    StringQ[#] && StringMatchQ[#, prefix ~~ ___] &];
+
+
+(* ============================================================
+   API キーアクセサー
+   ============================================================ *)
+
+$iAPIKeyMap = <|
+  "anthropic"  -> "ANTHROPIC_API_KEY",
+  "openai"     -> "OPENAI_API_KEY",
+  "github"     -> "GITHUB_TOKEN",
+  "gh"         -> "GITHUB_TOKEN",
+  "github_pat" -> "GITHUB_TOKEN"
+|>;
+
+Options[NBAccess`NBGetAPIKey] = {PrivacySpec -> <|"AccessLevel" -> 1.0|>};
+
+NBAccess`NBGetAPIKey[provider_String, opts:OptionsPattern[]] :=
+  Module[{al, credName, key},
+    al = iAccessLevel[OptionValue[PrivacySpec]];
+    If[al < 1.0,
+      Return[$Failed]];
+    credName = Lookup[$iAPIKeyMap, ToLowerCase[provider], None];
+    If[credName === None,
+      Message[NBGetAPIKey::unkn, provider];
+      Return[$Failed]];
+    key = Quiet[SystemCredential[credName]];
+    If[!StringQ[key] || StringLength[key] === 0,
+      Message[NBGetAPIKey::nokey, provider, credName];
+      Return[$Failed]];
+    key
+  ];
+
+NBGetAPIKey::unkn = "未知のプロバイダ: `1`。\"anthropic\"、\"openai\"、\"github\" のいずれかを指定してください。";
+NBGetAPIKey::nokey = "`1` の API キーが見つかりません。SystemCredential[\"`2`\"] を設定してください。";
+
+
+(* ============================================================
+   アクセス可能ディレクトリ API
+   ============================================================ *)
+
+NBAccess`NBSetAccessibleDirs[nb_NotebookObject, dirs_List] :=
+  NBAccess`NBSetTaggingRule[nb, "claudeAccessibleDirs",
+    Select[dirs, StringQ[#] && StringLength[#] > 0 &]];
+
+NBAccess`NBSetAccessibleDirs[dirs_List] :=
+  NBAccess`NBSetAccessibleDirs[EvaluationNotebook[], dirs];
+
+NBAccess`NBGetAccessibleDirs[nb_NotebookObject] :=
+  Module[{val},
+    val = NBAccess`NBGetTaggingRule[nb, "claudeAccessibleDirs"];
+    If[ListQ[val], val, {}]
+  ];
+
+NBAccess`NBGetAccessibleDirs[] :=
+  NBAccess`NBGetAccessibleDirs[EvaluationNotebook[]];
+
+
+(* ============================================================
+   汎用履歴データベース API
+   TaggingRules を用いた順次格納型履歴システム。
+   ・各タグに <|"header" -> ..., "entries" -> {...}|> を格納
+   ・header の "diffFields" に差分圧縮対象フィールド名リストを格納
+   ・entries の差分対象フィールドは Diff による差分圧縮
+     （最新エントリは平文、それ以前は Diff オブジェクト）
+   ・PrivacySpec オプションで privacylevel をエントリに記録
+   ============================================================ *)
+
+(* ---- 内部ヘルパー: ヘッダーから差分圧縮フィールドを取得 ---- *)
+(* 後方互換: diffFields 未設定の旧 DB には空リストを返す *)
+iGetDiffFields[header_Association] :=
+  Lookup[header, "diffFields", {}];
+
+iGetDiffFields[nb_NotebookObject, tag_String] :=
+  iGetDiffFields[Lookup[NBAccess`NBHistoryRawData[nb, tag], "header", <||>]];
+
+(* エントリの差分フィールドがまだ平文（未圧縮）かを判定 *)
+iIsPlainEntry[entry_Association, diffFields_List] :=
+  AnyTrue[diffFields,
+    Function[f, StringQ[Lookup[entry, f, Missing[]]]]];
+
+(* prev エントリを next エントリとの差分で圧縮する *)
+iCompressOneEntry[prev_Association, next_Association, diffFields_List] :=
+  Fold[
+    Function[{e, field},
+      Module[{pv = Lookup[e, field, ""], nv = Lookup[next, field, ""]},
+        If[StringQ[pv] && StringQ[nv],
+          <|e, field -> Diff[nv, pv]|>,
+          e]]],
+    prev,
+    diffFields];
+
+(* 差分オブジェクトを nextPlain の平文で復元する *)
+iDecompressOneEntry[entry_Association, nextPlain_Association, diffFields_List] :=
+  Fold[
+    Function[{e, field},
+      Module[{sv = Lookup[e, field, ""], nv = Lookup[nextPlain, field, ""]},
+        If[!StringQ[sv] && StringQ[nv],
+          (* Diff オブジェクト → DiffApply で復元 *)
+          <|e, field -> Quiet@Check[DiffApply[sv, nv], "(復元失敗)"]|>,
+          e]]],
+    entry,
+    diffFields];
+
+(* エントリリスト全体を復元 (最新=末尾 が平文、それ以前を順次復元) *)
+iDecompressAllEntries[entries_List, diffFields_List] :=
+  Which[
+    Length[entries] <= 1, entries,
+    Length[diffFields] === 0, entries,
+    True, Module[{n = Length[entries], result},
+      result = entries;
+      Do[result[[i]] = iDecompressOneEntry[result[[i]], result[[i + 1]], diffFields],
+        {i, n - 1, 1, -1}];
+      result]
+  ];
+
+(* エントリリスト全体を圧縮 (最新を平文のまま、それ以前を Diff 化) *)
+iCompressAllEntries[entries_List, diffFields_List] :=
+  Which[
+    Length[entries] <= 1, entries,
+    Length[diffFields] === 0, entries,
+    True, Module[{n = Length[entries], result},
+      result = entries;
+      Do[result[[i]] = iCompressOneEntry[result[[i]], result[[i + 1]], diffFields],
+        {i, n - 1, 1, -1}];
+      result]
+  ];
+
+(* ---- NBHistoryRawData: 圧縮状態のまま読み取り ---- *)
+NBAccess`NBHistoryRawData[nb_NotebookObject, tag_String] := Module[{val},
+  val = NBAccess`NBGetTaggingRule[nb, tag];
+  If[AssociationQ[val] && KeyExistsQ[val, "entries"], val,
+    <|"header" -> <||>, "entries" -> {}|>]
+];
+
+(* ---- NBHistoryCreate: DB 作成 (冪等) ---- *)
+NBAccess`NBHistoryCreate[nb_NotebookObject, tag_String, diffFields_List] :=
+  NBAccess`NBHistoryCreate[nb, tag, diffFields, <||>];
+
+NBAccess`NBHistoryCreate[nb_NotebookObject, tag_String, diffFields_List,
+    headerOverrides_Association] :=
+  Module[{raw, existingHdr, hdr},
+    raw = NBAccess`NBHistoryRawData[nb, tag];
+    existingHdr = Lookup[raw, "header", <||>];
+    (* diffFields 設定済みなら冪等: 既存ヘッダーを返す *)
+    If[AssociationQ[existingHdr] && KeyExistsQ[existingHdr, "diffFields"],
+      Return[existingHdr]];
+    (* 新規作成 or 旧 DB に diffFields を追加 *)
+    hdr = <|
+      "type"       -> "history_header",
+      "name"       -> "$default",
+      "parent"     -> None,
+      "inherit"    -> True,
+      "created"    -> AbsoluteTime[],
+      existingHdr,
+      headerOverrides,
+      "diffFields" -> diffFields
+    |>;
+    NBAccess`NBSetTaggingRule[nb, tag, <|raw, "header" -> hdr|>];
+    hdr
+  ];
+
+(* ---- NBHistoryData: 復元済みデータ (Decompress->False で圧縮状態) ---- *)
+Options[NBAccess`NBHistoryData] = {Decompress -> True};
+
+NBAccess`NBHistoryData[nb_NotebookObject, tag_String, opts:OptionsPattern[]] :=
+  Module[{raw, entries, hdr, diffFields},
+    raw = NBAccess`NBHistoryRawData[nb, tag];
+    entries = Lookup[raw, "entries", {}];
+    If[TrueQ[OptionValue[NBAccess`NBHistoryData, {opts}, Decompress]],
+      hdr = Lookup[raw, "header", <||>];
+      diffFields = iGetDiffFields[hdr];
+      entries = iDecompressAllEntries[entries, diffFields]];
+    <|raw, "entries" -> entries|>
+  ];
+
+(* ---- NBHistorySetData: 圧縮して書き込み ---- *)
+NBAccess`NBHistorySetData[nb_NotebookObject, tag_String, data_Association] :=
+  Module[{entries, compressed, hdr, diffFields},
+    entries = Lookup[data, "entries", {}];
+    hdr = Lookup[data, "header", <||>];
+    diffFields = iGetDiffFields[hdr];
+    compressed = iCompressAllEntries[entries, diffFields];
+    NBAccess`NBSetTaggingRule[nb, tag,
+      <|data, "entries" -> compressed|>]
+  ];
+
+(* ---- NBHistoryEntries: エントリリスト (Decompress->False で圧縮状態) ---- *)
+Options[NBAccess`NBHistoryEntries] = {Decompress -> True};
+
+NBAccess`NBHistoryEntries[nb_NotebookObject, tag_String, opts:OptionsPattern[]] :=
+  Lookup[NBAccess`NBHistoryData[nb, tag,
+    Decompress -> OptionValue[NBAccess`NBHistoryEntries, {opts}, Decompress]],
+    "entries", {}];
+
+(* ---- NBHistoryReadHeader ---- *)
+NBAccess`NBHistoryReadHeader[nb_NotebookObject, tag_String] := Module[{data, hdr},
+  data = NBAccess`NBHistoryRawData[nb, tag];
+  hdr = Lookup[data, "header", <||>];
+  If[AssociationQ[hdr] && Length[hdr] > 0, hdr,
+    <|"type" -> "history_header", "name" -> "$default",
+      "parent" -> None, "inherit" -> True, "created" -> 0|>]
+];
+
+(* ---- NBHistoryWriteHeader ---- *)
+NBAccess`NBHistoryWriteHeader[nb_NotebookObject, tag_String, header_Association] :=
+  Module[{data},
+    data = NBAccess`NBHistoryRawData[nb, tag];
+    NBAccess`NBSetTaggingRule[nb, tag, <|data, "header" -> header|>]
+  ];
+
+(* ---- NBHistoryAppend: エントリ追加 (差分圧縮 + privacylevel) ---- *)
+Options[NBAccess`NBHistoryAppend] = {PrivacySpec -> Automatic};
+
+NBAccess`NBHistoryAppend[nb_NotebookObject, tag_String,
+    entry_Association, opts:OptionsPattern[]] :=
+  Module[{data, entries, ps, newEntry, n, hdr, diffFields},
+    data = NBAccess`NBHistoryRawData[nb, tag];
+    If[!AssociationQ[data], data = <|"header" -> <||>, "entries" -> {}|>];
+    entries = Lookup[data, "entries", {}];
+    hdr = Lookup[data, "header", <||>];
+    diffFields = iGetDiffFields[hdr];
+    n = Length[entries];
+
+    (* privacylevel を付与 *)
+    ps = OptionValue[PrivacySpec];
+    If[ps === Automatic, ps = NBAccess`$NBPrivacySpec];
+    newEntry = <|entry, "privacylevel" -> ps|>;
+
+    (* 二つ前のエントリが未圧縮なら、直前のエントリとの差分で圧縮。
+       直前エントリ (entries[[-1]]) は前回の updateLast で確定済み。
+       ※ entries[[-1]] はまだ平文なのでこの段階で圧縮可能。 *)
+    If[n >= 2 && iIsPlainEntry[entries[[-2]], diffFields],
+      entries[[-2]] = iCompressOneEntry[entries[[-2]], entries[[-1]], diffFields]];
+
+    entries = Append[entries, newEntry];
+    NBAccess`NBSetTaggingRule[nb, tag, <|data, "entries" -> entries|>]
+  ];
+
+(* ---- NBHistoryUpdateLast: 最終エントリの更新 ---- *)
+NBAccess`NBHistoryUpdateLast[nb_NotebookObject, tag_String,
+    updates_Association] :=
+  Module[{data, entries},
+    data = NBAccess`NBHistoryRawData[nb, tag];
+    entries = Lookup[data, "entries", {}];
+    If[Length[entries] === 0, Return[]];
+    entries = MapAt[Merge[{#, updates}, Last] &, entries, -1];
+    NBAccess`NBSetTaggingRule[nb, tag, <|data, "entries" -> entries|>]
+  ];
+
+
+(* ---- NBHistoryReplaceEntries: エントリリスト全体の置換 ---- *)
+NBAccess`NBHistoryReplaceEntries[nb_NotebookObject, tag_String, entries_List] :=
+  Module[{data},
+    data = NBAccess`NBHistoryRawData[nb, tag];
+    If[!AssociationQ[data], data = <|"header" -> <||>, "entries" -> {}|>];
+    NBAccess`NBSetTaggingRule[nb, tag, <|data, "entries" -> entries|>]
+  ];
+
+(* ---- NBHistoryUpdateHeader: ヘッダーの部分更新 ---- *)
+NBAccess`NBHistoryUpdateHeader[nb_NotebookObject, tag_String, updates_Association] :=
+  Module[{data, hdr},
+    data = NBAccess`NBHistoryRawData[nb, tag];
+    hdr = Lookup[data, "header", <||>];
+    hdr = Merge[{hdr, updates}, Last];
+    NBAccess`NBSetTaggingRule[nb, tag, <|data, "header" -> hdr|>]
+  ];
+
+(* ---- NBHistoryEntriesWithInherit: 親チェーンを辿った全履歴 ---- *)
+Options[NBAccess`NBHistoryEntriesWithInherit] = {Decompress -> True};
+
+NBAccess`NBHistoryEntriesWithInherit[nb_NotebookObject, tag_String,
+    opts:OptionsPattern[]] :=
+  Module[{hdr, parentTag, parentHist, ownHist, createdTime, dec},
+    dec = OptionValue[NBAccess`NBHistoryEntriesWithInherit, {opts}, Decompress];
+    hdr = NBAccess`NBHistoryReadHeader[nb, tag];
+    ownHist = NBAccess`NBHistoryEntries[nb, tag, Decompress -> dec];
+    parentTag = Lookup[hdr, "parent", None];
+    If[parentTag === None || Lookup[hdr, "inherit", True] === False,
+      ownHist,
+      createdTime = Lookup[hdr, "created", Infinity];
+      parentHist = If[StringQ[parentTag],
+        NBAccess`NBHistoryEntriesWithInherit[nb, parentTag, Decompress -> dec],
+        {}];
+      If[NumericQ[createdTime] && createdTime < Infinity,
+        parentHist = Select[parentHist,
+          Function[entry, Lookup[entry, "time", 0] <= createdTime]]];
+      Join[parentHist, ownHist]]
+  ];
+
+(* ---- NBHistoryListTags ---- *)
+NBAccess`NBHistoryListTags[nb_NotebookObject, prefix_String] :=
+  NBAccess`NBListTaggingRuleKeys[nb, prefix];
+
+(* ---- NBHistoryDelete ---- *)
+NBAccess`NBHistoryDelete[nb_NotebookObject, tag_String] :=
+  NBAccess`NBDeleteTaggingRule[nb, tag];
+
+(* ---- セッションアタッチメント API ---- *)
+
+NBAccess`NBHistoryAddAttachment[nb_NotebookObject, tag_String, path_String] :=
+  Module[{hdr, atts, norm},
+    norm = ExpandFileName[path];
+    hdr = NBAccess`NBHistoryReadHeader[nb, tag];
+    atts = Lookup[hdr, "attachments", {}];
+    If[!ListQ[atts], atts = {}];
+    If[!MemberQ[atts, norm],
+      atts = Append[atts, norm];
+      NBAccess`NBHistoryWriteHeader[nb, tag, <|hdr, "attachments" -> atts|>]];
+    atts
+  ];
+
+NBAccess`NBHistoryRemoveAttachment[nb_NotebookObject, tag_String, path_String] :=
+  Module[{hdr, atts, norm},
+    norm = ExpandFileName[path];
+    hdr = NBAccess`NBHistoryReadHeader[nb, tag];
+    atts = Lookup[hdr, "attachments", {}];
+    If[!ListQ[atts], atts = {}];
+    atts = DeleteCases[atts, norm];
+    NBAccess`NBHistoryWriteHeader[nb, tag, <|hdr, "attachments" -> atts|>];
+    atts
+  ];
+
+NBAccess`NBHistoryGetAttachments[nb_NotebookObject, tag_String] :=
+  Module[{hdr, atts},
+    hdr = NBAccess`NBHistoryReadHeader[nb, tag];
+    atts = Lookup[hdr, "attachments", {}];
+    If[ListQ[atts], atts, {}]
+  ];
+
+NBAccess`NBHistoryClearAttachments[nb_NotebookObject, tag_String] :=
+  Module[{hdr},
+    hdr = NBAccess`NBHistoryReadHeader[nb, tag];
+    NBAccess`NBHistoryWriteHeader[nb, tag, <|hdr, "attachments" -> {}|>];
+  ];
+
+
+(* ============================================================
+   履歴プライバシフィルター
+   ============================================================ *)
+
+iHistoryFieldLeaksConfidential[text_String, confVars_List] :=
+  If[!StringQ[text] || Length[confVars] === 0, False,
+    AnyTrue[confVars,
+      StringContainsQ[text,
+        RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
+                         "(?![\\p{L}\\p{N}$])"] ] &]
+  ];
+
+NBAccess`NBFilterHistoryEntry[entry_Association, confVars_List] :=
+  NBAccess`NBFilterHistoryEntry[entry, confVars, <||>];
+
+NBAccess`NBFilterHistoryEntry[entry_Association, confVars_List, confVarTimes_Association] :=
+  Module[{resp, code, entryTime, minConfTime, blocked},
+    entryTime = Lookup[entry, "time", 0];
+    If[Length[confVars] > 0 && NumberQ[entryTime],
+      minConfTime = Min @ Map[
+        Function[v, Lookup[confVarTimes, v, Infinity]], confVars];
+      If[NumberQ[minConfTime] && minConfTime < Infinity && entryTime > minConfTime,
+        Return[entry]]];
+
+    resp    = Lookup[entry, "response", ""];
+    code    = Lookup[entry, "code", ""];
+    blocked = False;
+
+    If[iHistoryFieldLeaksConfidential[resp, confVars],
+      resp = "(機密変数の値を含むためこのステップの履歴は非表示)";
+      blocked = True];
+
+    If[!blocked && iHistoryFieldLeaksConfidential[code, confVars],
+      code = "(機密変数を含むため非表示)";
+      blocked = True];
+
+    ReplacePart[entry, {"response" -> resp, "code" -> code}]
+  ];
+
+
+(* ============================================================
+   Job \:7ba1\:7406: ClaudeQuery/ClaudeEval \:306e\:975e\:540c\:671f\:51fa\:529b\:4f4d\:7f6e\:7ba1\:7406
+   \:8a2d\:8a08:
+     \:30fb\:8a55\:4fa1\:30bb\:30eb\:306e\:76f4\:5f8c\:306b 3 \:3064\:306e\:4e0d\:53ef\:8996\:30b9\:30ed\:30c3\:30c8\:30bb\:30eb\:3092\:4e88\:7d04
+     \:30fb\:30b9\:30ed\:30c3\:30c81: \:30b7\:30b9\:30c6\:30e0\:30e1\:30c3\:30bb\:30fc\:30b8\:ff08\:30d7\:30ed\:30b0\:30ec\:30b9\:30fb\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:901a\:77e5\:ff09
+     \:30fb\:30b9\:30ed\:30c3\:30c82: \:5b8c\:4e86\:30e1\:30c3\:30bb\:30fc\:30b8
+     \:30fb\:30a2\:30f3\:30ab\:30fc: \:30ec\:30b9\:30dd\:30f3\:30b9\:66f8\:304d\:8fbc\:307f\:4f4d\:7f6e\:30de\:30fc\:30ab\:30fc
+     \:30fbCellObject \:306f NBAccess \:5185\:90e8\:3067\:306e\:307f\:7ba1\:7406\:3001ClaudeCode \:5074\:306b\:306f jobId \:306e\:307f\:516c\:958b
+   ============================================================ *)
+
+$NBJobTable = <||>;
+
+(* \:4e0d\:53ef\:8996\:30d7\:30ec\:30fc\:30b9\:30db\:30eb\:30c0\:30fc\:30bb\:30eb *)
+$iInvisibleCellOpts = Sequence[CellOpen -> False, ShowCellBracket -> False,
+  CellMargins -> {{0, 0}, {0, 0}}, CellElementSpacings -> {"CellMinHeight" -> 0}];
+
+(* \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:672b\:5c3e\:306b\:30ab\:30fc\:30bd\:30eb\:3092\:79fb\:52d5 *)
+NBAccess`NBMoveToEnd[nb_NotebookObject] :=
+  Quiet[SelectionMove[nb, After, Notebook]];
+
+NBAccess`NBBeginJob[nb_NotebookObject, evalCell_] :=
+  Module[{jobId, t1, t2, tA},
+    jobId = "cjob" <> ToString[UnixTime[]] <> "x" <> ToString[RandomInteger[99999]];
+    t1 = jobId <> "-s1";
+    t2 = jobId <> "-s2";
+    tA = jobId <> "-anchor";
+    (* evalCell \:304c CellObject \:306a\:3089\:305d\:306e\:76f4\:5f8c\:3001\:305d\:3046\:3067\:306a\:3051\:308c\:3070\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:672b\:5c3e *)
+    If[Head[evalCell] === CellObject,
+      Quiet[SelectionMove[evalCell, After, Cell]],
+      Quiet[SelectionMove[nb, After, Notebook]]];
+    (* 3\:3064\:306e\:4e0d\:53ef\:8996\:30bb\:30eb\:3092\:9806\:306b\:633f\:5165 *)
+    NotebookWrite[nb,
+      Cell["", "Text", CellTags -> {t1}, $iInvisibleCellOpts], After];
+    NotebookWrite[nb,
+      Cell["", "Text", CellTags -> {t2}, $iInvisibleCellOpts], After];
+    NotebookWrite[nb,
+      Cell["", "Text", CellTags -> {tA}, $iInvisibleCellOpts], After];
+    $NBJobTable[jobId] = <|
+      "nb"       -> nb,
+      "slotTags" -> {t1, t2},
+      "anchorTag" -> tA,
+      "written"  -> {False, False}
+    |>;
+    jobId
+  ];
+
+(* \:30b9\:30ed\:30c3\:30c8\:306b Cell \:5f0f\:3092\:66f8\:304d\:8fbc\:307f\:53ef\:8996\:306b\:3059\:308b *)
+NBAccess`NBWriteSlot[jobId_String, slotIdx_Integer, cellExpr_Cell] :=
+  Module[{entry, tag, nb, cells, newCell},
+    entry = Lookup[$NBJobTable, jobId, $Failed];
+    If[entry === $Failed, Return[$Failed]];
+    If[slotIdx < 1 || slotIdx > Length[entry["slotTags"]], Return[$Failed]];
+    nb  = entry["nb"];
+    tag = entry["slotTags"][[slotIdx]];
+    cells = Quiet[Cells[nb, CellTags -> tag]];
+    If[!ListQ[cells] || Length[cells] === 0, Return[$Failed]];
+    (* \:65b0\:3057\:3044\:30bb\:30eb\:306b\:540c\:3058\:30bf\:30b0\:3092\:4ed8\:4e0e\:3057\:3066\:7f6e\:63db *)
+    newCell = Append[cellExpr, CellTags -> {tag}];
+    Quiet[SelectionMove[First[cells], All, Cell]];
+    NotebookWrite[nb, newCell, All];
+    (* \:66f8\:304d\:8fbc\:307f\:6e08\:307f\:30d5\:30e9\:30b0\:3092\:66f4\:65b0 *)
+    $NBJobTable[jobId, "written"] =
+      ReplacePart[entry["written"], slotIdx -> True];
+  ];
+
+(* \:30a2\:30f3\:30ab\:30fc\:306e\:76f4\:5f8c\:306b\:30ab\:30fc\:30bd\:30eb\:3092\:79fb\:52d5 *)
+NBAccess`NBJobMoveToAnchor[jobId_String] :=
+  Module[{entry, nb, cells},
+    entry = Lookup[$NBJobTable, jobId, $Failed];
+    If[entry === $Failed, Return[$Failed]];
+    nb = entry["nb"];
+    cells = Quiet[Cells[nb, CellTags -> entry["anchorTag"]]];
+    If[ListQ[cells] && Length[cells] > 0,
+      Quiet[SelectionMove[First[cells], After, Cell]]];
+  ];
+
+(* \:30b8\:30e7\:30d6\:6b63\:5e38\:7d42\:4e86: \:672a\:66f8\:304d\:8fbc\:307f\:30b9\:30ed\:30c3\:30c8\:3068\:30a2\:30f3\:30ab\:30fc\:3092\:524a\:9664 *)
+NBAccess`NBEndJob[jobId_String] :=
+  Module[{entry, nb},
+    entry = Lookup[$NBJobTable, jobId, $Failed];
+    If[entry === $Failed, Return[]];
+    nb = entry["nb"];
+    (* \:672a\:66f8\:304d\:8fbc\:307f\:30b9\:30ed\:30c3\:30c8\:3092\:524a\:9664 *)
+    Do[If[!entry["written"][[i]],
+      NBAccess`NBDeleteCellsByTag[nb, entry["slotTags"][[i]]]],
+    {i, Length[entry["slotTags"]]}];
+    (* \:30a2\:30f3\:30ab\:30fc\:3092\:524a\:9664 *)
+    NBAccess`NBDeleteCellsByTag[nb, entry["anchorTag"]];
+    $NBJobTable = KeyDrop[$NBJobTable, jobId];
+  ];
+
+(* \:30b8\:30e7\:30d6\:7570\:5e38\:7d42\:4e86: \:30a8\:30e9\:30fc\:30e1\:30c3\:30bb\:30fc\:30b8\:3092\:66f8\:304d\:8fbc\:307f\:30af\:30ea\:30fc\:30f3\:30a2\:30c3\:30d7 *)
+NBAccess`NBAbortJob[jobId_String, errorMsg_String] :=
+  Module[{entry, firstUnwritten = 0},
+    entry = Lookup[$NBJobTable, jobId, $Failed];
+    If[entry === $Failed, Return[]];
+    (* \:6700\:521d\:306e\:672a\:66f8\:304d\:8fbc\:307f\:30b9\:30ed\:30c3\:30c8\:306b\:30a8\:30e9\:30fc\:3092\:66f8\:304d\:8fbc\:3080 *)
+    Do[If[!entry["written"][[i]],
+      firstUnwritten = i; Break[]],
+    {i, Length[entry["slotTags"]]}];
+    If[firstUnwritten > 0,
+      NBAccess`NBWriteSlot[jobId, firstUnwritten,
+        Cell[errorMsg, "Print", FontWeight -> Bold,
+          FontColor -> RGBColor[0.8, 0, 0], FontSize -> 11]]];
+    (* \:6b8b\:308a\:306e\:672a\:66f8\:304d\:8fbc\:307f\:30b9\:30ed\:30c3\:30c8\:3068\:30a2\:30f3\:30ab\:30fc\:3092\:524a\:9664 *)
+    NBAccess`NBEndJob[jobId];
+  ];
+
+
+
+(* ============================================================
+   分離API実装: claudecode が CellObject/Private に直接触らないための公開API
+   ============================================================ *)
+
+(* EvaluationCell を内部取得して Job を開始する *)
+NBAccess`NBBeginJobAtEvalCell[nb_NotebookObject] :=
+  Module[{evalCell},
+    evalCell = Quiet[EvaluationCell[]];
+    NBAccess`NBBeginJob[nb, evalCell]
+  ];
+
+(* テキストから代入変数名を抽出 (Private`iExtractAssignments の公開版) *)
+NBAccess`NBExtractAssignments[text_String] :=
+  iExtractAssignments[text];
+
+(* 機密変数テーブル操作API *)
+NBAccess`NBSetConfidentialVars[assoc_Association] :=
+  (NBAccess`$NBConfidentialSymbols = assoc);
+
+NBAccess`NBGetConfidentialVars[] :=
+  If[AssociationQ[NBAccess`$NBConfidentialSymbols],
+    NBAccess`$NBConfidentialSymbols, <||>];
+
+NBAccess`NBClearConfidentialVars[] :=
+  (NBAccess`$NBConfidentialSymbols = <||>);
+
+NBAccess`NBRegisterConfidentialVar[name_String, level_:1.0] :=
+  (NBAccess`$NBConfidentialSymbols[name] = level);
+
+NBAccess`NBUnregisterConfidentialVar[name_String] :=
+  (NBAccess`$NBConfidentialSymbols = KeyDrop[NBAccess`$NBConfidentialSymbols, name]);
+
+NBAccess`NBGetPrivacySpec[] :=
+  If[AssociationQ[NBAccess`$NBPrivacySpec],
+    NBAccess`$NBPrivacySpec, <|"AccessLevel" -> 0.5|>];
+
+(* CellEpilog 管理 *)
+NBAccess`NBInstallCellEpilog[nb_NotebookObject, key_String, expr_] :=
+  Module[{current},
+    current = Quiet[AbsoluteCurrentValue[nb, CellEpilog]];
+    If[FreeQ[current, key],
+      Quiet[SetOptions[nb, CellEpilog :> expr]]]];
+
+NBAccess`NBCellEpilogInstalledQ[nb_NotebookObject, key_String] :=
+  Module[{epi},
+    epi = Quiet[AbsoluteCurrentValue[nb, CellEpilog]];
+    !FreeQ[epi, key]];
+
+(* セル評価ヘルパー *)
+NBAccess`NBEvaluatePreviousCell[nb_NotebookObject] := (
+  Quiet[SelectionMove[nb, Previous, Cell]];
+  Quiet[SelectionEvaluate[nb]];
+  Quiet[SelectionMove[nb, After, Cell]]);
+
+(* Input テンプレート挿入 *)
+NBAccess`NBInsertInputTemplate[nb_NotebookObject, boxes_] := (
+  NotebookWrite[nb, Cell[BoxData[boxes], "Input"], All];
+  SelectionMove[nb, All, CellContents]);
+
+(* EvaluationCell の親ノートブック *)
+NBAccess`NBParentNotebookOfCurrentCell[] :=
+  Quiet @ Check[ParentNotebook[EvaluationCell[]], InputNotebook[]];
+
+
+(* ============================================================
+   分離API追加実装: セル書き込み・テンプレート・CellEpilog
+   ============================================================ *)
+
+(* 汎用セル書き込み *)
+NBAccess`NBWriteCell[nb_NotebookObject, cellExpr_Cell, where_:After] :=
+  Quiet[NotebookWrite[nb, cellExpr, where]];
+
+(* 通知用 Print セル書き込み *)
+NBAccess`NBWritePrintNotice[None, text_String, color_] :=
+  CellPrint[Cell[text, "Print", FontWeight -> Bold, FontColor -> color, FontSize -> 11]];
+NBAccess`NBWritePrintNotice[nb_NotebookObject, text_String, color_] :=
+  NotebookWrite[nb, Cell[text, "Print", FontWeight -> Bold, FontColor -> color, FontSize -> 11], After];
+
+(* Dynamic セル書き込み *)
+NBAccess`NBWriteDynamicCell[nb_NotebookObject, dynBoxExpr_, tag_String:"", opts___] :=
+  If[tag === "",
+    NotebookWrite[nb, Cell[BoxData[dynBoxExpr], "Print", opts], After],
+    NotebookWrite[nb, Cell[BoxData[dynBoxExpr], "Print", CellTags -> {tag}, opts], After]];
+
+(* ExternalLanguage セル書き込み *)
+NBAccess`NBWriteExternalLanguageCell[nb_NotebookObject, code_String,
+    lang_String, autoEvaluate_:False] := (
+  NotebookWrite[nb,
+    Cell[code, "ExternalLanguage", CellEvaluationLanguage -> lang], After];
+  If[TrueQ[autoEvaluate],
+    Quiet[SelectionMove[nb, Previous, Cell]];
+    Quiet[SelectionEvaluate[nb]];
+    Quiet[SelectionMove[nb, After, Cell]]]);
+
+(* Input セルを挿入して即座に評価 *)
+NBAccess`NBInsertAndEvaluateInput[nb_NotebookObject, boxes_] := (
+  NotebookWrite[nb, Cell[BoxData[boxes], "Input"], After];
+  Quiet[SelectionEvaluate[nb]]);
+
+(* Input セルを After に書き込み、Before CellContents に移動 *)
+NBAccess`NBInsertInputAfter[nb_NotebookObject, boxes_] := (
+  NotebookWrite[nb, Cell[BoxData[boxes], "Input"], After];
+  SelectionMove[nb, Before, CellContents]);
+
+(* カーソル後に Input セルを挿入し、カーソル配置 + 条件付き評価 *)
+NBAccess`NBWriteInputCellAndMaybeEvaluate[nb_NotebookObject, boxes_,
+    autoEvaluate_:False] := (
+  Quiet[SelectionMove[nb, After, Cell]];
+  NotebookWrite[nb, Cell[BoxData[boxes], "Input"], After];
+  Quiet[SelectionMove[nb, Previous, Cell]];
+  Quiet[SelectionMove[nb, Before, CellContents]];
+  SetSelectedNotebook[nb];
+  If[TrueQ[autoEvaluate], Quiet[SelectionEvaluate[nb]]]);
+
+(* EvaluationCell 直後に不可視アンカーセルを書き込む *)
+NBAccess`NBWriteAnchorAfterEvalCell[nb_NotebookObject, tag_String] :=
+  Module[{evalCell},
+    evalCell = Quiet[EvaluationCell[]];
+    If[Head[evalCell] === CellObject,
+      Quiet[SelectionMove[evalCell, After, Cell]],
+      Quiet[SelectionMove[nb, After, Notebook]]];
+    NotebookWrite[nb,
+      Cell["", "Text", CellTags -> {tag}, CellOpen -> False], After]];
+
+(* 機密追跡用 CellEpilog インストール (専用API)
+   epilogExpr: CellEpilog に設定する式
+   checkSymbol: FreeQ チェック用のマーカーシンボル (例: ClaudeCode`Private`iConfidentialCellEpilog) *)
+NBAccess`NBInstallConfidentialEpilog[nb_NotebookObject, epilogExpr_, checkSymbol_] :=
+  Module[{current},
+    current = Quiet[AbsoluteCurrentValue[nb, CellEpilog]];
+    If[FreeQ[current, checkSymbol],
+      Quiet[SetOptions[nb, CellEpilog :> epilogExpr]]]];
+
+NBAccess`NBConfidentialEpilogInstalledQ[nb_NotebookObject, checkSymbol_] :=
+  Module[{epi},
+    epi = Quiet[AbsoluteCurrentValue[nb, CellEpilog]];
+    !FreeQ[epi, checkSymbol]];
+
+
+(* .nb ファイルを開いてテキストセルを挿入する (テンプレート初期化用) *)
+NBAccess`NBInsertTextCells[nbFile_String, name_String, prompt_String] :=
+  Module[{nb},
+    nb = Quiet @ NotebookOpen[nbFile, Visible -> False];
+    If[Head[nb] =!= NotebookObject, Return[$Failed]];
+    SelectionMove[nb, After, Notebook];
+    NotebookWrite[nb, Cell["Package: " <> name, "Subsection"]];
+    NotebookWrite[nb, Cell[prompt, "Text"]];
+    Quiet @ NotebookSave[nb];
+    Quiet @ NotebookClose[nb]];
+
+
+End[];
+EndPackage[];

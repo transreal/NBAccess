@@ -1,0 +1,14 @@
+{
+	"packageName":"NBAccess",
+	"files":[
+		"NBAccess.wl"
+	],
+	"directories":[
+		"NBAccess_info"
+	],
+	"excludePatterns":[
+		"NBAccess_info\/history\/",
+		"NBAccess_info\/references\/"
+
+	]
+}
