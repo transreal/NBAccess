@@ -301,6 +301,37 @@ NBGetAPIKey::usage =
   "オプション PrivacySpec -> <|\"AccessLevel\" -> 1.0|> (ディフォルト)。\n" <>
   "SystemCredential へのアクセスを一元管理する。";
 
+(* ---- フォールバックモデル / プロバイダーアクセスレベル API ---- *)
+NBSetFallbackModels::usage =
+  "NBSetFallbackModels[models] はフォールバックモデルリストを設定する。\n" <>
+  "models: {{\"provider\",\"model\"}, {\"provider\",\"model\",\"url\"}, ...}\n" <>
+  "例: NBSetFallbackModels[{{\"anthropic\",\"claude-opus-4-6\"},{\"lmstudio\",\"gpt-oss-20b\",\"http://127.0.0.1:1234\"}}]";
+
+NBGetFallbackModels::usage =
+  "NBGetFallbackModels[] はフォールバックモデルリスト全体を返す。";
+
+NBSetProviderMaxAccessLevel::usage =
+  "NBSetProviderMaxAccessLevel[provider, level] はプロバイダーの最大アクセスレベルを設定する。\n" <>
+  "level: 0.0〜1.0。このレベルを超えるアクセスレベルのリクエストにはフォールバックしない。\n" <>
+  "例: NBSetProviderMaxAccessLevel[\"anthropic\", 0.5]\n" <>
+  "    NBSetProviderMaxAccessLevel[\"lmstudio\", 1.0]";
+
+NBGetProviderMaxAccessLevel::usage =
+  "NBGetProviderMaxAccessLevel[provider] はプロバイダーの最大アクセスレベルを返す。\n" <>
+  "未登録プロバイダーは 0.5 を返す。";
+
+NBGetAvailableFallbackModels::usage =
+  "NBGetAvailableFallbackModels[accessLevel] は指定アクセスレベルで利用可能な\n" <>
+  "フォールバックモデルのリストを返す。\n" <>
+  "プロバイダーの MaxAccessLevel >= accessLevel のモデルのみ含まれる。\n" <>
+  "例: NBGetAvailableFallbackModels[0.8] → lmstudio のみ\n" <>
+  "    NBGetAvailableFallbackModels[0.5] → 全プロバイダー";
+
+NBProviderCanAccess::usage =
+  "NBProviderCanAccess[provider, accessLevel] はプロバイダーが指定アクセスレベルの\n" <>
+  "データにアクセス可能かを返す (True/False)。\n" <>
+  "MaxAccessLevel >= accessLevel なら True。";
+
 (* ---- アクセス可能ディレクトリ API ---- *)
 NBSetAccessibleDirs::usage =
   "NBSetAccessibleDirs[nb, {dir1, dir2, ...}] \:306f Claude Code \:304c\n" <>
@@ -441,6 +472,19 @@ If[!AssociationQ[NBAccess`$NBConfidentialSymbols],
 (* 分離検査で無視するパッケージ名リスト *)
 If[!ListQ[NBAccess`$NBSeparationIgnoreList],
   NBAccess`$NBSeparationIgnoreList = {"NBAccess", "NotebookExtensions"}];
+
+(* フォールバックモデルリスト: {{provider, model}, {provider, model, url}, ...} *)
+If[!ListQ[$iFallbackModels],
+  $iFallbackModels = {{"anthropic", "claude-opus-4-6"}, {"openai", "gpt-5"}}];
+
+(* プロバイダー別最大アクセスレベル: 未登録は 0.5 *)
+If[!AssociationQ[$iProviderMaxAccessLevel],
+  $iProviderMaxAccessLevel = <|
+    "claudecode" -> 0.5,
+    "anthropic"  -> 0.5,
+    "openai"     -> 0.5,
+    "lmstudio"   -> 1.0
+  |>];
 
 (* ============================================================
    内部ヘルパー: セルインデックス → CellObject 解決
@@ -757,23 +801,38 @@ NBAccess`NBGetContext[nb_NotebookObject, afterIdx_Integer,
       Map[
         Function[iIdx,
           Module[{txt, result, wasRedacted, cellLabel, depTag,
-                  shouldSuppress, nextOutIndices, nextInIdx},
-            txt = ToString[NBAccess`NBCellToText[nb, iIdx]];
-            {result, wasRedacted} = iRedactConfidentialLines[
-              StringTake[txt, UpTo[500]]];
-            cellLabel = NBAccess`NBCellLabel[nb, iIdx];
-            depTag = NBAccess`NBCellGetTaggingRule[nb, iIdx,
-              {"claudecode", "dependent"}];
-            shouldSuppress = wasRedacted || TrueQ[depTag];
-            If[shouldSuppress,
+                  shouldSuppress, nextOutIndices, nextInIdx, cellPriv},
+            (* セルレベルのプライバシーチェック: マーク済みセルは除外 *)
+            cellPriv = NBAccess`NBCellPrivacyLevel[nb, iIdx];
+            If[cellPriv > iAccessLevel[OptionValue[PrivacySpec]],
+              (* セル全体が秘密: テキストを出さず、対応 Output も抑制 *)
               nextOutIndices = Select[outIndices, # > iIdx &];
               If[Length[nextOutIndices] > 0,
                 nextInIdx = SelectFirst[inIndices, # > iIdx &, Infinity];
                 nextOutIndices = Select[nextOutIndices, # < nextInIdx &];
-                suppressedOutPos = Join[suppressedOutPos, nextOutIndices]]];
-            If[cellLabel =!= "",
-              cellLabel <> " " <> result,
-              result]]],
+                suppressedOutPos = Join[suppressedOutPos, nextOutIndices]];
+              cellLabel = NBAccess`NBCellLabel[nb, iIdx];
+              If[cellLabel =!= "",
+                cellLabel <> " (* [\:6a5f\:5bc6\:30bb\:30eb: \:975e\:8868\:793a] *)",
+                Nothing],
+              (* 通常処理: 変数名ベースのリダクション *)
+              txt = ToString[NBAccess`NBCellToText[nb, iIdx]];
+              {result, wasRedacted} = iRedactConfidentialLines[
+                StringTake[txt, UpTo[500]]];
+              cellLabel = NBAccess`NBCellLabel[nb, iIdx];
+              depTag = NBAccess`NBCellGetTaggingRule[nb, iIdx,
+                {"claudecode", "dependent"}];
+              shouldSuppress = wasRedacted || TrueQ[depTag];
+              If[shouldSuppress,
+                nextOutIndices = Select[outIndices, # > iIdx &];
+                If[Length[nextOutIndices] > 0,
+                  nextInIdx = SelectFirst[inIndices, # > iIdx &, Infinity];
+                  nextOutIndices = Select[nextOutIndices, # < nextInIdx &];
+                  suppressedOutPos = Join[suppressedOutPos, nextOutIndices]]];
+              If[cellLabel =!= "",
+                cellLabel <> " " <> result,
+                result]
+            ]]],
         inIndices],
       "\n"];
     (* Output/Message は afterIdx 以降のみ、かつ機密 Input に対応するものを除外 *)
@@ -2405,6 +2464,37 @@ NBAccess`NBInsertTextCells[nbFile_String, name_String, prompt_String] :=
     NotebookWrite[nb, Cell[prompt, "Text"]];
     Quiet @ NotebookSave[nb];
     Quiet @ NotebookClose[nb]];
+
+
+(* ============================================================
+   フォールバックモデル / プロバイダーアクセスレベル API
+   ============================================================ *)
+
+(* フォールバックモデルリスト管理 *)
+NBAccess`NBSetFallbackModels[models_List] :=
+  ($iFallbackModels = models);
+
+NBAccess`NBGetFallbackModels[] :=
+  If[ListQ[$iFallbackModels], $iFallbackModels, {}];
+
+(* プロバイダー別最大アクセスレベル管理 *)
+NBAccess`NBSetProviderMaxAccessLevel[provider_String, level_?NumericQ] :=
+  ($iProviderMaxAccessLevel[ToLowerCase[provider]] = Clip[level, {0., 1.}]);
+
+NBAccess`NBGetProviderMaxAccessLevel[provider_String] :=
+  Lookup[$iProviderMaxAccessLevel, ToLowerCase[provider], 0.5];
+
+(* プロバイダーがアクセスレベルに対応可能か判定 *)
+NBAccess`NBProviderCanAccess[provider_String, accessLevel_?NumericQ] :=
+  Lookup[$iProviderMaxAccessLevel, ToLowerCase[provider], 0.5] >= accessLevel;
+
+(* 指定アクセスレベルで利用可能なフォールバックモデルのみ返す *)
+NBAccess`NBGetAvailableFallbackModels[requestedLevel_?NumericQ] :=
+  Select[$iFallbackModels,
+    Function[entry,
+      Lookup[$iProviderMaxAccessLevel, ToLowerCase[entry[[1]]], 0.5] >= requestedLevel
+    ]
+  ];
 
 
 End[];
