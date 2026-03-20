@@ -1,7 +1,3 @@
----
-
-## Updated: examples/example.md
-
 # NBAccess 使用例集
 
 このドキュメントでは、NBAccess パッケージの主な使い方を実践的な例で紹介します。
@@ -49,7 +45,7 @@ allCells = NBGetCells[nb, PrivacySpec -> <|"AccessLevel" -> 1.0|>];
 
 ## 例3: 機密セルのマークと解除
 
-セルに機密マーク（赤背景）や依存機密マーク（橙背景）を付けます。
+セルに機密マーク（赤背景 + WarningSign）や依存機密マーク（橙背景 + LockIcon）を付けます。
 
 ```mathematica
 NBMarkCellConfidential[nb, 3];
@@ -108,8 +104,11 @@ NBWriteCode[nb, "Plot[Sin[x], {x, 0, 2 Pi}]"];
 deps = NBBuildVarDependencies[nb];
 transitive = NBTransitiveDependents[deps, {"apiKey", "password"}];
 
-(* 依存セルに自動マーク *)
-markedCount = NBScanDependentCells[nb];
+(* 依存セルに自動マーク — deps を事前計算して渡すことで二重計算を回避 *)
+markedCount = NBScanDependentCells[nb, {"apiKey", "password"}, deps];
+
+(* deps を省略した従来互換の呼び出しも可能 *)
+markedCount = NBScanDependentCells[nb, {"apiKey", "password"}];
 
 (* グラフの可視化 *)
 NBPlotDependencyGraph[nb]
@@ -122,6 +121,7 @@ NBPlotDependencyGraph[nb]
 ## 例7: 汎用履歴データベース
 
 ノートブックの TaggingRules に差分圧縮された履歴を保存・取得します。
+履歴データの読み取りにはキャッシュが利用され、同一セッション内で同じ履歴を複数回読み取る場合の FrontEnd 通信が削減されます。
 
 ```mathematica
 NBHistoryCreate[nb, "chat-session-1", {"fullPrompt", "response"}];
@@ -131,6 +131,9 @@ NBHistoryAppend[nb, "chat-session-1", <|
 |>];
 entries = NBHistoryEntries[nb, "chat-session-1"];
 tags = NBHistoryListTags[nb, "chat-"];
+
+(* キャッシュのクリア（パッケージ再ロード・セッション切替時などに使用） *)
+NBHistoryCacheClear[];
 ```
 
 ```
@@ -225,7 +228,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 
 ## Updated: user_manual.md
 
-以下は `user_manual.md` の更新内容です。既存の構造を維持しつつ、以下の2セクションを追加・更新してください。
+以下は `user_manual.md` の更新内容です。既存の構造を維持しつつ、以下のセクションを追加・更新してください。
 
 ### 追加セクション: フォールバックモデル / プロバイダーアクセスレベル API
 
@@ -352,6 +355,83 @@ NBSetProviderMaxAccessLevel["openai", 0.5];
 ```
 
 この設定により、機密データを含むリクエストではローカル LLM のみがフォールバック先となり、非機密データのリクエストでは全プロバイダーが利用可能になります。
+
+---
+
+### 追加セクション: 履歴キャッシュ
+
+以下のセクションを汎用履歴データベース API セクション内に追加してください:
+
+---
+
+## 履歴キャッシュ
+
+`NBHistoryRawData` をはじめとする履歴読み取り関数は、内部キャッシュを使用して FrontEnd 通信を削減します。ClaudeQuery 1回の処理中に同じ履歴が7回以上読み取られることがあるため、このキャッシュにより大幅なパフォーマンス向上が期待できます。
+
+### キャッシュの動作
+
+- **自動同期**: `NBHistoryAppend`、`NBHistoryUpdateLast`、`NBHistoryWriteHeader`、`NBHistorySetData`、`NBHistoryReplaceEntries`、`NBHistoryUpdateHeader`、`NBHistoryCreate` などの書き込み系関数は、書き込みと同時にキャッシュを自動更新します。
+- **自動無効化**: `NBHistoryDelete` はキャッシュエントリを自動的に無効化します。
+- **手動クリア**: パッケージの再ロードやセッション切替時など、キャッシュ全体をクリアする必要がある場合は `NBHistoryCacheClear[]` を使用します。
+
+### 関数リファレンス
+
+#### NBHistoryCacheClear[]
+
+履歴キャッシュ全体をクリアします。パッケージの再ロード時やセッション切替時に使用します。
+
+```mathematica
+NBHistoryCacheClear[]
+```
+
+通常の使用では、書き込み系関数がキャッシュを自動同期するため、明示的にクリアする必要はありません。
+
+---
+
+### 更新セクション: NBScanDependentCells のオーバーロード
+
+user_manual.md の `NBScanDependentCells` の説明を以下のように更新してください:
+
+---
+
+## NBScanDependentCells — 依存セルの自動検出とマーク
+
+`NBScanDependentCells` は依存グラフを使って機密変数に依存するセルを検出し、`NBMarkCellDependent` で自動マークします。Claude 関数呼び出しセル（`ClaudeQuery` 等）は除外されます。
+
+### シグネチャ
+
+```mathematica
+(* 従来互換: 依存グラフを内部で計算 *)
+NBScanDependentCells[nb, confVarNames]
+
+(* 事前計算済みの依存グラフを渡すオーバーロード（二重計算回避） *)
+NBScanDependentCells[nb, confVarNames, deps]
+```
+
+### 引数
+
+- `nb` — 対象ノートブック（NotebookObject）
+- `confVarNames` — 機密変数名のリスト（例: `{"apiKey", "password"}`）
+- `deps` — （オプション）`NBBuildVarDependencies[nb]` の戻り値。事前に依存グラフを計算済みの場合に渡すことで、内部での二重計算を回避できます。
+
+### 戻り値
+
+新たにマークしたセル数（Integer）。
+
+### 使用例
+
+```mathematica
+(* 従来の呼び出し方: 依存グラフは内部で自動計算 *)
+markedCount = NBScanDependentCells[nb, {"apiKey", "password"}];
+
+(* 事前計算済みの依存グラフを渡す呼び出し方 *)
+deps = NBBuildVarDependencies[nb];
+(* deps を他の処理でも使用する場合、渡すことで二重計算を回避 *)
+transitive = NBTransitiveDependents[deps, {"apiKey", "password"}];
+markedCount = NBScanDependentCells[nb, {"apiKey", "password"}, deps];
+```
+
+`deps` 引数を渡すオーバーロードは、`NBBuildVarDependencies` の結果を他の処理（`NBTransitiveDependents` 等）と共有する場合に推奨されます。同一ノートブックに対して依存グラフを2回計算するコストを省くことができます。
 
 ---
 

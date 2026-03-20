@@ -151,7 +151,36 @@ Table[
 
 ---
 
-## 8. トラブルシューティング
+## 8. 履歴キャッシュについて
+
+NBAccess は履歴データ（`NBHistoryRawData`）の読み取りにインメモリキャッシュを使用しています。ClaudeQuery 1回の処理中に同じ履歴を7回以上読み取ることがあるため、キャッシュによって FrontEnd 通信を大幅に削減しています。
+
+書き込み系関数（`NBHistoryAppend`、`NBHistorySetData`、`NBHistoryWriteHeader` 等）はキャッシュを自動的に同期するため、通常の使用ではキャッシュを意識する必要はありません。
+
+パッケージの再ロードやセッション切替時にキャッシュをクリアしたい場合は以下を実行してください。
+
+```mathematica
+NBHistoryCacheClear[]
+```
+
+---
+
+## 9. NBScanDependentCells の最適化
+
+`NBScanDependentCells` は事前計算済みの依存グラフを第3引数として受け取るオーバーロードをサポートしています。同じノートブックに対して `NBBuildVarDependencies` を複数回呼び出す場合、依存グラフを事前に計算して渡すことで二重計算を回避できます。
+
+```mathematica
+(* 従来の使い方（内部で依存グラフを計算） *)
+NBScanDependentCells[nb, confVarNames]
+
+(* 最適化: 事前計算済みの依存グラフを渡す *)
+deps = NBBuildVarDependencies[nb];
+NBScanDependentCells[nb, confVarNames, deps]
+```
+
+---
+
+## 10. トラブルシューティング
 
 | 症状 | 対処 |
 |------|------|
@@ -159,3 +188,4 @@ Table[
 | `Needs` で見つからない | `$Path` に `$packageDirectory` が含まれているか `MemberQ[$Path, $packageDirectory]` で確認してください |
 | `NBGetAPIKey` が `$Failed` | `SystemCredential["ANTHROPIC_API_KEY"]` 等が設定済みか確認してください |
 | プライバシーフィルタで空リスト | `$NBPrivacySpec` の `AccessLevel` を `1.0` に上げて再試行してください |
+| 履歴データが古い・不整合がある | `NBHistoryCacheClear[]` を実行してキャッシュをクリアしてください |

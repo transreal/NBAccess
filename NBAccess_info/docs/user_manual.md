@@ -325,12 +325,19 @@ NBTransitiveDependents[deps, {"secretKey"}]
 
 ### NBScanDependentCells
 
-依存グラフを使って機密変数に依存するセルに自動マークを適用します。
+依存グラフを使って機密変数に依存するセルに自動マークを適用します。事前計算済みの依存グラフを渡すオーバーロードも利用可能です。
 
 ```mathematica
-NBScanDependentCells[nb]
+(* 依存グラフを内部で計算する版 *)
+NBScanDependentCells[nb, {"secretVar1", "secretVar2"}]
 (* 例: 3  — 新たにマークしたセル数 *)
+
+(* 事前計算済みの依存グラフを渡す版（二重計算を回避） *)
+deps = NBBuildVarDependencies[nb];
+NBScanDependentCells[nb, {"secretVar1", "secretVar2"}, deps]
 ```
+
+事前計算済みの依存グラフ `deps` を第3引数に渡すことで、同じ依存グラフを複数回計算するオーバーヘッドを回避できます。`deps` を省略した場合は内部で `NBBuildVarDependencies[nb]` が呼ばれます。
 
 ### NBDependencyEdges
 
@@ -460,6 +467,19 @@ NBCellSetOptions[nb, 3, CellStyle -> "Code"]
 
 ノートブックの TaggingRules に差分圧縮された履歴を保存する汎用 API です。
 
+### 履歴キャッシュ
+
+履歴データベースの読み取りにはインメモリキャッシュが使用されます。ClaudeQuery 1回の処理で同一の履歴が7回以上読まれることがあるため、キャッシュにより FrontEnd 通信のオーバーヘッドを大幅に削減します。
+
+書き込み系関数（`NBHistoryAppend`、`NBHistoryUpdateLast`、`NBHistoryWriteHeader`、`NBHistoryUpdateHeader`、`NBHistorySetData`、`NBHistoryReplaceEntries` 等）はキャッシュを自動的に同期します。`NBHistoryDelete` はキャッシュを無効化します。
+
+パッケージの再ロードやセッション切替時など、キャッシュを手動でクリアする必要がある場合は `NBHistoryCacheClear[]` を使用します。
+
+```mathematica
+(* 全履歴キャッシュをクリア *)
+NBHistoryCacheClear[]
+```
+
 ### NBHistoryCreate
 
 新しい履歴データベースを作成します（冪等）。
@@ -486,6 +506,14 @@ NBHistoryEntries[nb, "chat"]
 NBHistoryData[nb, "chat", Decompress -> False]
 ```
 
+### NBHistoryRawData
+
+差分圧縮を解除せずに履歴データを返します（内部用）。キャッシュが有効な場合はキャッシュから返します。
+
+```mathematica
+NBHistoryRawData[nb, "chat"]
+```
+
 ### NBHistoryEntriesWithInherit
 
 親チェーンを辿って全エントリを返します。
@@ -505,11 +533,19 @@ NBHistoryUpdateHeader[nb, "chat", <|"model" -> "claude-opus-4-6"|>]
 
 ### NBHistoryListTags / NBHistoryDelete / NBHistoryReplaceEntries
 
-タグ一覧・削除・エントリ全置換です。
+タグ一覧・削除・エントリ全置換です。`NBHistoryDelete` は対応するキャッシュも無効化します。
 
 ```mathematica
 NBHistoryListTags[nb, "chat"]
 NBHistoryDelete[nb, "chat-old"]
+```
+
+### NBHistoryCacheClear
+
+全履歴キャッシュをクリアします。パッケージ再ロード時やセッション切替時に使用します。
+
+```mathematica
+NBHistoryCacheClear[]
 ```
 
 ### セッションアタッチメント
@@ -755,92 +791,3 @@ NBFilterHistoryEntry[entry, {"secretKey", "password"}]
 - [claudecode](https://github.com/transreal/claudecode) — Claude AI との対話を管理するメインパッケージ
 - [NotebookExtensions](https://github.com/transreal/NotebookExtensions) — ノートブック拡張ユーティリティ
 - [PresentationListener](https://github.com/transreal/PresentationListener) — プレゼンテーション連携
-
----
-
-次に examples/example.md の更新内容を出力します。
-
-既存の example.md が提供されていないため、追加・修正すべき2箇所の差分を以下に示します。
-
-**例4（NBGetContext）への追記:**
-
-既存の例4の説明の末尾に以下を追加してください。
-
----
-
-#### 機密セルの除外動作
-
-NBGetContext は2段階のプライバシーフィルタリングを実行します。
-
-```mathematica
-(* 機密変数を登録 *)
-秘密データ = Confidential[Import["secret.xlsx", {"Dataset"}]]
-(* → セル3 が機密マークされる *)
-
-(* コンテキスト取得 *)
-NBGetContext[nb, 0, PrivacySpec -> <|"AccessLevel" -> 0.5|>]
-```
-
-出力例:
-
-```
-=== 実行されたコード ===
-In[1]:= x = 10
-In[2]:= y = x + 5
-In[3]:= (* [機密セル: 非表示] *)
-In[4]:= 結果 = (* [機密変数に依存: 値は非表示] *)
-In[5]:= Plot[Sin[t], {t, 0, 2 Pi}]
-
-=== 直近出力（抜粋） ===
-Out[5]= ...
-```
-
-- **第1段階**: セル3（`秘密データ = Confidential[...]`）は機密マーク済みのため、セル全体が `(* [機密セル: 非表示] *)` に置換されます。対応する Output セルも抑制されます。
-- **第2段階**: セル4（`結果 = 秘密データ[[1]]`）はセル自体は非機密ですが、`秘密データ`（機密変数）を参照しているため、右辺が `(* [機密変数に依存: 値は非表示] *)` にリダクションされます。
-
----
-
-**例9: フォールバックモデルの使用例（新規追加）:**
-
----
-
-### 例9: フォールバックモデルとプロバイダーアクセスレベルの管理
-
-LLM プロバイダーごとにアクセス可能なデータレベルを設定し、機密データを含むリクエストに適切なフォールバック先を選択する例です。
-
-```mathematica
-(* フォールバックモデルリストの設定 *)
-NBSetFallbackModels[{
-  {"anthropic", "claude-opus-4-6"},
-  {"openai", "gpt-5"},
-  {"lmstudio", "qwen-32b", "http://127.0.0.1:1234"}
-}]
-
-(* プロバイダーのアクセスレベルを設定 *)
-NBSetProviderMaxAccessLevel["anthropic", 0.5]   (* クラウド: 公開データのみ *)
-NBSetProviderMaxAccessLevel["openai", 0.5]      (* クラウド: 公開データのみ *)
-NBSetProviderMaxAccessLevel["lmstudio", 1.0]    (* ローカル: 全データOK *)
-
-(* 現在の設定を確認 *)
-NBGetFallbackModels[]
-(* {{"anthropic","claude-opus-4-6"},{"openai","gpt-5"},
-     {"lmstudio","qwen-32b","http://127.0.0.1:1234"}} *)
-
-NBGetProviderMaxAccessLevel["lmstudio"]
-(* 1.0 *)
-
-(* 公開データのリクエスト: 全モデルが利用可能 *)
-NBGetAvailableFallbackModels[0.5]
-(* {{"anthropic","claude-opus-4-6"},{"openai","gpt-5"},
-     {"lmstudio","qwen-32b","http://127.0.0.1:1234"}} *)
-
-(* 機密データのリクエスト: ローカル LLM のみ *)
-NBGetAvailableFallbackModels[0.8]
-(* {{"lmstudio","qwen-32b","http://127.0.0.1:1234"}} *)
-
-(* 特定プロバイダーのアクセス判定 *)
-NBProviderCanAccess["anthropic", 0.8]
-(* False *)
-
-NBProviderCanAccess["lmstudio", 1.0]
-(* True *)

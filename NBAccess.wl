@@ -173,8 +173,9 @@ NBTransitiveDependents::usage =
   "confVars に直接・間接依存する全変数名リストを返す。";
 
 NBScanDependentCells::usage =
-  "NBScanDependentCells[nb] は依存グラフを使って機密変数に依存するセルに\n" <>
+  "NBScanDependentCells[nb, confVarNames] は依存グラフを使って機密変数に依存するセルに\n" <>
   "NBMarkCellDependent を適用し、新たにマークしたセル数を返す。\n" <>
+  "NBScanDependentCells[nb, confVarNames, deps] は事前計算済みの依存グラフ deps を使う（二重計算回避）。\n" <>
   "Claude関数呼び出しセル (ClaudeQuery 等) は除外される。";
 
 NBFilterHistoryEntry::usage =
@@ -1409,11 +1410,17 @@ NBAccess`NBTransitiveDependents[deps_Association, confVars_List] :=
     marked
   ];
 
+(* deps を省略した場合は内部で計算する従来互換版 *)
 NBAccess`NBScanDependentCells[nb_NotebookObject,
     confVarNames_List, opts:OptionsPattern[]] :=
-  Module[{deps, dependentVars, allDepVars, nCells, inIndices,
+  NBAccess`NBScanDependentCells[nb, confVarNames,
+    NBAccess`NBBuildVarDependencies[nb], opts];
+
+(* deps を事前計算済みで渡せるオーバーロード（二重計算を回避） *)
+NBAccess`NBScanDependentCells[nb_NotebookObject,
+    confVarNames_List, deps_Association, opts:OptionsPattern[]] :=
+  Module[{dependentVars, allDepVars, nCells, inIndices,
           marked = 0},
-    deps = NBAccess`NBBuildVarDependencies[nb];
     allDepVars = NBAccess`NBTransitiveDependents[deps, confVarNames];
     dependentVars = Complement[allDepVars, confVarNames];
 
@@ -1956,11 +1963,33 @@ iCompressAllEntries[entries_List, diffFields_List] :=
       result]
   ];
 
-(* ---- NBHistoryRawData: 圧縮状態のまま読み取り ---- *)
-NBAccess`NBHistoryRawData[nb_NotebookObject, tag_String] := Module[{val},
+(* ---- NBHistoryRawData: 圧縮状態のまま読み取り (キャッシュ付き) ----
+   ClaudeQuery 1回で同じ履歴を7回以上読むため、キャッシュで FE 通信を削減。
+   書き込み系関数は iHistoryCacheUpdate / iHistoryCacheInvalidate でキャッシュを同期する。 *)
+
+$iNBHistoryCache = <||>;
+
+iHistoryCacheKey[nb_NotebookObject, tag_String] :=
+  {nb, tag};
+
+iHistoryCacheInvalidate[nb_NotebookObject, tag_String] :=
+  ($iNBHistoryCache = KeyDrop[$iNBHistoryCache, Key[{nb, tag}]]);
+
+iHistoryCacheUpdate[nb_NotebookObject, tag_String, val_] :=
+  ($iNBHistoryCache[{nb, tag}] = val);
+
+(* 全キャッシュクリア（パッケージ再ロード・セッション切替時） *)
+NBAccess`NBHistoryCacheClear[] := ($iNBHistoryCache = <||>);
+
+NBAccess`NBHistoryRawData[nb_NotebookObject, tag_String] := Module[{key, val},
+  key = {nb, tag};
+  If[KeyExistsQ[$iNBHistoryCache, key],
+    Return[$iNBHistoryCache[key]]];
   val = NBAccess`NBGetTaggingRule[nb, tag];
-  If[AssociationQ[val] && KeyExistsQ[val, "entries"], val,
-    <|"header" -> <||>, "entries" -> {}|>]
+  val = If[AssociationQ[val] && KeyExistsQ[val, "entries"], val,
+    <|"header" -> <||>, "entries" -> {}|>];
+  $iNBHistoryCache[key] = val;
+  val
 ];
 
 (* ---- NBHistoryCreate: DB 作成 (冪等) ---- *)
@@ -1986,7 +2015,9 @@ NBAccess`NBHistoryCreate[nb_NotebookObject, tag_String, diffFields_List,
       headerOverrides,
       "diffFields" -> diffFields
     |>;
-    NBAccess`NBSetTaggingRule[nb, tag, <|raw, "header" -> hdr|>];
+    With[{newData = <|raw, "header" -> hdr|>},
+      NBAccess`NBSetTaggingRule[nb, tag, newData];
+      iHistoryCacheUpdate[nb, tag, newData]];
     hdr
   ];
 
@@ -2011,8 +2042,9 @@ NBAccess`NBHistorySetData[nb_NotebookObject, tag_String, data_Association] :=
     hdr = Lookup[data, "header", <||>];
     diffFields = iGetDiffFields[hdr];
     compressed = iCompressAllEntries[entries, diffFields];
-    NBAccess`NBSetTaggingRule[nb, tag,
-      <|data, "entries" -> compressed|>]
+    With[{newData = <|data, "entries" -> compressed|>},
+      NBAccess`NBSetTaggingRule[nb, tag, newData];
+      iHistoryCacheUpdate[nb, tag, newData]]
   ];
 
 (* ---- NBHistoryEntries: エントリリスト (Decompress->False で圧縮状態) ---- *)
@@ -2036,7 +2068,9 @@ NBAccess`NBHistoryReadHeader[nb_NotebookObject, tag_String] := Module[{data, hdr
 NBAccess`NBHistoryWriteHeader[nb_NotebookObject, tag_String, header_Association] :=
   Module[{data},
     data = NBAccess`NBHistoryRawData[nb, tag];
-    NBAccess`NBSetTaggingRule[nb, tag, <|data, "header" -> header|>]
+    With[{newData = <|data, "header" -> header|>},
+      NBAccess`NBSetTaggingRule[nb, tag, newData];
+      iHistoryCacheUpdate[nb, tag, newData]]
   ];
 
 (* ---- NBHistoryAppend: エントリ追加 (差分圧縮 + privacylevel) ---- *)
@@ -2064,7 +2098,9 @@ NBAccess`NBHistoryAppend[nb_NotebookObject, tag_String,
       entries[[-2]] = iCompressOneEntry[entries[[-2]], entries[[-1]], diffFields]];
 
     entries = Append[entries, newEntry];
-    NBAccess`NBSetTaggingRule[nb, tag, <|data, "entries" -> entries|>]
+    With[{newData = <|data, "entries" -> entries|>},
+      NBAccess`NBSetTaggingRule[nb, tag, newData];
+      iHistoryCacheUpdate[nb, tag, newData]]
   ];
 
 (* ---- NBHistoryUpdateLast: 最終エントリの更新 ---- *)
@@ -2075,7 +2111,9 @@ NBAccess`NBHistoryUpdateLast[nb_NotebookObject, tag_String,
     entries = Lookup[data, "entries", {}];
     If[Length[entries] === 0, Return[]];
     entries = MapAt[Merge[{#, updates}, Last] &, entries, -1];
-    NBAccess`NBSetTaggingRule[nb, tag, <|data, "entries" -> entries|>]
+    With[{newData = <|data, "entries" -> entries|>},
+      NBAccess`NBSetTaggingRule[nb, tag, newData];
+      iHistoryCacheUpdate[nb, tag, newData]]
   ];
 
 
@@ -2084,7 +2122,9 @@ NBAccess`NBHistoryReplaceEntries[nb_NotebookObject, tag_String, entries_List] :=
   Module[{data},
     data = NBAccess`NBHistoryRawData[nb, tag];
     If[!AssociationQ[data], data = <|"header" -> <||>, "entries" -> {}|>];
-    NBAccess`NBSetTaggingRule[nb, tag, <|data, "entries" -> entries|>]
+    With[{newData = <|data, "entries" -> entries|>},
+      NBAccess`NBSetTaggingRule[nb, tag, newData];
+      iHistoryCacheUpdate[nb, tag, newData]]
   ];
 
 (* ---- NBHistoryUpdateHeader: ヘッダーの部分更新 ---- *)
@@ -2093,7 +2133,9 @@ NBAccess`NBHistoryUpdateHeader[nb_NotebookObject, tag_String, updates_Associatio
     data = NBAccess`NBHistoryRawData[nb, tag];
     hdr = Lookup[data, "header", <||>];
     hdr = Merge[{hdr, updates}, Last];
-    NBAccess`NBSetTaggingRule[nb, tag, <|data, "header" -> hdr|>]
+    With[{newData = <|data, "header" -> hdr|>},
+      NBAccess`NBSetTaggingRule[nb, tag, newData];
+      iHistoryCacheUpdate[nb, tag, newData]]
   ];
 
 (* ---- NBHistoryEntriesWithInherit: 親チェーンを辿った全履歴 ---- *)
@@ -2123,8 +2165,9 @@ NBAccess`NBHistoryListTags[nb_NotebookObject, prefix_String] :=
   NBAccess`NBListTaggingRuleKeys[nb, prefix];
 
 (* ---- NBHistoryDelete ---- *)
-NBAccess`NBHistoryDelete[nb_NotebookObject, tag_String] :=
+NBAccess`NBHistoryDelete[nb_NotebookObject, tag_String] := (
   NBAccess`NBDeleteTaggingRule[nb, tag];
+  iHistoryCacheInvalidate[nb, tag]);
 
 (* ---- セッションアタッチメント API ---- *)
 
