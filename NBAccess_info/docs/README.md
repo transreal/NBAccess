@@ -264,7 +264,58 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 | `docs/example.md` | 使用例集（実践的なコード例） |
 | `docs/user_manual.md` | ユーザーマニュアル（機能カテゴリ別の使い方） |
 
-### 免責事項
+## 使用例・デモ
+
+### セルのプライバシーフィルタリング
+
+```mathematica
+(* クラウド LLM 安全なセルのみを取得 *)
+safeCells = NBGetCells[nb, PrivacySpec -> <|"AccessLevel" -> 0.5|>];
+
+(* 機密セルのマーク *)
+NBMarkCellConfidential[nb, 3];
+NBMarkCellDependent[nb, 5];
+
+(* LLM プロンプト用コンテキスト構築（2段階フィルタリング + 3段階Output処理） *)
+context = NBGetContext[nb, 0, PrivacySpec -> <|"AccessLevel" -> 0.5|>];
+```
+
+### 変数依存グラフ解析
+
+```mathematica
+(* 依存関係グラフの構築と可視化 *)
+deps = NBBuildVarDependencies[nb];
+NBPlotDependencyGraph[nb];
+
+(* 機密変数に依存するセルを自動検出・マーク *)
+NBScanDependentCells[nb, {"apiKey", "password"}, deps];
+```
+
+### 履歴データベースとJob管理
+
+```mathematica
+(* 差分圧縮付き履歴保存 *)
+NBHistoryCreate[nb, "chat-session-1", {"prompt", "response"}];
+NBHistoryAppend[nb, "chat-session-1", <|"prompt" -> "Hello", "response" -> "Hi!"|>];
+
+(* 非同期処理用Job管理 *)
+jobId = NBBeginJob[nb, EvaluationCell[]];
+NBWriteSlot[jobId, 1, Cell["Progress: 50%", "Text"]];
+NBEndJob[jobId];
+```
+
+### フォールバックモデル制御
+
+```mathematica
+(* プロバイダー別アクセスレベル設定 *)
+NBSetProviderMaxAccessLevel["lmstudio", 1.0];   (* ローカル: 全データ可 *)
+NBSetProviderMaxAccessLevel["anthropic", 0.5]; (* クラウド: 非機密のみ *)
+
+(* 機密データで利用可能なモデルを取得 *)
+NBGetAvailableFallbackModels[0.8] (* → ローカルモデルのみ *)
+```
+
+## 免責事項
 
 本ソフトウェアは "as is"（現状有姿）で提供されており、明示・黙示を問わずいかなる保証もありません。
 本ソフトウェアの使用または使用不能から生じるいかなる損害についても責任を負いません。
@@ -272,7 +323,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 本ソフトウェアとドキュメントはほぼすべてが生成AIによって生成されたものです。
 Windows 11上での実行を想定しており、MacOS, LinuxのMathematicaでの動作検証は一切していません(生成AIの処理で対応可能と想定されます)。
 
-### ライセンス
+## ライセンス
 
 ```
 MIT License

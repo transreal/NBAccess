@@ -1016,37 +1016,74 @@ NBAccess`NBWriteText[nb_NotebookObject, text_String,
     style_String:"Text"] :=
   NotebookWrite[nb, Cell[text, style], After];
 
+(*  MakeBoxes でタイプセットすると危険なトップレベルヘッド
+    Module/Block 等のスコーピング構造は MakeBoxes で変数コンテキストが壊れる *)
+$iMakeBoxesUnsafeHeads = {
+  Module, Block, With, DynamicModule, Manipulate,
+  Do, For, While, Scan, CompoundExpression,
+  Set, SetDelayed, Function,
+  Show, Graphics, Graphics3D,
+  Plot, Plot3D, ListPlot, ListLinePlot, ParametricPlot,
+  StreamPlot, ContourPlot, DensityPlot, VectorPlot,
+  RegionPlot, LogPlot, LogLogPlot, LogLinearPlot,
+  GraphicsRow, GraphicsColumn, GraphicsGrid,
+  Column, Row, Grid, Panel, Pane, TabView, Dynamic,
+  If, Which, Switch
+};
+
+(* HoldComplete[expr] のトップレベルヘッドが MakeBoxes に安全か判定 *)
+(* 多引数(CompoundExpression相当)や複雑な式は安全でないとみなす *)
+iIsMakeBoxesSafe[held_HoldComplete] :=
+  Module[{len, head},
+    len = Length[held];
+    (* 多引数 = CompoundExpression → 安全でない *)
+    If[len =!= 1, Return[False]];
+    head = Replace[held, HoldComplete[x_] :> Head[x]];
+    (* パターンマッチ失敗時（何らかの理由で Head が取れない）→ 安全でない *)
+    If[head === HoldComplete, Return[False]];
+    !MemberQ[$iMakeBoxesUnsafeHeads, head]
+  ];
+
 NBAccess`NBWriteCode[nb_NotebookObject, code_String] :=
-  Module[{result, box, held, boxes, cell},
-    result = Quiet @ Check[
-      MathLink`CallFrontEnd[
-        FrontEnd`UndocumentedTestFEParserPacket[code, False]],
-      $Failed
-    ];
-    box = Which[
-      MatchQ[result, {_BoxData, ___}],              First[result],
-      MatchQ[result, {Cell[_BoxData, ___], ___}],   First[result][[1]],
-      MatchQ[result, _BoxData],                     result,
-      True,                                         $Failed
-    ];
-    If[box === $Failed,
-      held  = Quiet @ Check[
-        ToExpression[code, InputForm, HoldComplete], $Failed];
-      boxes = If[held === $Failed, $Failed,
-        held /. HoldComplete[e_] :>
-          MakeBoxes[Unevaluated[e], StandardForm]];
-      If[boxes =!= $Failed, box = BoxData[boxes]]
-    ];
-    cell = If[MatchQ[box, _BoxData],
-      Cell[box, "Input"],
-      Cell[code, "Input", CellAutoOverwrite -> True]
-    ];
-    NotebookWrite[nb, cell, After]
+  Module[{trimmed = StringTrim[code], result, box, held, boxes, cell},
+    Catch[
+      (* --- 安全な数式のみ MakeBoxes[StandardForm] でタイプセット:
+            Integrate→∫, Sum→Σ, Subscript→下付き, Sqrt→√ 等 --- *)
+      held = Quiet @ Check[
+        ToExpression[trimmed, InputForm, HoldComplete], $Failed];
+      If[held =!= $Failed && iIsMakeBoxesSafe[held],
+        boxes = Quiet @ Check[
+          held /. HoldComplete[e_] :>
+            MakeBoxes[e, StandardForm],
+          $Failed];
+        If[boxes =!= $Failed,
+          NotebookWrite[nb,
+            Cell[BoxData[boxes], "Input"], After];
+          Throw[Null, "done"]]
+      ];
+      (* --- フォールバック: FEParser（Module/Block/複雑なコード向け）--- *)
+      result = Quiet @ Check[
+        MathLink`CallFrontEnd[
+          FrontEnd`UndocumentedTestFEParserPacket[code, False]],
+        $Failed
+      ];
+      box = Which[
+        MatchQ[result, {_BoxData, ___}],              First[result],
+        MatchQ[result, {Cell[_BoxData, ___], ___}],   First[result][[1]],
+        MatchQ[result, _BoxData],                     result,
+        True,                                         $Failed
+      ];
+      cell = If[MatchQ[box, _BoxData],
+        Cell[box, "Input"],
+        Cell[code, "Input", CellAutoOverwrite -> True]
+      ];
+      NotebookWrite[nb, cell, After]
+    , "done"]
   ];
 
 NBAccess`NBWriteSmartCode[nb_NotebookObject, code_String] :=
   Module[{trimmed = StringTrim[code], held,
-          cellArgHold, restHold, cellExpr, restBoxes},
+          cellArgHold, restHold, cellExpr, restBoxes, boxes},
     If[trimmed === "", Return[]];
     held = Quiet @ Check[
       ToExpression[trimmed, InputForm, HoldComplete], $Failed];
@@ -1059,33 +1096,49 @@ NBAccess`NBWriteSmartCode[nb_NotebookObject, code_String] :=
           $Failed]
       ];
 
-    If[held =!= $Failed,
-      Which[
-        MatchQ[held, HoldComplete[CellPrint[_]]],
-          cellArgHold = held /.
-            HoldComplete[CellPrint[arg_]] :> HoldComplete[arg];
-          cellExpr = iCellFromHold[cellArgHold];
-          If[MatchQ[cellExpr, Cell[__]],
-            NotebookWrite[nb, cellExpr, After];
-            Return[]],
+    Catch[
+      If[held =!= $Failed,
+        Which[
+          MatchQ[held, HoldComplete[CellPrint[_]]],
+            cellArgHold = held /.
+              HoldComplete[CellPrint[arg_]] :> HoldComplete[arg];
+            cellExpr = iCellFromHold[cellArgHold];
+            If[MatchQ[cellExpr, Cell[__]],
+              NotebookWrite[nb, cellExpr, After];
+              Throw[Null, "done"]],
 
-        MatchQ[held, HoldComplete[CompoundExpression[CellPrint[_], __]]],
-          cellArgHold = held /.
-            HoldComplete[CompoundExpression[CellPrint[arg_], rest__]] :>
-              HoldComplete[arg];
-          restHold = held /.
-            HoldComplete[CompoundExpression[CellPrint[arg_], rest__]] :>
-              HoldComplete[CompoundExpression[rest]];
-          cellExpr = iCellFromHold[cellArgHold];
-          If[MatchQ[cellExpr, Cell[__]],
-            NotebookWrite[nb, cellExpr, After];
-            restBoxes = restHold /.
-              HoldComplete[e_] :> MakeBoxes[Unevaluated[e], StandardForm];
-            NotebookWrite[nb, Cell[BoxData[restBoxes], "Input"], After];
-            Return[]]
-      ]
-    ];
-    NBAccess`NBWriteCode[nb, trimmed]
+          MatchQ[held, HoldComplete[CompoundExpression[CellPrint[_], __]]],
+            cellArgHold = held /.
+              HoldComplete[CompoundExpression[CellPrint[arg_], rest__]] :>
+                HoldComplete[arg];
+            restHold = held /.
+              HoldComplete[CompoundExpression[CellPrint[arg_], rest__]] :>
+                HoldComplete[CompoundExpression[rest]];
+            cellExpr = iCellFromHold[cellArgHold];
+            If[MatchQ[cellExpr, Cell[__]],
+              NotebookWrite[nb, cellExpr, After];
+              restBoxes = restHold /.
+                HoldComplete[e_] :> MakeBoxes[e, StandardForm];
+              NotebookWrite[nb, Cell[BoxData[restBoxes], "Input"], After];
+              Throw[Null, "done"]],
+
+          (* --- 安全な数式のみ MakeBoxes[StandardForm] でタイプセット
+                Integrate→∫, Sum→Σ, Subscript→下付き, Sqrt→√ 等
+                Module/Block/Show 等の手続き的コードは FEParser へ --- *)
+          iIsMakeBoxesSafe[held],
+            boxes = Quiet @ Check[
+              held /. HoldComplete[e_] :>
+                MakeBoxes[e, StandardForm],
+              $Failed];
+            If[boxes =!= $Failed,
+              NotebookWrite[nb,
+                Cell[BoxData[boxes], "Input"], After];
+              Throw[Null, "done"]]
+        ]
+      ];
+      (* フォールバック: FEParser ベース *)
+      NBAccess`NBWriteCode[nb, trimmed]
+    , "done"]
   ];
 
 (* ============================================================
