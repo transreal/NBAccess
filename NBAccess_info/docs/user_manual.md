@@ -38,6 +38,20 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>
 
 機密変数名とプライバシーレベルのテーブルです。[claudecode](https://github.com/transreal/claudecode) パッケージが自動的に更新します。
 
+### $NBSendDataSchema
+
+秘密依存データのスキーマ情報（データ型・サイズ・キー名等）をクラウド LLM に送信するかどうかを制御するフラグです。初期値は `True` です。
+
+- **True（デフォルト）**: 秘密依存 Output であっても、データ型・サイズ・キー名等のスキーマ情報のみを LLM に送信します。値そのものは含まれません。
+- **False**: 秘密依存 Output のスキーマ情報を一切送信しません。
+
+非秘密 Output は常にスマート要約付きで送信されます。
+
+```mathematica
+(* スキーマ情報の送信を無効化する場合 *)
+$NBSendDataSchema = False
+```
+
 ### $NBSeparationIgnoreList
 
 分離検査で無視するパッケージ名のリストです。NBAccess と [NotebookExtensions](https://github.com/transreal/NotebookExtensions) はデフォルトで登録されています。
@@ -116,7 +130,7 @@ NBCellRead[nb, 5]
 
 ### NBCellReadInputText
 
-FrontEnd 経由で InputText 形式のテキストを取得します。失敗時は NBCellExprToText にフォールバックします。
+FrontEnd の `ExportPacket` 経由で InputText 形式のテキストを取得します。この方式は 2D 表示（Sum、Integral 等の数式表記）も正しくテキスト変換できるため、`NBCellToText` より信頼性が高い場合があります。失敗時は `NBCellExprToText` にフォールバックします。
 
 ```mathematica
 NBCellReadInputText[nb, 5]
@@ -134,7 +148,7 @@ NBCellExprToText[cell]
 
 ### NBCellToText
 
-セルのテキスト内容を直接返します。
+セルのテキスト内容を直接返します。Cases ベースの文字列トークン収集を行いますが、特殊な BoxData 形式では空文字列を返す場合があります。より堅牢なテキスト取得が必要な場合は `NBCellReadInputText` を使用してください。
 
 ```mathematica
 NBCellToText[nb, 3]
@@ -203,19 +217,19 @@ NBGetCells[nb, PrivacySpec -> <|"AccessLevel" -> 0.5|>]
 NBGetContext[nb, 5, PrivacySpec -> <|"AccessLevel" -> 0.5|>]
 ```
 
-#### 2段階プライバシーフィルタリング
+#### プライバシーフィルタリングとスマート出力要約
 
-NBGetContext は、機密情報の漏洩を防ぐために **2段階のプライバシーフィルタリング** を実行します。
+NBGetContext は、機密情報の漏洩を防ぎつつ LLM に有用なコンテキストを提供するために、**入力セルのプライバシーフィルタリング**と**出力セルのスマート要約**を実行します。
 
-**第1段階: セルレベルの完全除外**
+**第1段階: セルレベルの完全除外（Input セル）**
 
-各セルのプライバシーレベル (`NBCellPrivacyLevel`) を PrivacySpec の AccessLevel と比較し、アクセス不可のセル（機密マーク済み・直接機密変数を代入するセル等）はセル内容を一切出力せず、`(* [機密セル: 非表示] *)` というプレースホルダに置換します。対応する Output セルも同時に抑制されます。
+各 Input セルのプライバシーレベル (`NBCellPrivacyLevel`) を PrivacySpec の AccessLevel と比較し、アクセス不可のセル（機密マーク済み・直接機密変数を代入するセル等）はセル内容を一切出力せず、`(* [機密セル: 非表示] *)` というプレースホルダに置換します。対応する Output セルも同時に抑制されます。
 
 ```
 In[3]:= (* [機密セル: 非表示] *)
 ```
 
-**第2段階: 変数名レベルのリダクション**
+**第2段階: 変数名レベルのリダクション（Input セル）**
 
 第1段階を通過したセル（プライバシーレベルがアクセスレベル以下のセル）に対して、`$NBConfidentialSymbols` に登録されている機密変数名が行内に含まれていないかを走査します。機密変数名が検出された行は以下のようにリダクションされます。
 
@@ -224,7 +238,44 @@ In[3]:= (* [機密セル: 非表示] *)
 
 リダクションが発生したセルに対応する Output セルも抑制されます。
 
-この2段階方式により、直接機密なセルは完全に隠蔽され、間接的に機密変数を参照するセルはコードの構造を保ちつつ値のみが隠蔽されます。
+**第3段階: Output のスマート要約**
+
+全 Output セルに対して、プライバシーレベルと抑制状態に基づいて3種類の処理を適用します。
+
+1. **非秘密かつ非抑制の Output**: スマート要約付きでコンテキストに含めます。
+   - 短い出力（200文字以下）はそのまま含めます。
+   - 長い出力はデータ構造情報（型・サイズ・キー名等）と先頭100文字のプレビューを要約として生成します。
+
+2. **秘密依存の Output**（`$NBSendDataSchema = True` の場合）: 値を一切含まず、スキーマ情報（データ型・サイズ・キー名等）のみを送信します。
+
+3. **それ以外の Output**（抑制済み、または `$NBSendDataSchema = False` の秘密依存 Output）: 完全にスキップされます。
+
+スマート要約で検出されるデータ構造の種類:
+
+| データ構造 | 要約例 |
+|---|---|
+| Association | `Association, 5 keys: {name, age, ...}` |
+| Dataset | `Dataset, columns: {col1, col2, ...}` |
+| ネストリスト/行列 | `NestedList/Matrix, ~10 rows` |
+| リスト | `List, ~42 elements` |
+| SparseArray | `SparseArray` |
+| NumericArray | `NumericArray` |
+| Graphics/Image | `Graphics/Image` |
+| その他 | `1234 chars` |
+
+```mathematica
+(* 非秘密 Output のスマート要約例 *)
+Out[5]= (* Association, 3 keys: {name, age, city} *) <|"name" -> "Alice", "age" -> 30, ... …
+
+(* 秘密依存 Output のスキーマ情報例 *)
+Out[8]= (* [機密依存データ: Dataset, columns: {revenue, profit, cost}] *)
+```
+
+**Message の処理**
+
+Message セル（エラーメッセージ）は afterIdx 以降のもののみがコンテキストに含まれます。PrivacySpec によるフィルタリングも適用されます。
+
+この方式により、直接機密なセルは完全に隠蔽され、間接的に機密変数を参照するセルはコードの構造を保ちつつ値のみが隠蔽されます。さらに、Output セルにはスマート要約が適用されるため、LLM に必要な構造情報を効率的に提供できます。
 
 ---
 
@@ -308,12 +359,25 @@ NBIsClaudeFunctionCell[nb, 3]
 
 ### NBBuildVarDependencies
 
-ノートブックの Input セルから変数依存関係グラフを構築します。
+ノートブックの Input セルから変数依存関係グラフを構築します。通常のセル実行時にはこちらを使用します。
 
 ```mathematica
 NBBuildVarDependencies[nb]
 (* <|"y" -> {"x"}, "z" -> {"x", "y"}|> *)
 ```
+
+### NBBuildGlobalVarDependencies
+
+`Notebooks[]` 全体の Input/Code セルを走査し、統合された変数依存関係グラフを構築して返します。ClaudeQuery/ClaudeEval/ContinueEval の直前の精密チェックで使用します。
+
+通常のセル実行時は軽量版の `NBBuildVarDependencies[nb]` を使用してください。
+
+```mathematica
+NBBuildGlobalVarDependencies[]
+(* <|"y" -> {"x"}, "z" -> {"x", "y"}, "w" -> {"z"}|> *)
+```
+
+`NBBuildVarDependencies[nb]` が単一ノートブック内の依存関係のみを解析するのに対し、`NBBuildGlobalVarDependencies[]` は開いているすべてのノートブックを横断して解析します。これにより、あるノートブックで定義された変数を別のノートブックで参照しているケースも検出できます。
 
 ### NBTransitiveDependents
 

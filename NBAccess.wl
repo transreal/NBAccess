@@ -34,6 +34,12 @@ $NBConfidentialSymbols::usage =
   "<|\"変数名\" -> privacyLevel, ...|> の形式。\n" <>
   "ClaudeCode パッケージが自動的に更新する。";
 
+$NBSendDataSchema::usage =
+  "$NBSendDataSchema は秘密依存データのスキーマ情報をクラウドLLMに送信するかを制御する。\n" <>
+  "True (ディフォルト): 秘密依存 Output でもデータ型・サイズ・キー等のスキーマ情報を送信する。\n" <>
+  "False: 秘密依存 Output のスキーマ情報を一切送信しない。\n" <>
+  "非秘密 Output は常にスマート要約付きで送信される。";
+
 (* ---- セルユーティリティ API (新規) ---- *)
 NBCellCount::usage =
   "NBCellCount[nb] はノートブックの全セル数を返す。";
@@ -167,6 +173,12 @@ NBBuildVarDependencies::usage =
   "NBBuildVarDependencies[nb] はノートブックのInputセルを解析して\n" <>
   "変数依存関係グラフ <|\"var\" -> {\"dep1\",...}|> を返す。\n" <>
   "文字列リテラル内の識別子は除外される。";
+
+NBBuildGlobalVarDependencies::usage =
+  "NBBuildGlobalVarDependencies[] は Notebooks[] 全体の Input セルを走査して\n" <>
+  "統合された変数依存関係グラフ <|\"var\" -> {\"dep1\",...}|> を返す。\n" <>
+  "LLM 呼び出し直前の精密チェックで使用する。\n" <>
+  "通常のセル実行時は軽量版 NBBuildVarDependencies[nb] を使用すること。";
 
 NBTransitiveDependents::usage =
   "NBTransitiveDependents[deps, confVars] は deps グラフ上で\n" <>
@@ -469,6 +481,10 @@ If[!AssociationQ[NBAccess`$NBPrivacySpec],
 (* 秘密変数名 -> プライバシーレベル (0.0..1.0) *)
 If[!AssociationQ[NBAccess`$NBConfidentialSymbols],
   NBAccess`$NBConfidentialSymbols = <||>];
+
+(* 秘密依存データのスキーマ情報送信フラグ (ディフォルト True) *)
+If[NBAccess`$NBSendDataSchema =!= False,
+  NBAccess`$NBSendDataSchema = True];
 
 (* 分離検査で無視するパッケージ名リスト *)
 If[!ListQ[NBAccess`$NBSeparationIgnoreList],
@@ -782,6 +798,102 @@ iRedactConfidentialLines[text_String] :=
     {StringJoin @ Riffle[redacted, "\n"], anyRedacted}
   ];
 
+(* ============================================================
+   Output スマート要約 (全 Output をコンテキストに含めるための要約機構)
+   短い出力はそのまま含め、長い出力はデータ型・サイズ・先頭値等を要約する。
+   ============================================================ *)
+
+$iOutputSummaryMaxLen = 200;
+
+(* Output テキストからデータ構造情報を検出 *)
+iDetectDataInfo[text_String] :=
+  Module[{len = StringLength[text]},
+    Which[
+      (* Association: <|...|> *)
+      StringContainsQ[text, "<|"],
+        Module[{keys},
+          keys = DeleteDuplicates @ Join[
+            StringCases[text,
+              RegularExpression["\"([^\"]{1,50})\"\\s*->"] :> "$1", 20],
+            StringCases[text,
+              RegularExpression["(?<=[<|,])\\s*([\\p{L}$][\\p{L}\\p{N}$]*)\\s*->"] :> "$1", 20]];
+          keys = Take[keys, UpTo[10]];
+          "Association, " <> ToString[Max[1, StringCount[text, "->"]]] <> " keys" <>
+            If[Length[keys] > 0,
+              ": {" <> StringRiffle[keys, ", "] <> "}",
+              ""]],
+      (* Dataset *)
+      StringContainsQ[text, "Dataset["],
+        Module[{keys},
+          keys = DeleteDuplicates @ StringCases[text,
+            RegularExpression["\"([^\"]{1,50})\"\\s*->"] :> "$1", 20];
+          keys = Take[keys, UpTo[10]];
+          "Dataset" <>
+            If[Length[keys] > 0,
+              ", columns: {" <> StringRiffle[keys, ", "] <> "}",
+              ""]],
+      (* Nested list / matrix: {{...}, ...} *)
+      StringMatchQ[text, RegularExpression["^\\s*\\{\\s*\\{"]],
+        Module[{nRows = StringCount[text, RegularExpression["\\}\\s*,\\s*\\{"]] + 1},
+          "NestedList/Matrix, ~" <> ToString[nRows] <> " rows"],
+      (* Simple list: {...} *)
+      StringMatchQ[text, RegularExpression["^\\s*\\{"]],
+        Module[{nElems = StringCount[text, ","] + 1},
+          "List, ~" <> ToString[nElems] <> " elements"],
+      (* SparseArray, NumericArray 等 *)
+      StringContainsQ[text, "SparseArray["],
+        "SparseArray",
+      StringContainsQ[text, "NumericArray["],
+        "NumericArray",
+      (* Image *)
+      StringContainsQ[text, RegularExpression["Image\\[|Graphics\\[|Graphics3D\\["]],
+        "Graphics/Image",
+      (* Default: サイズ情報のみ *)
+      True,
+        ToString[len] <> " chars"
+    ]
+  ];
+
+(* セルテキストの堅牢な取得:
+   NBCellToText (Cases ベース) は特殊な BoxData 形式で空になることがある。
+   FrontEnd`ExportPacket 経由の NBCellReadInputText を優先し、
+   失敗時に NBCellToText にフォールバックする。 *)
+iRobustCellText[nb_NotebookObject, oIdx_Integer] :=
+  Module[{txt},
+    (* 優先: FrontEnd ExportPacket (InputText 形式) *)
+    txt = Quiet[NBAccess`NBCellReadInputText[nb, oIdx]];
+    If[StringQ[txt] && StringLength[StringTrim[txt]] > 0,
+      Return[StringTrim[txt]]];
+    (* フォールバック: BoxData 内の文字列トークン収集 *)
+    txt = ToString[NBAccess`NBCellToText[nb, oIdx]];
+    If[StringQ[txt] && StringLength[StringTrim[txt]] > 0,
+      Return[StringTrim[txt]]];
+    ""
+  ];
+
+(* 非秘密 Output のスマート要約: 短ければそのまま、長ければ構造 + 先頭値 *)
+iSmartOutputSummary[nb_NotebookObject, oIdx_Integer] :=
+  Module[{outTxt, len},
+    outTxt = iRobustCellText[nb, oIdx];
+    If[outTxt === "", Return["(出力取得失敗)"]];
+    len = StringLength[outTxt];
+    If[len <= $iOutputSummaryMaxLen, Return[outTxt]];
+    (* 長い出力: 構造情報 + 先頭プレビュー *)
+    Module[{info = iDetectDataInfo[outTxt], preview},
+      preview = StringTake[outTxt, UpTo[100]];
+      "(* " <> info <> " *) " <> preview <> " \[Ellipsis]"
+    ]
+  ];
+
+(* 秘密依存 Output のスキーマ情報: データ型・サイズ・キーのみ、値は含まない *)
+iOutputSchemaText[nb_NotebookObject, oIdx_Integer] :=
+  Module[{outTxt, info},
+    outTxt = iRobustCellText[nb, oIdx];
+    If[outTxt === "", Return["(* [機密依存データ: 取得失敗] *)"]];
+    info = iDetectDataInfo[outTxt];
+    "(* [機密依存データ: " <> info <> "] *)"
+  ];
+
 Options[NBAccess`NBGetContext] = {PrivacySpec -> Automatic};
 NBAccess`NBGetContext[nb_NotebookObject, afterIdx_Integer,
     opts:OptionsPattern[]] :=
@@ -836,40 +948,59 @@ NBAccess`NBGetContext[nb_NotebookObject, afterIdx_Integer,
             ]]],
         inIndices],
       "\n"];
-    (* Output/Message は afterIdx 以降のみ、かつ機密 Input に対応するものを除外 *)
-    With[{supSet = Association[# -> True & /@ suppressedOutPos],
-          afterPos = afterIdx},
-      outIndices = Select[
-        Select[outIndices, # > afterPos &],
-        !KeyExistsQ[supSet, #] &];
-      msgIndices = Select[
-        Sort[Join[
-          NBAccess`NBCellIndicesByStyle[nb, "Message"],
-          NBAccess`NBCellIndicesByStyle[nb, "MSG"]]],
-        # > afterPos &]];
-    (* プライバシーフィルタ *)
+    (* Output: 全 Output を含めるが、スマート要約・スキーマ処理を適用
+       afterIdx フィルタは撤廃し、秘密依存 Output はスキーマ情報のみ送信 *)
+    Module[{supSet = Association[# -> True & /@ suppressedOutPos],
+            accessLvl = iAccessLevel[OptionValue[PrivacySpec]],
+            normalOuts = {}, schemaOuts = {}, outLines = {}},
+      Do[Module[{priv = NBAccess`NBCellPrivacyLevel[nb, oi],
+                 isSuppressed = KeyExistsQ[supSet, oi]},
+          Which[
+            (* 非秘密かつ非抑制 → スマート要約付きで含める *)
+            !isSuppressed && priv <= accessLvl,
+              AppendTo[normalOuts, oi],
+            (* 秘密依存だがスキーマフラグ ON → スキーマ情報のみ *)
+            TrueQ[NBAccess`$NBSendDataSchema],
+              AppendTo[schemaOuts, oi],
+            (* それ以外 → 完全スキップ *)
+            True, Null]],
+        {oi, outIndices}];
+
+      (* Normal outputs: スマート要約 *)
+      Do[Module[{outLabel = NBAccess`NBCellLabel[nb, oi],
+                 outSummary = iSmartOutputSummary[nb, oi]},
+          AppendTo[outLines,
+            If[outLabel =!= "",
+              StringReplace[outLabel, "=" -> "="] <> " " <> outSummary,
+              outSummary]]],
+        {oi, normalOuts}];
+      (* Schema outputs: データ型・サイズ・キー情報のみ *)
+      Do[Module[{outLabel = NBAccess`NBCellLabel[nb, oi],
+                 schema = iOutputSchemaText[nb, oi]},
+          AppendTo[outLines,
+            If[outLabel =!= "",
+              StringReplace[outLabel, "=" -> "="] <> " " <> schema,
+              schema]]],
+        {oi, schemaOuts}];
+
+      outText = If[Length[outLines] > 0,
+        "=== Output 一覧 ===\n" <>
+          StringJoin[Riffle[outLines, "\n"]] <> "\n\n",
+        ""]];
+
+    (* Message は afterIdx 以降のみ *)
+    msgIndices = Select[
+      Sort[Join[
+        NBAccess`NBCellIndicesByStyle[nb, "Message"],
+        NBAccess`NBCellIndicesByStyle[nb, "MSG"]]],
+      # > afterIdx &];
     With[{safeSet = Association[
-            # -> True & /@ NBAccess`NBFilterCellIndices[nb,
-              Join[outIndices, msgIndices], opts]]},
-      outIndices = Select[outIndices, KeyExistsQ[safeSet, #] &];
+            # -> True & /@ NBAccess`NBFilterCellIndices[nb, msgIndices, opts]]},
       msgIndices = Select[msgIndices, KeyExistsQ[safeSet, #] &]];
     msgText = If[Length[msgIndices] > 0,
       "=== エラーメッセージ ===\n" <>
         StringJoin[Riffle[
           ToString[NBAccess`NBCellToText[nb, #]] & /@ msgIndices,
-          "\n"]] <> "\n\n",
-      ""];
-    outText = If[Length[outIndices] > 0,
-      "=== 直近出力（抜粋） ===\n" <>
-        StringJoin[Riffle[
-          Map[Function[oIdx,
-            Module[{outLabel, outTxt},
-              outLabel = NBAccess`NBCellLabel[nb, oIdx];
-              outTxt = StringTake[ToString[NBAccess`NBCellToText[nb, oIdx]], UpTo[200]];
-              If[outLabel =!= "",
-                StringReplace[outLabel, "=" -> "="] <> " " <> outTxt,
-                outTxt]]],
-            Take[outIndices, UpTo[5]]],
           "\n"]] <> "\n\n",
       ""];
     If[StringLength[inLines] > 0,
@@ -1394,6 +1525,49 @@ NBAccess`NBBuildVarDependencies[nb_NotebookObject] :=
         {fd, funcDefs}],
 
     {idx, inIndices}];
+    deps
+  ];
+
+(* ============================================================
+   全ノートブック統合依存グラフ (LLM送信直前の精密チェック用)
+   Notebooks[] 全体の Input セルを走査し、変数依存関係を
+   1つの Association にマージして返す。
+   通常のセル実行時は NBBuildVarDependencies[nb] を使用し、
+   ClaudeQuery/ClaudeEval/ContinueEval の直前にのみ呼び出すこと。
+   ============================================================ *)
+
+NBAccess`NBBuildGlobalVarDependencies[] :=
+  Module[{allNBs, deps = <||>, cells, text, assignments, funcDefs},
+    allNBs = Quiet[Notebooks[]];
+    If[!ListQ[allNBs], Return[deps]];
+    Do[
+      cells = Quiet[Cells[nbx]];
+      If[!ListQ[cells], Continue[]];
+      Do[
+        (* Input/Code セルのみ解析 *)
+        If[!MemberQ[{"Input", "Code"},
+             Quiet[CurrentValue[c, CellStyle]]],
+          Continue[]];
+        text = Quiet[iCellToInputText[c]];
+        If[!StringQ[text] || text === "", Continue[]];
+
+        (* --- Variable assignments: var = expr --- *)
+        assignments = iExtractAssignments[text];
+        Do[
+          With[{lhs = First[a], rhsVars = Last[a]},
+            deps[lhs] = DeleteDuplicates[
+              Join[Lookup[deps, lhs, {}], rhsVars]]],
+          {a, assignments}];
+
+        (* --- Function definitions: f[x_] := body --- *)
+        funcDefs = iExtractFuncDefs[text];
+        Do[
+          With[{fname = First[fd], globalDeps = Last[fd]},
+            deps[fname] = DeleteDuplicates[
+              Join[Lookup[deps, fname, {}], globalDeps]]],
+          {fd, funcDefs}],
+      {c, cells}],
+    {nbx, allNBs}];
     deps
   ];
 

@@ -92,6 +92,7 @@ NBGetAPIKey["anthropic"]
 |------|------|--------|
 | `$NBPrivacySpec` | デフォルトのプライバシーフィルタ | `<\|"AccessLevel" -> 0.5\|>` |
 | `$NBConfidentialSymbols` | 機密変数テーブル | `<\|\|>` |
+| `$NBSendDataSchema` | 秘密依存 Output のスキーマ情報送信フラグ | `True` |
 | `$NBSeparationIgnoreList` | 分離検査で無視するパッケージ名 | `{"NBAccess", "NotebookExtensions"}` |
 
 ### プライバシーレベルの変更
@@ -103,6 +104,20 @@ $NBPrivacySpec = <|"AccessLevel" -> 0.5|>;
 (* ローカル LLM 環境：すべてのデータにアクセス *)
 $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 ```
+
+### スキーマ情報送信の制御
+
+`$NBSendDataSchema` は、秘密依存 Output のスキーマ情報（データ型・サイズ・キー名など）をクラウド LLM に送信するかどうかを制御します。
+
+```mathematica
+(* デフォルト: スキーマ情報を送信する *)
+$NBSendDataSchema = True;
+
+(* スキーマ情報も一切送信しない *)
+$NBSendDataSchema = False;
+```
+
+`True` の場合、秘密依存 Output であっても「Association, 5 keys: {name, age, ...}」のようなデータ構造の概要が LLM に送信されます。これにより、LLM が秘密データの値を知らなくても適切なコードを生成できるようになります。非秘密 Output は本設定に関係なく、常にスマート要約付きで送信されます。
 
 ---
 
@@ -151,7 +166,36 @@ Table[
 
 ---
 
-## 8. 履歴キャッシュについて
+## 8. NBGetContext のスマート出力要約
+
+`NBGetContext` は LLM プロンプト用のコンテキスト文字列を構築する関数です。Output セルの処理において、以下のスマート要約機構を使用しています。
+
+### 非秘密 Output
+
+短い出力（200 文字以下）はそのまま含められます。長い出力に対しては、データ構造情報と先頭プレビューで要約されます。
+
+検出されるデータ型の例:
+- **Association**: キー数とキー名を表示（例: `Association, 5 keys: {name, age, score}`）
+- **Dataset**: カラム名を表示
+- **NestedList/Matrix**: 行数を表示
+- **List**: 要素数を表示
+- **Graphics/Image**: `Graphics/Image` と表示
+- **SparseArray/NumericArray**: 型名を表示
+- **その他**: 文字数を表示
+
+### 秘密依存 Output
+
+`$NBSendDataSchema` が `True` の場合、秘密依存 Output はスキーマ情報（データ型・サイズ・キー名）のみが送信されます。値は一切含まれません。
+
+```
+(* [機密依存データ: Association, 3 keys: {password, token, secret}] *)
+```
+
+`$NBSendDataSchema` が `False` の場合、秘密依存 Output は完全にスキップされます。
+
+---
+
+## 9. 履歴キャッシュについて
 
 NBAccess は履歴データ（`NBHistoryRawData`）の読み取りにインメモリキャッシュを使用しています。ClaudeQuery 1回の処理中に同じ履歴を7回以上読み取ることがあるため、キャッシュによって FrontEnd 通信を大幅に削減しています。
 
@@ -165,7 +209,7 @@ NBHistoryCacheClear[]
 
 ---
 
-## 9. NBScanDependentCells の最適化
+## 10. NBScanDependentCells の最適化
 
 `NBScanDependentCells` は事前計算済みの依存グラフを第3引数として受け取るオーバーロードをサポートしています。同じノートブックに対して `NBBuildVarDependencies` を複数回呼び出す場合、依存グラフを事前に計算して渡すことで二重計算を回避できます。
 
@@ -180,7 +224,21 @@ NBScanDependentCells[nb, confVarNames, deps]
 
 ---
 
-## 10. トラブルシューティング
+## 11. NBBuildGlobalVarDependencies による全ノートブック統合依存解析
+
+`NBBuildGlobalVarDependencies[]` は `Notebooks[]` 全体の Input セルを走査して、統合された変数依存関係グラフを返します。`NBBuildVarDependencies[nb]` が単一ノートブック内の依存関係のみを解析するのに対し、この関数は全ノートブックをまたいだ依存関係を構築します。
+
+```mathematica
+(* 全ノートブック統合依存グラフを取得 *)
+globalDeps = NBBuildGlobalVarDependencies[]
+(* → <|"var1" -> {"dep1", "dep2"}, ...|> *)
+```
+
+> **注意:** この関数は全ノートブックを走査するため、処理コストが高くなります。LLM 呼び出し直前の精密チェック（ClaudeQuery / ClaudeEval / ContinueEval の直前）にのみ使用してください。通常のセル実行時は `NBBuildVarDependencies[nb]` を使用してください。
+
+---
+
+## 12. トラブルシューティング
 
 | 症状 | 対処 |
 |------|------|
@@ -189,3 +247,5 @@ NBScanDependentCells[nb, confVarNames, deps]
 | `NBGetAPIKey` が `$Failed` | `SystemCredential["ANTHROPIC_API_KEY"]` 等が設定済みか確認してください |
 | プライバシーフィルタで空リスト | `$NBPrivacySpec` の `AccessLevel` を `1.0` に上げて再試行してください |
 | 履歴データが古い・不整合がある | `NBHistoryCacheClear[]` を実行してキャッシュをクリアしてください |
+| 秘密依存 Output のスキーマが送信されない | `$NBSendDataSchema` が `True` に設定されているか確認してください |
+| Output の内容が `(出力取得失敗)` と表示される | セル出力が空、または FrontEnd からのテキスト取得に失敗しています。セルを再評価してください |
