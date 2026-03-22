@@ -421,6 +421,18 @@ NBBuildGlobalVarDependencies[]
 
 `NBBuildVarDependencies[nb]` が単一ノートブック内の依存関係のみを解析するのに対し、`NBBuildGlobalVarDependencies[]` は開いているすべてのノートブックを横断して解析します。これにより、あるノートブックで定義された変数を別のノートブックで参照しているケースも検出できます。
 
+### NBUpdateGlobalVarDependencies
+
+既存の依存グラフに新しいセルのみを追加してマージします。完全なグラフを毎回構築するコストを回避するインクリメンタル版です。
+
+CellLabel In[x] の x が afterLine より大きいセルだけを走査し、既存の依存グラフにマージします。
+
+```mathematica
+{updatedDeps, newLastLine} = NBUpdateGlobalVarDependencies[existingDeps, afterLine]
+```
+
+返り値は `{更新された依存グラフ, 新しい最終行番号}` の形式です。この関数により、大規模なノートブックでも効率的に依存関係を追跡できます。
+
 ### NBTransitiveDependents
 
 機密変数に直接・間接依存する全変数名を返します。依存グラフ上で固定点に達するまで反復的に依存を追跡します。
@@ -450,6 +462,8 @@ NBScanDependentCells[nb, {"secretVar1", "secretVar2"}, deps]
 
 Claude 関数呼び出しセル（ClaudeQuery 等）は走査対象から除外されます。事前計算済みの依存グラフ `deps` を第3引数に渡すことで、同じ依存グラフを複数回計算するオーバーヘッドを回避できます。`deps` を省略した場合は内部で `NBBuildVarDependencies[nb]` が呼ばれます。
 
+通知セル（CellTags に "claudecode-notice" が含まれるセル）は自動的にマーキング対象から除外されます。
+
 ### NBDependencyEdges
 
 変数依存関係をエッジリストで返します。機密変数でフィルタも可能です。
@@ -472,6 +486,12 @@ NBPlotDependencyGraph[nb, PrivacySpec -> <|"AccessLevel" -> 1.0|>]
 ```
 
 デフォルトの AccessLevel は 1.0（全ノード表示）です。AccessLevel を下げると、そのレベルを超えるプライバシーレベルのノードが非表示になります。エッジラベルには依存を定義するセルの `In[xx]` 番号がツールチップとして付与されます。`Out$n` 形式の仮想変数は `Out[n]` として表示されます。
+
+グラフの表示には以下の特徴があります：
+
+- **ノード着色**: 関数は白地に色付き縁取り、変数は塗りつぶしで表示されます。秘密は赤、依存秘密は橙、公開は青で色分けされます。
+- **エッジスタイル**: ノートブック内エッジは濃い実線、クロスノートブック間エッジは薄い破線で描画されます。
+- **ラベル**: 秘密・依存秘密のノードのみ変数名ラベルが表示され、公開ノードはラベルなしで表示されます。
 
 ### NBGetFunctionGlobalDeps
 
@@ -533,7 +553,7 @@ NBWriteCell[nb, Cell["Hello", "Text"], Before]
 
 ### NBWritePrintNotice
 
-通知用 Print セルを書き込みます。`nb` が `None` の場合は `CellPrint` を使用します（同期 In/Out 間出力）。
+通知用 Print セルを書き込みます。CellTags に "claudecode-notice" を付与して、`NBScanDependentCells` のマーキング対象外にします。`nb` が `None` の場合は `CellPrint` を使用します（同期 In/Out 間出力）。
 
 ```mathematica
 NBWritePrintNotice[nb, "処理が完了しました", Green]

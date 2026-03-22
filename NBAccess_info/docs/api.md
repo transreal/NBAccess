@@ -23,14 +23,6 @@ False: 秘密依存 Output のスキーマ情報を一切送信しない。
 型: List, 初期値: `{"NBAccess", "NotebookExtensions"}`
 分離検査（ClaudeCheckSeparation）で無視するパッケージ名のリスト。
 
-### $NBConfidentialCellOpts
-型: List
-直接機密セルの視覚スタイル（赤背景 + WarningSign）。NBMarkCellConfidential で使用される。
-
-### $NBDependentCellOpts
-型: List
-依存機密セルの視覚スタイル（橙背景 + WarningSign）。NBMarkCellDependent で使用される。
-
 ### PrivacySpec (オプション)
 多くの関数で使用されるオプション。`PrivacySpec -> <|"AccessLevel" -> 0.5|>` の形式。
 Automatic 指定時は $NBPrivacySpec を使用する。
@@ -167,6 +159,11 @@ InputText 形式で取得するため 2D 表示も正しく解析される。変
 Notebooks[] 全体の Input セルを走査して統合された変数依存関係グラフを返す。
 → `<|"var" -> {"dep1", ...}, ...|>`
 LLM 呼び出し直前の精密チェックで使用する。通常のセル実行時は軽量版 NBBuildVarDependencies[nb] を使用すること。
+
+### NBUpdateGlobalVarDependencies[existingDeps, afterLine] → {Association, Integer}
+既存の依存グラフに CellLabel In[x] (x > afterLine) のセルのみを追加走査してマージする。
+返り値は {updatedDeps, newLastLine}。
+完全なグラフを毎回構築するコストを回避するインクリメンタル版。
 
 ### NBTransitiveDependents[deps, confVars] → {String...}
 deps グラフ上で confVars に直接・間接依存する全変数名を返す（confVars 自身も含む）。

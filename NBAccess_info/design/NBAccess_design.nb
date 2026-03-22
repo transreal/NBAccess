@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[      2130,         63]
-NotebookOptionsPosition[      1630,         45]
-NotebookOutlinePosition[      2049,         62]
-CellTagsIndexPosition[      2006,         59]
+NotebookDataLength[      3342,         93]
+NotebookOptionsPosition[      2513,         69]
+NotebookOutlinePosition[      2952,         87]
+CellTagsIndexPosition[      2909,         84]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -41,10 +41,35 @@ NBAccess\:306f\:3001Mathematica\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:4e0a\
  CellChangeTimes->{{3.9826545386082897`*^9, 
   3.982654715433338*^9}},ExpressionUUID->"01c34be4-c29b-ea43-a7b9-\
 49f48f16bc79"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\:79d8\:5bc6\:5909\:6570", "Section",
+ CellChangeTimes->{{3.983122714967596*^9, 
+  3.9831227228055477`*^9}},ExpressionUUID->"1b970d0b-0a4b-9743-ae4b-\
+db6b02ece59c"],
+
+Cell["\<\
+\:64cd\:4f5c\:6027\:3092\:78ba\:4fdd\:3059\:308b\:305f\:3081\:306bClaudeQuery,\
+ ClaudeEval\:306a\:3069\:30af\:30e9\:30a6\:30c9LLM\:306e\:547c\:3073\:51fa\
+\:3057\:524d\:306e\:307f\:3001\:7cbe\:5bc6\:306a\:30c1\:30a7\:30c3\:30af\:3092\
+\:5b9f\:65bd\:3002\:30a4\:30f3\:30af\:30ea\:30e1\:30f3\:30bf\:30eb\:306b\:4f9d\
+\:5b58\:30b0\:30e9\:30d5\:3092\:69cb\:6210\:3059\:308b\:3002\
+\>", "Text",
+ CellChangeTimes->{{3.983122738744852*^9, 
+  3.9831228144743214`*^9}},ExpressionUUID->"0e194d5d-3c20-fe42-95cd-\
+9f4cd104cdba"],
+
+Cell["", "Text",
+ CellChangeTimes->{{3.98312308757778*^9, 
+  3.983123091667532*^9}},ExpressionUUID->"3453be07-ddf7-354a-9ab2-\
+90584da95493"]
 }, Open  ]]
 },
-WindowSize->{886.125, 419.25},
-WindowMargins->{{0, Automatic}, {Automatic, 0}},
+WindowSize->{886.5, 419.5},
+WindowMargins->{{Automatic, 34.5}, {Automatic, 386}},
+CellEpilog:>Null,
 FrontEndVersion->"14.3 for Microsoft Windows (64-bit) (2025\:5e747\:67088\
 \:65e5)",
 StyleDefinitions->"Normal use.nb",
@@ -64,6 +89,11 @@ Notebook[{
 Cell[CellGroupData[{
 Cell[576, 22, 209, 4, 68, "Section",ExpressionUUID->"aaa51d95-0277-9249-8532-e1c6ef100aaf"],
 Cell[788, 28, 826, 14, 119, "Text",ExpressionUUID->"01c34be4-c29b-ea43-a7b9-49f48f16bc79"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[1651, 47, 171, 3, 68, "Section",ExpressionUUID->"1b970d0b-0a4b-9743-ae4b-db6b02ece59c"],
+Cell[1825, 52, 528, 9, 55, "Text",ExpressionUUID->"0e194d5d-3c20-fe42-95cd-9f4cd104cdba"],
+Cell[2356, 63, 141, 3, 33, "Text",ExpressionUUID->"3453be07-ddf7-354a-9ab2-90584da95493"]
 }, Open  ]]
 }
 ]

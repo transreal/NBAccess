@@ -106,6 +106,16 @@ accessibleCells = NBAccess`NBGetCells[nb, PrivacySpec -> $NBPrivacySpec]
 isAccessible = NBAccess`NBIsAccessible[nb, 1, PrivacySpec -> $NBPrivacySpec]
 ```
 
+### 依存グラフ機能テスト
+
+```mathematica
+(* 基本的な依存関係の確認 *)
+dependencies = NBAccess`NBBuildVarDependencies[nb]
+
+(* 依存グラフの可視化（機密変数がある場合） *)
+NBAccess`NBPlotDependencyGraph[nb, "Scope" -> "Local"]
+```
+
 ## API キー設定（オプション）
 
 AI プロバイダーとの連携を行う場合：
@@ -152,6 +162,15 @@ NBAccess`ClaudeCheckSeparation["YourPackageName"]
 
 (* 自動修正 *)
 NBAccess`ClaudeFixSeparation["YourPackageName"]
+```
+
+### パフォーマンス問題
+
+大きなノートブックで動作が遅い場合、NBAccess は自動的にキャッシュ機能を使用してFrontEndアクセスを最適化します。通常は設定不要ですが、キャッシュをクリアしたい場合：
+
+```mathematica
+(* 内部キャッシュは自動管理されるため、通常は手動操作不要 *)
+(* 問題が発生した場合はノートブックを再起動してください *)
 ```
 
 ## 次のステップ

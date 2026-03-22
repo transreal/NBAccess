@@ -132,9 +132,19 @@ markedCount = NBScanDependentCells[nb, {"apiKey", "password"}];
 NBPlotDependencyGraph[nb]
 ```
 
+グラフの可視化では以下の特徴があります：
+
+- **ノードスタイル**: 関数は白地 + 色付き縁取り、変数は塗りつぶし + 縁取りなし
+- **色分け**: 秘密（直接）は赤、依存秘密（推移的）は橙、公開は青
+- **ラベル**: 秘密・依存秘密のみ変数名を表示、公開はラベルなし
+- **エッジツールチップ**: 依存を定義するセルの番号 (In[xx]) を表示
+- **凡例**: "秘密 (直接)"、"依存秘密 (推移的)"、"公開" の3段階で表示
+
 ```
 (* 例: deps = <|"result" -> {"apiKey"}, ...|>, markedCount = 3 *)
 ```
+
+**注意**: 通知セル（CellTags -> {"claudecode-notice"}）はマーキング対象外となります。これにより、ClaudeCode が生成するシステム通知セルは依存解析から除外されます。
 
 ## 例7: 全ノートブック統合依存グラフ
 
@@ -144,6 +154,9 @@ NBPlotDependencyGraph[nb]
 (* 全ノートブック統合依存グラフを取得 *)
 globalDeps = NBBuildGlobalVarDependencies[]
 (* <|"y" -> {"x"}, "z" -> {"x", "y"}, "w" -> {"z"}|> *)
+
+(* インクリメンタル更新: 既存グラフに新しいセルのみ追加 *)
+{updatedDeps, newLastLine} = NBUpdateGlobalVarDependencies[globalDeps, 10];
 
 (* 推移的依存変数を検出 *)
 allDepVars = NBTransitiveDependents[globalDeps, {"apiKey"}];
@@ -157,6 +170,8 @@ NBScanDependentCells[nb, Keys[NBGetConfidentialVars[]], globalDeps]
 (* 単一ノートブック版の NBBuildVarDependencies[nb] より処理コストが高いため、
    通常のセル実行時は NBBuildVarDependencies[nb] を使用してください *)
 ```
+
+**インクリメンタル更新機能**: `NBUpdateGlobalVarDependencies` は完全なグラフ再構築を回避し、CellLabel In[x] の x が afterLine より大きいセルのみを追加走査してマージします。大規模なノートブックセッションでのパフォーマンス向上に寄与します。
 
 ## 例8: 汎用履歴データベース
 

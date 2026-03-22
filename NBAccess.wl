@@ -180,6 +180,12 @@ NBBuildGlobalVarDependencies::usage =
   "LLM 呼び出し直前の精密チェックで使用する。\n" <>
   "通常のセル実行時は軽量版 NBBuildVarDependencies[nb] を使用すること。";
 
+NBUpdateGlobalVarDependencies::usage =
+  "NBUpdateGlobalVarDependencies[existingDeps, afterLine] は既存の依存グラフに\n" <>
+  "CellLabel In[x] (x > afterLine) のセルのみを追加走査してマージする。\n" <>
+  "返り値は {updatedDeps, newLastLine}。\n" <>
+  "完全なグラフを毎回構築するコストを回避するインクリメンタル版。";
+
 NBTransitiveDependents::usage =
   "NBTransitiveDependents[deps, confVars] は deps グラフ上で\n" <>
   "confVars に直接・間接依存する全変数名リストを返す。";
@@ -205,10 +211,14 @@ NBDebugDependencies::usage =
   "各 Input セルについて InputText 取得結果、代入解析結果、依存判定結果を出力する。";
 
 NBPlotDependencyGraph::usage =
-  "NBPlotDependencyGraph[nb] はノートブックの変数依存関係グラフをプロットする。\n" <>
+  "NBPlotDependencyGraph[] は全ノートブック統合の依存グラフをプロットする (デフォルト)。\n" <>
+  "NBPlotDependencyGraph[nb] は指定ノートブックの依存グラフをプロットする。\n" <>
   "ノードは変数名・Out[n]で、直接秘密は赤、依存秘密は橙で着色。\n" <>
-  "エッジラベルは依存を定義するセルの In[xx] 番号。\n" <>
-  "オプション PrivacySpec -> <|\"AccessLevel\" -> 1.0|> で表示範囲を制御。";
+  "NB内エッジは濃い実線、クロスNBエッジは薄い破線で描画。\n" <>
+  "オプション:\n" <>
+  "  \"Scope\" -> \"Global\" (デフォルト) | \"Local\"\n" <>
+  "  PrivacySpec -> <|\"AccessLevel\" -> 1.0|> で表示範囲を制御。\n" <>
+  "例: NBPlotDependencyGraph[EvaluationNotebook[], \"Scope\" -> \"Local\"]";
 
 (* ---- 関数定義解析 ---- *)
 NBGetFunctionGlobalDeps::usage =
@@ -505,12 +515,98 @@ If[!AssociationQ[$iProviderMaxAccessLevel],
 
 (* ============================================================
    内部ヘルパー: セルインデックス → CellObject 解決
+   $iCellsCache により Cells[nb] の FrontEnd round-trip をキャッシュ。
+   iPrecisionConfidentialCheck 等の重い走査で数千回の Cells[] 呼び出しを
+   NB数回（5NB なら 5回）に削減する。
    ============================================================ *)
 
+$iCellsCache = <||>;
+$iCellStyleCache = <||>;
+
+iResolveCells[nb_NotebookObject] :=
+  Module[{cached},
+    cached = Lookup[$iCellsCache, nb, None];
+    If[ListQ[cached], Return[cached]];
+    cached = Quiet[Cells[nb]];
+    If[ListQ[cached], $iCellsCache[nb] = cached, cached = {}];
+    cached];
+
+(* 全セルのスタイルを一括取得してキャッシュ *)
+iResolveCellStyles[nb_NotebookObject] :=
+  Module[{cached, cells, styles},
+    cached = Lookup[$iCellStyleCache, nb, None];
+    If[ListQ[cached], Return[cached]];
+    cells = iResolveCells[nb];
+    styles = Map[
+      Module[{s = Quiet[CurrentValue[#, CellStyle]]},
+        Which[StringQ[s], s, ListQ[s] && Length[s] > 0, First[s], True, ""]] &,
+      cells];
+    $iCellStyleCache[nb] = styles;
+    styles];
+
 iResolveCell[nb_NotebookObject, cellIdx_Integer] :=
-  Module[{cells = Quiet[Cells[nb]]},
-    If[!ListQ[cells] || cellIdx < 1 || cellIdx > Length[cells],
+  Module[{cells = iResolveCells[nb]},
+    If[cellIdx < 1 || cellIdx > Length[cells],
       $Failed, cells[[cellIdx]]]
+  ];
+
+(* キャッシュ無効化 *)
+NBAccess`NBInvalidateCellsCache[] := (
+  $iCellsCache = <||>; $iCellStyleCache = <||>);
+NBAccess`NBInvalidateCellsCache[nb_NotebookObject] := (
+  $iCellsCache = KeyDrop[$iCellsCache, nb];
+  $iCellStyleCache = KeyDrop[$iCellStyleCache, nb]);
+
+(* ユーザーノートブックのみ取得:
+   Notebooks[] はパレット、ヘルプブラウザ、ダイアログ等のシステムNBも含む。
+   これらに Cells[] や CurrentValue を呼ぶと FrontEnd がブロック/フリーズする。
+   WindowFrame が "Normal" のNBのみを安全に走査対象とする。 *)
+NBAccess`NBUserNotebooks[] :=
+  Module[{allNBs, result = {}},
+    allNBs = Quiet[Notebooks[]];
+    If[!ListQ[allNBs], Return[{}]];
+    Do[
+      Quiet @ Module[{frame},
+        frame = CurrentValue[nbx, WindowFrame];
+        If[frame === "Normal", AppendTo[result, nbx]]],
+    {nbx, allNBs}];
+    result
+  ];
+
+iUserNotebooks[] := NBAccess`NBUserNotebooks[];
+
+(* スマートリフレッシュ: 変化のないNBのキャッシュを保持。
+   返り値: 変化があったNBの NotebookObject リスト。
+   判定方法:
+     1. CurrentValue[nb, "ModifiedInMemory"] が False → 完全スキップ (0 FE call追加)
+     2. Cells[nb] リストが前回と同一 → キャッシュ保持 (1 FE call)
+     3. それ以外 → キャッシュ更新 (1 FE call + N CellStyle calls) *)
+NBAccess`NBRefreshCellsCache[] :=
+  Module[{allNBs, freshCells, cachedCells, changedNBs = {}, activeSet},
+    allNBs = iUserNotebooks[];
+    If[!ListQ[allNBs], Return[{}]];
+    (* 閉じられたNBのキャッシュを除去 *)
+    activeSet = Association[# -> True & /@ allNBs];
+    $iCellsCache = KeySelect[$iCellsCache, KeyExistsQ[activeSet, #] &];
+    $iCellStyleCache = KeySelect[$iCellStyleCache, KeyExistsQ[activeSet, #] &];
+    Do[
+      (* 未変更チェック: 保存済み + 編集なし → FE call なしでスキップ *)
+      If[Quiet[CurrentValue[nbx, "ModifiedInMemory"]] === False &&
+         KeyExistsQ[$iCellsCache, nbx],
+        Continue[]];
+      (* Cells[] を取得して前回と比較 *)
+      freshCells = Quiet[Cells[nbx]];
+      If[!ListQ[freshCells], Continue[]];
+      cachedCells = Lookup[$iCellsCache, nbx, None];
+      If[ListQ[cachedCells] && freshCells === cachedCells,
+        (* CellObject リストが完全一致 → セルの追加/削除なし → キャッシュ保持 *)
+        Null,
+        (* 変化あり → キャッシュ更新 *)
+        $iCellsCache[nbx] = freshCells;
+        $iCellStyleCache = KeyDrop[$iCellStyleCache, nbx];
+        AppendTo[changedNBs, nbx]],
+    {nbx, allNBs}];
+    changedNBs
   ];
 
 (* ============================================================
@@ -555,9 +651,7 @@ iCellUsesConfSymbol[nb_NotebookObject, cell_CellObject] :=
    ============================================================ *)
 
 NBAccess`NBCellCount[nb_NotebookObject] :=
-  Module[{cells = Quiet[Cells[nb]]},
-    If[ListQ[cells], Length[cells], 0]
-  ];
+  Length[iResolveCells[nb]];
 
 NBAccess`NBCurrentCellIndex[nb_NotebookObject] :=
   Module[{ec, cells, pos},
@@ -604,19 +698,13 @@ NBAccess`NBCellIndicesByTag[nb_NotebookObject, tag_String] :=
   ];
 
 NBAccess`NBCellIndicesByStyle[nb_NotebookObject, style_String] :=
-  Module[{n},
-    (* Cells[nb, CellStyle -> style] は CellStyle がリスト {"Input"} の場合に
-       マッチしない場合があるため、全セル走査 + NBCellStyle (正規化済み) を使用 *)
-    n = NBAccess`NBCellCount[nb];
-    If[n === 0, Return[{}]];
-    Select[Range[n], NBAccess`NBCellStyle[nb, #] === style &]
+  Module[{styles = iResolveCellStyles[nb]},
+    Flatten[Position[styles, style]]
   ];
 
 NBAccess`NBCellIndicesByStyle[nb_NotebookObject, styles_List] :=
-  Module[{n},
-    n = NBAccess`NBCellCount[nb];
-    If[n === 0, Return[{}]];
-    Select[Range[n], MemberQ[styles, NBAccess`NBCellStyle[nb, #]] &]
+  Module[{allStyles = iResolveCellStyles[nb]},
+    Select[Range[Length[allStyles]], MemberQ[styles, allStyles[[#]]] &]
   ];
 
 NBAccess`NBDeleteCellsByTag[nb_NotebookObject, tag_String] :=
@@ -640,17 +728,8 @@ NBAccess`NBCellRead[nb_NotebookObject, cellIdx_Integer] :=
   ];
 
 NBAccess`NBCellStyle[nb_NotebookObject, cellIdx_Integer] :=
-  Module[{cell, s},
-    cell = iResolveCell[nb, cellIdx];
-    If[cell === $Failed, Return[""]];
-    s = Quiet[CurrentValue[cell, CellStyle]];
-    (* CellStyle はリスト {"Input"} または文字列 "Input" を返す場合がある。
-       常に文字列を返すように正規化する *)
-    Which[
-      StringQ[s], s,
-      ListQ[s] && Length[s] > 0, First[s],
-      True, ""
-    ]
+  Module[{styles = iResolveCellStyles[nb]},
+    If[cellIdx < 1 || cellIdx > Length[styles], "", styles[[cellIdx]]]
   ];
 
 NBAccess`NBCellLabel[nb_NotebookObject, cellIdx_Integer] :=
@@ -1591,15 +1670,18 @@ NBAccess`NBBuildVarDependencies[nb_NotebookObject] :=
 
 NBAccess`NBBuildGlobalVarDependencies[] :=
   Module[{allNBs, deps = <||>, cells, text, assignments, funcDefs},
-    allNBs = Quiet[Notebooks[]];
+    allNBs = iUserNotebooks[];
     If[!ListQ[allNBs], Return[deps]];
     Do[
       cells = Quiet[Cells[nbx]];
       If[!ListQ[cells], Continue[]];
       Do[
-        (* Input/Code セルのみ解析 *)
-        If[!MemberQ[{"Input", "Code"},
-             Quiet[CurrentValue[c, CellStyle]]],
+        (* Input/Code セルのみ解析
+           CurrentValue[cell, CellStyle] はリスト {"Input"} を返すため
+           ContainsAny で判定する *)
+        If[!ContainsAny[
+             Flatten[{Quiet[CurrentValue[c, CellStyle]]}],
+             {"Input", "Code"}],
           Continue[]];
         text = Quiet[iCellToInputText[c]];
         If[!StringQ[text] || text === "", Continue[]];
@@ -1622,6 +1704,52 @@ NBAccess`NBBuildGlobalVarDependencies[] :=
       {c, cells}],
     {nbx, allNBs}];
     deps
+  ];
+
+(* インクリメンタル版: 既存グラフに新しいセルのみ追加
+   CellLabel In[x] の x が afterLine より大きいセルだけを走査し、
+   既存の依存グラフにマージする。
+   返り値: {updatedDeps, newMaxLine} *)
+NBAccess`NBUpdateGlobalVarDependencies[existingDeps_Association,
+    afterLine_Integer] :=
+  Module[{allNBs, deps = existingDeps, maxLine = afterLine,
+          cells, text, assignments, funcDefs, lineNum},
+    allNBs = iUserNotebooks[];
+    If[!ListQ[allNBs], Return[{deps, maxLine}]];
+    Do[
+      cells = Quiet[Cells[nbx]];
+      If[!ListQ[cells], Continue[]];
+      Do[
+        If[!ContainsAny[
+             Flatten[{Quiet[CurrentValue[c, CellStyle]]}],
+             {"Input", "Code"}],
+          Continue[]];
+        (* CellLabel から In[x] の x を取得し、afterLine 以下ならスキップ *)
+        lineNum = iCellNumber[c];
+        If[lineNum === None, Continue[]];
+        lineNum = Quiet @ Check[ToExpression[lineNum], 0];
+        If[!IntegerQ[lineNum] || lineNum <= afterLine, Continue[]];
+        If[lineNum > maxLine, maxLine = lineNum];
+
+        text = Quiet[iCellToInputText[c]];
+        If[!StringQ[text] || text === "", Continue[]];
+
+        assignments = iExtractAssignments[text];
+        Do[
+          With[{lhs = First[a], rhsVars = Last[a]},
+            deps[lhs] = DeleteDuplicates[
+              Join[Lookup[deps, lhs, {}], rhsVars]]],
+          {a, assignments}];
+
+        funcDefs = iExtractFuncDefs[text];
+        Do[
+          With[{fname = First[fd], globalDeps = Last[fd]},
+            deps[fname] = DeleteDuplicates[
+              Join[Lookup[deps, fname, {}], globalDeps]]],
+          {fd, funcDefs}],
+      {c, cells}],
+    {nbx, allNBs}];
+    {deps, maxLine}
   ];
 
 NBAccess`NBTransitiveDependents[deps_Association, confVars_List] :=
@@ -1670,7 +1798,16 @@ NBAccess`NBScanDependentCells[nb_NotebookObject,
     Module[{lastInputIdx = 0, lastInputText = "", lastInputTag = Missing[],
             lastInputDepTag = Missing[], lastInputIsDep = False,
             lastInputIsDirectConf = False,
-            style, text, assigns},
+            style, text, assigns,
+            noticeCells, allC, noticeIdxSet = <||>},
+      (* 通知セル (claudecode-notice) のインデックスを収集: マーキング対象外 *)
+      noticeCells = Quiet[Cells[nb, CellTags -> "claudecode-notice"]];
+      If[ListQ[noticeCells] && Length[noticeCells] > 0,
+        allC = Quiet[Cells[nb]];
+        If[ListQ[allC],
+          Do[Module[{pos = Position[allC, nc]},
+            If[Length[pos] > 0, noticeIdxSet[pos[[1, 1]]] = True]],
+          {nc, noticeCells}]]];
       Do[
         style = NBAccess`NBCellStyle[nb, i];
         Which[
@@ -1707,8 +1844,9 @@ NBAccess`NBScanDependentCells[nb_NotebookObject,
 
           (* Output/Print セル: 直前の Input に基づいてマーク *)
           MemberQ[{"Output", "Print"}, style] && lastInputIdx > 0,
-            (* 明示的に非機密マーク（NonConfidential）のセルはスキップ *)
-            If[NBAccess`NBGetConfidentialTag[nb, i] =!= False,
+            (* 通知セル (claudecode-notice) はスキップ *)
+            If[!TrueQ[Lookup[noticeIdxSet, i, False]] &&
+               NBAccess`NBGetConfidentialTag[nb, i] =!= False,
               Which[
                 (* 直接秘密セルの Output → 赤マーク *)
                 lastInputIsDirectConf,
@@ -1858,60 +1996,123 @@ NBAccess`NBDebugDependencies[nb_NotebookObject, confVars_List] :=
    依存グラフプロット
    ============================================================ *)
 
-Options[NBAccess`NBPlotDependencyGraph] = {PrivacySpec -> <|"AccessLevel" -> 1.0|>};
 
-NBAccess`NBPlotDependencyGraph[nb_NotebookObject, opts : OptionsPattern[]] :=
-  Module[{accessLevel, allNBs,
-          directConfVars = {}, inCells,
-          deps = <||>, varCellNum = <||>,
+Options[NBAccess`NBPlotDependencyGraph] = {
+  PrivacySpec -> <|"AccessLevel" -> 1.0|>,
+  "Scope" -> "Global",
+  GraphLayout -> "LayeredDigraphEmbedding"
+};
+
+(* 引数なし: デフォルト Scope="Global" で全NB統合 *)
+NBAccess`NBPlotDependencyGraph[opts : OptionsPattern[]] :=
+  NBAccess`NBPlotDependencyGraph[None, opts];
+
+(* メイン実装: nb=None なら全NB、nb 指定なら Scope に従う *)
+NBAccess`NBPlotDependencyGraph[nb : (_NotebookObject | None),
+    opts : OptionsPattern[]] :=
+  Module[{accessLevel, scope, targetNBs, allNBs,
+          nbNames = <||>, nbList = {},
+          directConfVars = {}, deps = <||>,
+          varNBSource = <||>, varCellNum = <||>,
+          funcSet = <||>,
+          allDepVars,
           allEdges, fullGraph,
           confInGraph, transDepVerts, depOnly,
-          varPrivacy, visibleVars, subg, highlighted,
-          legend},
+          varPrivacy, visibleVars, subg,
+          legend, nbColorMap, scopeLabel, isMultiNB, layout},
 
     accessLevel = iAccessLevel[OptionValue[PrivacySpec]];
+    scope = OptionValue["Scope"];
+    layout = OptionValue[GraphLayout];
 
-    allNBs = Quiet[Notebooks[]];
-    If[ListQ[allNBs],
-      Do[Module[{cells},
-        cells = Quiet[Cells[nbx]];
-        If[ListQ[cells],
-          Do[Module[{tag, depTag, txt, assigns},
-            tag    = iGetConfTag[c];
-            depTag = Quiet[CurrentValue[c,
-                       {TaggingRules, "claudecode", "dependent"}]];
-            If[TrueQ[tag] && !TrueQ[depTag],
-              txt = Quiet[iCellToInputText[c]];
-              If[StringQ[txt],
-                assigns = iExtractAssignments[txt];
-                directConfVars =
-                  Join[directConfVars, Map[First, assigns]]]]],
-          {c, cells}]]],
-      {nbx, allNBs}]];
+    (* === Step 1: 対象ノートブックを決定 === *)
+    allNBs = iUserNotebooks[];
+    If[!ListQ[allNBs], Return[Style["(ノートブックなし)", Gray, Italic]]];
+    targetNBs = If[scope === "Local" && nb =!= None,
+      {nb},   (* Local: 指定NBのみ *)
+      allNBs  (* Global: 全NB *)
+    ];
+    isMultiNB = Length[targetNBs] > 1;
+    scopeLabel = If[scope === "Local",
+      "Local (1 NB)",
+      "Global (" <> ToString[Length[targetNBs]] <> " NBs)"];
+
+    (* NB 名前マッピング *)
+    Do[Module[{name},
+      name = Quiet @ Check[
+        Module[{fn = NotebookFileName[nbx]},
+          If[StringQ[fn], FileBaseName[fn],
+            "NB" <> ToString[Hash[nbx, "CRC32"]]]],
+        "NB" <> ToString[Hash[nbx, "CRC32"]]];
+      nbNames[nbx] = name;
+      If[!MemberQ[nbList, name], AppendTo[nbList, name]]],
+    {nbx, targetNBs}];
+
+    (* NB ごとに色を割り当て *)
+    nbColorMap = Association[MapIndexed[
+      #1 -> ColorData[97][First[#2]] &, nbList]];
+
+    (* === Step 2: 秘密変数を収集 ===
+       Global モードでは全NB走査、Local モードでも全NB走査
+       （別NBの秘密変数が現在NBの変数に影響するため） *)
+    Do[Module[{cells},
+      cells = Quiet[Cells[nbx]];
+      If[ListQ[cells],
+        Do[Module[{tag, depTag, txt, assigns},
+          tag    = iGetConfTag[c];
+          depTag = Quiet[CurrentValue[c,
+                     {TaggingRules, "claudecode", "dependent"}]];
+          If[TrueQ[tag] && !TrueQ[depTag],
+            txt = Quiet[iCellToInputText[c]];
+            If[StringQ[txt],
+              assigns = iExtractAssignments[txt];
+              directConfVars =
+                Join[directConfVars, Map[First, assigns]]]]],
+        {c, cells}]]],
+    {nbx, allNBs}];
     directConfVars = DeleteDuplicates[directConfVars];
 
-    inCells = Module[{idxs = NBAccess`NBCellIndicesByStyle[nb, "Input"],
-                      allC = Quiet[Cells[nb]]},
-                If[!ListQ[allC], {}, allC[[#]] & /@ idxs]];
-    Do[Module[{text, assignments, cNum},
-      text = Quiet[iCellToInputText[c]];
-      If[StringQ[text] && text =!= "",
-        assignments = iExtractAssignments[text];
-        cNum = iCellNumber[c];
-        Do[With[{lhs = First[a], rhs = Last[a]},
-          deps[lhs] = DeleteDuplicates[
-            Join[Lookup[deps, lhs, {}], rhs]];
-          If[cNum =!= None, varCellNum[lhs] = cNum]],
-        {a, assignments}];
-        If[cNum =!= None && Length[assignments] > 0,
-          With[{outKey = "Out$" <> cNum,
-                allRhs = DeleteDuplicates[
-                  Join @@ Map[Last, assignments]]},
-            deps[outKey] = DeleteDuplicates[
-              Join[Lookup[deps, outKey, {}], allRhs]];
-            varCellNum[outKey] = cNum]]]],
-    {c, inCells}];
+    (* === Step 3: 依存グラフ構築 + 変数のNBソース追跡 === *)
+    Do[Module[{cells, nbName},
+      cells = Quiet[Cells[nbx]];
+      nbName = Lookup[nbNames, nbx, "?"];
+      If[ListQ[cells],
+        Do[
+          If[!ContainsAny[
+               Flatten[{Quiet[CurrentValue[c, CellStyle]]}],
+               {"Input", "Code"}],
+            Continue[]];
+          Module[{text, assignments, funcDefs, cNum},
+            text = Quiet[iCellToInputText[c]];
+            If[!StringQ[text] || text === "", Continue[]];
+            cNum = iCellNumber[c];
+            assignments = iExtractAssignments[text];
+            Do[With[{lhs = First[a], rhsVars = Last[a]},
+              deps[lhs] = DeleteDuplicates[
+                Join[Lookup[deps, lhs, {}], rhsVars]];
+              varNBSource[lhs] = nbName;
+              If[cNum =!= None, varCellNum[lhs] = cNum]],
+            {a, assignments}];
+            (* Out$n 仮想変数 *)
+            If[cNum =!= None && Length[assignments] > 0,
+              With[{outKey = "Out$" <> cNum,
+                    allRhs = DeleteDuplicates[
+                      Join @@ Map[Last, assignments]]},
+                deps[outKey] = DeleteDuplicates[
+                  Join[Lookup[deps, outKey, {}], allRhs]];
+                varCellNum[outKey] = cNum;
+                varNBSource[outKey] = nbName]];
+            funcDefs = iExtractFuncDefs[text];
+            Do[With[{fname = First[fd], globalDeps = Last[fd]},
+              deps[fname] = DeleteDuplicates[
+                Join[Lookup[deps, fname, {}], globalDeps]];
+              varNBSource[fname] = nbName;
+              funcSet[fname] = True],
+            {fd, funcDefs}]],
+        {c, cells}]]],
+    {nbx, targetNBs}];
 
+    (* 未参照の Out$n を除去 *)
     With[{refd = DeleteDuplicates[
             Select[Flatten[Values[deps]],
               StringMatchQ[#, "Out$" ~~ DigitCharacter ..] &]]},
@@ -1921,6 +2122,11 @@ NBAccess`NBPlotDependencyGraph[nb_NotebookObject, opts : OptionsPattern[]] :=
             StringMatchQ[#, "Out$" ~~ DigitCharacter ..] &],
           refd]]];
 
+    (* === Step 4: 推移的依存を計算 === *)
+    allDepVars = NBAccess`NBTransitiveDependents[deps, directConfVars];
+    If[!ListQ[allDepVars], allDepVars = directConfVars];
+
+    (* === Step 5: グラフ構築 === *)
     allEdges = DeleteDuplicates @ Flatten[
       KeyValueMap[
         Function[{var, depList},
@@ -1931,14 +2137,14 @@ NBAccess`NBPlotDependencyGraph[nb_NotebookObject, opts : OptionsPattern[]] :=
       Return[Style["(エッジなし)", Gray, Italic]]];
 
     fullGraph = Graph[allEdges,
-      GraphLayout      -> "SpringElectricalEmbedding",
-      VertexSize       -> {"Scaled", 0.008},
+      GraphLayout      -> layout,
+      VertexSize       -> {"Scaled", 0.007},
       VertexStyle      -> Directive[
         EdgeForm[{Thin, GrayLevel[0.55]}],
         RGBColor[0.85, 0.93, 1.0]],
-      EdgeStyle        -> Directive[GrayLevel[0.5], Arrowheads[0.008]],
-      ImageSize        -> {900, 600},
-      ImagePadding     -> 30];
+      EdgeStyle        -> Directive[GrayLevel[0.5], Arrowheads[0.012]],
+      ImageSize        -> {1000, 700},
+      ImagePadding     -> 40];
 
     confInGraph = Intersection[directConfVars, VertexList[fullGraph]];
     transDepVerts = If[Length[confInGraph] > 0,
@@ -1961,28 +2167,79 @@ NBAccess`NBPlotDependencyGraph[nb_NotebookObject, opts : OptionsPattern[]] :=
 
     subg = Subgraph[fullGraph, visibleVars];
 
+    (* === Step 6: 描画 === *)
     Module[{iDispName, confSet, depSet, pubSet,
             confLabels, depLabels, pubLabels, allLabels,
-            edgeTooltips},
+            vStyles, eStyles, edgeTooltips,
+            highlighted, nbLegendItems},
 
+      (* ラベル: 秘密・依存秘密のみ変数名を表示。公開はラベルなし。
+         全ノードに Tooltip で変数名+NB名を表示。 *)
       iDispName[v_String] :=
         If[StringMatchQ[v, "Out$" ~~ DigitCharacter ..],
           "Out[" <> StringDrop[v, 4] <> "]", v];
+
+      iTooltipText[v_String] :=
+        Module[{base, src},
+          base = iDispName[v];
+          src = Lookup[varNBSource, v, ""];
+          If[src =!= "", base <> "\n" <> src, base]];
 
       confSet = Intersection[confInGraph, visibleVars];
       depSet  = Intersection[depOnly, visibleVars];
       pubSet  = Complement[visibleVars, confSet, depSet];
 
+      (* 秘密・依存秘密: Above に変数名ラベル表示 + Tooltip でNB名
+         Tooltip[表示ラベル, ホバーテキスト] を Placed[..., Above] で配置 *)
       confLabels = Map[# -> Placed[
-        Style[iDispName[#], Bold, 6, RGBColor[0.7, 0.1, 0.1]], Above] &,
+        Tooltip[Style[iDispName[#], Bold, 7, RGBColor[0.7, 0.1, 0.1]],
+                iTooltipText[#]], Above] &,
         confSet];
       depLabels = Map[# -> Placed[
-        Style[iDispName[#], Bold, 6, RGBColor[0.8, 0.45, 0.05]], Above] &,
+        Tooltip[Style[iDispName[#], Bold, 7, RGBColor[0.8, 0.45, 0.05]],
+                iTooltipText[#]], Above] &,
         depSet];
-      pubLabels = Map[# -> Placed[iDispName[#], Tooltip] &, pubSet];
+      (* 公開変数: ラベルなし、Tooltip のみ *)
+      pubLabels = Map[# -> Placed[iTooltipText[#], Tooltip] &, pubSet];
 
       allLabels = Join[confLabels, depLabels, pubLabels];
 
+      (* ノードスタイル:
+         変数: 塗りつぶし (秘密=赤, 依存秘密=橙, 公開=青), 縁取りなし
+         関数: 白地 + 縁取り (秘密=赤, 依存秘密=橙, 公開=青) *)
+      vStyles = Map[
+        Function[v,
+          Module[{priv, isFunc, clr},
+            priv = Lookup[varPrivacy, v, 0.0];
+            isFunc = TrueQ[Lookup[funcSet, v, False]];
+            clr = Which[
+              priv === 1.0,  RGBColor[0.82, 0.15, 0.15],   (* 赤 *)
+              priv === 0.75, RGBColor[0.90, 0.55, 0.10],   (* 橙 *)
+              True,          RGBColor[0.35, 0.55, 0.82]];   (* 青 *)
+            v -> If[isFunc,
+              (* 関数: 白地 + 色付き縁取り *)
+              Directive[EdgeForm[{AbsoluteThickness[2], clr}], White],
+              (* 変数: 塗りつぶし + 縁取りなし *)
+              Directive[EdgeForm[None], clr]]]],
+        visibleVars];
+
+      (* エッジスタイル: NB内は濃い実線、クロスNBは薄い破線 *)
+      eStyles = Map[
+        Function[e,
+          Module[{srcNB, dstNB, isCross},
+            srcNB = Lookup[varNBSource, e[[1]], "?src"];
+            dstNB = Lookup[varNBSource, e[[2]], "?dst"];
+            isCross = isMultiNB && (srcNB =!= dstNB);
+            e -> If[isCross,
+              (* クロスNB: 薄い破線 *)
+              Directive[GrayLevel[0.72], Dashing[{0.01, 0.008}],
+                Arrowheads[0.012]],
+              (* NB内 (または Local モード): 濃い実線 *)
+              Directive[GrayLevel[0.35], AbsoluteThickness[1.5],
+                Arrowheads[0.012]]]]],
+        EdgeList[subg]];
+
+      (* エッジツールチップ: セル番号 *)
       edgeTooltips = DeleteCases[
         Map[Function[e,
           With[{cn = Lookup[varCellNum, e[[2]], None]},
@@ -1990,29 +2247,62 @@ NBAccess`NBPlotDependencyGraph[nb_NotebookObject, opts : OptionsPattern[]] :=
               e -> Placed["In[" <> cn <> "]", Tooltip], Nothing]]],
         EdgeList[subg]], Nothing];
 
-      highlighted = HighlightGraph[subg,
-        {Style[confSet,
-           Directive[EdgeForm[{Thick, RGBColor[0.70, 0.10, 0.10]}],
-                     RGBColor[1, 0.82, 0.82]]],
-         Style[depSet,
-           Directive[EdgeForm[{Thick, RGBColor[0.80, 0.45, 0.05]}],
-                     RGBColor[1, 0.92, 0.78]]]},
-        GraphHighlightStyle -> "DehighlightFade",
+      highlighted = Graph[subg,
+        VertexStyle  -> vStyles,
         VertexLabels -> allLabels,
+        VertexSize   -> {"Scaled", 0.007},
+        EdgeStyle    -> eStyles,
         EdgeLabels   -> edgeTooltips,
+        GraphLayout  -> layout,
+        ImageSize    -> {1000, 700},
+        ImagePadding -> 40,
         PlotLabel    -> Style[
-          "依存グラフ (AccessLevel\[Equal]" <>
-          ToString[accessLevel] <> ")", Bold, 14]]
-    ];
+          "依存グラフ — " <> scopeLabel <>
+          " (AccessLevel=" <> ToString[accessLevel] <> ")",
+          Bold, 14]];
 
-    legend = SwatchLegend[
-      {RGBColor[1, 0.82, 0.82], RGBColor[1, 0.92, 0.78],
-       RGBColor[0.85, 0.93, 1.0]},
-      {"秘密 (1.0)", "依存秘密 (0.75)", "公開 (0.0)"},
-      LegendMarkerSize -> 18, LabelStyle -> 10];
+      (* 凡例 *)
+      legend = Column[{
+        SwatchLegend[
+          {RGBColor[0.82, 0.15, 0.15], RGBColor[0.90, 0.55, 0.10],
+           RGBColor[0.35, 0.55, 0.82]},
+          {"秘密 (直接)", "依存秘密 (推移的)", "公開"},
+          LegendMarkerSize -> 14, LabelStyle -> 10],
+        Row[{
+          Graphics[{RGBColor[0.35, 0.55, 0.82], Disk[{0, 0}, 0.4]},
+            ImageSize -> 14, PlotRange -> 1],
+          Style[" 変数", 9], Spacer[10],
+          Graphics[{White, EdgeForm[{AbsoluteThickness[2], RGBColor[0.35, 0.55, 0.82]}],
+            Disk[{0, 0}, 0.4]}, ImageSize -> 14, PlotRange -> 1],
+          Style[" 関数", 9]}],
+        If[isMultiNB,
+          Column[{
+            Spacer[4],
+            Row[Flatten[{
+              Style["NB: ", Bold, 10],
+              Riffle[
+                KeyValueMap[
+                  Function[{name, clr},
+                    Row[{Graphics[{clr, Disk[]}, ImageSize -> 12], " ", name}]],
+                  nbColorMap],
+                "  "]}]],
+            Spacer[2],
+            Row[{
+              Graphics[{GrayLevel[0.35], AbsoluteThickness[1.5],
+                Line[{{0,0},{1,0}}]}, ImageSize -> {30, 8}],
+              Style[" NB内", 9],
+              Spacer[10],
+              Graphics[{GrayLevel[0.72], Dashing[{0.03, 0.02}],
+                Line[{{0,0},{1,0}}]}, ImageSize -> {30, 8}],
+              Style[" クロスNB", 9]}]
+          }, Spacings -> 0.3],
+          Nothing]
+        }, Spacings -> 0.5];
 
-    Legended[highlighted, Placed[legend, Below]]
+      Legended[highlighted, Placed[legend, Below]]
+    ]
   ];
+
 
 
 (* ============================================================
@@ -2566,6 +2856,12 @@ NBAccess`NBEndJob[jobId_String] :=
     $NBJobTable = KeyDrop[$NBJobTable, jobId];
   ];
 
+(* スロットの written フラグを False にリセット (NBEndJob での削除対象にする) *)
+NBAccess`NBJobResetSlotWritten[jobId_String, slotIdx_Integer] :=
+  If[KeyExistsQ[$NBJobTable, jobId],
+    $NBJobTable[jobId, "written"] =
+      ReplacePart[$NBJobTable[jobId]["written"], slotIdx -> False]];
+
 (* \:30b8\:30e7\:30d6\:7570\:5e38\:7d42\:4e86: \:30a8\:30e9\:30fc\:30e1\:30c3\:30bb\:30fc\:30b8\:3092\:66f8\:304d\:8fbc\:307f\:30af\:30ea\:30fc\:30f3\:30a2\:30c3\:30d7 *)
 NBAccess`NBAbortJob[jobId_String, errorMsg_String] :=
   Module[{entry, firstUnwritten = 0},
@@ -2657,11 +2953,14 @@ NBAccess`NBParentNotebookOfCurrentCell[] :=
 NBAccess`NBWriteCell[nb_NotebookObject, cellExpr_Cell, where_:After] :=
   Quiet[NotebookWrite[nb, cellExpr, where]];
 
-(* 通知用 Print セル書き込み *)
+(* 通知用 Print セル書き込み
+   CellTags "claudecode-notice" を付与して NBScanDependentCells のマーキング対象外にする *)
 NBAccess`NBWritePrintNotice[None, text_String, color_] :=
-  CellPrint[Cell[text, "Print", FontWeight -> Bold, FontColor -> color, FontSize -> 11]];
+  CellPrint[Cell[text, "Print", FontWeight -> Bold, FontColor -> color, FontSize -> 11,
+    CellTags -> {"claudecode-notice"}]];
 NBAccess`NBWritePrintNotice[nb_NotebookObject, text_String, color_] :=
-  NotebookWrite[nb, Cell[text, "Print", FontWeight -> Bold, FontColor -> color, FontSize -> 11], After];
+  NotebookWrite[nb, Cell[text, "Print", FontWeight -> Bold, FontColor -> color, FontSize -> 11,
+    CellTags -> {"claudecode-notice"}], After];
 
 (* Dynamic セル書き込み *)
 NBAccess`NBWriteDynamicCell[nb_NotebookObject, dynBoxExpr_, tag_String:"", opts___] :=
