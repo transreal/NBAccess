@@ -65,7 +65,7 @@ AppendTo[$NBSeparationIgnoreList, "MyPackage"]
 機密マーク・依存機密マークのセル表示オプションです。`NBMarkCellConfidential` および `NBMarkCellDependent` が内部で使用します。
 
 - `$NBConfidentialCellOpts`: 赤背景 + WarningSign（直接機密セル用）
-- `$NBDependentCellOpts`: 橙背景 + WarningSign（依存機密セル用）
+- `$NBDependentCellOpts`: 橙背景 + LockIcon（依存機密セル用）
 
 ---
 
@@ -325,7 +325,7 @@ NBMarkCellConfidential[nb, 3]
 
 ### NBMarkCellDependent
 
-セルに依存機密マーク（橙背景 + WarningSign）を付けます。機密変数に間接依存するセルに使用します。TaggingRules に `"confidential" -> True` と `"dependent" -> True` の両方を設定し、`$NBDependentCellOpts` のスタイルを適用します。
+セルに依存機密マーク（橙背景 + LockIcon）を付けます。機密変数に間接依存するセルに使用します。TaggingRules に `"confidential" -> True` と `"dependent" -> True` の両方を設定し、`$NBDependentCellOpts` のスタイルを適用します。
 
 ```mathematica
 NBMarkCellDependent[nb, 7]
@@ -492,6 +492,15 @@ NBPlotDependencyGraph[nb, PrivacySpec -> <|"AccessLevel" -> 1.0|>]
 - **ノード着色**: 関数は白地に色付き縁取り、変数は塗りつぶしで表示されます。秘密は赤、依存秘密は橙、公開は青で色分けされます。
 - **エッジスタイル**: ノートブック内エッジは濃い実線、クロスノートブック間エッジは薄い破線で描画されます。
 - **ラベル**: 秘密・依存秘密のノードのみ変数名ラベルが表示され、公開ノードはラベルなしで表示されます。
+
+オプション:
+
+- `"Scope" -> "Global"`（デフォルト）: 全ノートブック統合の依存グラフを表示します。
+- `"Scope" -> "Local"`: 指定ノートブックのみの依存グラフを表示します。
+
+```mathematica
+NBPlotDependencyGraph[EvaluationNotebook[], "Scope" -> "Local"]
+```
 
 ### NBGetFunctionGlobalDeps
 
