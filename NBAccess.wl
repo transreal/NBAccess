@@ -659,6 +659,9 @@ NBAccess`NBCurrentCellIndex[nb_NotebookObject] :=
     If[Head[ec] =!= CellObject, Return[0]];
     cells = Quiet[Cells[nb]];
     If[!ListQ[cells], Return[0]];
+    (* Cells[] を直接呼んだので、キャッシュも同期する *)
+    $iCellsCache[nb] = cells;
+    $iCellStyleCache = KeyDrop[$iCellStyleCache, nb];
     pos = First[Flatten[Position[cells, ec]], 0];
     pos
   ];
@@ -678,6 +681,9 @@ NBAccess`NBSelectedCellIndices[nb_NotebookObject] :=
       ];
     ];
     If[!ListQ[sel] || Length[sel] === 0, Return[{}]];
+    (* Cells[] を直接呼んだので、キャッシュも同期する *)
+    $iCellsCache[nb] = allCells;
+    $iCellStyleCache = KeyDrop[$iCellStyleCache, nb];
     selSet = Association[# -> True & /@ sel];
     indices = Flatten[MapIndexed[
       If[KeyExistsQ[selSet, #1], First[#2], Nothing] &,
@@ -3009,8 +3015,9 @@ NBAccess`NBWriteAnchorAfterEvalCell[nb_NotebookObject, tag_String] :=
       Cell["", "Text", CellTags -> {tag}, CellOpen -> False], After]];
 
 (* 機密追跡用 CellEpilog インストール (専用API)
-   epilogExpr: CellEpilog に設定する式
+   epilogExpr: CellEpilog に設定する式（HoldRest により未評価で受け取る）
    checkSymbol: FreeQ チェック用のマーカーシンボル (例: ClaudeCode`Private`iConfidentialCellEpilog) *)
+SetAttributes[NBAccess`NBInstallConfidentialEpilog, HoldRest];
 NBAccess`NBInstallConfidentialEpilog[nb_NotebookObject, epilogExpr_, checkSymbol_] :=
   Module[{current},
     current = Quiet[AbsoluteCurrentValue[nb, CellEpilog]];
