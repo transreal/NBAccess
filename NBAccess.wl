@@ -1316,6 +1316,24 @@ NBAccess`$NBDependentCellOpts = {
     FontColor -> RGBColor[0.85, 0.50, 0.10], FontSize -> 12]
 };
 
+(* 機密解除済み（直接機密だったもの）: ごく薄い赤背景 + チェックマーク *)
+NBAccess`$NBDeclassifiedDirectCellOpts = {
+  Background     -> RGBColor[1, 0.97, 0.97],
+  CellFrame      -> {{1, 1}, {1, 1}},
+  CellFrameColor -> RGBColor[0.80, 0.55, 0.55],
+  CellDingbat    -> Cell["\[CheckmarkedBox]",
+    FontColor -> RGBColor[0.65, 0.35, 0.35], FontSize -> 12]
+};
+
+(* 機密解除済み（依存機密だったもの）: ごく薄い橙背景 + チェックマーク *)
+NBAccess`$NBDeclassifiedDependentCellOpts = {
+  Background     -> RGBColor[1, 0.98, 0.95],
+  CellFrame      -> {{1, 1}, {1, 1}},
+  CellFrameColor -> RGBColor[0.85, 0.65, 0.40],
+  CellDingbat    -> Cell["\[CheckmarkedBox]",
+    FontColor -> RGBColor[0.70, 0.50, 0.25], FontSize -> 12]
+};
+
 NBAccess`NBMarkCellConfidential[nb_NotebookObject, cellIdx_Integer] := (
   NBAccess`NBSetConfidentialTag[nb, cellIdx, True];
   NBAccess`NBCellSetOptions[nb, cellIdx, Sequence @@ NBAccess`$NBConfidentialCellOpts]
@@ -1759,11 +1777,17 @@ NBAccess`NBUpdateGlobalVarDependencies[existingDeps_Association,
   ];
 
 NBAccess`NBTransitiveDependents[deps_Association, confVars_List] :=
-  Module[{marked = Union[confVars], changed = True},
+  NBAccess`NBTransitiveDependents[deps, confVars, {}];
+
+(* excludeVars: 解除済み変数。伝搬のファイアウォールとして機能し、
+   これらの変数には伝搬せず、これら経由の間接依存も検出しない *)
+NBAccess`NBTransitiveDependents[deps_Association, confVars_List, excludeVars_List] :=
+  Module[{marked = Union[confVars], excSet = Association[# -> True & /@ excludeVars],
+          changed = True},
     While[changed,
       changed = False;
       Do[
-        If[!MemberQ[marked, v] &&
+        If[!MemberQ[marked, v] && !TrueQ[excSet[v]] &&
            Length[Intersection[Lookup[deps, v, {}], marked]] > 0,
           AppendTo[marked, v];
           changed = True],
@@ -1771,7 +1795,21 @@ NBAccess`NBTransitiveDependents[deps_Association, confVars_List] :=
     marked
   ];
 
+(* 機密解除済みセルの変数名を収集 *)
+NBAccess`NBCollectDeclassifiedVarNames[nb_NotebookObject] :=
+  Module[{nCells, result = {}, rawVN},
+    nCells = NBAccess`NBCellCount[nb];
+    Do[With[{dk = NBAccess`NBCellGetTaggingRule[nb, i, {"claudecode", "declassified"}]},
+        If[StringQ[dk],
+          rawVN = Quiet[NBAccess`NBCellExtractVarNames[nb, i]];
+          If[ListQ[rawVN], result = Join[result, rawVN]]]],
+      {i, nCells}];
+    DeleteDuplicates[result]
+  ];
+
 (* deps を省略した場合は内部で計算する従来互換版 *)
+Options[NBAccess`NBScanDependentCells] = {"ExcludeVars" -> {}};
+
 NBAccess`NBScanDependentCells[nb_NotebookObject,
     confVarNames_List, opts:OptionsPattern[]] :=
   NBAccess`NBScanDependentCells[nb, confVarNames,
@@ -1781,8 +1819,10 @@ NBAccess`NBScanDependentCells[nb_NotebookObject,
 NBAccess`NBScanDependentCells[nb_NotebookObject,
     confVarNames_List, deps_Association, opts:OptionsPattern[]] :=
   Module[{dependentVars, allDepVars, nCells, inIndices,
-          marked = 0},
-    allDepVars = NBAccess`NBTransitiveDependents[deps, confVarNames];
+          marked = 0, excludeVars},
+    excludeVars = OptionValue[NBAccess`NBScanDependentCells, {opts}, "ExcludeVars"];
+    If[!ListQ[excludeVars], excludeVars = {}];
+    allDepVars = NBAccess`NBTransitiveDependents[deps, confVarNames, excludeVars];
     dependentVars = Complement[allDepVars, confVarNames];
 
     nCells = NBAccess`NBCellCount[nb];
@@ -1798,12 +1838,14 @@ NBAccess`NBScanDependentCells[nb_NotebookObject,
     (* Phase 2: 全セルを順番に走査し Input/Output ペアを検出
        直前の Input セルが依存秘密 → Output を橙
        直前の Input セルが直接秘密 → Output を赤
+       直前の Input セルが機密解除済み → Output を解除済みスタイル
        
        この方式により、セルインデックスの "nextOut" 検索の
        ずれ問題を完全に回避する。 *)
     Module[{lastInputIdx = 0, lastInputText = "", lastInputTag = Missing[],
             lastInputDepTag = Missing[], lastInputIsDep = False,
             lastInputIsDirectConf = False,
+            lastInputDeclKind = None,
             style, text, assigns,
             noticeCells, allC, noticeIdxSet = <||>},
       (* 通知セル (claudecode-notice) のインデックスを収集: マーキング対象外 *)
@@ -1825,8 +1867,13 @@ NBAccess`NBScanDependentCells[nb_NotebookObject,
               {"claudecode", "dependent"}];
             lastInputIsDirectConf = TrueQ[lastInputTag] && !TrueQ[lastInputDepTag];
             lastInputIsDep = False;
+            (* 機密解除済み判定 *)
+            lastInputDeclKind = NBAccess`NBCellGetTaggingRule[nb, i,
+              {"claudecode", "declassified"}];
+            If[!StringQ[lastInputDeclKind], lastInputDeclKind = None];
             (* 直接秘密・明示非秘密・Claude関数セルはスキップ *)
             If[!TrueQ[lastInputTag] && lastInputTag =!= False &&
+               lastInputDeclKind === None &&
                !NBAccess`NBIsClaudeFunctionCell[nb, i],
               text = Quiet[NBAccess`NBCellReadInputText[nb, i]];
               If[StringQ[text] && text =!= "" && !iIsFuncDefText[text],
@@ -1851,14 +1898,28 @@ NBAccess`NBScanDependentCells[nb_NotebookObject,
           (* Output/Print セル: 直前の Input に基づいてマーク *)
           MemberQ[{"Output", "Print"}, style] && lastInputIdx > 0,
             (* 通知セル (claudecode-notice) はスキップ *)
-            If[!TrueQ[Lookup[noticeIdxSet, i, False]] &&
-               NBAccess`NBGetConfidentialTag[nb, i] =!= False,
+            If[!TrueQ[Lookup[noticeIdxSet, i, False]],
               Which[
+                (* 機密解除済みセルの Output → 解除済みスタイル *)
+                lastInputDeclKind === "direct",
+                  NBAccess`NBSetConfidentialTag[nb, i, False];
+                  NBAccess`NBCellSetTaggingRule[nb, i,
+                    {"claudecode", "declassified"}, "direct"];
+                  NBAccess`NBCellSetOptions[nb, i,
+                    Sequence @@ NBAccess`$NBDeclassifiedDirectCellOpts],
+                lastInputDeclKind === "dependent",
+                  NBAccess`NBSetConfidentialTag[nb, i, False];
+                  NBAccess`NBCellSetTaggingRule[nb, i,
+                    {"claudecode", "declassified"}, "dependent"];
+                  NBAccess`NBCellSetOptions[nb, i,
+                    Sequence @@ NBAccess`$NBDeclassifiedDependentCellOpts],
                 (* 直接秘密セルの Output → 赤マーク *)
-                lastInputIsDirectConf,
+                lastInputIsDirectConf &&
+                  NBAccess`NBGetConfidentialTag[nb, i] =!= False,
                   NBAccess`NBMarkCellConfidential[nb, i],
                 (* 依存秘密セルの Output → 橙マーク *)
-                lastInputIsDep,
+                lastInputIsDep &&
+                  NBAccess`NBGetConfidentialTag[nb, i] =!= False,
                   NBAccess`NBMarkCellDependent[nb, i]
               ]
             ];
