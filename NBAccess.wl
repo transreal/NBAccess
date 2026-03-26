@@ -131,6 +131,78 @@ NBInsertTextCells::usage =
   "NBInsertTextCells[nbFile, name, prompt] は .nb ファイルを非表示で開き、\n" <>
   "末尾に Subsection セル (name) と Text セル (prompt) を挿入して保存・閉じる。";
 
+(* ---- ファイル型ノートブック操作 API ---- *)
+(* 閉じた .nb ファイルを対象とした読み書き操作。
+   秘匿セルの有無に関わらず、必ずこの API を経由する。
+   規則: claudecode.wl 等の上位層から .nb ファイルを直接 NotebookOpen/NotebookGet
+         などで開いてはならない。必ず NBFileOpen を使うこと。              *)
+NBFileOpen::usage =
+  "NBFileOpen[path] は .nb ファイルを非表示 (Visible->False) で開き\n" <>
+  "NotebookObject を返す。失敗時は $Failed を返す。\n" <>
+  "必ず NBFileClose で閉じること。\n" <>
+  "例: nb2 = NBFileOpen[\"C:\\\\path\\\\to\\\\file.nb\"]";
+
+NBFileClose::usage =
+  "NBFileClose[nb] は NBFileOpen で開いたノートブックを閉じる。\n" <>
+  "例: NBFileClose[nb2]";
+
+NBFileSave::usage =
+  "NBFileSave[nb, path] は開いているノートブックを指定パスに保存する。\n" <>
+  "path が None の場合は上書き保存。\n" <>
+  "例: NBFileSave[nb2, \"C:\\\\path\\\\to\\\\translated.nb\"]";
+
+NBFileReadCells::usage =
+  "NBFileReadCells[nb, PrivacySpec -> ps] は開いているノートブックの全セルを\n" <>
+  "PrivacySpec に従ってフィルタリングし、{<|cellIdx, style, text, privacyLevel|>, ...} を返す。\n" <>
+  "privacyLevel > PrivacySpec の秘匿セルはテキストを \"[CONFIDENTIAL]\" に置換する。\n" <>
+  "例: cells = NBFileReadCells[nb2, PrivacySpec -> <|\"AccessLevel\"->0.5|>]";
+
+NBFileReadAllCells::usage =
+  "NBFileReadAllCells[nb] は開いているノートブックの全セルを\n" <>
+  "アクセスレベル別に分類して返す。秘匿セルも含む全セルを返すが\n" <>
+  "PrivacyLevel フィールドで識別できる。ローカルモデルで処理する際に使用。\n" <>
+  "例: cells = NBFileReadAllCells[nb2]";
+
+NBFileWriteCell::usage =
+  "NBFileWriteCell[nb, cellIdx, newText] は開いているノートブックの\n" <>
+  "指定セルのテキストを newText で置き換える。\n" <>
+  "セルスタイル・TaggingRules・秘匿マーク等の属性はそのまま保持される。\n" <>
+  "例: NBFileWriteCell[nb2, 3, \"This is a pen.\"]";
+
+NBFileWriteAllCells::usage =
+  "NBFileWriteAllCells[nb, replacements] は {cellIdx -> newText, ...} の\n" <>
+  "Associaiton または List に従って複数セルを一括置換する。\n" <>
+  "例: NBFileWriteAllCells[nb2, <|2->\"text\", 3->\"[CONFIDENTIAL]\"|>]";
+
+(* ---- ObjectSpec API ---- *)
+NBFileSpec::usage =
+  "NBFileSpec[path] はファイルのメタ情報と PrivacyLevel を Association で返す。\n" <>
+  "PrivacyLevel: 0.5=クラウドLLM可, 1.0=ローカルのみ, {0.5,1.0}=混在(.nb)。\n" <>
+  "例: NBFileSpec[\"C:\\\\path\\\\file.nb\"]";
+
+NBValueSpec::usage =
+  "NBValueSpec[expr, privacyLevel] は値の型情報と PrivacyLevel を返す。\n" <>
+  "例: NBValueSpec[dataset, 1.0]";
+
+NBPrivacyLevelToRoutes::usage =
+  "NBPrivacyLevelToRoutes[privacyLevel] は必要なモデルルートリストを返す。\n" <>
+  "0.5 -> {\"cloud\"}, 1.0 -> {\"local\"}, {0.5,1.0} -> {\"cloud\",\"local\"}\n" <>
+  "例: NBPrivacyLevelToRoutes[{0.5, 1.0}]";
+
+NBFileReadCellsInRange::usage =
+  "NBFileReadCellsInRange[nb, lo, hi] は PrivacyLevel が lo〜hi のセルのみ返す。\n" <>
+  "例: NBFileReadCellsInRange[nb2, 0.5, 0.5]  (* 公開セルのみ *)\n" <>
+  "    NBFileReadCellsInRange[nb2, 0.9, 1.0]  (* 秘匿セルのみ *)";
+NBSplitNotebookCells::usage =
+  "NBSplitNotebookCells[path, threshold] は .nb ファイルのセルを\n" <>
+  "PrivacyLevel <= threshold (public) と > threshold (private) に2分割する。\n" <>
+  "戻り値: {publicCells, privateCells}\n" <>
+  "例: {pub, priv} = NBAccess`NBSplitNotebookCells[\"file.nb\", 0.5]";
+NBMergeNotebookCells::usage =
+  "NBMergeNotebookCells[sourcePath, outputPath, results1, results2] は\n" <>
+  "2つの <|cellIdx->newText|> を元セル順にマージして outputPath に保存する。\n" <>
+  "例: NBAccess`NBMergeNotebookCells[src, dst, pubResults, privResults]";
+
 (* ---- セルマーク API ---- *)
 NBGetConfidentialTag::usage =
   "NBGetConfidentialTag[nb, cellIdx] は TaggingRules から機密タグを返す: True/False/Missing[]。";
@@ -1230,46 +1302,6 @@ NBAccess`NBWriteSmartCode[nb_NotebookObject, code_String] :=
    ロード時メッセージ
    ============================================================ *)
 
-Print[Style["NBAccess パッケージ \[LongDash] ノートブックアクセスユーティリティ (セルインデックス版)", Bold]];
-Print[
-  "  NBCellCount[nb]                      \[RightArrow] セル数\n" <>
-  "  NBCurrentCellIndex[nb]               \[RightArrow] 現在セルインデックス\n" <>
-  "  NBSelectedCellIndices[nb]            \[RightArrow] 選択セルインデックス\n" <>
-  "  NBCellPrivacyLevel[nb, idx]          \[RightArrow] プライバシーレベル (0.0..1.0)\n" <>
-  "  NBIsAccessible[nb, idx, PrivacySpec->ps] \[RightArrow] アクセス可能判定\n" <>
-  "  NBFilterCellIndices[nb, idxs, PrivacySpec->ps] \[RightArrow] プライバシーフィルタ\n" <>
-  "  NBCellToText[nb, idx]                \[RightArrow] セルテキスト抽出\n" <>
-  "  NBCellHasImage[cellExpr]             \[RightArrow] Cell式が画像を含むか判定\n" <>
-  "  NBGetCells[nb, PrivacySpec->ps]      \[RightArrow] 全セルインデックス取得 (フィルタ付き)\n" <>
-  "  NBGetContext[nb, idx, PrivacySpec->ps] \[RightArrow] LLMプロンプト用コンテキスト文字列\n" <>
-  "  NBWriteText[nb, text, style]         \[RightArrow] テキストセル書込\n" <>
-  "  NBWriteCode[nb, code]                \[RightArrow] コードセル書込 (構文カラーリング付き)\n" <>
-  "  NBWriteSmartCode[nb, code]           \[RightArrow] スマートコード書込 (CellPrint対応)\n" <>
-  "  NBWriteInputCellAndMaybeEvaluate[nb, boxes, auto] \[RightArrow] Inputセル挿入+条件付き評価\n" <>
-  "\n--- アクセス可能ディレクトリ API ---\n" <>
-  "  NBSetAccessibleDirs[nb, {dir1,...}] \[RightArrow] Claude Code 参照ディレクトリ設定\n" <>
-  "  NBGetAccessibleDirs[nb]            \[RightArrow] 設定済みディレクトリ取得\n" <>
-  "\n--- 汎用履歴データベース API ---\n" <>
-  "  NBHistoryCreate[nb, tag, diffFields]  \[RightArrow] DB作成 (差分フィールド指定, 冪等)\n" <>
-  "  NBHistoryAppend[nb, tag, entry]      \[RightArrow] エントリ追加 (差分圧縮+privacylevel)\n" <>
-  "  NBHistoryEntries[nb, tag]            \[RightArrow] 全エントリ (復元済み)\n" <>
-  "  NBHistoryUpdateLast[nb, tag, upd]    \[RightArrow] 最終エントリ更新\n" <>
-  "  NBHistoryReadHeader[nb, tag]         \[RightArrow] ヘッダー読取\n" <>
-  "  NBHistoryWriteHeader[nb, tag, hdr]   \[RightArrow] ヘッダー書込\n" <>
-  "  NBHistoryEntriesWithInherit[nb, tag] \[RightArrow] 親チェーン含む全履歴\n" <>
-  "  NBHistoryData[nb, tag]               \[RightArrow] 復元済み全データ\n" <>
-  "  NBHistorySetData[nb, tag, data]      \[RightArrow] 全データ書込 (自動圧縮)\n" <>
-  "  NBHistoryListTags[nb, prefix]        \[RightArrow] タグ一覧\n" <>
-  "  NBHistoryDelete[nb, tag]             \[RightArrow] 履歴削除\n" <>
-  "  NBHistoryReplaceEntries[nb, tag, e]  \[RightArrow] エントリ全置換\n" <>
-  "  NBHistoryUpdateHeader[nb, tag, upd]  \[RightArrow] ヘッダー部分更新\n" <>
-  "  NBHistoryAddAttachment[nb, tag, path] \[RightArrow] アタッチメント追加\n" <>
-  "  NBHistoryGetAttachments[nb, tag]     \[RightArrow] アタッチメント一覧\n" <>
-  "\n$NBPrivacySpec (default): " <>
-    ToString[NBAccess`$NBPrivacySpec] <>
-  "\n$NBConfidentialSymbols: " <>
-    ToString[Length[NBAccess`$NBConfidentialSymbols]] <> " 変数登録済"
-];
 
 (* ============================================================
    セルマーク関数 (セルインデックス版)
@@ -3104,6 +3136,187 @@ NBAccess`NBInsertTextCells[nbFile_String, name_String, prompt_String] :=
 
 
 (* ============================================================
+   ファイル型ノートブック操作 API
+   閉じた .nb ファイルを対象とした、PrivacySpec 対応の読み書き。
+
+   設計原則:
+     - 上位層 (claudecode.wl 等) は .nb ファイルを直接
+       NotebookOpen/NotebookGet/Cells[] などで操作してはならない。
+       必ず本 API を経由すること (rules/10-nbaccess.md 参照)。
+     - セルの秘匿属性 (TaggingRules["claudecode"]["confidential"])
+       は読み書き時に必ず保持・尊重する。
+     - CellEpilog / CellDingbat 等のマーク属性は一切変更しない。
+   ============================================================ *)
+
+(* ────────────────────────────────────────────────────────
+   NBFileOpen: .nb ファイルを非表示で開く
+   ──────────────────────────────────────────────────────── *)
+NBAccess`NBFileOpen[path_String] :=
+  Module[{nb},
+    If[!FileExistsQ[path],
+      Message[NBAccess`NBFileOpen::notfound, path]; Return[$Failed]];
+    nb = Quiet @ NotebookOpen[path, Visible -> False];
+    If[Head[nb] =!= NotebookObject,
+      Message[NBAccess`NBFileOpen::openfail, path]; Return[$Failed]];
+    nb
+  ];
+NBAccess`NBFileOpen::notfound = "ファイルが見つかりません: `1`";
+NBAccess`NBFileOpen::openfail  = "ノートブックを開けませんでした: `1`";
+
+(* ────────────────────────────────────────────────────────
+   NBFileClose: 開いたノートブックを閉じる
+   ──────────────────────────────────────────────────────── *)
+NBAccess`NBFileClose[nb_NotebookObject] :=
+  Quiet @ NotebookClose[nb];
+
+(* ────────────────────────────────────────────────────────
+   NBFileSave: 指定パスに保存 (path=None なら上書き)
+   ──────────────────────────────────────────────────────── *)
+NBAccess`NBFileSave[nb_NotebookObject, path_: None] :=
+  If[path === None,
+    Quiet @ NotebookSave[nb],
+    Quiet @ NotebookSave[nb, path]
+  ];
+
+(* ────────────────────────────────────────────────────────
+   内部ヘルパー: Cell 式からスタイル・秘匿フラグ・テキストを取得
+   (開いている nb を必要とせず Cell 式だけで動作するため
+    FrontEnd へのラウンドトリップが不要)
+   ──────────────────────────────────────────────────────── *)
+iNBFileCellGetTaggingRules[cellExpr_] :=
+  Quiet @ Replace[cellExpr,
+    {Cell[_, _, rest___] :>
+       (TaggingRules /. {rest} /. TaggingRules -> {}),
+     Cell[_, rest___] :>
+       (TaggingRules /. {rest} /. TaggingRules -> {}),
+     _ :> {}}];
+
+iNBFileCellGetClaudeCodeCC[cellExpr_] :=
+  Module[{tr = iNBFileCellGetTaggingRules[cellExpr], cc},
+    If[!ListQ[tr] && !AssociationQ[tr], Return[{}]];
+    cc = Quiet @ Lookup[tr, "claudecode", {}];
+    If[!ListQ[cc] && !AssociationQ[cc], {}, cc]
+  ];
+
+iNBFileCellIsConfidential[cellExpr_] :=
+  Module[{cc = iNBFileCellGetClaudeCodeCC[cellExpr]},
+    If[!ListQ[cc] && !AssociationQ[cc], False,
+      TrueQ[Quiet @ Lookup[cc, "confidential", False]]]];
+
+iNBFileCellPrivacyLevel[cellExpr_] :=
+  Module[{cc = iNBFileCellGetClaudeCodeCC[cellExpr]},
+    If[!ListQ[cc] && !AssociationQ[cc], Return[0.0]];
+    Which[
+      TrueQ[Quiet @ Lookup[cc, "confidential", False]], 1.0,
+      TrueQ[Quiet @ Lookup[cc, "dependent", False]],    0.75,
+      True,                                              0.0
+    ]
+  ];
+
+iNBFileCellStyle[cellExpr_] :=
+  Replace[cellExpr,
+    {Cell[_, style_String, ___] :> style,
+     _                          :> ""}];
+
+(* Cell 式から平文テキストを抽出 *)
+iNBFileCellText[cellExpr_] :=
+  Module[{content},
+    content = Replace[cellExpr,
+      {Cell[BoxData[bd_],   ___] :> bd,
+       Cell[str_String,     ___] :> str,
+       Cell[TextData[td_],  ___] :> td,
+       Cell[RawBoxes[rb_],  ___] :> rb,
+       _                         :> ""}];
+    StringTrim @ StringJoin @
+      Riffle[Cases[content, tok_String /; StringLength[tok] > 0, {0, Infinity}], " "]
+  ];
+
+(* ────────────────────────────────────────────────────────
+   NBFileReadCells: 全セルを PrivacySpec フィルタ付きで読む
+   戻り値:
+     { <|"CellIdx"->i, "Style"->s, "Text"->t,
+          "PrivacyLevel"->p, "IsConfidential"->b,
+          "CellExpr"->cell|>, ... }
+   PrivacyLevel > accessLevel の秘匿セルの Text は "[CONFIDENTIAL]" に置換。
+   ──────────────────────────────────────────────────────── *)
+Options[NBAccess`NBFileReadCells] = {PrivacySpec -> Automatic};
+NBAccess`NBFileReadCells[nb_NotebookObject, opts:OptionsPattern[]] :=
+  Module[{n, accessLevel, result},
+    n = NBAccess`NBCellCount[nb];
+    If[n === 0, Return[{}]];
+    accessLevel = iAccessLevel[OptionValue[PrivacySpec]];
+    result = Table[
+      Module[{cellObj, cellExpr, privLvl, style, text, isConf},
+        cellObj  = iResolveCell[nb, i];
+        If[cellObj === $Failed, Nothing,
+          cellExpr = Quiet @ NotebookRead[cellObj];
+          isConf   = iNBFileCellIsConfidential[cellExpr];
+          privLvl  = iNBFileCellPrivacyLevel[cellExpr];
+          style    = iNBFileCellStyle[cellExpr];
+          text     = If[privLvl <= accessLevel,
+            iNBFileCellText[cellExpr],
+            "[CONFIDENTIAL]"];
+          <|"CellIdx"        -> i,
+            "Style"          -> style,
+            "Text"           -> text,
+            "PrivacyLevel"   -> privLvl,
+            "IsConfidential" -> isConf,
+            "CellExpr"       -> cellExpr
+          |>]],
+      {i, n}];
+    Select[result, AssociationQ]
+  ];
+
+(* ────────────────────────────────────────────────────────
+   NBFileReadAllCells: 秘匿セルも含め全セルをそのまま返す
+   (ローカルモデル / PrivacySpec=1.0 用途)
+   ──────────────────────────────────────────────────────── *)
+NBAccess`NBFileReadAllCells[nb_NotebookObject] :=
+  NBAccess`NBFileReadCells[nb,
+    PrivacySpec -> <|"AccessLevel" -> 1.0|>];
+
+(* ────────────────────────────────────────────────────────
+   NBFileWriteCell: 指定セルのテキストを置き換える
+   スタイル・TaggingRules・CellEpilog・CellDingbat 等の属性は
+   すべてそのまま保持し、テキスト部分のみを差し替える。
+   ──────────────────────────────────────────────────────── *)
+NBAccess`NBFileWriteCell[nb_NotebookObject, cellIdx_Integer,
+                          newText_String] :=
+  Module[{cellObj, cellExpr, newCellExpr},
+    cellObj  = iResolveCell[nb, cellIdx];
+    If[cellObj === $Failed, Return[$Failed]];
+    cellExpr = Quiet @ NotebookRead[cellObj];
+    (* テキスト部分のみ置換、他の全オプション・属性はそのまま *)
+    newCellExpr = Replace[cellExpr,
+      {Cell[_String,    rest___] :> Cell[newText, rest],
+       Cell[TextData[_],rest___] :> Cell[newText, rest],
+       Cell[BoxData[_], rest___] :> Cell[newText, rest],
+       other_                    :> other}];
+    NotebookWrite[cellObj, newCellExpr];
+    cellIdx
+  ];
+
+(* ────────────────────────────────────────────────────────
+   NBFileWriteAllCells: 複数セルを一括置換
+   replacements: <|cellIdx -> newText, ...|> または
+                 {{cellIdx, newText}, ...}
+   ──────────────────────────────────────────────────────── *)
+NBAccess`NBFileWriteAllCells[nb_NotebookObject,
+                              replacements_Association] :=
+  KeyValueMap[
+    Function[{idx, txt},
+      NBAccess`NBFileWriteCell[nb, idx, txt]],
+    replacements];
+
+NBAccess`NBFileWriteAllCells[nb_NotebookObject,
+                              replacements_List] :=
+  Scan[
+    Function[pair,
+      NBAccess`NBFileWriteCell[nb, pair[[1]], pair[[2]]]],
+    replacements];
+
+
+(* ============================================================
    フォールバックモデル / プロバイダーアクセスレベル API
    ============================================================ *)
 
@@ -3131,6 +3344,216 @@ NBAccess`NBGetAvailableFallbackModels[requestedLevel_?NumericQ] :=
     Function[entry,
       Lookup[$iProviderMaxAccessLevel, ToLowerCase[entry[[1]]], 0.5] >= requestedLevel
     ]
+  ];
+
+
+(* ============================================================
+   ObjectSpec: オブジェクトのメタ情報 + プライバシーレベル
+
+   PrivacyLevel の意味:
+     0.5        — クラウド LLM でアクセス可能
+     1.0        — ローカルモデルのみ
+     {0.5, 1.0} — 混在: 公開部分は 0.5, 秘密部分は 1.0
+
+   ファイルのプライバシーレベル規則:
+     $packageDirectory または $ClaudeAccessibleDirs 内 → 0.5
+     それ以外                                         → 1.0
+     .nb ファイルは秘匿セルの有無で {0.5,1.0} に変わる可能性
+   ============================================================ *)
+
+(* ファイルのプライバシーレベルを決定する (pure, ファイルシステム情報だけ使用) *)
+iNBFilePrivacyLevel[path_String] :=
+  Module[{dir, pkgDir, accessDirs, isSafe},
+    dir        = DirectoryName[path];
+    pkgDir     = Quiet @ Symbol["Global`$packageDirectory"];
+    accessDirs = Quiet @ If[ListQ[Symbol["Global`$ClaudeAccessibleDirs"]],
+      Symbol["Global`$ClaudeAccessibleDirs"], {}];
+    isSafe = AnyTrue[
+      Select[Flatten[{pkgDir, accessDirs}], StringQ],
+      Function[d,
+        StringStartsQ[StringReplace[dir, "\\"->"/" ],
+          StringReplace[d,  "\\"->"/"]]
+      ]];
+    If[TrueQ[isSafe], 0.5, 1.0]
+  ];
+
+(* .nb ファイル固有: 秘匿セルの有無で PrivacyLevel レンジを返す *)
+iNBFileCellPrivacyRange[path_String] :=
+  Module[{nb2, allCells, hasConf, hasPublic, baseLevel},
+    baseLevel = iNBFilePrivacyLevel[path];
+    If[baseLevel === 0.5,
+      (* $packageDirectory 内 .nb は常にアクセス可 *)
+      Return[0.5]];
+    nb2 = Quiet @ NBAccess`NBFileOpen[path];
+    If[Head[nb2] =!= NotebookObject, Return[1.0]];
+    allCells  = Quiet @ NBAccess`NBFileReadAllCells[nb2];
+    Quiet @ NBAccess`NBFileClose[nb2];
+    If[!ListQ[allCells] || Length[allCells] === 0, Return[1.0]];
+    hasConf   = AnyTrue[allCells, TrueQ[#["IsConfidential"]] &];
+    hasPublic = AnyTrue[allCells, !TrueQ[#["IsConfidential"]] &];
+    Which[
+      hasConf && hasPublic, {0.5, 1.0},   (* 混在 *)
+      hasConf,              1.0,           (* 全て秘匿 *)
+      True,                 0.5            (* 全て公開 — ファイルは1.0だがセルが全公開 *)
+    ]
+  ];
+
+(* ──────────────────────────────────────────────────────────
+   NBObjectSpec: ファイルまたは値のメタ情報 + PrivacyLevel
+   ──────────────────────────────────────────────────────── *)
+Options[NBAccess`NBFileSpec] = {PrivacySpec -> Automatic};
+NBAccess`NBFileSpec[path_String, opts:OptionsPattern[]] :=
+  Module[{exists, ext, fsize, privLevel, nb2, allCells,
+          nConf = 0, nPublic = 0, nTotal = 0},
+    exists = FileExistsQ[path];
+    If[!exists,
+      Return[<|"Type" -> "File", "Path" -> path, "Exists" -> False,
+               "PrivacyLevel" -> 1.0|>]];
+    ext   = ToLowerCase[FileExtension[path]];
+    fsize = Quiet @ Check[FileByteCount[path], 0];
+    (* .nb ファイルはセル情報も取得 *)
+    If[ext === "nb",
+      privLevel = iNBFileCellPrivacyRange[path];
+      nb2 = Quiet @ NBAccess`NBFileOpen[path];
+      If[Head[nb2] === NotebookObject,
+        allCells = Quiet @ NBAccess`NBFileReadAllCells[nb2];
+        Quiet @ NBAccess`NBFileClose[nb2];
+        If[ListQ[allCells],
+          nTotal  = Length[allCells];
+          nConf   = Count[allCells, _?(TrueQ[#["IsConfidential"]] &)];
+          nPublic = nTotal - nConf]]];
+    If[ext =!= "nb",
+      privLevel = iNBFilePrivacyLevel[path]];
+    <|
+      "Type"          -> "File",
+      "FileType"      -> If[ext =!= "", ext, "unknown"],
+      "Path"          -> path,
+      "Exists"        -> True,
+      "FileSize"      -> fsize,
+      "PrivacyLevel"  -> privLevel,
+      (* .nb 固有フィールド *)
+      If[ext === "nb", "CellCount"            -> nTotal,   Nothing],
+      If[ext === "nb", "PublicCellCount"       -> nPublic,  Nothing],
+      If[ext === "nb", "ConfidentialCellCount" -> nConf,    Nothing]
+    |>
+  ];
+
+(* 変数/値の ObjectSpec (型情報 + プライバシーレベル) *)
+NBAccess`NBValueSpec[expr_, privacyLevel_:0.5] :=
+  Module[{h = Head[expr], len, keys, dims},
+    len  = Quiet @ Check[Length[expr], 0];
+    keys = If[AssociationQ[expr], Keys[expr], {}];
+    dims = Quiet @ Check[Dimensions[expr], {}];
+    <|
+      "Type"         -> "Value",
+      "Head"         -> ToString[h],
+      "Length"       -> len,
+      "Keys"         -> Take[keys, UpTo[20]],
+      "Dimensions"   -> dims,
+      "PrivacyLevel" -> privacyLevel
+    |>
+  ];
+
+(* PrivacyLevel から必要なモデルルートを決定 *)
+NBAccess`NBPrivacyLevelToRoutes[privacyLevel_] :=
+  Which[
+    privacyLevel === 0.5 || privacyLevel == 0.5,
+      {"cloud"},                   (* ClaudeCode/API のみ *)
+    privacyLevel === 1.0 || privacyLevel == 1.0,
+      {"local"},                   (* $ClaudePrivateModel のみ *)
+    ListQ[privacyLevel] && Length[privacyLevel] == 2,
+      {"cloud", "local"},          (* 並列2ノード *)
+    True,
+      {"cloud"}
+  ];
+
+(* セルをアクセスレベル範囲でフィルタ:
+   lo <= privacyLevel <= hi のセルのみ返す *)
+Options[NBAccess`NBFileReadCellsInRange] = {};
+NBAccess`NBFileReadCellsInRange[nb_NotebookObject,
+                                 lo_?NumericQ, hi_?NumericQ] :=
+  Module[{n, result},
+    n = NBAccess`NBCellCount[nb];
+    If[n === 0, Return[{}]];
+    result = Table[
+      Module[{cellObj, cellExpr, privLvl, style, text, isConf},
+        cellObj  = iResolveCell[nb, i];
+        If[cellObj === $Failed, Nothing,
+          cellExpr = Quiet @ NotebookRead[cellObj];
+          isConf   = iNBFileCellIsConfidential[cellExpr];
+          privLvl  = iNBFileCellPrivacyLevel[cellExpr];
+          If[privLvl >= lo && privLvl <= hi,
+            style = iNBFileCellStyle[cellExpr];
+            text  = iNBFileCellText[cellExpr];
+            <|"CellIdx"        -> i,
+              "Style"          -> style,
+              "Text"           -> text,
+              "PrivacyLevel"   -> privLvl,
+              "IsConfidential" -> isConf,
+              "CellExpr"       -> cellExpr
+            |>,
+            Nothing]]],
+      {i, n}];
+    Select[result, AssociationQ]
+  ];
+
+
+(* ────────────────────────────────────────────────────────
+   NBSplitNotebookCells: PrivacyLevel threshold でセルを2分割
+   戻り値: {publicCells, privateCells}
+     各要素は {<|"CellIdx"->n, "Style"->s, "Text"->t, "PrivacyLevel"->p, "CellExpr"->e|>, ...}
+   threshold: 0.5 以下は public, 0.5 超は private
+   ──────────────────────────────────────────────────────── *)
+NBAccess`NBSplitNotebookCells[path_String, threshold_:0.5] :=
+  Module[{nb2, allCells, public, private},
+    If[!FileExistsQ[path], Return[{{},{}}]];
+    nb2 = NBAccess`NBFileOpen[path];
+    If[Head[nb2] =!= NotebookObject, Return[{{},{}}]];
+    allCells = Quiet @ NBAccess`NBFileReadAllCells[nb2];
+    Quiet @ NBAccess`NBFileClose[nb2];
+    If[!ListQ[allCells] || Length[allCells] === 0, Return[{{},{}}]];
+    public  = Select[allCells, #["PrivacyLevel"] <= threshold &];
+    private = Select[allCells, #["PrivacyLevel"] >  threshold &];
+    {public, private}
+  ];
+
+(* ────────────────────────────────────────────────────────
+   NBMergeNotebookCells: 2つの結果 Association を元のセル順にマージして保存
+   results1, results2: <|cellIdx -> newText, ...|>
+   元ファイルを開いて書き戻し、outputPath に保存する。
+   ──────────────────────────────────────────────────────── *)
+NBAccess`NBMergeNotebookCells[sourcePath_String, outputPath_String,
+                               results1_Association, results2_Association] :=
+  Module[{nb2, merged, normOut},
+    (* 出力パスに関連する既存 invisible ノートブックを閉じる (パス正規化) *)
+    normOut = StringReplace[outputPath, "\\" -> "/"];
+    Scan[Function[n,
+      Module[{fn = Quiet[NotebookFileName[n]]},
+        If[StringQ[fn] && StringReplace[fn, "\\" -> "/"] === normOut,
+          Quiet @ NotebookClose[n]]]],
+      Quiet @ Notebooks[]];
+    (* ソースパスも同様に閉じる (前回の NBSplitNotebookCells が残している場合) *)
+    Module[{normSrc = StringReplace[sourcePath, "\\" -> "/"]},
+      Scan[Function[n,
+        Module[{fn = Quiet[NotebookFileName[n]]},
+          If[StringQ[fn] && StringReplace[fn, "\\" -> "/"] === normSrc &&
+             Quiet[CurrentValue[n, Visible]] === False,
+            Quiet @ NotebookClose[n]]]],
+        Quiet @ Notebooks[]]];
+    nb2 = NBAccess`NBFileOpen[sourcePath];
+    If[Head[nb2] =!= NotebookObject, Return[$Failed]];
+    merged = Join[results1, results2];
+    If[Length[merged] > 0,
+      NBAccess`NBFileWriteAllCells[nb2, merged]];
+    NBAccess`NBFileSave[nb2, outputPath];
+    NBAccess`NBFileClose[nb2];
+    (* 保存後、outputPath のノートブックが invisible で残っていないか再確認 *)
+    Scan[Function[n,
+      Module[{fn = Quiet[NotebookFileName[n]]},
+        If[StringQ[fn] && StringReplace[fn, "\\" -> "/"] === normOut,
+          Quiet @ NotebookClose[n]]]],
+      Quiet @ Notebooks[]];
+    outputPath
   ];
 
 
