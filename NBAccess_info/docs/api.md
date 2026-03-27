@@ -1,479 +1,528 @@
-# NBAccess API リファレンス
+# NBAccess API Reference
 
-LLM コード生成用リファレンス。NBAccess パッケージの全公開シンボルを網羅する。
+Package: `NBAccess` — Notebook cell-index-based read/write with privacy filtering.
+Load: `Block[{$CharacterEncoding = "UTF-8"}, Get["NBAccess.wl"]]`
+GitHub: https://github.com/transreal/NBAccess
 
-## グローバル変数
+All functions are in the `NBAccess`` context. After `BeginPackage`/`Get`, call without prefix.
+
+## Global Variables
 
 ### $NBPrivacySpec
-型: Association, 初期値: `<|"AccessLevel" -> 0.5|>`
-NBAccess 関数のデフォルト PrivacySpec。ローカルLLM環境では `$NBPrivacySpec = <|"AccessLevel" -> 1.0|>` に設定する。
+Type: Association, Default: `<|"AccessLevel" -> 0.5|>`
+Default PrivacySpec for all NBAccess functions. Set to `<|"AccessLevel" -> 1.0|>` in local LLM environments to allow confidential data access.
 
 ### $NBConfidentialSymbols
-型: Association, 初期値: `<||>`
-秘密変数名 → プライバシーレベル (0.0..1.0) のテーブル。ClaudeCode パッケージが自動更新する。
+Type: Association, Default: `<||>`
+Table of confidential variable names → privacy level. Format: `<|"varName" -> privacyLevel, ...|>`. Auto-updated by ClaudeCode package.
 
 ### $NBSendDataSchema
-型: Boolean, 初期値: True
-True: 秘密依存 Output でもデータ型・サイズ・キー等のスキーマ情報を送信する。False: 秘密依存 Output のスキーマ情報を一切送信しない。
+Type: Boolean, Default: `True`
+Controls whether schema info (type, size, keys) of confidential-dependent Output cells is sent to cloud LLM. `False` sends no schema for confidential-dependent outputs. Non-confidential outputs always include smart summary.
+
+### $NBLLMQueryFunc
+Type: Function | Symbol | None, Default: `None`
+Async LLM call callback. ClaudeCode package registers `ClaudeQueryAsync` at load time. Signature: `$NBLLMQueryFunc[prompt, callback, nb, Model -> spec, Fallback -> bool]`. Non-blocking.
 
 ### $NBSeparationIgnoreList
-型: List, 初期値: `{"NBAccess", "NotebookExtensions"}`
-分離検査 (ClaudeCheckSeparation) で無視するパッケージ名リスト。
-例: `AppendTo[$NBSeparationIgnoreList, "MyPackage"]`
+Type: List, Default: `{"NBAccess", "NotebookExtensions"}`
+Package names excluded from separation check (`ClaudeCheckSeparation`). Append to add packages.
 
-## オプション
+## Options
 
 ### PrivacySpec
-NBAccess 関数のプライバシーフィルタリングオプション。
-`PrivacySpec -> <|"AccessLevel" -> 0.5|>` の形式で指定する。
-AccessLevel の意味: 0.5=クラウドLLM安全なデータのみ, 1.0=すべてのデータ。
-指定されたアクセスレベル以下のプライバシーレベルを持つセルのみアクセス可能。
+Option for NBAccess history/filter functions. Value: `<|"AccessLevel" -> level|>` where level ∈ [0.0, 1.0]. Cells with privacyLevel > AccessLevel are inaccessible. Default AccessLevel: 0.5 (cloud-LLM-safe data only).
 
-## セルユーティリティ API
+## Cell Utility API
 
 ### NBCellCount[nb] → Integer
-ノートブックの全セル数を返す。
+Returns total number of cells in notebook.
 
 ### NBCurrentCellIndex[nb] → Integer
-EvaluationCell[] のセルインデックスを返す。見つからない場合は 0。
+Returns cell index of `EvaluationCell[]`. Returns 0 if not found.
 
 ### NBSelectedCellIndices[nb] → List
-選択中セルのインデックスリストを返す。セルブラケット選択またはカーソル位置のセルを返す。
+Returns list of indices of currently selected cells. Falls back to cursor-position cell if no bracket selection.
 
 ### NBCellIndicesByTag[nb, tag] → List
-指定 CellTags を持つセルのインデックスリストを返す。
+Returns list of indices of cells with the specified `CellTags` value.
 
 ### NBCellIndicesByStyle[nb, style] → List
-指定 CellStyle のセルのインデックスリストを返す。`style` は文字列またはリスト `{style1, style2, ...}`。
+Returns indices of cells with given `CellStyle`. `style` may be a String or `{style1, style2, ...}` for multiple styles.
 
 ### NBDeleteCellsByTag[nb, tag]
-指定 CellTags を持つセルを全て削除する。
+Deletes all cells with the specified `CellTags`.
 
 ### NBMoveAfterCell[nb, cellIdx]
-セルの後ろにカーソルを移動する。
+Moves cursor to after the specified cell.
 
 ### NBCellRead[nb, cellIdx] → Cell
-NotebookRead で Cell 式を返す。
+Returns cell expression via `NotebookRead`.
 
 ### NBCellReadInputText[nb, cellIdx] → String
-FrontEnd 経由で InputText 形式を取得する。失敗時は NBCellExprToText にフォールバック。
+Retrieves cell content as InputText string via FrontEnd. Falls back to `NBCellExprToText` on failure.
 
 ### NBCellStyle[nb, cellIdx] → String
-セルの CellStyle を返す。
+Returns the `CellStyle` of the cell.
 
 ### NBCellLabel[nb, cellIdx] → String
-セルの CellLabel (例: "In[3]:=") を返す。ラベルなしの場合は ""。
+Returns `CellLabel` (e.g., `"In[3]:="`). Returns `""` if no label.
 
 ### NBCellSetOptions[nb, cellIdx, opts]
-セルに SetOptions を適用する。
+Applies `SetOptions` to the specified cell.
 
 ### NBCellGetTaggingRule[nb, cellIdx, path] → value
-TaggingRules のネスト値を返す。
+Returns nested value from cell's `TaggingRules` at the given path.
 例: `NBCellGetTaggingRule[nb, 3, {"claudecode", "confidential"}]`
 
+### NBCellSetTaggingRule[nb, cellIdx, path, value]
+Sets nested value in cell's `TaggingRules` at the given path.
+例: `NBCellSetTaggingRule[nb, 3, {"documentation", "idea"}, "original idea"]`
+
 ### NBCellRasterize[nb, cellIdx, file, opts]
-セルを Rasterize して file に保存する。
+Rasterizes the cell and saves to `file`.
 
-### NBCellHasImage[cellExpr] → Boolean
-Cell 式が画像 (RasterBox/GraphicsBox) を含むか判定する。cellExpr は NBCellRead の戻り値を想定。
+### NBCellHasImage[cellExpr] → True | False
+Returns True if the Cell expression (from `NBCellRead`) contains images (RasterBox/GraphicsBox).
 
-## プライバシー API
+### NBCellWriteText[nb, cellIdx, newText]
+Replaces cell text content with `newText`. Preserves CellStyle, TaggingRules, and other options.
 
-### NBCellPrivacyLevel[nb, cellIdx] → Real
-セルのプライバシーレベル (0.0〜1.0) を返す。
-0.0: 非秘密, 0.75: 依存機密 (dependent タグ), 1.0: 直接機密または秘密変数参照あり。
+### NBInvalidateCellsCache[]
+Clears the internal Cells[] cache for all notebooks.
 
-### NBIsAccessible[nb, cellIdx, opts] → Boolean
-セルが指定の PrivacySpec でアクセス可能かを返す。
-Options: `PrivacySpec -> Automatic`
+### NBInvalidateCellsCache[nb]
+Clears the internal Cells[] cache for the specified notebook.
 
-### NBFilterCellIndices[nb, indices, opts] → List
-セルインデックスリストを PrivacySpec でフィルタリングして返す。
-Options: `PrivacySpec -> Automatic`
-
-## テキスト抽出 API
+## Text Extraction API
 
 ### NBCellExprToText[cellExpr] → String
-NotebookRead の結果 (Cell式) からテキストを抽出する。
+Extracts text from a Cell expression returned by `NotebookRead`.
 
 ### NBCellToText[nb, cellIdx] → String
-セルのテキスト内容を返す。
+Returns text content of the specified cell.
+
+### NBCellGetText[nb, cellIdx] → String
+Robustly retrieves text from a cell. Fallback chain: FrontEnd InputText → `NBCellToText` → `NBCellExprToText`. Returns `""` if text cannot be retrieved.
+
+## Privacy API
+
+### NBCellPrivacyLevel[nb, cellIdx] → Real
+Returns privacy level of cell in range [0.0, 1.0]. 0.0 = non-confidential, 1.0 = confidential (Confidential mark or confidential variable reference).
+
+### NBIsAccessible[nb, cellIdx, opts] → True | False
+Returns whether cell is accessible under the given PrivacySpec.
+Options: `PrivacySpec -> $NBPrivacySpec`
+
+### NBFilterCellIndices[nb, indices, opts] → List
+Filters a list of cell indices to only those accessible under PrivacySpec.
+Options: `PrivacySpec -> $NBPrivacySpec`
+
+## Cell List / Context API
 
 ### NBGetCells[nb, opts] → List
-ノートブック内の全セルインデックスを PrivacySpec でフィルタリングして返す。
-Options: `PrivacySpec -> Automatic`
+Returns all cell indices in notebook filtered by PrivacySpec.
+Options: `PrivacySpec -> $NBPrivacySpec`
 
 ### NBGetContext[nb, afterIdx, opts] → String
-ノートブック内の afterIdx 番目以降のセルから LLM プロンプト用コンテキスト文字列を構築する。PrivacySpec でフィルタリングされる。
-Options: `PrivacySpec -> Automatic` (デフォルト AccessLevel 0.5)
+Builds LLM prompt context string from cells after index `afterIdx`, filtered by PrivacySpec.
+Options: `PrivacySpec -> $NBPrivacySpec` (default AccessLevel 0.5)
 
-## 書き込み API
+## LLM Integration API
+
+### NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]
+Asynchronously transforms a cell using LLM. Non-blocking. Automatically selects appropriate LLM based on cell privacy level.
+`promptFn`: `String -> String` — receives cell text, returns prompt string.
+`completionFn`: `Association -> Null` — receives `<|"Response" -> text, "OriginalText" -> orig, "PrivacyLevel" -> pl|>` or `$Failed` on error.
+→ Null
+Options: `Fallback -> False`, `InputText -> Automatic` (override cell text)
+例: `NBCellTransformWithLLM[nb, 3, promptFn, Print, Fallback -> True]`
+
+## Write API
 
 ### NBWriteText[nb, text, style]
-ノートブックにテキストセルを書き込む。style のデフォルトは "Text"。
+Writes a text cell to the notebook. `style` defaults to `"Text"`.
 
 ### NBWriteCode[nb, code]
-構文カラーリング付き Input セルを書き込む。MakeBoxes による数式タイプセットを自動試行し、失敗時は FE パーサにフォールバック。
+Writes an Input cell with syntax coloring.
 
 ### NBWriteSmartCode[nb, code]
-CellPrint[] パターンを自動検出してスマートにセルを書き込む。
+Writes a cell to the notebook, auto-detecting `CellPrint[]` patterns for smart cell insertion.
 
 ### NBWriteInputCellAndMaybeEvaluate[nb, boxes, autoEvaluate]
-現在のカーソル位置の後ろに Input セルを挿入し、カーソルをセル先頭に移動する。autoEvaluate が True の場合は SelectionEvaluate を実行する。
+Inserts an Input cell after the current cursor position and moves cursor to cell start. If `autoEvaluate` is True, additionally calls `SelectionEvaluate`.
 
 ### NBInsertTextCells[nbFile, name, prompt]
-.nb ファイルを非表示で開き、末尾に Subsection セル (name) と Text セル (prompt) を挿入して保存・閉じる。
+Opens `.nb` file invisibly, appends a Subsection cell (`name`) and a Text cell (`prompt`) at the end, saves, and closes.
 
 ### NBWriteCell[nb, cellExpr]
-ノートブックに Cell 式を書き込む (After)。`NBWriteCell[nb, cellExpr, pos]` で pos (After/Before/All) を指定可能。
+Writes a Cell expression to the notebook at the After position.
+
+### NBWriteCell[nb, cellExpr, pos]
+Writes a Cell expression at `pos` (After/Before/All).
 
 ### NBWritePrintNotice[nb, text, color]
-ノートブックに通知用 Print セルを書き込む。nb が None の場合は CellPrint を使用 (同期 In/Out 間出力)。
+Writes a notification Print cell to the notebook. If `nb` is None, uses `CellPrint` (synchronous In/Out placement).
 
 ### NBWriteDynamicCell[nb, dynBoxExpr, tag]
-ノートブックに Dynamic セルを書き込む。tag が "" でない場合は CellTags を設定する。
+Writes a Dynamic cell to the notebook. Sets `CellTags` if `tag` is not `""`.
 
 ### NBWriteExternalLanguageCell[nb, code, lang, autoEvaluate]
-ExternalLanguage セルを書き込む。autoEvaluate が True なら直前セルを評価する。
+Writes an ExternalLanguage cell. If `autoEvaluate` is True, evaluates the preceding cell immediately.
 
 ### NBInsertAndEvaluateInput[nb, boxes]
-Input セルを挿入して即座に評価する。
+Inserts an Input cell and evaluates it immediately.
 
 ### NBInsertInputAfter[nb, boxes]
-Input セルを After に書き込み Before CellContents に移動する。
+Inserts an Input cell at After position, then moves cursor to Before CellContents.
 
 ### NBWriteAnchorAfterEvalCell[nb, tag]
-EvaluationCell 直後に不可視アンカーセルを書き込む。EvaluationCell が取得できない場合はノートブック末尾に書き込む。
+Writes an invisible anchor cell immediately after EvaluationCell. Falls back to notebook end if EvaluationCell cannot be retrieved.
 
-## ファイル型ノートブック操作 API
+## Cell Mark API
 
-閉じた .nb ファイルを対象とした読み書き操作。上位層から直接 NotebookOpen/NotebookGet で .nb を開いてはならない。必ず NBFileOpen を経由すること。
+### NBGetConfidentialTag[nb, cellIdx] → True | False | Missing[]
+Returns the confidential tag from cell's `TaggingRules`.
+
+### NBSetConfidentialTag[nb, cellIdx, val]
+Sets the confidential tag in cell's `TaggingRules` to `val` (True/False).
+
+### NBMarkCellConfidential[nb, cellIdx]
+Marks cell as confidential (red background + WarningSign icon).
+
+### NBMarkCellDependent[nb, cellIdx]
+Marks cell as dependent-confidential (orange background + LockIcon). Use for cells that are indirectly confidential (e.g., computed from confidential variables).
+
+### NBUnmarkCell[nb, cellIdx]
+Removes all confidential marks (visual and tag) from the cell.
+
+## Cell Content Analysis API
+
+### NBCellUsesConfidentialSymbol[nb, cellIdx] → True | False
+Returns whether the cell references any variable in `$NBConfidentialSymbols`.
+
+### NBCellExtractVarNames[nb, cellIdx] → List
+Extracts LHS variable names from Set/SetDelayed expressions in the cell.
+
+### NBCellExtractAssignedNames[nb, cellIdx] → List
+Extracts assignment target variable names inside `Confidential[...]` in the cell.
+
+### NBShouldExcludeFromPrompt[nb, cellIdx] → True | False
+Returns whether the cell should be excluded from LLM prompt context.
+
+### NBIsClaudeFunctionCell[nb, cellIdx] → True | False
+Returns whether the cell is a Claude function call cell (ClaudeQuery, etc.).
+
+## Internal Cell Helper (Public)
+
+### NBAccess`iCellToInputText[cell] → String
+Retrieves InputText format of a CellObject via FrontEnd. Falls back to `NBCellExprToText` on failure.
+
+## Dependency Graph API
+
+### NBBuildVarDependencies[nb] → Association
+Analyzes Input cells in notebook and returns variable dependency graph `<|"var" -> {"dep1", ...}, ...|>`. Identifiers inside string literals are excluded. Use for per-cell evaluation; use `NBBuildGlobalVarDependencies[]` for precision LLM pre-checks.
+
+### NBBuildGlobalVarDependencies[] → Association
+Scans all Input cells across all open notebooks (`Notebooks[]`) and returns unified dependency graph `<|"var" -> {"dep1", ...}, ...|>`. Use immediately before LLM calls for precise dependency checks. For normal cell execution, use the lighter `NBBuildVarDependencies[nb]`.
+
+### NBUpdateGlobalVarDependencies[existingDeps, afterLine] → {updatedDeps, newLastLine}
+Incremental update: scans only cells with `CellLabel In[x]` where x > `afterLine` and merges into `existingDeps`. Avoids full graph rebuild cost.
+
+### NBTransitiveDependents[deps, confVars] → List
+Returns all variable names that directly or transitively depend on `confVars` in the dependency graph `deps`.
+
+### NBScanDependentCells[nb, confVarNames] → Integer
+Applies `NBMarkCellDependent` to cells that depend on confidential variables. Returns count of newly marked cells. Claude function call cells are excluded.
+
+### NBScanDependentCells[nb, confVarNames, deps]
+Same as above but uses pre-computed dependency graph `deps` (avoids redundant computation).
+
+### NBFilterHistoryEntry[entry, confVars] → entry
+Blocks `response`/`instruction` fields in a history entry if they contain current confidential variable names or values. `confVars` is the current confidential variable name list.
+
+### NBDependencyEdges[nb] → List
+Returns variable dependency relations as edge list `{DirectedEdge["dep", "var"], ...}`. `"dep" → "var"` means "var depends on dep".
+
+### NBDependencyEdges[nb, confVars] → List
+Returns only edges related to confidential variables `confVars`.
+
+### NBDebugDependencies[nb, confVars]
+Debug function. Prints dependency graph, transitive dependencies, and cell text analysis for each Input cell via `Print`.
+
+### NBPlotDependencyGraph[] → Graphics
+Plots unified dependency graph of all open notebooks (default). Nodes are variable names or Out[n]. Direct confidential nodes: red, dependent-confidential: orange. Intra-notebook edges: solid, cross-notebook: dashed.
+Options: `"Scope" -> "Global"` (default) | `"Local"`, `PrivacySpec -> <|"AccessLevel" -> 1.0|>`
+
+### NBPlotDependencyGraph[nb] → Graphics
+Plots dependency graph for specified notebook.
+例: `NBPlotDependencyGraph[EvaluationNotebook[], "Scope" -> "Local"]`
+
+### NBGetFunctionGlobalDeps[nb] → Association
+Analyzes all function definitions in notebook and returns `<|"funcName" -> {"globalVar1", ...}, ...|>`. Pattern variables and scoping locals (Module/Block/With/Function) are excluded.
+
+## Notebook TaggingRules API
+
+### NBGetTaggingRule[nb, key] → value | Missing[]
+Returns value at `key` in notebook's `TaggingRules`. Returns `Missing[]` if key absent.
+
+### NBGetTaggingRule[nb, {key1, key2, ...}] → value | Missing[]
+Returns nested value at the specified key path.
+
+### NBSetTaggingRule[nb, key, value]
+Sets `key -> value` in notebook's `TaggingRules`.
+
+### NBSetTaggingRule[nb, {key1, key2}, value]
+Sets nested key path in notebook's `TaggingRules`.
+
+### NBDeleteTaggingRule[nb, key]
+Removes `key` from notebook's `TaggingRules`.
+
+### NBListTaggingRuleKeys[nb] → List
+Returns all top-level keys in notebook's `TaggingRules`.
+
+### NBListTaggingRuleKeys[nb, prefix] → List
+Returns only keys starting with `prefix`.
+
+## File-type Notebook API
+
+Rules: Never open `.nb` files with `NotebookOpen`/`NotebookGet` directly from calling code. Always use `NBFileOpen`. Always close with `NBFileClose`.
 
 ### NBFileOpen[path] → NotebookObject | $Failed
-.nb ファイルを非表示 (Visible->False) で開き NotebookObject を返す。失敗時は $Failed。必ず NBFileClose で閉じること。
+Opens a `.nb` file invisibly (`Visible -> False`). Must be closed with `NBFileClose`.
 例: `nb2 = NBFileOpen["C:\\path\\to\\file.nb"]`
 
 ### NBFileClose[nb]
-NBFileOpen で開いたノートブックを閉じる。
+Closes a notebook opened with `NBFileOpen`.
 
 ### NBFileSave[nb, path]
-開いているノートブックを指定パスに保存する。path が None の場合は上書き保存。
+Saves the open notebook to `path`. If `path` is None, saves in-place (overwrites).
+例: `NBFileSave[nb2, "C:\\path\\to\\translated.nb"]`
 
 ### NBFileReadCells[nb, opts] → List
-開いているノートブックの全セルを PrivacySpec に従ってフィルタリングし、`{<|"cellIdx"->n, "style"->s, "text"->t, "privacyLevel"->p|>, ...}` を返す。privacyLevel > AccessLevel の秘匿セルはテキストを "[CONFIDENTIAL]" に置換する。
-Options: `PrivacySpec -> Automatic`
-例: `cells = NBFileReadCells[nb2, PrivacySpec -> <|"AccessLevel"->0.5|>]`
+Reads all cells from open notebook, filtered by PrivacySpec. Returns `{<|"cellIdx" -> i, "style" -> s, "text" -> t, "privacyLevel" -> pl|>, ...}`. Cells with privacyLevel exceeding PrivacySpec have text replaced with `"[CONFIDENTIAL]"`.
+Options: `PrivacySpec -> $NBPrivacySpec`
+例: `cells = NBFileReadCells[nb2, PrivacySpec -> <|"AccessLevel" -> 0.5|>]`
 
 ### NBFileReadAllCells[nb] → List
-開いているノートブックの全セルをアクセスレベル別に分類して返す。秘匿セルも含む全セルを返すが PrivacyLevel フィールドで識別できる。ローカルモデルで処理する際に使用。
+Reads all cells including confidential, classified by access level. Use for local model processing. Returns all cells with `PrivacyLevel` field for identification.
 
 ### NBFileWriteCell[nb, cellIdx, newText]
-開いているノートブックの指定セルのテキストを newText で置き換える。セルスタイル・TaggingRules・秘匿マーク等の属性はそのまま保持される。
+Replaces text of specified cell in open notebook. Preserves CellStyle, TaggingRules, and confidential marks.
 例: `NBFileWriteCell[nb2, 3, "This is a pen."]`
 
 ### NBFileWriteAllCells[nb, replacements]
-`{cellIdx -> newText, ...}` の Association または List に従って複数セルを一括置換する。
-例: `NBFileWriteAllCells[nb2, <|2->"text", 3->"[CONFIDENTIAL]"|>]`
-
-### NBFileReadCellsInRange[nb, lo, hi] → List
-PrivacyLevel が lo〜hi のセルのみ返す。
-例: `NBFileReadCellsInRange[nb2, 0.5, 0.5]` (公開セルのみ), `NBFileReadCellsInRange[nb2, 0.9, 1.0]` (秘匿セルのみ)
-
-### NBSplitNotebookCells[path, threshold] → {publicCells, privateCells}
-.nb ファイルのセルを PrivacyLevel <= threshold (public) と > threshold (private) に2分割する。
-例: `{pub, priv} = NBSplitNotebookCells["file.nb", 0.5]`
-
-### NBMergeNotebookCells[sourcePath, outputPath, results1, results2]
-2つの `<|cellIdx->newText|>` を元セル順にマージして outputPath に保存する。
-例: `NBMergeNotebookCells[src, dst, pubResults, privResults]`
+Batch-replaces multiple cells from an Association or List of `cellIdx -> newText` rules.
+例: `NBFileWriteAllCells[nb2, <|2 -> "text", 3 -> "[CONFIDENTIAL]"|>]`
 
 ## ObjectSpec API
 
 ### NBFileSpec[path] → Association
-ファイルのメタ情報と PrivacyLevel を Association で返す。PrivacyLevel: 0.5=クラウドLLM可, 1.0=ローカルのみ, {0.5,1.0}=混在(.nb)。
+Returns file metadata and PrivacyLevel as Association. PrivacyLevel: 0.5 = cloud-LLM-accessible, 1.0 = local-only, `{0.5, 1.0}` = mixed (`.nb` file with both).
 
 ### NBValueSpec[expr, privacyLevel] → Association
-値の型情報と PrivacyLevel を返す。
+Returns type information and PrivacyLevel of a value.
 
 ### NBPrivacyLevelToRoutes[privacyLevel] → List
-必要なモデルルートリストを返す。0.5 → {"cloud"}, 1.0 → {"local"}, {0.5,1.0} → {"cloud","local"}。
+Returns required model route list from privacy level. `0.5 -> {"cloud"}`, `1.0 -> {"local"}`, `{0.5, 1.0} -> {"cloud", "local"}`.
 
-## セルマーク API
+### NBFileReadCellsInRange[nb, lo, hi] → List
+Returns only cells whose PrivacyLevel falls in [lo, hi].
+例: `NBFileReadCellsInRange[nb2, 0.5, 0.5]` (public cells only)
+`NBFileReadCellsInRange[nb2, 0.9, 1.0]` (confidential cells only)
 
-### NBGetConfidentialTag[nb, cellIdx] → True | False | Missing[]
-TaggingRules から機密タグを返す。
+### NBSplitNotebookCells[path, threshold] → {publicCells, privateCells}
+Splits cells of a `.nb` file into public (PrivacyLevel ≤ threshold) and private (> threshold).
+例: `{pub, priv} = NBAccess`NBSplitNotebookCells["file.nb", 0.5]`
 
-### NBSetConfidentialTag[nb, cellIdx, val]
-セルの機密タグを val (True/False) に設定する。
+### NBMergeNotebookCells[sourcePath, outputPath, results1, results2]
+Merges two `<|cellIdx -> newText|>` associations in cell-index order and saves to `outputPath`.
+例: `NBAccess`NBMergeNotebookCells[src, dst, pubResults, privResults]`
 
-### NBMarkCellConfidential[nb, cellIdx]
-セルに機密マーク（赤背景 + WarningSign）を付ける。直接機密セルに使用する。
+## History Database API
 
-### NBMarkCellDependent[nb, cellIdx]
-セルに依存機密マーク（橙背景 + LockIcon）を付ける。機密変数に依存する計算結果など間接的に機密なセルに使用する。
-
-### NBUnmarkCell[nb, cellIdx]
-セルの機密マーク（視覚・タグ）をすべて解除する。
-
-## セル内容分析 API
-
-### NBCellUsesConfidentialSymbol[nb, cellIdx] → Boolean
-セルが機密変数を参照しているかを返す。
-
-### NBCellExtractVarNames[nb, cellIdx] → List
-セル内容から Set/SetDelayed の LHS 変数名を抽出する。キーワード (If, Module 等) は除外される。
-
-### NBCellExtractAssignedNames[nb, cellIdx] → List
-セル内容から Confidential[] 内の代入先変数名を抽出する。
-
-### NBShouldExcludeFromPrompt[nb, cellIdx] → Boolean
-セルがプロンプトから除外すべきかを返す。
-
-### NBIsClaudeFunctionCell[nb, cellIdx] → Boolean
-セルが Claude 関数呼び出しセル (ClaudeQuery 等) かを返す。
-
-## 依存グラフ API
-
-### NBBuildVarDependencies[nb] → Association
-ノートブックの Input セルを解析して変数依存関係グラフ `<|"var" -> {"dep1",...}|>` を返す。文字列リテラル内の識別子は除外される。通常のセル実行時に使用する。
-
-### NBBuildGlobalVarDependencies[] → Association
-Notebooks[] 全体の Input セルを走査して統合された変数依存関係グラフを返す。LLM 呼び出し直前の精密チェックで使用する。通常時は NBBuildVarDependencies[nb] を使うこと。
-
-### NBUpdateGlobalVarDependencies[existingDeps, afterLine] → {updatedDeps, newLastLine}
-既存の依存グラフに CellLabel In[x] (x > afterLine) のセルのみを追加走査してマージする。完全なグラフを毎回構築するコストを回避するインクリメンタル版。
-
-### NBTransitiveDependents[deps, confVars] → List
-deps グラフ上で confVars に直接・間接依存する全変数名リストを返す。
-
-### NBScanDependentCells[nb, confVarNames] → Integer
-依存グラフを使って機密変数に依存するセルに NBMarkCellDependent を適用し、新たにマークしたセル数を返す。Claude 関数呼び出しセルは除外される。
-`NBScanDependentCells[nb, confVarNames, deps]` で事前計算済み deps を使い二重計算を回避できる。
-
-### NBFilterHistoryEntry[entry, confVars] → Association
-履歴エントリ内の response/instruction に現時点の機密変数名または値が含まれる場合にそのフィールドをブロックする。
-`NBFilterHistoryEntry[entry, confVars, confVarTimes]` で機密変数の登録時刻 Association も指定可能。
-
-### NBDependencyEdges[nb] → List
-ノートブックの変数依存関係をエッジリスト `{DirectedEdge["dep", "var"], ...}` で返す。"dep" → "var" は "var が dep に依存する" を意味する。
-`NBDependencyEdges[nb, confVars]` は機密変数 confVars に関連するエッジのみ返す。
-
-### NBDebugDependencies[nb, confVars]
-依存グラフ・推移依存・セルテキストを Print で表示するデバッグ関数。各 Input セルについて InputText 取得結果、代入解析結果、依存判定結果を出力する。
-
-### NBPlotDependencyGraph[opts]
-全ノートブック統合の依存グラフをプロットする (デフォルト Scope="Global")。
-`NBPlotDependencyGraph[nb, opts]` で指定ノートブックのグラフをプロットする。
-ノードは変数名・Out[n]で、直接秘密は赤、依存秘密は橙で着色。NB内エッジは濃い実線、クロスNBエッジは薄い破線で描画。
-Options: `PrivacySpec -> <|"AccessLevel" -> 1.0|>` (表示範囲制御), `"Scope" -> "Global"` ("Global"|"Local"), `GraphLayout -> "LayeredDigraphEmbedding"`
-例: `NBPlotDependencyGraph[EvaluationNotebook[], "Scope" -> "Local"]`
-
-### NBGetFunctionGlobalDeps[nb] → Association
-ノートブック内の全関数定義を解析し、各関数が依存している大域変数のリストを返す。戻り値: `<|"関数名" -> {"大域変数1", ...}, ...|>`。パターン変数とスコーピング局所変数 (Module/Block/With/Function) は除外される。
-
-## ノートブック TaggingRules API
-
-### NBGetTaggingRule[nb, key] → value | Missing[]
-ノートブックの TaggingRules から key の値を返す。キーが存在しない場合は Missing[]。
-`NBGetTaggingRule[nb, {key1, key2, ...}]` でネストしたパスを指定可能。
-
-### NBSetTaggingRule[nb, key, value]
-ノートブックの TaggingRules に key -> value を設定する。`NBSetTaggingRule[nb, {key1, key2}, value]` でネストしたパスを指定可能。
-
-### NBDeleteTaggingRule[nb, key]
-ノートブックの TaggingRules から key を削除する。
-
-### NBListTaggingRuleKeys[nb] → List
-ノートブックの TaggingRules の全キーを返す。`NBListTaggingRuleKeys[nb, prefix]` は prefix で始まるキーのみ返す。
-
-## 汎用履歴データベース API
-
-TaggingRules を用いた順次格納型履歴システム。各タグに `<|"header" -> ..., "entries" -> {...}|>` を格納する。entries の差分対象フィールドは Diff による差分圧縮（最新エントリは平文、それ以前は Diff オブジェクト）。
+History is stored in notebook `TaggingRules`. Entries use diff compression on fields like `fullPrompt`/`response`/`code`.
 
 ### NBHistoryCreate[nb, tag, diffFields]
-新しい履歴データベースを作成する。diffFields は差分圧縮対象のフィールド名リスト (例: `{"fullPrompt", "response", "code"}`)。既存 DB に diffFields がある場合は既存ヘッダーを返す (冪等)。
-`NBHistoryCreate[nb, tag, diffFields, headerOverrides]` でヘッダーを上書き可能。
+Creates a new history database. `diffFields` is the list of field names to diff-compress (e.g., `{"fullPrompt", "response", "code"}`). Returns existing header if DB already exists (idempotent).
+
+### NBHistoryCreate[nb, tag, diffFields, headerOverrides]
+Same, with header override Association.
 
 ### NBHistoryData[nb, tag] → Association
-TaggingRules から履歴データを読み取り、差分圧縮されたエントリを復元して返す。戻り値: `<|"header" -> <|...|>, "entries" -> {<|...|>, ...}|>`
-Options: `Decompress -> False` で Diff オブジェクトのまま返す。
+Reads history and decompresses diff-compressed entries. Returns `<|"header" -> <|...|>, "entries" -> {<|...|>, ...}|>`.
+Options: `Decompress -> True` (default). `Decompress -> False` returns raw Diff objects.
 
 ### NBHistoryRawData[nb, tag] → Association
-差分圧縮を解除せずに履歴データを返す (内部用)。
+Returns history without decompressing (internal use).
 
 ### NBHistorySetData[nb, tag, data]
-TaggingRules に履歴データを書き込む。data は `<|"header" -> ..., "entries" -> {...}|>` の形式。entries は差分圧縮されていない平文で渡すこと (自動的に圧縮される)。
+Writes history data to `TaggingRules`. `data` format: `<|"header" -> ..., "entries" -> {...}|>`. Pass entries as plain text; auto-compressed on write.
 
 ### NBHistoryAppend[nb, tag, entry]
-エントリを履歴に追加する。差分圧縮: 直前のエントリの fullPrompt/response/code を Diff で圧縮する。
-Options: `PrivacySpec -> Automatic` (privacylevel をエントリに記録)
+Appends an entry to history. Diff-compresses `fullPrompt`/`response`/`code` fields against the previous entry. Records `privacyLevel` in entry if `PrivacySpec` option is provided.
+Options: `PrivacySpec -> $NBPrivacySpec`
 
 ### NBHistoryEntries[nb, tag] → List
-差分圧縮を復元した全エントリリストを返す。
-Options: `Decompress -> False` で Diff オブジェクトのまま返す。
+Returns all entries with diff decompressed.
+Options: `Decompress -> True`
 
 ### NBHistoryUpdateLast[nb, tag, updates]
-最後のエントリを更新する。updates は `<|"response" -> ..., "code" -> ..., ...|>` の形式。
+Updates the last entry with fields from `updates` Association. Format: `<|"response" -> ..., "code" -> ..., ...|>`.
 
 ### NBHistoryReadHeader[nb, tag] → Association
-履歴のヘッダー Association を返す。
+Returns the header Association of the history.
 
 ### NBHistoryWriteHeader[nb, tag, header]
-履歴のヘッダーを書き込む。
+Overwrites the header of the history.
 
 ### NBHistoryUpdateHeader[nb, tag, updates]
-ヘッダーにキーを追加・更新する。既存キーは上書き、新規キーは追加される。
+Merges `updates` into existing header (existing keys overwritten, new keys appended).
 
 ### NBHistoryEntriesWithInherit[nb, tag] → List
-親履歴を含む全エントリを返す。header の parent/inherit/created に従って親チェーンを辿る。
-Options: `Decompress -> False` で Diff オブジェクトのまま返す。
+Returns all entries including entries from parent history chains. Traverses `parent`/`inherit`/`created` fields in header.
+Options: `Decompress -> True`
 
 ### NBHistoryListTags[nb, prefix] → List
-prefix で始まる履歴タグ一覧を返す。
+Returns all history tag names starting with `prefix`.
 
 ### NBHistoryDelete[nb, tag]
-指定タグの履歴を TaggingRules から削除する。
+Deletes the specified history from `TaggingRules`.
 
 ### NBHistoryReplaceEntries[nb, tag, entries]
-エントリリスト全体を置換する。コンパクションやバッチ更新に使用する。
+Replaces the entire entry list. Use for compaction or batch updates.
 
-## セッションアタッチメント API
+## Session Attachment API
 
 ### NBHistoryAddAttachment[nb, tag, path]
-セッションにファイルをアタッチする。ヘッダーの "attachments" リストにパスを追加 (重複除去)。
+Attaches a file to the session. Appends `path` to `"attachments"` list in header (deduplicates).
 
 ### NBHistoryRemoveAttachment[nb, tag, path]
-セッションからファイルをデタッチする。
+Removes a file from session attachments.
 
 ### NBHistoryGetAttachments[nb, tag] → List
-セッションのアタッチメントリストを返す。
+Returns the list of attachment paths for the session.
 
 ### NBHistoryClearAttachments[nb, tag]
-セッションの全アタッチメントをクリアする。
+Clears all attachments from the session.
 
-## API キーアクセサー
+## API Key Accessor
 
-### NBGetAPIKey[provider, opts] → String | $Failed
-AI プロバイダの API キーを返す。provider: "anthropic" | "openai" | "github"。SystemCredential へのアクセスを一元管理する。アクセスレベルが 1.0 未満の場合は $Failed を返す。
-Options: `PrivacySpec -> <|"AccessLevel" -> 1.0|>`
+### NBGetAPIKey[provider] → String
+Returns the API key for the specified AI provider. Manages `SystemCredential` access.
+`provider`: `"anthropic"` | `"openai"` | `"github"`
+Options: `PrivacySpec -> <|"AccessLevel" -> 1.0|>` (default)
 
-## フォールバックモデル / プロバイダーアクセスレベル API
+## Fallback Model / Provider Access Level API
 
 ### NBSetFallbackModels[models]
-フォールバックモデルリストを設定する。models: `{{provider, model}, {provider, model, url}, ...}`
-例: `NBSetFallbackModels[{{"anthropic","claude-opus-4-6"},{"lmstudio","gpt-oss-20b","http://127.0.0.1:1234"}}]`
+Sets the fallback model list. Format: `{{provider, model}, {provider, model, url}, ...}`.
+例: `NBSetFallbackModels[{{"anthropic", "claude-opus-4-6"}, {"lmstudio", "gpt-oss-20b", "http://127.0.0.1:1234"}}]`
 
 ### NBGetFallbackModels[] → List
-フォールバックモデルリスト全体を返す。
+Returns the full fallback model list.
 
 ### NBSetProviderMaxAccessLevel[provider, level]
-プロバイダーの最大アクセスレベルを設定する。level: 0.0〜1.0。このレベルを超えるアクセスレベルのリクエストにはフォールバックしない。
-例: `NBSetProviderMaxAccessLevel["anthropic", 0.5]`、`NBSetProviderMaxAccessLevel["lmstudio", 1.0]`
+Sets the maximum data access level permitted for a provider. LLM requests exceeding this level will not fall back to this provider.
+例: `NBSetProviderMaxAccessLevel["anthropic", 0.5]`
+`NBSetProviderMaxAccessLevel["lmstudio", 1.0]`
 
 ### NBGetProviderMaxAccessLevel[provider] → Real
-プロバイダーの最大アクセスレベルを返す。未登録プロバイダーは 0.5 を返す。
+Returns the maximum access level for a provider. Returns 0.5 for unregistered providers.
 
 ### NBGetAvailableFallbackModels[accessLevel] → List
-指定アクセスレベルで利用可能なフォールバックモデルのリストを返す。プロバイダーの MaxAccessLevel >= accessLevel のモデルのみ含まれる。
-例: `NBGetAvailableFallbackModels[0.8]` → lmstudio のみ、`NBGetAvailableFallbackModels[0.5]` → 全プロバイダー
+Returns fallback models available for the given access level. Only includes models where provider's MaxAccessLevel ≥ accessLevel.
+例: `NBGetAvailableFallbackModels[0.8]` → lmstudio only; `NBGetAvailableFallbackModels[0.5]` → all providers
 
-### NBProviderCanAccess[provider, accessLevel] → Boolean
-プロバイダーが指定アクセスレベルのデータにアクセス可能かを返す。MaxAccessLevel >= accessLevel なら True。
+### NBProviderCanAccess[provider, accessLevel] → True | False
+Returns whether provider can handle data at the given access level (MaxAccessLevel ≥ accessLevel).
 
-## アクセス可能ディレクトリ API
+## Accessible Directory API
 
-### NBSetAccessibleDirs[nb, dirs]
-Claude Code が参照可能なディレクトリリストを TaggingRules に保存する。
-`NBSetAccessibleDirs[dirs]` は EvaluationNotebook[] に保存する。
+### NBSetAccessibleDirs[nb, {dir1, dir2, ...}]
+Saves the list of directories accessible to Claude Code in notebook's `TaggingRules`.
+
+### NBSetAccessibleDirs[{dir1, dir2, ...}]
+Saves to `EvaluationNotebook[]`.
 
 ### NBGetAccessibleDirs[nb] → List
-保存されたアクセス可能ディレクトリリストを返す。
-`NBGetAccessibleDirs[]` は EvaluationNotebook[] から取得する。
+Returns the saved accessible directory list.
 
-## Job 管理 API
+### NBGetAccessibleDirs[] → List
+Retrieves from `EvaluationNotebook[]`.
 
-ClaudeQuery/ClaudeEval の非同期出力位置管理。
-
-### NBBeginJob[nb, evalCell] → jobId
-評価セルの直後に3つの不可視スロットセルを挿入しジョブIDを返す。evalCell が CellObject でない場合はノートブック末尾に挿入する。
-スロット1: システムメッセージ（プログレス・フォールバック通知）、スロット2: 完了メッセージ、アンカー: レスポンス書き込み位置マーカー。
-
-### NBBeginJobAtEvalCell[nb] → jobId
-EvaluationCell[] を内部取得してその直後に Job スロットを挿入する。claudecode が CellObject を保持する必要がない分離 API。
-
-### NBWriteSlot[jobId, slotIdx, cellExpr]
-ジョブのスロットに Cell 式を書き込み可視にする。同じスロットに再度書き込むと上書きされる。
-
-### NBJobMoveToAnchor[jobId]
-アンカーセルの直後にカーソルを移動する。レスポンスコンテンツの書き込み前に呼ぶ。
-
-### NBEndJob[jobId]
-ジョブを正常終了する。未書き込みスロットとアンカーを削除してテーブルをクリアする。
-
-### NBAbortJob[jobId, errorMsg]
-エラーメッセージを書き込みジョブを終了する。
-
-## 分離 API
-
-claudecode が CellObject/Private に直接触らないための公開 API。
-
-### NBExtractAssignments[text] → List
-テキストから Set/SetDelayed の LHS 変数名を抽出する。
-
-### NBSetConfidentialVars[assoc]
-機密変数テーブルを一括設定する。assoc: `<|"varName" -> True, ...|>`
-
-### NBGetConfidentialVars[] → Association
-現在の機密変数テーブルを返す。
-
-### NBClearConfidentialVars[]
-機密変数テーブルをクリアする。
-
-### NBRegisterConfidentialVar[name, level]
-機密変数を1つ登録する (level デフォルト 1.0)。
-
-### NBUnregisterConfidentialVar[name]
-機密変数を1つ解除する。
-
-### NBGetPrivacySpec[] → Association
-現在の $NBPrivacySpec を返す。
-
-### NBInstallCellEpilog[nb, key, expr]
-ノートブックの CellEpilog に式を設定する。key は識別用文字列。既にインストール済みなら何もしない。
-
-### NBCellEpilogInstalledQ[nb, key] → Boolean
-CellEpilog が key で既にインストールされているか返す。
-
-### NBInstallConfidentialEpilog[nb, epilogExpr, checkSymbol]
-機密変数追跡用 CellEpilog をインストールする。checkSymbol は FreeQ チェック用のマーカーシンボル。既にインストール済みなら何もしない。
-
-### NBConfidentialEpilogInstalledQ[nb, checkSymbol] → Boolean
-機密追跡 CellEpilog がインストール済みか返す。checkSymbol は FreeQ チェック用のマーカーシンボル。
-
-### NBEvaluatePreviousCell[nb]
-直前のセルを選択して評価する。
-
-### NBInsertInputTemplate[nb, boxes]
-Input セルテンプレートを挿入する。
-
-### NBParentNotebookOfCurrentCell[] → NotebookObject
-EvaluationCell の親ノートブックを返す。
+## Cursor Navigation
 
 ### NBMoveToEnd[nb]
-ノートブックの末尾にカーソルを移動する。
+Moves cursor to the end of the notebook.
 
-## ユーティリティ変数 (内部公開)
+## Job Management API
 
-### NBUserNotebooks[] → List
-WindowFrame が "Normal" のユーザーノートブックのみを返す。パレット・ヘルプブラウザ・ダイアログ等のシステム NB は除外される。
+Job API manages async output slot positions for ClaudeQuery/ClaudeEval non-blocking output.
 
-### NBInvalidateCellsCache[]
-全ノートブックのセルキャッシュを無効化する。`NBInvalidateCellsCache[nb]` で指定ノートブックのみ無効化する。
+### NBBeginJob[nb, evalCell] → jobId
+Inserts 3 invisible slot cells immediately after `evalCell` and returns a job ID. If `evalCell` is not a CellObject, inserts at notebook end.
+Slot 1: system message (progress/fallback notifications)
+Slot 2: completion message
+Anchor: marks response write position
 
-## 定数
+### NBBeginJobAtEvalCell[nb] → jobId
+Internally retrieves `EvaluationCell[]` and inserts job slots after it. Use when calling code does not hold a CellObject reference.
 
-### $NBConfidentialCellOpts
-機密マーク用セルオプション (赤背景 + WarningSign)。NBMarkCellConfidential が使用する。
+### NBWriteSlot[jobId, slotIdx, cellExpr]
+Writes a Cell expression to slot `slotIdx` of the job and makes it visible. Overwrites if called again for the same slot.
 
-### $NBDependentCellOpts
-依存機密マーク用セルオプション (橙背景 + WarningSign)。NBMarkCellDependent が使用する。
+### NBJobMoveToAnchor[jobId]
+Moves cursor to immediately after the anchor cell. Call before writing response content.
+
+### NBEndJob[jobId]
+Terminates job normally. Deletes unwritten slots and anchor, clears table.
+
+### NBAbortJob[jobId, errorMsg]
+Writes error message and terminates job.
+
+## Separation API
+
+Functions for claudecode package to access NBAccess internals without direct CellObject/Private access.
+
+### NBExtractAssignments[text] → List
+Extracts LHS variable names from Set/SetDelayed expressions in text.
+
+### NBSetConfidentialVars[assoc]
+Bulk-sets the confidential variable table. `assoc`: `<|"varName" -> True, ...|>`.
+
+### NBGetConfidentialVars[] → Association
+Returns the current confidential variable table.
+
+### NBClearConfidentialVars[]
+Clears the confidential variable table.
+
+### NBRegisterConfidentialVar[name, level]
+Registers one confidential variable. `level` defaults to 1.0.
+
+### NBUnregisterConfidentialVar[name]
+Unregisters one confidential variable.
+
+### NBGetPrivacySpec[] → Association
+Returns the current `$NBPrivacySpec`.
+
+### NBInstallCellEpilog[nb, key, expr]
+Sets an expression in the notebook's `CellEpilog` identified by `key`. No-op if already installed.
+
+### NBCellEpilogInstalledQ[nb, key] → True | False
+Returns whether `CellEpilog` with the given `key` is already installed.
+
+### NBInstallConfidentialEpilog[nb, epilogExpr, checkSymbol]
+Installs a confidential variable tracking `CellEpilog`. `checkSymbol` is a marker symbol used for `FreeQ` checking. No-op if already installed.
+
+### NBConfidentialEpilogInstalledQ[nb, checkSymbol] → True | False
+Returns whether the confidential tracking `CellEpilog` is installed. `checkSymbol` is the FreeQ marker symbol.
+
+### NBEvaluatePreviousCell[nb]
+Selects and evaluates the cell immediately before the current cell.
+
+### NBInsertInputTemplate[nb, boxes]
+Inserts an Input cell template.
+
+### NBParentNotebookOfCurrentCell[] → NotebookObject
+Returns the parent notebook of `EvaluationCell`.
