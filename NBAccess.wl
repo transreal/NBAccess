@@ -43,6 +43,17 @@ $NBSendDataSchema::usage =
   "False: \:79d8\:5bc6\:4f9d\:5b58 Output \:306e\:30b9\:30ad\:30fc\:30de\:60c5\:5831\:3092\:4e00\:5207\:9001\:4fe1\:3057\:306a\:3044\:3002\n" <>
   "\:975e\:79d8\:5bc6 Output \:306f\:5e38\:306b\:30b9\:30de\:30fc\:30c8\:8981\:7d04\:4ed8\:304d\:3067\:9001\:4fe1\:3055\:308c\:308b\:3002";
 
+$NBVerbose::usage =
+  "$NBVerbose \:306f NBAccess \:30d1\:30c3\:30b1\:30fc\:30b8\:306e\:8a73\:7d30\:30ed\:30b0\:51fa\:529b\:3092\:5236\:5fa1\:3059\:308b\:30d5\:30e9\:30b0\:3002\n" <>
+  "True: NBAccess \:5185\:90e8\:306e\:8a73\:7d30\:30ed\:30b0\:3092 Messages \:306b\:51fa\:529b\:3059\:308b\:3002\n" <>
+  "False (\:30c7\:30a3\:30d5\:30a9\:30eb\:30c8): \:91cd\:5927\:30a8\:30e9\:30fc\:4ee5\:5916\:306e NBAccess \:30ed\:30b0\:3092\:6291\:5236\:3059\:308b\:3002";
+
+$NBAutoEvalProhibitedPatterns::usage =
+  "$NBAutoEvalProhibitedPatterns \:306f NBEvaluatePreviousCell \:3067\:81ea\:52d5\:5b9f\:884c\:3092\:30d6\:30ed\:30c3\:30af\:3059\:308b\:30d1\:30bf\:30fc\:30f3\:306e\:30ea\:30b9\:30c8\:3002\n" <>
+  "RegularExpression \:307e\:305f\:306f StringExpression \:306e\:30ea\:30b9\:30c8\:3002\n" <>
+  "\:30bb\:30eb\:5185\:5bb9\:304c\:3044\:305a\:308c\:304b\:306e\:30d1\:30bf\:30fc\:30f3\:306b\:30de\:30c3\:30c1\:3059\:308b\:5834\:5408\:3001\:8a55\:4fa1\:3092\:30b9\:30ad\:30c3\:30d7\:3057\:3066\:8b66\:544a\:3092\:8868\:793a\:3059\:308b\:3002\n" <>
+  "ClaudeCode \:30d1\:30c3\:30b1\:30fc\:30b8\:304c\:30ed\:30fc\:30c9\:6642\:306b\:30d1\:30bf\:30fc\:30f3\:3092\:767b\:9332\:3059\:308b\:3002\:30c7\:30d5\:30a9\:30eb\:30c8\:306f\:7a7a\:30ea\:30b9\:30c8\:3002";
+
 (* ---- \:30bb\:30eb\:30e6\:30fc\:30c6\:30a3\:30ea\:30c6\:30a3 API (\:65b0\:898f) ---- *)
 NBCellCount::usage =
   "NBCellCount[nb] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:5168\:30bb\:30eb\:6570\:3092\:8fd4\:3059\:3002";
@@ -605,6 +616,14 @@ If[!AssociationQ[NBAccess`$NBConfidentialSymbols],
 (* \:79d8\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf\:306e\:30b9\:30ad\:30fc\:30de\:60c5\:5831\:9001\:4fe1\:30d5\:30e9\:30b0 (\:30c7\:30a3\:30d5\:30a9\:30eb\:30c8 True) *)
 If[NBAccess`$NBSendDataSchema =!= False,
   NBAccess`$NBSendDataSchema = True];
+
+(* NBAccess \:8a73\:7d30\:30ed\:30b0\:51fa\:529b\:30d5\:30e9\:30b0 (\:30c7\:30a3\:30d5\:30a9\:30eb\:30c8 False: \:91cd\:5927\:30a8\:30e9\:30fc\:4ee5\:5916\:306e\:30ed\:30b0\:3092\:6291\:5236) *)
+If[NBAccess`$NBVerbose =!= True,
+  NBAccess`$NBVerbose = False];
+
+(* AutoEvaluate \:7981\:6b62\:30d1\:30bf\:30fc\:30f3 (\:30c7\:30a3\:30d5\:30a9\:30eb\:30c8 \:7a7a: ClaudeCode \:304c\:30ed\:30fc\:30c9\:6642\:306b\:767b\:9332) *)
+If[!ListQ[NBAccess`$NBAutoEvalProhibitedPatterns],
+  NBAccess`$NBAutoEvalProhibitedPatterns = {}];
 
 (* \:5206\:96e2\:691c\:67fb\:3067\:7121\:8996\:3059\:308b\:30d1\:30c3\:30b1\:30fc\:30b8\:540d\:30ea\:30b9\:30c8 *)
 If[!ListQ[NBAccess`$NBSeparationIgnoreList],
@@ -3251,11 +3270,34 @@ NBAccess`NBCellEpilogInstalledQ[nb_NotebookObject, key_String] :=
     epi = Quiet[AbsoluteCurrentValue[nb, CellEpilog]];
     !FreeQ[epi, key]];
 
-(* \:30bb\:30eb\:8a55\:4fa1\:30d8\:30eb\:30d1\:30fc *)
-NBAccess`NBEvaluatePreviousCell[nb_NotebookObject] := (
-  Quiet[SelectionMove[nb, Previous, Cell]];
-  Quiet[SelectionEvaluate[nb]];
-  Quiet[SelectionMove[nb, After, Cell]]);
+(* \:30bb\:30eb\:8a55\:4fa1\:30d8\:30eb\:30d1\:30fc: AutoEvaluate \:7981\:6b62\:64cd\:4f5c\:30ac\:30fc\:30c9\:4ed8\:304d
+   $NBAutoEvalProhibitedPatterns \:306b\:30de\:30c3\:30c1\:3059\:308b\:30bb\:30eb\:306f\:8a55\:4fa1\:3092\:30b9\:30ad\:30c3\:30d7\:3057\:8b66\:544a\:3092\:8868\:793a\:3059\:308b\:3002
+   \:3053\:308c\:306f\:5168 AutoEvaluate \:30d1\:30b9\:306e\:6700\:7d42\:9632\:885b\:7dda\:3067\:3042\:308a\:3001\:30d0\:30a4\:30d1\:30b9\:4e0d\:53ef\:80fd\:3002 *)
+NBAccess`NBEvaluatePreviousCell[nb_NotebookObject] :=
+  Module[{cellExpr, cellText, prohibited = False},
+    Quiet[SelectionMove[nb, Previous, Cell]];
+    (* \:7981\:6b62\:30d1\:30bf\:30fc\:30f3\:30c1\:30a7\:30c3\:30af *)
+    If[ListQ[NBAccess`$NBAutoEvalProhibitedPatterns] &&
+       Length[NBAccess`$NBAutoEvalProhibitedPatterns] > 0,
+      cellExpr = Quiet[NotebookRead[nb]];
+      cellText = Which[
+        MatchQ[cellExpr, Cell[BoxData[_], ___]],
+          Quiet @ Check[NBAccess`NBCellExprToText[cellExpr], ""],
+        MatchQ[cellExpr, Cell[s_String, ___]],
+          First[cellExpr],
+        True, ""];
+      If[StringQ[cellText] && StringLength[cellText] > 0,
+        prohibited = AnyTrue[NBAccess`$NBAutoEvalProhibitedPatterns,
+          StringContainsQ[cellText, #] &]]];
+    If[prohibited,
+      (* \:7981\:6b62\:64cd\:4f5c\:691c\:51fa: \:8a55\:4fa1\:3092\:30b9\:30ad\:30c3\:30d7\:3057\:3066\:8b66\:544a\:3092\:8868\:793a *)
+      Quiet[SelectionMove[nb, After, Cell]];
+      NBAccess`NBWritePrintNotice[nb,
+        "\:26d4 \:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:4fdd\:8b77: \:4e0a\:306e\:30bb\:30eb\:306f\:30a2\:30af\:30bb\:30b9\:7bc4\:56f2\:3092\:5909\:66f4\:3059\:308b\:64cd\:4f5c\:3092\:542b\:3080\:305f\:3081\:81ea\:52d5\:5b9f\:884c\:3092\:30d6\:30ed\:30c3\:30af\:3057\:307e\:3057\:305f\:3002\:5185\:5bb9\:3092\:78ba\:8a8d\:3057\:3066\:304b\:3089 Shift+Enter \:3067\:624b\:52d5\:5b9f\:884c\:3057\:3066\:304f\:3060\:3055\:3044\:3002",
+        RGBColor[0.8, 0, 0]],
+      (* \:901a\:5e38: \:8a55\:4fa1\:5b9f\:884c *)
+      Quiet[SelectionEvaluate[nb]];
+      Quiet[SelectionMove[nb, After, Cell]]]];
 
 (* Input \:30c6\:30f3\:30d7\:30ec\:30fc\:30c8\:633f\:5165 *)
 NBAccess`NBInsertInputTemplate[nb_NotebookObject, boxes_] := (
