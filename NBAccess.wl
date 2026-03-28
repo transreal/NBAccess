@@ -438,11 +438,17 @@ NBHistoryGetAttachments::usage =
 NBHistoryClearAttachments::usage =
   "NBHistoryClearAttachments[nb, tag] \:306f\:30bb\:30c3\:30b7\:30e7\:30f3\:306e\:5168\:30a2\:30bf\:30c3\:30c1\:30e1\:30f3\:30c8\:3092\:30af\:30ea\:30a2\:3059\:308b\:3002";
 
+NBHistoryClearAll::usage =
+  "NBHistoryClearAll[nb, prefix, PrivacySpec -> ps] \:306f prefix \:3067\:59cb\:307e\:308b\:5168\:5c65\:6b74\:3092\:524a\:9664\:3059\:308b\:3002\n" <>
+  "PrivacySpec -> <|\"AccessLevel\" -> 1.0|> \:304c\:5fc5\:9808\:3002\n" <>
+  "\:30bb\:30eb\:30ec\:30d9\:30eb\:306e\:6a5f\:5bc6\:30fb\:6a5f\:5bc6\:4f9d\:5b58\:30bf\:30b0\:306f\:524a\:9664\:3057\:306a\:3044\:3002\n" <>
+  "\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:3092\:4ed6\:8005\:306b\:6e21\:3059\:969b\:306e\:5c65\:6b74\:60c5\:5831\:9664\:53bb\:7528\:3002";
+
 (* ---- API \:30ad\:30fc\:30a2\:30af\:30bb\:30b5\:30fc ---- *)
 NBGetAPIKey::usage =
   "NBGetAPIKey[provider] \:306f AI \:30d7\:30ed\:30d0\:30a4\:30c0\:306e API \:30ad\:30fc\:3092\:8fd4\:3059\:3002\n" <>
   "provider: \"anthropic\" | \"openai\" | \"github\"\n" <>
-  "\:30aa\:30d7\:30b7\:30e7\:30f3 PrivacySpec -> <|\"AccessLevel\" -> 1.0|> (\:30c7\:30a3\:30d5\:30a9\:30eb\:30c8)\:3002\n" <>
+  "AccessLevel >= 1.0 \:304c\:5fc5\:9808\:3002\:547c\:3073\:51fa\:3057\:5074\:3067 PrivacySpec -> <|\"AccessLevel\" -> 1.0|> \:3092\:660e\:793a\:6307\:5b9a\:3059\:308b\:3053\:3068\:3002\n" <>
   "SystemCredential \:3078\:306e\:30a2\:30af\:30bb\:30b9\:3092\:4e00\:5143\:7ba1\:7406\:3059\:308b\:3002";
 
 (* ---- \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:30e2\:30c7\:30eb / \:30d7\:30ed\:30d0\:30a4\:30c0\:30fc\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb API ---- *)
@@ -2708,7 +2714,7 @@ $iAPIKeyMap = <|
   "github_pat" -> "GITHUB_TOKEN"
 |>;
 
-Options[NBAccess`NBGetAPIKey] = {PrivacySpec -> <|"AccessLevel" -> 1.0|>};
+Options[NBAccess`NBGetAPIKey] = {PrivacySpec -> Automatic};
 
 NBAccess`NBGetAPIKey[provider_String, opts:OptionsPattern[]] :=
   Module[{al, credName, key},
@@ -3064,6 +3070,23 @@ NBAccess`NBHistoryClearAttachments[nb_NotebookObject, tag_String] :=
     hdr = NBAccess`NBHistoryReadHeader[nb, tag];
     NBAccess`NBHistoryWriteHeader[nb, tag, <|hdr, "attachments" -> {}|>];
   ];
+
+(* ---- NBHistoryClearAll: \:5168\:5c65\:6b74\:524a\:9664 (AccessLevel 1.0 \:5fc5\:9808) ---- *)
+Options[NBAccess`NBHistoryClearAll] = {PrivacySpec -> Automatic};
+NBAccess`NBHistoryClearAll[nb_NotebookObject, prefix_String,
+    opts : OptionsPattern[]] :=
+  Module[{al, tags, count},
+    al = iAccessLevel[OptionValue[PrivacySpec]];
+    If[al < 1.0,
+      Message[NBHistoryClearAll::acl, al];
+      Return[$Failed]];
+    tags = NBAccess`NBHistoryListTags[nb, prefix];
+    count = Length[tags];
+    Scan[NBAccess`NBHistoryDelete[nb, #] &, tags];
+    count
+  ];
+NBHistoryClearAll::acl =
+  "AccessLevel `1` < 1.0: \:5168\:5c65\:6b74\:524a\:9664\:306b\:306f PrivacySpec -> <|\"AccessLevel\" -> 1.0|> \:304c\:5fc5\:8981\:3067\:3059\:3002";
 
 
 (* ============================================================
