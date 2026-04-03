@@ -1,5 +1,3 @@
----
-
 # NBAccess ユーザーマニュアル
 
 NBAccess は Mathematica ノートブックのセル操作・プライバシーフィルタリング・履歴管理を提供するユーティリティパッケージです。
@@ -146,6 +144,32 @@ NBCellIndicesByStyle[nb, {"Input", "Code"}]
 ```mathematica
 NBCellStyle[nb, 3]       (* 例: "Input" *)
 NBCellLabel[nb, 3]       (* 例: "In[3]:=" *)
+```
+
+### NBCellSetStyle
+
+セルのスタイルを変更します。Cell 式の第2引数を書き換え、TaggingRules 等の他の属性は保持されます。`SetOptions[cell, CellStyle -> ...]` ではセルスタイルは変わらないため、Cell 式全体を読み書きする実装になっています。
+
+```mathematica
+NBCellSetStyle[nb, 3, "Input"]
+NBCellSetStyle[nb, 5, "Text"]
+```
+
+### NBResolveCell
+
+セルインデックスに対応する CellObject を返します。外部パッケージが低レベルのセル参照を必要とする場合に使用します。指定インデックスが無効な場合は `$Failed` を返します。
+
+```mathematica
+NBResolveCell[nb, 3]
+(* 例: CellObject[...] *)
+```
+
+### NBSelectCell
+
+セルブラケットを選択状態にします。パレット操作後のセル選択復元に使用します。
+
+```mathematica
+NBSelectCell[nb, 3]
 ```
 
 ---
@@ -563,6 +587,16 @@ NBDebugDependencies[nb, {"secretKey"}]
 NBWriteText[nb, "これは説明です", "Text"]
 NBWriteCode[nb, "Plot[Sin[x], {x, 0, 2Pi}]"]
 ```
+
+### NBCellWriteCode
+
+既存セルにコードを BoxData + Input スタイルで書き込みます。FrontEnd のパーサー（FEParser）で構文カラーリング付き BoxData に変換し、Cell 式全体を内容（BoxData）とスタイル（Input）で置換します。TaggingRules 等の属性は保持されます。
+
+```mathematica
+NBCellWriteCode[nb, 3, "Plot[Sin[x], {x, 0, 2Pi}]"]
+```
+
+`NBWriteCode` がノートブックの現在位置に新しいセルを書き込むのに対し、`NBCellWriteCode` は指定インデックスの**既存セル**を上書きします。
 
 ### NBWriteSmartCode
 
@@ -1274,10 +1308,15 @@ NBMergeNotebookCells[srcNB, processedResults, "C:\\...\\output.nb"]
 
 保存前後に同一パスの既存 invisible ノートブックをクリーンアップし、ファイルロック（エラー-43）を回避します。
 
-### 今回の修正点
+### 変更履歴
 
-以下のバグ修正が行われました。
+以下のバグ修正・機能追加が行われました。
 
+- **`NBCellSetStyle` の追加**: Cell 式の第2引数（スタイル）を書き換える新関数です。`SetOptions[cell, CellStyle -> ...]` ではセルスタイルが変わらないため、Cell 式全体を読み書きする実装になっています。TaggingRules 等の属性は保持されます。
+- **`NBCellWriteCode` の追加**: 既存セルにコードを BoxData + Input スタイルで書き込む新関数です。FEParser で構文カラーリング付き BoxData に変換し、Cell 式全体を置換します。
+- **`NBResolveCell` の追加**: セルインデックスに対応する CellObject を返す新関数です。外部パッケージが低レベルのセル参照を必要とする場合に使用します。指定インデックスが無効な場合は `$Failed` を返します。
+- **`NBSelectCell` の追加**: セルブラケットを選択状態にする新関数です。パレット操作後のセル選択復元に使用します。
+- **`SelectionMove` の `AutoScroll -> False`**: セル選択・移動処理全般に `AutoScroll -> False` を追加し、操作中の意図しないスクロールを抑制しました。
 - **`iNBFileCellIsConfidential`**: TaggingRules が List 形式の場合にも対応（Extract → Lookup）
 - **`iNBFileCellPrivacyLevel`**: 2 値（0/1）から 3 値（0/0.75/1.0）に拡張し dependent 対応
 - **`iNBFileCellText`**: 裸文字列の捕捉に対応（Cases のレベル指定を `{0, Infinity}` に修正）

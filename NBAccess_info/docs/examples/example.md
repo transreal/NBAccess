@@ -114,7 +114,34 @@ NBWriteCode[nb, "Plot[Sin[x], {x, 0, 2 Pi}]"];
 (* ノートブックにセルが追加されます *)
 ```
 
-## 例6: 変数依存グラフの解析と可視化
+## 例6: 既存セルの編集
+
+インデックスを指定して既存セルのスタイル・コード内容を変更したり、CellObject を取得したりします。
+
+```mathematica
+(* セルのスタイルを変更する (TaggingRules 等の属性は保持される) *)
+NBCellSetStyle[nb, 3, "Input"];
+
+(* 既存セルにコードを書き込む (FEParser で構文カラーリング付き BoxData に変換) *)
+NBCellWriteCode[nb, 3, "Plot[Sin[x], {x, 0, 2Pi}]"];
+
+(* CellObject を取得する (低レベルのセル参照が必要な場合) *)
+cell = NBResolveCell[nb, 3];
+
+(* セルブラケットを選択状態にする (パレット操作後のセル選択復元などに使用) *)
+NBSelectCell[nb, 3];
+```
+
+```
+(* 例:
+   NBCellSetStyle[nb, 3, "Input"] → 3番セルのスタイルが "Input" に変更される
+   NBCellWriteCode[nb, 3, "Plot[...]"] → 構文カラーリング付き BoxData でセルを置換
+   NBResolveCell[nb, 99] → 無効なインデックスの場合は $Failed を返す *)
+```
+
+**注意**: `NBCellSetStyle` は `SetOptions[cell, CellStyle -> ...]` とは異なり、Cell 式の第2引数を直接書き換えるためスタイルが確実に変更されます。
+
+## 例7: 変数依存グラフの解析と可視化
 
 機密変数に依存するセルを自動検出し、依存関係を可視化します。
 
@@ -146,7 +173,7 @@ NBPlotDependencyGraph[nb]
 
 **注意**: 通知セル（CellTags -> {"claudecode-notice"}）はマーキング対象外となります。これにより、ClaudeCode が生成するシステム通知セルは依存解析から除外されます。
 
-## 例7: 全ノートブック統合依存グラフ
+## 例8: 全ノートブック統合依存グラフ
 
 `NBBuildGlobalVarDependencies[]` は開いている全ノートブックの Input/Code セルを走査して、統合された変数依存関係グラフを構築します。ClaudeQuery/ClaudeEval/ContinueEval の直前の精密チェックで使用します。
 
@@ -173,7 +200,7 @@ NBScanDependentCells[nb, Keys[NBGetConfidentialVars[]], globalDeps]
 
 **インクリメンタル更新機能**: `NBUpdateGlobalVarDependencies` は完全なグラフ再構築を回避し、CellLabel In[x] の x が afterLine より大きいセルのみを追加走査してマージします。大規模なノートブックセッションでのパフォーマンス向上に寄与します。
 
-## 例8: 汎用履歴データベース
+## 例9: 汎用履歴データベース
 
 ノートブックの TaggingRules に差分圧縮された履歴を保存・取得します。
 履歴データの読み取りにはキャッシュが利用され、同一セッション内で同じ履歴を複数回読み取る場合の FrontEnd 通信が削減されます。
@@ -195,7 +222,7 @@ NBHistoryCacheClear[];
 (* 例: entries = {<|"fullPrompt" -> "Hello", "response" -> "Hi there!"|>} *)
 ```
 
-## 例9: API キー取得とアクセス可能ディレクトリ
+## 例10: API キー取得とアクセス可能ディレクトリ
 
 API キーの安全な取得と、Claude Code が参照可能なディレクトリの管理を行います。
 
@@ -213,7 +240,7 @@ dirs = NBGetAccessibleDirs[nb];
 (* 例: key = "sk-ant-...", dirs = {"C:/Projects/myapp", "C:/Data/public"} *)
 ```
 
-## 例10: フォールバックモデルとプロバイダーアクセスレベル
+## 例11: フォールバックモデルとプロバイダーアクセスレベル
 
 メインの LLM が利用できない場合のフォールバックモデルを設定し、プロバイダーごとにアクセス可能なデータレベルを制御します。
 
@@ -266,7 +293,7 @@ NBGetAvailableFallbackModels[0.5]
             {"lmstudio", "local-model-7b", "http://127.0.0.1:1234"}} *)
 ```
 
-## 例11: 秘密依存データのスキーマ情報送信制御
+## 例12: 秘密依存データのスキーマ情報送信制御
 
 `$NBSendDataSchema` は、秘密依存 Output のスキーマ情報（データ型・サイズ・キー名等）をクラウド LLM に送信するかどうかを制御します。非秘密 Output は本設定に関係なく常にスマート要約付きで送信されます。
 

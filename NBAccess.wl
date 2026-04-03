@@ -84,6 +84,21 @@ NBCellLabel::usage =
   "\:30e9\:30d9\:30eb\:306a\:3057\:306e\:5834\:5408\:306f \"\" \:3092\:8fd4\:3059\:3002";
 NBCellSetOptions::usage =
   "NBCellSetOptions[nb, cellIdx, opts] \:306f\:30bb\:30eb\:306b SetOptions \:3092\:9069\:7528\:3059\:308b\:3002";
+NBCellSetStyle::usage =
+  "NBCellSetStyle[nb, cellIdx, style] \:306f\:30bb\:30eb\:306e\:30b9\:30bf\:30a4\:30eb\:3092\:5909\:66f4\:3059\:308b\:3002\n" <>
+  "Cell \:5f0f\:306e\:7b2c2\:5f15\:6570\:3092\:66f8\:304d\:63db\:3048\:308b\:3002TaggingRules \:7b49\:306e\:5c5e\:6027\:306f\:4fdd\:6301\:3055\:308c\:308b\:3002\n" <>
+  "\:4f8b: NBCellSetStyle[nb, 3, \"Input\"]";
+NBCellWriteCode::usage =
+  "NBCellWriteCode[nb, cellIdx, code] \:306f\:65e2\:5b58\:30bb\:30eb\:306b\:30b3\:30fc\:30c9\:3092 BoxData + Input \:30b9\:30bf\:30a4\:30eb\:3067\:66f8\:304d\:8fbc\:3080\:3002\n" <>
+  "FEParser \:3067\:69cb\:6587\:30ab\:30e9\:30fc\:30ea\:30f3\:30b0\:4ed8\:304d BoxData \:306b\:5909\:63db\:3057\:3001\n" <>
+  "Cell \:5f0f\:5168\:4f53\:3092\:5185\:5bb9\:ff08BoxData\:ff09\:3068\:30b9\:30bf\:30a4\:30eb\:ff08Input\:ff09\:3067\:7f6e\:63db\:3059\:308b\:3002\n" <>
+  "\:4f8b: NBCellWriteCode[nb, 3, \"Plot[Sin[x], {x, 0, 2Pi}]\"]";
+NBSelectCell::usage =
+  "NBSelectCell[nb, cellIdx] \:306f\:30bb\:30eb\:30d6\:30e9\:30b1\:30c3\:30c8\:3092\:9078\:629e\:72b6\:614b\:306b\:3059\:308b\:3002\n" <>
+  "\:30d1\:30ec\:30c3\:30c8\:64cd\:4f5c\:5f8c\:306e\:30bb\:30eb\:9078\:629e\:5fa9\:5143\:306b\:4f7f\:7528\:3059\:308b\:3002";
+NBResolveCell::usage =
+  "NBResolveCell[nb, cellIdx] \:306f CellObject \:3092\:8fd4\:3059\:3002\n" <>
+  "\:6307\:5b9a\:30a4\:30f3\:30c7\:30c3\:30af\:30b9\:304c\:7121\:52b9\:306a\:5834\:5408\:306f $Failed \:3092\:8fd4\:3059\:3002";
 NBCellGetTaggingRule::usage =
   "NBCellGetTaggingRule[nb, cellIdx, path] \:306f TaggingRules \:306e\:30cd\:30b9\:30c8\:5024\:3092\:8fd4\:3059\:3002\n" <>
   "\:4f8b: NBCellGetTaggingRule[nb, 3, {\"claudecode\", \"confidential\"}]";
@@ -579,6 +594,11 @@ NBWritePrintNotice::usage =
   "NBWritePrintNotice[nb, text, color] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306b\:901a\:77e5\:7528 Print \:30bb\:30eb\:3092\:66f8\:304d\:8fbc\:3080\:3002\n" <>
   "nb \:304c None \:306e\:5834\:5408\:306f CellPrint \:3092\:4f7f\:7528 (\:540c\:671f In/Out \:9593\:51fa\:529b)\:3002";
 
+NBCellPrint::usage =
+  "NBCellPrint[cellExpr] \:306f\:8a55\:4fa1\:4e2d\:306e\:30bb\:30eb\:306e\:76f4\:5f8c\:306b\:51fa\:529b\:30bb\:30eb\:3092\:63ff\:5165\:3059\:308b (CellPrint \:30e9\:30c3\:30d1\:30fc)\:3002\n" <>
+  "\:30ab\:30fc\:30bd\:30eb\:4f4d\:7f6e\:306b\:4f9d\:5b58\:305b\:305a\:3001\:5e38\:306b EvaluationCell \:306e\:76f4\:5f8c\:306b\:914d\:7f6e\:3055\:308c\:308b\:3002\n" <>
+  "ClaudeBackupDataset \:7b49\:306e\:30bf\:30b0\:4ed8\:304d\:51fa\:529b\:30bb\:30eb\:306b\:4f7f\:7528\:3059\:308b\:3002";
+
 NBWriteDynamicCell::usage =
   "NBWriteDynamicCell[nb, dynBoxExpr, tag] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306b Dynamic \:30bb\:30eb\:3092\:66f8\:304d\:8fbc\:3080\:3002\n" <>
   "tag \:304c \"\" \:3067\:306a\:3044\:5834\:5408\:306f CellTags \:3092\:8a2d\:5b9a\:3059\:308b\:3002";
@@ -872,7 +892,7 @@ NBAccess`NBSelectCell[nb_NotebookObject, cellIdx_Integer] :=
   Module[{cell},
     cell = iResolveCell[nb, cellIdx];
     If[cell =!= $Failed,
-      Quiet[SelectionMove[cell, All, Cell]]]
+      Quiet[SelectionMove[cell, All, Cell, AutoScroll -> False]]]
   ];
 
 NBAccess`NBCellRead[nb_NotebookObject, cellIdx_Integer] :=
@@ -899,6 +919,50 @@ NBAccess`NBCellSetOptions[nb_NotebookObject, cellIdx_Integer, opts__] :=
     cell = iResolveCell[nb, cellIdx];
     If[cell =!= $Failed, Quiet[SetOptions[cell, opts]]]
   ];
+
+(* セルスタイルを変更する。Cell 式の第2引数を書き換え、他オプションは保持する。
+   SetOptions[cell, CellStyle -> ...] ではセルスタイルは変わらないため、
+   Cell 式全体を読み書きする。 *)
+NBAccess`NBCellSetStyle[nb_NotebookObject, cellIdx_Integer, newStyle_String] :=
+  Module[{cell, cellExpr, newCellExpr},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[$Failed]];
+    cellExpr = Quiet @ NotebookRead[cell];
+    newCellExpr = Replace[cellExpr,
+      {Cell[content_, _String, rest___] :> Cell[content, newStyle, rest],
+       Cell[content_, rest___]          :> Cell[content, newStyle, rest]}];
+    NotebookWrite[cell, newCellExpr, All, AutoScroll -> False]];
+
+(* 既存セルにコードを BoxData + Input スタイルで書き込む。
+   FEParser で構文カラーリング付き BoxData に変換し、
+   Cell 式全体を内容とスタイルで置換する（TaggingRules 等は保持）。 *)
+NBAccess`NBCellWriteCode[nb_NotebookObject, cellIdx_Integer, code_String] :=
+  Module[{cell, cellExpr, result, box, newContent, newCellExpr},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[$Failed]];
+    (* FEParser でコードを BoxData に変換 *)
+    result = Quiet @ Check[
+      MathLink`CallFrontEnd[
+        FrontEnd`UndocumentedTestFEParserPacket[code, False]],
+      $Failed];
+    box = Which[
+      MatchQ[result, {_BoxData, ___}],             First[result],
+      MatchQ[result, {Cell[_BoxData, ___], ___}],  First[result][[1]],
+      MatchQ[result, _BoxData],                    result,
+      True,                                        $Failed];
+    newContent = If[MatchQ[box, _BoxData], box, code];
+    (* Cell 式全体を読み出し、内容とスタイルを Input に置換 *)
+    cellExpr = Quiet @ NotebookRead[cell];
+    newCellExpr = Replace[cellExpr,
+      {Cell[_, _String, rest___] :> Cell[newContent, "Input", rest],
+       Cell[_, rest___]          :> Cell[newContent, "Input", rest],
+       _                         :> Cell[newContent, "Input"]}];
+    NotebookWrite[cell, newCellExpr, All, AutoScroll -> False]];
+
+(* CellObject を返す。外部パッケージが低レベルのセル参照を必要とする場合に使用。
+   指定インデックスが無効な場合は $Failed を返す。 *)
+NBAccess`NBResolveCell[nb_NotebookObject, cellIdx_Integer] :=
+  iResolveCell[nb, cellIdx];
 
 NBAccess`NBCellGetTaggingRule[nb_NotebookObject, cellIdx_Integer, path_] :=
   Module[{cell},
@@ -3157,8 +3221,8 @@ NBAccess`NBBeginJob[nb_NotebookObject, evalCell_] :=
     tA = jobId <> "-anchor";
     (* evalCell \:304c CellObject \:306a\:3089\:305d\:306e\:76f4\:5f8c\:3001\:305d\:3046\:3067\:306a\:3051\:308c\:3070\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:672b\:5c3e *)
     If[Head[evalCell] === CellObject,
-      Quiet[SelectionMove[evalCell, After, Cell]],
-      Quiet[SelectionMove[nb, After, Notebook]]];
+      Quiet[SelectionMove[evalCell, After, Cell, AutoScroll -> False]],
+      Quiet[SelectionMove[nb, After, Notebook, AutoScroll -> False]]];
     (* 3\:3064\:306e\:4e0d\:53ef\:8996\:30bb\:30eb\:3092\:9806\:306b\:633f\:5165 *)
     NotebookWrite[nb,
       Cell["", "Text", CellTags -> {t1}, $iInvisibleCellOpts], After];
@@ -3187,7 +3251,7 @@ NBAccess`NBWriteSlot[jobId_String, slotIdx_Integer, cellExpr_Cell] :=
     If[!ListQ[cells] || Length[cells] === 0, Return[$Failed]];
     (* \:65b0\:3057\:3044\:30bb\:30eb\:306b\:540c\:3058\:30bf\:30b0\:3092\:4ed8\:4e0e\:3057\:3066\:7f6e\:63db *)
     newCell = Append[cellExpr, CellTags -> {tag}];
-    Quiet[SelectionMove[First[cells], All, Cell]];
+    Quiet[SelectionMove[First[cells], All, Cell, AutoScroll -> False]];
     NotebookWrite[nb, newCell, All];
     (* \:66f8\:304d\:8fbc\:307f\:6e08\:307f\:30d5\:30e9\:30b0\:3092\:66f4\:65b0 *)
     $NBJobTable[jobId, "written"] =
@@ -3202,7 +3266,7 @@ NBAccess`NBJobMoveToAnchor[jobId_String] :=
     nb = entry["nb"];
     cells = Quiet[Cells[nb, CellTags -> entry["anchorTag"]]];
     If[ListQ[cells] && Length[cells] > 0,
-      Quiet[SelectionMove[First[cells], After, Cell]]];
+      Quiet[SelectionMove[First[cells], After, Cell, AutoScroll -> False]]];
   ];
 
 (* \:30b8\:30e7\:30d6\:6b63\:5e38\:7d42\:4e86: \:672a\:66f8\:304d\:8fbc\:307f\:30b9\:30ed\:30c3\:30c8\:3068\:30a2\:30f3\:30ab\:30fc\:3092\:524a\:9664 *)
@@ -3349,6 +3413,12 @@ NBAccess`NBWritePrintNotice[nb_NotebookObject, text_String, color_] :=
   NotebookWrite[nb, Cell[text, "Print", FontWeight -> Bold, FontColor -> color, FontSize -> 11,
     CellTags -> {"claudecode-notice"}], After];
 
+(* CellPrint ラッパー: 評価セルの直後に出力セルを挿入。
+   NotebookWrite と異なりカーソル位置に依存しない。
+   ClaudeBackupDataset 等のタグ付き出力セルに使用する。 *)
+NBAccess`NBCellPrint[cellExpr_Cell] :=
+  Quiet[CellPrint[cellExpr]];
+
 (* Dynamic \:30bb\:30eb\:66f8\:304d\:8fbc\:307f *)
 NBAccess`NBWriteDynamicCell[nb_NotebookObject, dynBoxExpr_, tag_String:"", opts___] :=
   If[tag === "",
@@ -3390,8 +3460,8 @@ NBAccess`NBWriteAnchorAfterEvalCell[nb_NotebookObject, tag_String] :=
   Module[{evalCell},
     evalCell = Quiet[EvaluationCell[]];
     If[Head[evalCell] === CellObject,
-      Quiet[SelectionMove[evalCell, After, Cell]],
-      Quiet[SelectionMove[nb, After, Notebook]]];
+      Quiet[SelectionMove[evalCell, After, Cell, AutoScroll -> False]],
+      Quiet[SelectionMove[nb, After, Notebook, AutoScroll -> False]]];
     NotebookWrite[nb,
       Cell["", "Text", CellTags -> {tag}, CellOpen -> False], After]];
 

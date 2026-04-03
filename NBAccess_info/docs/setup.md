@@ -96,6 +96,29 @@ currentIdx = NBAccess`NBCurrentCellIndex[nb]
 cellText = NBAccess`NBCellToText[nb, currentIdx]
 ```
 
+### 低レベルセル操作テスト
+
+以下の関数を使うと、セルの CellObject 解決・セル選択・スタイル変更・コード書き込みを行えます：
+
+```mathematica
+nb = EvaluationNotebook[]
+
+(* CellObject を取得する（外部パッケージが低レベル参照を必要とする場合に使用） *)
+(* 指定インデックスが無効な場合は $Failed を返す *)
+cellObj = NBAccess`NBResolveCell[nb, 3]
+
+(* セルブラケットを選択状態にする（パレット操作後のセル選択復元に使用） *)
+NBAccess`NBSelectCell[nb, 3]
+
+(* セルのスタイルを変更する *)
+(* Cell 式の第2引数を書き換える。TaggingRules 等の属性は保持される *)
+NBAccess`NBCellSetStyle[nb, 3, "Input"]
+
+(* 既存セルにコードを BoxData + Input スタイルで書き込む *)
+(* FEParser で構文カラーリング付き BoxData に変換し、Cell 式全体を置換する *)
+NBAccess`NBCellWriteCode[nb, 3, "Plot[Sin[x], {x, 0, 2Pi}]"]
+```
+
 ### プライバシーフィルタリングテスト
 
 ```mathematica
@@ -166,12 +189,7 @@ NBAccess`ClaudeFixSeparation["YourPackageName"]
 
 ### パフォーマンス問題
 
-大きなノートブックで動作が遅い場合、NBAccess は自動的にキャッシュ機能を使用してFrontEndアクセスを最適化します。通常は設定不要ですが、キャッシュをクリアしたい場合：
-
-```mathematica
-(* 内部キャッシュは自動管理されるため、通常は手動操作不要 *)
-(* 問題が発生した場合はノートブックを再起動してください *)
-```
+大きなノートブックで動作が遅い場合、NBAccess は自動的にキャッシュ機能を使用してFrontEndアクセスを最適化します。通常は設定不要ですが、問題が発生した場合はノートブックを再起動してください。
 
 ## 次のステップ
 
