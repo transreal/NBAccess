@@ -33,6 +33,39 @@ Get["claudecode.wl"]
 2. `Applications` フォルダ内に `NBAccess.wl` を配置します
 3. 通常の `Get` または `Needs` で読み込みます
 
+## 関連パッケージ
+
+### ClaudeRuntime との連携
+
+NBAccess は [ClaudeRuntime](https://github.com/transreal/ClaudeRuntime) パッケージと連携することで、ノートブック内での安全な式実行・検証・ルーティング機能が強化されます。
+
+ClaudeRuntime を導入すると、以下の高度な API が利用可能になります：
+
+- **`NBValidateHeldExpr`** — LLM が生成した式を Allowed Expression Surface に照合し、実行前に安全性を検証します
+- **`NBExecuteHeldExpr`** — 検証済み式をポリシーに従って安全に実行します
+- **`NBAuthorize`** — PolicyGate・ScoreGate・EnvironmentGate を統合したアクセス制御判定を行います
+- **`NBRouteDecision`** — コンテキストのリスクスコアに基づき、CloudLLM / PrivateLLM / LocalOnly へのルーティング推奨を返します
+- **`GuardedApply`** / **`Declassify`** — 関数単位のセキュリティポリシー適用と情報ラベルの引き下げ
+
+ClaudeRuntime は NBAccess とは独立したパッケージです。NBAccess 単体でも従来どおりすべての機能が利用できます（後方互換性の節を参照）。
+
+ClaudeRuntime の読み込み例：
+
+```mathematica
+Block[{$CharacterEncoding = "UTF-8"}, Get["ClaudeRuntime.wl"]]
+(* または claudecode.wl 経由で自動ロードされます *)
+```
+
+### ClaudeTestKit との連携
+
+[ClaudeTestKit](https://github.com/transreal/ClaudeTestKit) は NBAccess および ClaudeRuntime のテストを自動化するためのユーティリティパッケージです。パッケージ開発者や NBAccess を組み込むプロジェクト向けに、以下の用途で使用します：
+
+- NBAccess の各 API に対するユニットテスト・統合テストの実行
+- プライバシーフィルタリング・アクセス制御ロジックの回帰テスト
+- ClaudeRuntime のルーティング判定・ポリシーゲートの動作検証
+
+ClaudeTestKit は開発・検証用パッケージであり、エンドユーザーが通常利用する際には必須ではありません。
+
 ## 基本設定
 
 ### プライバシー設定
@@ -70,6 +103,28 @@ $NBSeparationIgnoreList = {"NBAccess", "NotebookExtensions"}
 (* 独自パッケージを追加する場合 *)
 AppendTo[$NBSeparationIgnoreList, "MyPackage"]
 ```
+
+## 後方互換性について
+
+NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存のコードとの後方互換性を維持しています。
+
+### 互換性の保証範囲
+
+- **ClaudeRuntime 未導入環境**: ClaudeRuntime に依存する新 API（`NBValidateHeldExpr`、`NBExecuteHeldExpr`、`NBAuthorize` 等）は ClaudeRuntime が読み込まれていない場合は定義されませんが、それ以外の全 API は従来どおり動作します。
+- **既存の PrivacySpec・プライバシーフィルタリング API**: 変更なく利用可能です。
+- **HistoryDB・TaggingRules API**: 変更なく利用可能です。
+- **セル操作 API（`NBCellRead`、`NBCellWriteText`、`NBGetCells` 等）**: 変更なく利用可能です。
+- **`$NBPrivacySpec`・`$NBConfidentialSymbols`・`$NBSendDataSchema`** 等のグローバル変数: 初期値・動作に変更はありません。
+
+### ClaudeRuntime 導入時の注意点
+
+ClaudeRuntime を導入すると、`$NBAllowedHeads`・`$NBApprovalHeads`・`$NBDenyHeads` などのグローバル変数が追加されます。既存コードがこれらのシンボル名を独自に使用している場合は、名前の衝突を確認してください。
+
+ラベル代数 API（`NBLabelQ`、`NBLabelJoin`、`NBLabelMeet` 等）および関数セキュリティ API（`NBRegisterFunctionSecurity`、`GuardedApply`、`Declassify` 等）は ClaudeRuntime と同時に導入されたものですが、既存の API とは完全に独立しており、既存の動作に影響しません。
+
+### バージョン間の移行
+
+ClaudeRuntime 導入前に作成したノートブックをそのまま使い続けることができます。ClaudeRuntime の新機能を使用したい場合は、個別の関数呼び出し時に `NBAuthorize` や `NBValidateHeldExpr` を任意で追加するだけで構いません。強制的な移行作業は不要です。
 
 ## 動作確認
 
@@ -139,6 +194,17 @@ dependencies = NBAccess`NBBuildVarDependencies[nb]
 NBAccess`NBPlotDependencyGraph[nb, "Scope" -> "Local"]
 ```
 
+### ClaudeRuntime 連携テスト（ClaudeRuntime 導入時のみ）
+
+```mathematica
+(* ルーティング判定の確認 *)
+NBAccess`NBRouteDecision[0.5]
+(* 出力例: <|"Route" -> "CloudLLM", "EffectiveRiskScore" -> 0.5, ...|> *)
+
+(* 式の事前検証 *)
+NBAccess`NBValidateHeldExpr[HoldComplete[1 + 1], <|"AccessLevel" -> 0.5|>]
+```
+
 ## API キー設定（オプション）
 
 AI プロバイダーとの連携を行う場合：
@@ -173,6 +239,18 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>
 
 (* または関数呼び出し時に個別指定 *)
 NBAccess`NBGetCells[nb, PrivacySpec -> <|"AccessLevel" -> 1.0|>]
+```
+
+### ClaudeRuntime の API が見つからない場合
+
+`NBValidateHeldExpr` 等の ClaudeRuntime 連携 API が未定義の場合は、ClaudeRuntime が読み込まれていることを確認してください：
+
+```mathematica
+(* ClaudeRuntime が読み込まれているか確認 *)
+Names["NBAccess`NBAuthorize"]
+(* {} が返る場合は ClaudeRuntime が未ロード *)
+
+Block[{$CharacterEncoding = "UTF-8"}, Get["ClaudeRuntime.wl"]]
 ```
 
 ### 依存関係問題

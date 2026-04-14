@@ -625,6 +625,178 @@ NBConfidentialEpilogInstalledQ::usage =
   "NBConfidentialEpilogInstalledQ[nb, checkSymbol] \:306f\:6a5f\:5bc6\:8ffd\:8de1 CellEpilog \:304c\:30a4\:30f3\:30b9\:30c8\:30fc\:30eb\:6e08\:307f\:304b\:8fd4\:3059\:3002\n" <>
   "checkSymbol \:306f FreeQ \:30c1\:30a7\:30c3\:30af\:7528\:306e\:30de\:30fc\:30ab\:30fc\:30b7\:30f3\:30dc\:30eb\:3002";
 
+(* ════════════════════════════════════════════════════════
+   Phase 7: Allowed Expression Surface & Runtime Integration API
+   ════════════════════════════════════════════════════════ *)
+
+$NBAllowedHeads::usage =
+  "$NBAllowedHeads は LLM が自由に実行可能な head のリスト。";
+
+$NBApprovalHeads::usage =
+  "$NBApprovalHeads は人間承認を要する head のリスト。";
+
+$NBDenyHeads::usage =
+  "$NBDenyHeads は常に拒否する head のリスト。";
+
+NBValidateHeldExpr::usage =
+  "NBValidateHeldExpr[heldExpr, accessSpec, opts] は HoldComplete[...] 式を\n" <>
+  "Allowed Expression Surface に照合し AccessDecision を返す。\n" <>
+  "返り値: <|\"Decision\" -> \"Permit\"|\"Deny\"|\"NeedsApproval\"|\"RepairNeeded\", ...)|>";
+
+NBExecuteHeldExpr::usage =
+  "NBExecuteHeldExpr[heldExpr, accessSpec, opts] は検証済み式を安全に実行し結果を返す。\n" <>
+  "返り値: <|\"Success\" -> True/False, \"RawResult\" -> ..., \"Error\" -> ...|>";
+
+NBRedactExecutionResult::usage =
+  "NBRedactExecutionResult[result, accessSpec, opts] は実行結果を redact し安全な形で返す。\n" <>
+  "返り値: <|\"RedactedResult\" -> ..., \"Summary\" -> String|>";
+
+NBMakeContextPacket::usage =
+  "NBMakeContextPacket[nb, accessSpec, opts] は notebook から安全な context packet を構築する。\n" <>
+  "返り値: <|\"Input\" -> ..., \"Cells\" -> ..., \"AccessSpec\" -> ..., ...)|>";
+
+$NBRoutingThresholds::usage =
+  "$NBRoutingThresholds は routing 閾値の Association。\n" <>
+  "<|\"Cloud\" -> 0.5, \"Private\" -> 0.8|>\n" <>
+  "EffectiveRiskScore < Cloud → CloudLLM 候補\n" <>
+  "Cloud <= score < Private → PrivateLLM 候補\n" <>
+  "Private <= score → LocalOnly";
+
+NBRouteDecision::usage =
+  "NBRouteDecision[scoreOrAccessSpec] は数値スコアまたは accessSpec から\n" <>
+  "routing 推奨を返す (advisory, not gatekeeping)。\n" <>
+  "返り値: <|\"Route\" -> \"CloudLLM\"|\"PrivateLLM\"|\"LocalOnly\",\n" <>
+  "  \"EffectiveRiskScore\" -> n, \"Thresholds\" -> ...,\n" <>
+  "  \"Reason\" -> String|>";
+
+(* ════════════════════════════════════════════════════════
+   Phase 14: Iterative Agent Loop Support APIs
+   ════════════════════════════════════════════════════════ *)
+
+NBInferExprRequirements::usage =
+  "NBInferExprRequirements[heldExpr, accessSpec] は式が必要とする\n" <>
+  "アクセスレベル・書き込みターゲット・参照セル等を静的に推定する。\n" <>
+  "返り値: <|\"ReadCells\" -> {...}, \"WriteCells\" -> {...},\n" <>
+  "  \"RequiredAccessLevel\" -> n, \"HasSideEffects\" -> True/False, ...)|>";
+
+NBReleaseResult::usage =
+  "NBReleaseResult[result, accessSpec, opts] は実行結果を\n" <>
+  "指定された sink に安全に release する。\n" <>
+  "redaction + routing check を行い、release 可能な形を返す。";
+
+NBMakeRetryPacket::usage =
+  "NBMakeRetryPacket[failureAssoc, accessSpec] は失敗情報から\n" <>
+  "秘密を含まない安全な retry packet を構築する。";
+
+NBAuthorize::usage =
+  "NBAuthorize[obj, req] は PolicyGate + ScoreGate + EnvironmentGate を\n" <>
+  "統合した AccessDecision を返す。\n" <>
+  "返り値: <|\"Decision\" -> \"Permit\"|\"Deny\"|\"Screen\"|\"RequireApproval\",\n" <>
+  "  \"ReasonClass\" -> ..., \"RequiredAction\" -> ...,\n" <>
+  "  \"VisibleExplanation\" -> ..., \"RouteAdvice\" -> ...|>";
+
+NBPolicyGate::usage =
+  "NBPolicyGate[obj, req] は半順序ラベルに基づく flow 判定を返す。\n" <>
+  "PolicyLabel / ContainerLabel / SinkLabel を考慮する。";
+
+NBScoreGate::usage =
+  "NBScoreGate[obj, req] は数値スコアに基づく routing/screening 判定を返す。\n" <>
+  "advisory 体系: 判定は routing に影響するが permit/deny の主体ではない。";
+
+NBEnvironmentGate::usage =
+  "NBEnvironmentGate[obj, req] は実行環境に基づく制約チェックを返す。\n" <>
+  "Sink / Environment / Principal を考慮する。";
+
+(* ════════════════════════════════════════════════════════
+   Phase 20: Function Security API
+   ════════════════════════════════════════════════════════ *)
+
+NBRegisterFunctionSecurity::usage =
+  "NBRegisterFunctionSecurity[sym, spec] は関数 sym に\n" <>
+  "セキュリティメタデータを登録する。\n" <>
+  "spec: <|\"DefinitionLabel\" -> label,\n" <>
+  "  \"ExecPolicy\" -> \"Open\"|\"Guarded\"|\"Denied\",\n" <>
+  "  \"ReleasePolicy\" -> <|...|>|>";
+
+NBFunctionDefinitionLabel::usage =
+  "NBFunctionDefinitionLabel[f] は関数 f の定義ラベルを返す。\n" <>
+  "定義ラベルはコード自体の閲覧可否を制御する。";
+
+NBFunctionExecPolicy::usage =
+  "NBFunctionExecPolicy[f] は関数 f の実行ポリシーを返す。\n" <>
+  "\"Open\"|\"Guarded\"|\"Denied\"";
+
+NBFunctionReleasePolicy::usage =
+  "NBFunctionReleasePolicy[f] は関数 f の結果リリースポリシーを返す。\n" <>
+  "結果のラベル引き下げ条件を定義する。";
+
+GuardedApply::usage =
+  "GuardedApply[req, f, args] は f[args] を\n" <>
+  "セキュリティポリシーに従って実行する。\n" <>
+  "ExecPolicy が \"Guarded\" の場合、flow チェック後に実行し、\n" <>
+  "結果に適切なラベルを付与する。";
+
+Declassify::usage =
+  "Declassify[obj, req, releaseSpec] は obj のラベルを\n" <>
+  "releaseSpec に従って引き下げる。\n" <>
+  "req の Principal が acts-for 権限を持つ場合のみ許可。";
+
+(* ════════════════════════════════════════════════════════
+   Phase 14: Label Algebra (最小 API)
+   ════════════════════════════════════════════════════════ *)
+
+NBLabelQ::usage =
+  "NBLabelQ[label] は label が有効な NBAccess ラベルかを判定する。";
+
+NBLabelBottom::usage =
+  "NBLabelBottom[] は最小制約ラベル (public) を返す。";
+
+NBLabelTop::usage =
+  "NBLabelTop[] は最大制約ラベル (全拒否) を返す。";
+
+NBLabelJoin::usage =
+  "NBLabelJoin[l1, l2] はラベルの join (最大下界の双対 = より制約的) を返す。\n" <>
+  "両方の制約を満たす方向。";
+
+NBLabelMeet::usage =
+  "NBLabelMeet[l1, l2] はラベルの meet (最小上界 = より緩い) を返す。";
+
+NBLabelLEQ::usage =
+  "NBLabelLEQ[l1, l2] は l1 ⪯ l2 (l1 の情報が l2 へ flow 可能) を判定する。";
+
+NBRegisterPrincipal::usage =
+  "NBRegisterPrincipal[name, opts] はアクセス主体を登録する。";
+
+NBGrantActsFor::usage =
+  "NBGrantActsFor[p, q] は principal p が q として行動できる委任を登録する。";
+
+NBActsForQ::usage =
+  "NBActsForQ[p, q] は p が q として行動可能か判定する。";
+
+NBCanFlowToQ::usage =
+  "NBCanFlowToQ[srcLabel, dstLabel] は src から dst への flow が許可されるか判定する。";
+
+NBCanDeclassifyQ::usage =
+  "NBCanDeclassifyQ[srcLabel, dstLabel, req] は declassify が正当か判定する。";
+
+NBEffectiveLabel::usage =
+  "NBEffectiveLabel[obj, req] はオブジェクトと要求から実効ラベルを計算する。";
+
+$NBAllowedHeadsByCategory::usage =
+  "$NBAllowedHeadsByCategory はカテゴリ別の許可 head リスト (Association)。";
+
+$NBDisabledCategories::usage =
+  "$NBDisabledCategories は無効化されたカテゴリの追跡 (Association)。";
+
+NBEnableCategory::usage =
+  "NBEnableCategory[cat] はカテゴリを有効化する。";
+
+NBDisableCategory::usage =
+  "NBDisableCategory[cat] はカテゴリを無効化する。";
+
+NBCategoryEnabled::usage =
+  "NBCategoryEnabled[cat] はカテゴリが有効かを返す。";
+
 Begin["`Private`"];
 
 (* ============================================================
@@ -3914,6 +4086,1213 @@ NBAccess`NBMergeNotebookCells[sourcePath_String, outputPath_String,
     outputPath
   ];
 
+
+(* ════════════════════════════════════════════════════════
+   Phase 7: Allowed Expression Surface
+   ════════════════════════════════════════════════════════ *)
+
+If[!AssociationQ[$NBAllowedHeadsByCategory],
+  $NBAllowedHeadsByCategory = <|
+    "NBAccess_ReadOnly" -> {
+      "NBCellRead", "NBCellReadInputText", "NBCellCount",
+      "NBCurrentCellIndex", "NBSelectedCellIndices",
+      "NBCellIndicesByTag", "NBCellIndicesByStyle",
+      "NBCellStyle", "NBCellLabel", "NBCellGetText",
+      "NBGetCells", "NBGetContext", "NBResolveCell",
+      "NBCellGetTaggingRule", "NBCellHasImage",
+      "NBCellPrivacyLevel", "NBIsAccessible",
+      "NBFilterCellIndices", "NBCellExprToText", "NBCellToText",
+      "NBFileReadCells", "NBFileReadAllCells", "NBFileReadCellsInRange",
+      "NBFileSpec", "NBValueSpec", "NBPrivacyLevelToRoutes",
+      "NBGetConfidentialTag", "NBCellUsesConfidentialSymbol",
+      "NBCellExtractVarNames", "NBCellExtractAssignedNames",
+      "NBShouldExcludeFromPrompt", "NBIsClaudeFunctionCell",
+      "NBBuildVarDependencies", "NBTransitiveDependents",
+      "NBDependencyEdges", "NBGetTaggingRule"
+    },
+    "Control" -> {
+      "CompoundExpression", "Module", "With", "Block",
+      "If", "Which", "Switch", "Do", "Table",
+      "Return", "Break", "Continue", "Throw", "Catch",
+      "While", "For", "Nest", "NestList", "FixedPoint",
+      "Sequence", "Nothing", "Slot", "Function"
+    },
+    "Arithmetic" -> {
+      "Plus", "Times", "Power", "Subtract", "Divide",
+      "Minus", "Sqrt", "Abs", "Min", "Max", "Mod",
+      "Equal", "Unequal", "Less", "Greater",
+      "LessEqual", "GreaterEqual", "And", "Or", "Not",
+      "True", "False", "Null",
+      "IntegerPart", "Round", "Floor", "Ceiling"
+    },
+    "DataOps" -> {
+      "Map", "Select", "Cases", "Association", "Lookup",
+      "List", "Rule", "RuleDelayed",
+      "Sort", "SortBy", "Reverse", "Take", "Drop",
+      "Append", "Prepend", "Join", "Flatten",
+      "Range", "ConstantArray", "Total", "Mean",
+      "AssociationMap", "KeyValueMap", "GroupBy", "Counts", "Tally",
+      "DeleteDuplicates", "Union", "Intersection", "Complement",
+      "Position", "FirstPosition", "First", "Last", "Rest", "Most",
+      "AllTrue", "AnyTrue", "NoneTrue", "Count", "MemberQ", "FreeQ",
+      "MapIndexed", "MapAt", "MapThread", "Scan", "Fold",
+      "Apply", "Thread", "Through",
+      "Transpose", "Dimensions", "ArrayDepth",
+      "Head", "MatchQ", "Replace", "ReplaceAll",
+      "Echo", "Identity", "Composition",
+      "Missing", "FailureQ",
+      "Short", "Length", "Part", "Keys", "Values"
+    },
+    "StringOps" -> {
+      "Print", "ToString", "StringJoin", "StringLength",
+      "StringTake", "StringDrop", "StringReplace",
+      "StringCases", "StringContainsQ", "StringSplit",
+      "StringForm",
+      "StringRepeat", "StringPadLeft", "StringPadRight",
+      "StringRiffle", "StringTrim", "StringCount",
+      "StringPosition", "StringInsert", "StringDelete",
+      "StringMatchQ", "StringStartsQ", "StringEndsQ",
+      "TextString", "Characters", "CharacterRange",
+      "ToUpperCase", "ToLowerCase"
+    },
+    "TypeChecks" -> {
+      "StringQ", "NumberQ", "IntegerQ", "ListQ", "AssociationQ",
+      "NumericQ", "AtomQ", "ValueQ", "OptionValue",
+      "Depth", "ByteCount"
+    },
+    "KernelRead" -> {
+      "Notebooks", "InputNotebook", "EvaluationNotebook",
+      "Cells", "NotebookRead", "CellObject",
+      "Options", "CurrentValue", "AbsoluteOptions",
+      "Names", "Context", "Contexts",
+      "Needs",
+      "DateString", "AbsoluteTime", "Now"
+    },
+    "Formatting" -> {
+      "Row", "Column", "Grid", "TableForm",
+      "NumberForm",
+      "Style", "Bold", "Italic", "Red", "Blue", "Green",
+      "RGBColor", "GrayLevel", "FontSize", "FontColor",
+      "Framed", "Panel", "Labeled", "Tooltip",
+      "InputForm", "OutputForm", "TraditionalForm",
+      "MatrixForm"
+    }
+  |>];
+
+(* カテゴリ別有効/無効切り替え *)
+If[!AssociationQ[$NBDisabledCategories],
+  $NBDisabledCategories = <||>];
+
+NBEnableCategory[cat_String] := ($NBDisabledCategories[cat] = False);
+NBDisableCategory[cat_String] := ($NBDisabledCategories[cat] = True);
+NBCategoryEnabled[cat_String] := !TrueQ[$NBDisabledCategories[cat]];
+
+(* $NBAllowedHeads は $NBAllowedHeadsByCategory から自動導出（後方互換） *)
+(* Set/SetDelayed は文脈依存チェック: Module/With/Block 内のみ許可。
+   $NBAllowedHeads からは除外し、iExtractGlobalSets で判定する。
+   Phase 16: グローバルスコープの Set は NeedsApproval に格上げ *)
+If[!ListQ[$NBAllowedHeads],
+  $NBAllowedHeads = Flatten[Values[
+    Select[$NBAllowedHeadsByCategory,
+      NBCategoryEnabled[First[#]] &] /. 
+    Rule[k_, v_] :> If[NBCategoryEnabled[k], v, Nothing]]]];
+(* 実際には毎回再計算: 動的カテゴリ切り替え対応 *)
+iRecomputeAllowedHeads[] := (
+  $NBAllowedHeads = Flatten @ KeyValueMap[
+    If[NBCategoryEnabled[#1], #2, {}] &,
+    $NBAllowedHeadsByCategory]);
+iRecomputeAllowedHeads[];
+
+If[!ListQ[$NBApprovalHeads],
+  $NBApprovalHeads = {
+    (* NBAccess 書き込み系 *)
+    "NBCellWriteCode", "NBCellWriteText", "NBWriteText", "NBWriteCode",
+    "NBWriteSmartCode", "NBWriteInputCellAndMaybeEvaluate",
+    "NBInsertTextCells", "NBCellSetOptions", "NBCellSetStyle",
+    "NBCellSetTaggingRule", "NBSelectCell",
+    "NBDeleteCellsByTag", "NBMoveAfterCell",
+    "NBMarkCellConfidential", "NBMarkCellDependent", "NBUnmarkCell",
+    "NBSetConfidentialTag", "NBSetTaggingRule", "NBDeleteTaggingRule",
+    "NBFileWriteCell", "NBFileWriteAllCells",
+    "NBMergeNotebookCells",
+    (* ファイル操作 *)
+    "NBFileOpen", "NBFileClose", "NBFileSave",
+    "NBSplitNotebookCells"
+  }];
+
+If[!ListQ[$NBDenyHeads],
+  $NBDenyHeads = {
+    "DeleteFile", "RenameFile", "CopyFile",
+    "SystemOpen", "Run", "RunProcess", "StartProcess",
+    "Import", "Export",
+    "Get", "Put", "PutAppend", "Save",
+    "Install", "Uninstall", "URLExecute",
+    "CreateProcess", "KillProcess",
+    "FileRemove", "DeleteDirectory",
+    "SendMail", "CloudDeploy", "CloudPut",
+    "Quit", "Exit", "Abort",
+    "Unset", "Clear", "Remove",
+    "Evaluate" (* ReleaseHold経由の明示的eval阻止 *)
+  }];
+
+(* ════════════════════════════════════════════════════════
+   Phase 7: NBValidateHeldExpr
+   ════════════════════════════════════════════════════════ *)
+
+Options[NBValidateHeldExpr] = {"AllowedHeads" -> Automatic,
+  "ApprovalHeads" -> Automatic, "DenyHeads" -> Automatic,
+  "LabelCheck" -> Automatic};
+
+NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
+  Module[{allowed, approval, deny, heads, denied, needsApproval, unknown,
+          labelCheck},
+    If[!MatchQ[heldExpr, HoldComplete[_]],
+      Return[<|"Decision" -> "Deny",
+        "ReasonClass" -> "ModelFormatError",
+        "VisibleExplanation" -> "Expected HoldComplete[expr], got " <> ToString[Head[heldExpr]],
+        "SanitizedExpr" -> None|>]];
+    
+    (* Phase 16: カテゴリ動的再計算 *)
+    iRecomputeAllowedHeads[];
+    allowed  = Replace[OptionValue["AllowedHeads"],  Automatic -> $NBAllowedHeads];
+    approval = Replace[OptionValue["ApprovalHeads"], Automatic -> $NBApprovalHeads];
+    deny     = Replace[OptionValue["DenyHeads"],     Automatic -> $NBDenyHeads];
+    
+    (* 式中の全 head を抽出 *)
+    heads = iExtractAllHeads[heldExpr];
+    
+    (* 禁止 head チェック *)
+    denied = Select[heads, MemberQ[deny, #] &];
+    If[Length[denied] > 0,
+      Return[<|"Decision" -> "Deny",
+        "ReasonClass" -> "ForbiddenHead",
+        "VisibleExplanation" -> "Forbidden heads: " <> StringRiffle[denied, ", "],
+        "SanitizedExpr" -> iSanitizeExpr[heldExpr]|>]];
+    
+    (* 承認要 head チェック *)
+    needsApproval = Select[heads, MemberQ[approval, #] &];
+    If[Length[needsApproval] > 0,
+      Return[<|"Decision" -> "NeedsApproval",
+        "ReasonClass" -> "AccessEscalationRequired",
+        "VisibleExplanation" -> "Heads requiring approval: " <> StringRiffle[needsApproval, ", "],
+        "SanitizedExpr" -> heldExpr|>]];
+    
+    (* 未知 head チェック — ただし Set/SetDelayed は文脈依存で判定 *)
+    (* Phase 16: Set/SetDelayed はグローバルスコープなら NeedsApproval *)
+    Module[{globalSets, setHeadsInExpr},
+      setHeadsInExpr = Select[heads, MemberQ[{"Set", "SetDelayed"}, #] &];
+      If[Length[setHeadsInExpr] > 0,
+        globalSets = iExtractGlobalSets[heldExpr];
+        If[Length[globalSets] > 0,
+          Return[<|"Decision" -> "NeedsApproval",
+            "ReasonClass" -> "GlobalSetRequiresApproval",
+            "VisibleExplanation" ->
+              "Global-scope " <> StringRiffle[DeleteDuplicates[globalSets], "/"] <>
+              " detected. Only Set/SetDelayed inside Module/With/Block is auto-permitted.",
+            "SanitizedExpr" -> heldExpr|>]]]];
+    
+    unknown = Select[heads,
+      !MemberQ[allowed, #] && !MemberQ[approval, #] &&
+      !MemberQ[{"Set", "SetDelayed"}, #] &];
+    If[Length[unknown] > 0,
+      Return[<|"Decision" -> "RepairNeeded",
+        "ReasonClass" -> "ValidationRepairable",
+        "VisibleExplanation" -> "Unknown heads: " <> StringRiffle[unknown, ", "],
+        "SanitizedExpr" -> heldExpr|>]];
+    
+    (* confidential leak チェック *)
+    If[iContainsConfidentialLeak[heldExpr, accessSpec],
+      Return[<|"Decision" -> "Deny",
+        "ReasonClass" -> "ConfidentialLeakRisk",
+        "VisibleExplanation" -> "Expression may leak confidential data",
+        "SanitizedExpr" -> iSanitizeExpr[heldExpr]|>]];
+    
+    (* ── Phase 15: label-aware validation ──
+       accessSpec に PolicyLabel / SinkLabel が設定されている場合のみ実行。
+       head チェック通過後に、ラベル半順序に基づく flow 判定を行う。 *)
+    labelCheck = Replace[OptionValue["LabelCheck"], Automatic ->
+      KeyExistsQ[accessSpec, "PolicyLabel"] ||
+      KeyExistsQ[accessSpec, "SinkLabel"]];
+    If[TrueQ[labelCheck],
+      Module[{obj, req, authResult, authDecision},
+        obj = <|
+          "PolicyLabel"       -> Lookup[accessSpec, "PolicyLabel", NBLabelBottom[]],
+          "ContainerLabel"    -> Lookup[accessSpec, "ContainerLabel", NBLabelBottom[]],
+          "AccessLevel"       -> Lookup[accessSpec, "AccessLevel", 0.5],
+          "EffectiveRiskScore" -> Lookup[accessSpec, "EffectiveRiskScore",
+            Lookup[accessSpec, "AccessLevel", 0.5]]|>;
+        req = <|
+          "SinkLabel"   -> Lookup[accessSpec, "SinkLabel", NBLabelBottom[]],
+          "Sink"        -> Lookup[accessSpec, "Sink", "CloudLLM"],
+          "Environment" -> Lookup[accessSpec, "Environment", "Notebook"],
+          "Principal"   -> Lookup[accessSpec, "Principal", None]|>;
+        authResult = NBAuthorize[obj, req];
+        authDecision = authResult["Decision"];
+        
+        (* NBAuthorize の結果を validation decision にマッピング *)
+        Which[
+          authDecision === "Deny",
+            Return[<|"Decision" -> "Deny",
+              "ReasonClass" -> authResult["ReasonClass"],
+              "VisibleExplanation" -> authResult["VisibleExplanation"],
+              "SanitizedExpr" -> iSanitizeExpr[heldExpr],
+              "RouteAdvice" -> authResult["RouteAdvice"]|>],
+          authDecision === "RequireApproval",
+            Return[<|"Decision" -> "NeedsApproval",
+              "ReasonClass" -> authResult["ReasonClass"],
+              "VisibleExplanation" -> authResult["VisibleExplanation"],
+              "SanitizedExpr" -> heldExpr,
+              "RouteAdvice" -> authResult["RouteAdvice"]|>],
+          authDecision === "Screen",
+            (* Screen は advisory — Permit するが RouteAdvice に反映 *)
+            Null,
+          True, (* Permit *)
+            Null
+        ]]];
+    
+    <|"Decision" -> "Permit",
+      "ReasonClass" -> "None",
+      "VisibleExplanation" -> "",
+      "SanitizedExpr" -> heldExpr,
+      "RouteAdvice" -> NBRouteDecision[accessSpec]|>
+  ];
+
+(* head 抽出ヘルパー: 式中の全シンボル head を文字列リストで返す。
+   HoldComplete 内を Cases で走査するため評価は発生しない。 *)
+iExtractAllHeads[held_HoldComplete] :=
+  DeleteDuplicates @ Cases[
+    held,
+    s_Symbol[___] :> SymbolName[Unevaluated[s]],
+    {1, Infinity}];
+
+iExtractAllHeads[_] := {};
+
+(* sanitize: 文字列リテラルを伏せる *)
+iSanitizeExpr[heldExpr_] :=
+  Replace[heldExpr,
+    s_String /; StringLength[s] > 0 :> "[STRING]",
+    {2, Infinity}];
+
+(* confidential leak 簡易チェック *)
+iContainsConfidentialLeak[heldExpr_, accessSpec_Association] :=
+  Module[{confSyms, exprStr},
+    confSyms = Lookup[accessSpec, "ConfidentialSymbols",
+      If[ListQ[$NBConfidentialSymbols], $NBConfidentialSymbols, {}]];
+    If[Length[confSyms] === 0, Return[False]];
+    exprStr = ToString[heldExpr, InputForm];
+    AnyTrue[confSyms, StringContainsQ[exprStr, ToString[#]] &]
+  ];
+
+(* ════════════════════════════════════════════════════════
+   Phase 16: Set/SetDelayed 文脈依存チェック
+   
+   Set/SetDelayed は $NBAllowedHeads からは除外されている。
+   Module/With/Block 内のローカルスコープの Set のみ許可し、
+   グローバルスコープの Set は NeedsApproval に格上げする。
+   
+   方式: ReplaceAll でスコープ構造を除去し、残った Set を検出。
+   HoldAll + Set パターンの衝突を回避する安全な構造的アプローチ。
+   ════════════════════════════════════════════════════════ *)
+
+(* ── ヘルパー: 式中のグローバルスコープ Set/SetDelayed を検出 ── *)
+(* 戦略:
+   1. HoldComplete 内の式から Module/With/Block/Function を
+      丸ごと中立値 (Null) に置換
+   2. 置換後に残る Set/SetDelayed はグローバルスコープのもの
+   3. FreeQ で残存を判定
+   
+   返り値: グローバルスコープにある Set/SetDelayed の head 名リスト。
+   空リスト = 全て安全 (ローカルスコープ内) *)
+
+iExtractGlobalSets[held_HoldComplete] :=
+  Module[{stripped, result = {}},
+    (* スコープ構造を除去: Module/With/Block/Function の全体を Null に置換。
+       ReplaceAll は HoldComplete 内でも構造的に動作する。
+       スコープ内の Set/SetDelayed は一緒に消える。 *)
+    stripped = held /. {
+      HoldPattern[(Module | With | Block)[_, _]] :> Null,
+      HoldPattern[Function[_]] :> Null,
+      HoldPattern[Function[_, _]] :> Null,
+      HoldPattern[Function[_, _, _]] :> Null
+    };
+    
+    (* 残った Set/SetDelayed はグローバルスコープ *)
+    If[!FreeQ[stripped, HoldPattern[_Set]], AppendTo[result, "Set"]];
+    If[!FreeQ[stripped, HoldPattern[_SetDelayed]], AppendTo[result, "SetDelayed"]];
+    result
+  ];
+
+iExtractGlobalSets[_] := {};
+
+(* ════════════════════════════════════════════════════════
+   Phase 7: NBExecuteHeldExpr
+   ════════════════════════════════════════════════════════ *)
+
+Options[NBExecuteHeldExpr] = {"TimeConstraint" -> 30};
+
+NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
+  Module[{result, timeout},
+    If[!MatchQ[heldExpr, HoldComplete[_]],
+      Return[<|"Success" -> False, "RawResult" -> None,
+        "Error" -> "Invalid HoldComplete expression"|>]];
+    timeout = OptionValue["TimeConstraint"];
+    result = Quiet @ Check[
+      TimeConstrained[
+        ReleaseHold[heldExpr],
+        timeout,
+        $TimedOut],
+      $Failed];
+    If[result === $Failed,
+      <|"Success" -> False, "RawResult" -> None,
+        "HeldExpr" -> heldExpr,
+        "Error" -> "Execution failed"|>,
+    If[result === $TimedOut,
+      <|"Success" -> False, "RawResult" -> None,
+        "HeldExpr" -> heldExpr,
+        "Error" -> "Execution timed out after " <> ToString[timeout] <> "s"|>,
+      <|"Success" -> True, "RawResult" -> result,
+        "HeldExpr" -> heldExpr,
+        "Error" -> None|>
+    ]]
+  ];
+
+(* ════════════════════════════════════════════════════════
+   Phase 7: NBRedactExecutionResult
+   ════════════════════════════════════════════════════════ *)
+
+Options[NBRedactExecutionResult] = {"MaxSummaryLength" -> 500};
+
+NBRedactExecutionResult[result_Association, accessSpec_Association,
+    opts:OptionsPattern[]] :=
+  Module[{raw, redacted, maxLen, confSyms, confVarNames, secrets, heldExpr,
+          refsConfidential = False, schemaInfo},
+    raw = Lookup[result, "RawResult", None];
+    maxLen = OptionValue["MaxSummaryLength"];
+    
+    (* 機密変数リストを統合 *)
+    confVarNames = Lookup[accessSpec, "ConfidentialSymbols",
+      If[ListQ[$NBConfidentialSymbols],
+        Keys[$NBConfidentialSymbols], {}]];
+    (* Association 形式の $NBConfidentialSymbols からキーを取得 *)
+    If[AssociationQ[$NBConfidentialSymbols],
+      confVarNames = DeleteDuplicates @ Join[confVarNames,
+        Keys[$NBConfidentialSymbols]]];
+    secrets = Lookup[accessSpec, "Secrets", {}];
+    (* confSyms = 全検出対象 (変数名 + API キー等) *)
+    confSyms = DeleteDuplicates @ Join[confVarNames, secrets];
+    
+    (* ── 機密依存チェック (Phase 17 fix) ──
+       実行した式 (HeldExpr) が機密変数を参照しているかを
+       静的にチェックする。参照していれば結果全体を redact。
+       これにより「2*v (v=1)→結果2」のような値リークを防ぐ。
+       注: HeldExpr チェックは confVarNames のみ (Secrets はコード内に現れない) *)
+    heldExpr = Lookup[result, "HeldExpr", None];
+    If[MatchQ[heldExpr, HoldComplete[_]] && Length[confVarNames] > 0,
+      Module[{exprStr = ToString[heldExpr, InputForm]},
+        refsConfidential = AnyTrue[confVarNames,
+          StringContainsQ[exprStr,
+            RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
+              "(?![\\p{L}\\p{N}$])"]] &]]];
+    
+    (* フォールバック: HeldExpr がない場合は結果文字列ベースでチェック
+       注: confVarNames のみ使用 (Secrets は StringReplace で処理) *)
+    If[!refsConfidential && Length[confVarNames] > 0,
+      Module[{rawStr = ToString[Short[raw, 10]]},
+        refsConfidential = AnyTrue[confVarNames,
+          StringContainsQ[rawStr,
+            RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
+              "(?![\\p{L}\\p{N}$])"]] &]]];
+    
+    If[refsConfidential,
+      (* ── 機密依存: 型・サイズ・Head のスキーマ情報のみ返す ── *)
+      schemaInfo = iMakeResultSchema[raw];
+      <|"RedactedResult" -> schemaInfo,
+        "Summary" -> schemaInfo,
+        "ConfidentialDependent" -> True|>,
+      (* ── 非機密: 従来通りの redaction ── *)
+      redacted = ToString[Short[raw, 10]];
+      (* 変数名と Secrets の両方を文字列置換 *)
+      Do[redacted = StringReplace[redacted,
+          RegularExpression["(?<![\\p{L}\\p{N}$])" <> s <>
+            "(?![\\p{L}\\p{N}$])"] -> "[REDACTED]"],
+        {s, confSyms}];
+      <|"RedactedResult" -> StringTake[redacted, UpTo[maxLen]],
+        "Summary" -> StringTake[redacted, UpTo[200]],
+        "ConfidentialDependent" -> False|>
+    ]
+  ];
+
+(* 実行結果のスキーマ情報生成（機密依存時に値の代わりに返す） *)
+iMakeResultSchema[raw_] :=
+  Module[{head, info},
+    head = Head[raw];
+    info = Which[
+      raw === Null, "(* [機密依存: 副作用のみ] *)",
+      head === Integer, "(* [機密依存データ: Integer] *)",
+      head === Real, "(* [機密依存データ: Real] *)",
+      head === Complex, "(* [機密依存データ: Complex] *)",
+      head === String, "(* [機密依存データ: String, " <>
+        ToString[StringLength[raw]] <> " chars] *)",
+      head === List, Module[{dims = Quiet @ Check[Dimensions[raw], {Length[raw]}]},
+        "(* [機密依存データ: List, dimensions " <> ToString[dims] <> "] *)"],
+      head === Association, Module[{keys = Take[Keys[raw], UpTo[10]]},
+        "(* [機密依存データ: Association, " <> ToString[Length[raw]] <>
+        " keys: {" <> StringRiffle[ToString /@ keys, ", "] <> "}] *)"],
+      head === Dataset, "(* [機密依存データ: Dataset] *)",
+      head === SparseArray, "(* [機密依存データ: SparseArray] *)",
+      MatchQ[raw, _Image | _Graphics | _Graphics3D],
+        "(* [機密依存データ: " <> ToString[head] <> "] *)",
+      True, "(* [機密依存データ: " <> ToString[head] <> "] *)"
+    ];
+    info
+  ];
+
+(* ════════════════════════════════════════════════════════
+   Phase 7: NBMakeContextPacket
+   ════════════════════════════════════════════════════════ *)
+
+Options[NBMakeContextPacket] = {
+  "CellRange" -> All,
+  "IncludeSelection" -> True,
+  "MaxCells" -> 50
+};
+
+NBMakeContextPacket[nb_, accessSpec_Association, opts:OptionsPattern[]] :=
+  Module[{cells = {}, selectedIdx = {}, cellRange, maxCells, packet,
+          totalCellCount = 0, threshold},
+    cellRange = OptionValue["CellRange"];
+    maxCells  = OptionValue["MaxCells"];
+    threshold = Lookup[accessSpec, "AccessLevel", 0.5];
+    
+    (* notebook が有効か *)
+    If[nb === $Failed || nb === None,
+      Return[<|"Input" -> None, "Cells" -> {},
+        "SelectedCells" -> {}, "AccessSpec" -> accessSpec,
+        "NotebookValid" -> False, "TotalCellCount" -> 0|>]];
+    
+    (* 全セル数を先に取得（フィルタ前） *)
+    totalCellCount = Quiet @ Check[NBAccess`NBCellCount[nb], 0];
+    
+    (* セル読み取り — Phase 17 fix:
+       NBGetCells は整数インデックスのリストを返すため、
+       各インデックスからセル Association を構築する。
+       旧 NBGetContext と同等の機密処理を適用:
+       - 機密セル (PrivacyLevel > threshold) → テキスト非表示マーカー
+       - 機密変数を含む行 → iRedactConfidentialLines で墨消し
+       - 機密依存 Output → iOutputSchemaText でスキーマ情報のみ *)
+    cells = Quiet @ Check[
+      Module[{indices, cellAssocs = {}},
+        indices = Range[Min[maxCells, totalCellCount]];
+        If[!ListQ[indices], indices = {}];
+        
+        Do[Module[{privLevel, style, text, redactedText, wasRedacted,
+                   depTag},
+          privLevel = Quiet @ Check[
+            NBAccess`NBCellPrivacyLevel[nb, idx], 0];
+          style = Quiet @ Check[
+            NBAccess`NBCellStyle[nb, idx], "Unknown"];
+          
+          If[privLevel > threshold,
+            (* ── 機密セル: テキスト非表示 ── *)
+            AppendTo[cellAssocs, <|
+              "CellIndex" -> idx,
+              "CellStyle" -> style,
+              "InputText" -> "(* [機密セル: 非表示] *)",
+              "PrivacyLevel" -> privLevel,
+              "Confidential" -> True|>],
+            (* ── 非機密セル: 機密変数の墨消し処理 ── *)
+            text = Quiet @ Check[
+              NBAccess`NBCellGetText[nb, idx], ""];
+            If[!StringQ[text], text = ""];
+            text = StringTake[text, UpTo[500]];
+            {redactedText, wasRedacted} =
+              iRedactConfidentialLines[text];
+            (* 機密変数依存の Output かチェック *)
+            depTag = Quiet @ Check[
+              NBAccess`NBCellGetTaggingRule[nb, idx,
+                {"claudecode", "dependent"}], False];
+            If[TrueQ[depTag] && (style === "Output"),
+              (* 機密依存 Output: スキーマ情報のみ *)
+              AppendTo[cellAssocs, <|
+                "CellIndex" -> idx,
+                "CellStyle" -> style,
+                "InputText" -> iOutputSchemaText[nb, idx],
+                "PrivacyLevel" -> privLevel,
+                "ConfidentialDependent" -> True|>],
+              (* 通常セル / 墨消し済みセル *)
+              AppendTo[cellAssocs, <|
+                "CellIndex" -> idx,
+                "CellStyle" -> style,
+                "InputText" -> redactedText,
+                "PrivacyLevel" -> privLevel,
+                "Redacted" -> wasRedacted|>]
+            ]
+          ]
+        ],
+        {idx, indices}];
+        cellAssocs
+      ],
+      {}];
+    
+    (* 選択セルインデックス *)
+    If[TrueQ[OptionValue["IncludeSelection"]],
+      selectedIdx = Quiet @ Check[
+        NBAccess`NBSelectedCellIndices[nb], {}]];
+    
+    packet = <|
+      "Input" -> None, (* caller が設定 *)
+      "Cells" -> cells,
+      "SelectedCells" -> selectedIdx,
+      "AccessSpec" -> accessSpec,
+      "NotebookValid" -> True,
+      "TotalCellCount" -> totalCellCount,
+      "CellCount" -> Length[cells],
+      "Timestamp" -> AbsoluteTime[]
+    |>;
+    packet
+  ];
+
+(* ════════════════════════════════════════════════════════
+   Phase 11: Score → Advisory Routing
+   
+   数値スコアは access control の主体ではなく、
+   routing / audit / visibility の advisory 体系として位置づける。
+   将来的に半順序ラベルが access control の主体系となる。
+   ════════════════════════════════════════════════════════ *)
+
+(* ── Routing Thresholds ── *)
+If[!AssociationQ[$NBRoutingThresholds],
+  $NBRoutingThresholds = <|
+    "Cloud"   -> 0.5,  (* score < 0.5 → cloud LLM 候補 *)
+    "Private" -> 0.8   (* 0.5 <= score < 0.8 → private LLM 候補 *)
+                       (* 0.8 <= score → local only *)
+  |>];
+
+(* ── NBRouteDecision ── *)
+NBRouteDecision[score_?NumericQ] :=
+  Module[{cloudTh, privateTh, route, reason},
+    cloudTh   = Lookup[$NBRoutingThresholds, "Cloud", 0.5];
+    privateTh = Lookup[$NBRoutingThresholds, "Private", 0.8];
+    Which[
+      score < cloudTh,
+        route = "CloudLLM";
+        reason = "RiskBelowCloudThreshold",
+      score < privateTh,
+        route = "PrivateLLM";
+        reason = "RiskAboveCloudThreshold",
+      True,
+        route = "LocalOnly";
+        reason = "RiskAbovePrivateThreshold"
+    ];
+    <|"Route" -> route,
+      "EffectiveRiskScore" -> score,
+      "Thresholds" -> $NBRoutingThresholds,
+      "Reason" -> reason|>
+  ];
+
+NBRouteDecision[accessSpec_Association] :=
+  NBRouteDecision[Lookup[accessSpec, "AccessLevel",
+    Lookup[accessSpec, "EffectiveRiskScore", 0.5]]];
+
+(* ════════════════════════════════════════════════════════
+   Phase 14: NBInferExprRequirements
+   
+   式が必要とするリソースを静的に推定する。
+   将来の label-aware validation の基盤。
+   ════════════════════════════════════════════════════════ *)
+
+Options[NBInferExprRequirements] = {"Depth" -> Infinity};
+
+NBInferExprRequirements[heldExpr_, accessSpec_Association,
+    opts:OptionsPattern[]] :=
+  Module[{heads, readHeads, writeHeads, readCells = {}, writeCells = {},
+          hasSideEffects, requiredLevel, cellRefs},
+    If[!MatchQ[heldExpr, HoldComplete[_]],
+      Return[<|"Error" -> "Expected HoldComplete"|>]];
+    
+    heads = iExtractAllHeads[heldExpr];
+    
+    readHeads  = Select[heads, MemberQ[$NBAllowedHeads, #] &];
+    writeHeads = Select[heads, MemberQ[$NBApprovalHeads, #] &];
+    hasSideEffects = Length[writeHeads] > 0;
+    
+    (* セル参照の抽出: NBCellRead[nb, 3] → {3} *)
+    cellRefs = Cases[heldExpr,
+      HoldPattern[_Symbol[_, idx_Integer]] :> idx, {0, Infinity}];
+    readCells  = DeleteDuplicates[cellRefs];
+    
+    (* 必要アクセスレベル推定 *)
+    requiredLevel = Which[
+      Length[writeHeads] > 0, 0.8,
+      MemberQ[heads, "NBCellPrivacyLevel" | "NBGetConfidentialTag"], 0.7,
+      True, Lookup[accessSpec, "AccessLevel", 0.5]];
+    
+    <|"ReadHeads"            -> readHeads,
+      "WriteHeads"           -> writeHeads,
+      "ReadCells"            -> readCells,
+      "WriteCells"           -> {},  (* TODO: 書き込み先特定 *)
+      "HasSideEffects"       -> hasSideEffects,
+      "RequiredAccessLevel"  -> requiredLevel,
+      "AllHeads"             -> heads,
+      "RouteAdvice"          -> NBRouteDecision[requiredLevel]|>
+  ];
+
+(* ════════════════════════════════════════════════════════
+   Phase 14: NBReleaseResult
+   
+   実行結果を redact + routing check して安全に release する。
+   ════════════════════════════════════════════════════════ *)
+
+Options[NBReleaseResult] = {
+  "Sink" -> "CloudLLM",
+  "MaxSummaryLength" -> 500
+};
+
+NBReleaseResult[result_Association, accessSpec_Association,
+    opts:OptionsPattern[]] :=
+  Module[{redacted, sink, route, score},
+    (* まず redact *)
+    redacted = NBRedactExecutionResult[result, accessSpec,
+      "MaxSummaryLength" -> OptionValue["MaxSummaryLength"]];
+    
+    (* routing チェック *)
+    sink  = OptionValue["Sink"];
+    route = NBRouteDecision[accessSpec];
+    score = Lookup[route, "EffectiveRiskScore", 0.5];
+    
+    Which[
+      sink === "CloudLLM" && Lookup[route, "Route", ""] =!= "CloudLLM",
+        <|"Released" -> False,
+          "Reason"   -> "RiskTooHighForCloud",
+          "Score"    -> score,
+          "Route"    -> route,
+          "Redacted" -> redacted|>,
+      sink === "PrivateLLM" && Lookup[route, "Route", ""] === "LocalOnly",
+        <|"Released" -> False,
+          "Reason"   -> "RiskTooHighForPrivate",
+          "Score"    -> score,
+          "Route"    -> route,
+          "Redacted" -> redacted|>,
+      True,
+        <|"Released"      -> True,
+          "RedactedResult" -> redacted["RedactedResult"],
+          "Summary"       -> redacted["Summary"],
+          "Route"         -> route|>
+    ]
+  ];
+
+(* ════════════════════════════════════════════════════════
+   Phase 14: NBMakeRetryPacket
+   
+   失敗情報から秘密を除去した安全な retry packet を構築する。
+   ════════════════════════════════════════════════════════ *)
+
+NBMakeRetryPacket[failureAssoc_Association, accessSpec_Association] :=
+  Module[{safePacket, secrets, confSyms},
+    safePacket = <|
+      "Type"              -> "RetryPacket",
+      "ReasonClass"       -> Lookup[failureAssoc, "ReasonClass", "UnknownFailure"],
+      "VisibleExplanation" -> Lookup[failureAssoc, "VisibleExplanation", ""],
+      "Decision"          -> Lookup[failureAssoc, "Decision", "Deny"],
+      "Timestamp"         -> AbsoluteTime[]
+    |>;
+    
+    (* 秘密情報の redaction *)
+    secrets  = Lookup[accessSpec, "Secrets", {}];
+    confSyms = Lookup[accessSpec, "ConfidentialSymbols",
+      If[ListQ[$NBConfidentialSymbols], $NBConfidentialSymbols, {}]];
+    
+    Module[{explanation = safePacket["VisibleExplanation"]},
+      Do[explanation = StringReplace[explanation, ToString[s] -> "[REDACTED]"],
+        {s, confSyms}];
+      Do[explanation = StringReplace[explanation, s -> "[REDACTED]"],
+        {s, secrets}];
+      safePacket["VisibleExplanation"] = explanation];
+    
+    (* SanitizedExpr は文字列化して秘密を除去 *)
+    If[KeyExistsQ[failureAssoc, "SanitizedExpr"],
+      Module[{exprStr = ToString[failureAssoc["SanitizedExpr"]]},
+        Do[exprStr = StringReplace[exprStr, s -> "[REDACTED]"],
+          {s, secrets}];
+        safePacket["SanitizedExprStr"] = StringTake[exprStr, UpTo[500]]]];
+    
+    safePacket
+  ];
+
+(* ════════════════════════════════════════════════════════
+   Phase 14: Label Algebra (最小 API)
+   
+   DLM 風の半順序ラベル体系。
+   初期実装は reader policy ベース。
+   将来的に AccessLevel 数値に代わる主体系となる。
+   ════════════════════════════════════════════════════════ *)
+
+(* ── Principal 管理 ── *)
+
+If[!AssociationQ[$iNBPrincipals], $iNBPrincipals = <||>];
+If[!AssociationQ[$iNBActsFor],    $iNBActsFor = <||>];
+
+NBRegisterPrincipal[name_String, opts___Rule] :=
+  Module[{spec = Association[opts]},
+    $iNBPrincipals[name] = <|
+      "Name"       -> name,
+      "Type"       -> Lookup[spec, "Type", "User"],
+      "Registered" -> AbsoluteTime[]
+    |>;
+    name
+  ];
+
+NBGrantActsFor[p_String, q_String] :=
+  Module[{},
+    If[!KeyExistsQ[$iNBPrincipals, p],
+      NBRegisterPrincipal[p]];
+    If[!KeyExistsQ[$iNBPrincipals, q],
+      NBRegisterPrincipal[q]];
+    $iNBActsFor[{p, q}] = True;
+    {p, q}
+  ];
+
+NBActsForQ[p_String, q_String] :=
+  Catch[Module[{visited, queue, cur, delegates},
+    (* 自己同一性 *)
+    If[p === q, Throw[True, "actsfor"]];
+    (* 直接委任 *)
+    If[TrueQ[$iNBActsFor[{p, q}]], Throw[True, "actsfor"]];
+    (* 推移的閉包: BFS で p → ... → q のパスを探索 *)
+    visited = {p}; queue = {p};
+    While[Length[queue] > 0,
+      cur = First[queue];
+      queue = Rest[queue];
+      delegates = Select[Keys[$iNBActsFor],
+        MatchQ[#, {cur, _}] && TrueQ[$iNBActsFor[#]] &];
+      Do[
+        Module[{target = d[[2]]},
+          If[target === q, Throw[True, "actsfor"]];
+          If[!MemberQ[visited, target],
+            AppendTo[visited, target];
+            AppendTo[queue, target]]],
+        {d, delegates}]];
+    False
+  ], "actsfor"];
+
+(* ── Label 構造 ── *)
+
+(*
+  Label 形式:
+  <|"ReaderPolicies" -> <|owner1 -> {reader1, ...}, ...|>,
+    "Categories"     -> {"Grades", "MethodIP", ...}|>
+  
+  ReaderPolicies が空 = public (bottom)
+  ReaderPolicies が <|"*" -> {}|> = 誰も読めない (top)
+*)
+
+NBLabelQ[label_] := AssociationQ[label] &&
+  KeyExistsQ[label, "ReaderPolicies"] &&
+  AssociationQ[label["ReaderPolicies"]];
+
+NBLabelBottom[] := <|"ReaderPolicies" -> <||>, "Categories" -> {}|>;
+
+NBLabelTop[] := <|"ReaderPolicies" -> <|"*" -> {}|>,
+  "Categories" -> {"TopSecret"}|>;
+
+NBLabelJoin[l1_?NBLabelQ, l2_?NBLabelQ] :=
+  Module[{rp1, rp2, merged, owners, cats},
+    rp1 = l1["ReaderPolicies"];
+    rp2 = l2["ReaderPolicies"];
+    owners = DeleteDuplicates[Join[Keys[rp1], Keys[rp2]]];
+    (* Join = 各 owner の reader set の交差 (より制約的) *)
+    merged = Association @ Map[
+      Function[{owner},
+        owner -> Intersection[
+          Lookup[rp1, owner, {}],
+          Lookup[rp2, owner, {}]]],
+      owners];
+    cats = DeleteDuplicates[Join[
+      Lookup[l1, "Categories", {}],
+      Lookup[l2, "Categories", {}]]];
+    <|"ReaderPolicies" -> merged, "Categories" -> cats|>
+  ];
+
+NBLabelJoin[l1_?NBLabelQ] := l1;
+
+NBLabelJoin[l1_?NBLabelQ, l2_?NBLabelQ, rest__?NBLabelQ] :=
+  NBLabelJoin[NBLabelJoin[l1, l2], rest];
+
+NBLabelMeet[l1_?NBLabelQ, l2_?NBLabelQ] :=
+  Module[{rp1, rp2, merged, owners, cats},
+    rp1 = l1["ReaderPolicies"];
+    rp2 = l2["ReaderPolicies"];
+    owners = DeleteDuplicates[Join[Keys[rp1], Keys[rp2]]];
+    (* Meet = 各 owner の reader set の和集合 (より緩い) *)
+    merged = Association @ Map[
+      Function[{owner},
+        owner -> DeleteDuplicates[Join[
+          Lookup[rp1, owner, {}],
+          Lookup[rp2, owner, {}]]]],
+      owners];
+    cats = Intersection[
+      Lookup[l1, "Categories", {}],
+      Lookup[l2, "Categories", {}]];
+    <|"ReaderPolicies" -> merged, "Categories" -> cats|>
+  ];
+
+NBLabelLEQ[l1_?NBLabelQ, l2_?NBLabelQ] :=
+  Module[{rp1, rp2},
+    rp1 = l1["ReaderPolicies"];
+    rp2 = l2["ReaderPolicies"];
+    (* l1 ⪯ l2 iff l1 の全 owner について、
+       l2 にも同 owner があり readers(l2) ⊆ readers(l1)。
+       つまり l2 が l1 以上に制約的なら flow OK。
+       Keys[rp1] で反復する: l1 の各 owner が l2 にも存在し、
+       l2 の readers が l1 の readers の部分集合であることを確認。 *)
+    If[Length[rp1] === 0, Return[True]]; (* bottom ⪯ anything *)
+    AllTrue[Keys[rp1],
+      Function[{owner},
+        KeyExistsQ[rp2, owner] &&
+        SubsetQ[
+          Lookup[rp1, owner, {}],
+          Lookup[rp2, owner, {}]]]]
+  ];
+
+(* ── Flow / Declassify 判定 ── *)
+
+NBCanFlowToQ[srcLabel_?NBLabelQ, dstLabel_?NBLabelQ] :=
+  NBLabelLEQ[srcLabel, dstLabel];
+
+NBCanDeclassifyQ[srcLabel_?NBLabelQ, dstLabel_?NBLabelQ,
+    req_Association] :=
+  Module[{principal, hasAuthority},
+    principal = Lookup[req, "Principal", None];
+    If[!StringQ[principal], Return[False]];
+    (* principal が src の全 owner に対して acts-for を持つか *)
+    hasAuthority = AllTrue[Keys[srcLabel["ReaderPolicies"]],
+      NBActsForQ[principal, #] &];
+    hasAuthority
+  ];
+
+(* ── EffectiveLabel ── *)
+
+NBEffectiveLabel[obj_Association, req_Association] :=
+  Module[{objLabel, containerLabel, sinkLabel},
+    objLabel = Lookup[obj, "PolicyLabel", NBLabelBottom[]];
+    containerLabel = Lookup[obj, "ContainerLabel", NBLabelBottom[]];
+    sinkLabel = Lookup[req, "SinkLabel", NBLabelBottom[]];
+    If[!NBLabelQ[objLabel], objLabel = NBLabelBottom[]];
+    If[!NBLabelQ[containerLabel], containerLabel = NBLabelBottom[]];
+    NBLabelJoin[objLabel, containerLabel]
+  ];
+
+(* ════════════════════════════════════════════════════════
+   Phase 15: NBAuthorize 分離
+   
+   NBAuthorize を PolicyGate / ScoreGate / EnvironmentGate に
+   内部分離し、構造化された AccessDecision を返す。
+   
+   設計原則:
+   - PolicyGate (label-based): authoritative — flow 判定の主体系
+   - ScoreGate (score-based): advisory — routing 判定の副体系
+   - EnvironmentGate: 環境制約チェック
+   
+   返り値 AccessDecision:
+   <|"Decision" -> "Permit"|"Deny"|"Screen"|"RequireApproval",
+     "ReasonClass" -> String,
+     "RequiredAction" -> "None"|"RepairProposal"|"HumanApproval"|"Declassify",
+     "VisibleExplanation" -> String,
+     "RouteAdvice" -> <|...|>,
+     "GateResults" -> <|"Policy"->..., "Score"->..., "Environment"->...|>|>
+   ════════════════════════════════════════════════════════ *)
+
+(* ── PolicyGate: 半順序ラベルに基づく flow 判定 ── *)
+
+NBPolicyGate[obj_Association, req_Association] :=
+  Module[{effLabel, sinkLabel, canFlow, principal, canDecl},
+    effLabel  = NBEffectiveLabel[obj, req];
+    sinkLabel = Lookup[req, "SinkLabel", NBLabelBottom[]];
+    
+    (* ラベルが設定されていない場合は通過（後方互換） *)
+    If[!NBLabelQ[effLabel] || !NBLabelQ[sinkLabel],
+      Return[<|"Gate" -> "Policy", "Decision" -> "Pass",
+        "Reason" -> "NoLabelsConfigured"|>]];
+    
+    canFlow = NBCanFlowToQ[effLabel, sinkLabel];
+    If[canFlow,
+      Return[<|"Gate" -> "Policy", "Decision" -> "Pass",
+        "Reason" -> "FlowPermitted"|>]];
+    
+    (* flow 不可 → declassify 可能か確認 *)
+    principal = Lookup[req, "Principal", None];
+    If[StringQ[principal],
+      canDecl = NBCanDeclassifyQ[effLabel, sinkLabel, req];
+      If[canDecl,
+        Return[<|"Gate" -> "Policy", "Decision" -> "RequireApproval",
+          "Reason" -> "DeclassifyRequired",
+          "RequiredAction" -> "Declassify"|>]]];
+    
+    <|"Gate" -> "Policy", "Decision" -> "Deny",
+      "Reason" -> "PolicyFlowViolation",
+      "RequiredAction" -> "None"|>
+  ];
+
+(* ── ScoreGate: 数値スコアに基づく advisory routing ── *)
+
+NBScoreGate[obj_Association, req_Association] :=
+  Module[{score, sink, route, cloudTh, privateTh},
+    score     = Lookup[obj, "EffectiveRiskScore",
+      Lookup[obj, "AccessLevel",
+        Lookup[req, "AccessLevel", 0.5]]];
+    sink      = Lookup[req, "Sink", "CloudLLM"];
+    route     = NBRouteDecision[score];
+    cloudTh   = Lookup[$NBRoutingThresholds, "Cloud", 0.5];
+    privateTh = Lookup[$NBRoutingThresholds, "Private", 0.8];
+    
+    Which[
+      (* sink が CloudLLM だがスコアが高すぎる *)
+      sink === "CloudLLM" && score >= cloudTh,
+        <|"Gate" -> "Score", "Decision" -> "Screen",
+          "Reason" -> "RiskAboveCloudThreshold",
+          "Score" -> score, "Route" -> route|>,
+      (* sink が PrivateLLM だがスコアが高すぎる *)
+      sink === "PrivateLLM" && score >= privateTh,
+        <|"Gate" -> "Score", "Decision" -> "Screen",
+          "Reason" -> "RiskAbovePrivateThreshold",
+          "Score" -> score, "Route" -> route|>,
+      (* 通過 *)
+      True,
+        <|"Gate" -> "Score", "Decision" -> "Pass",
+          "Reason" -> "ScoreWithinThreshold",
+          "Score" -> score, "Route" -> route|>
+    ]
+  ];
+
+(* ── EnvironmentGate: 実行環境制約チェック ── *)
+
+NBEnvironmentGate[obj_Association, req_Association] :=
+  Module[{env, sink, principal, allowedSinks, deniedEnvs},
+    env       = Lookup[req, "Environment", "Notebook"];
+    sink      = Lookup[req, "Sink", "CloudLLM"];
+    principal = Lookup[req, "Principal", None];
+    
+    (* 環境制約: 将来拡張ポイント *)
+    allowedSinks = Lookup[obj, "AllowedSinks", {"CloudLLM", "PrivateLLM", "LocalOnly", "Notebook"}];
+    deniedEnvs   = Lookup[obj, "DeniedEnvironments", {}];
+    
+    Which[
+      ListQ[allowedSinks] && !MemberQ[allowedSinks, sink],
+        <|"Gate" -> "Environment", "Decision" -> "Deny",
+          "Reason" -> "SinkNotAllowed",
+          "RequiredAction" -> "None"|>,
+      ListQ[deniedEnvs] && MemberQ[deniedEnvs, env],
+        <|"Gate" -> "Environment", "Decision" -> "Deny",
+          "Reason" -> "EnvironmentDenied",
+          "RequiredAction" -> "None"|>,
+      True,
+        <|"Gate" -> "Environment", "Decision" -> "Pass",
+          "Reason" -> "EnvironmentPermitted"|>
+    ]
+  ];
+
+(* ── NBAuthorize: 統合判定 ── *)
+
+NBAuthorize[obj_Association, req_Association] :=
+  Module[{policyResult, scoreResult, envResult, decision, reasonClass,
+          requiredAction, explanation},
+    
+    (* 各ゲートを順番に実行 *)
+    policyResult = NBPolicyGate[obj, req];
+    scoreResult  = NBScoreGate[obj, req];
+    envResult    = NBEnvironmentGate[obj, req];
+    
+    (* 判定統合: 最も制約の厳しい結果を採用
+       優先順位: Deny > RequireApproval > Screen > Pass *)
+    Which[
+      (* いずれかが Deny → 全体 Deny *)
+      policyResult["Decision"] === "Deny",
+        decision       = "Deny";
+        reasonClass    = policyResult["Reason"];
+        requiredAction = "None";
+        explanation    = "Policy gate denied: " <> reasonClass,
+      envResult["Decision"] === "Deny",
+        decision       = "Deny";
+        reasonClass    = envResult["Reason"];
+        requiredAction = "None";
+        explanation    = "Environment gate denied: " <> reasonClass,
+      
+      (* RequireApproval *)
+      policyResult["Decision"] === "RequireApproval",
+        decision       = "RequireApproval";
+        reasonClass    = policyResult["Reason"];
+        requiredAction = Lookup[policyResult, "RequiredAction", "HumanApproval"];
+        explanation    = "Policy gate requires approval: " <> reasonClass,
+      
+      (* Score が Screen → advisory warning だが通過 *)
+      scoreResult["Decision"] === "Screen",
+        decision       = "Screen";
+        reasonClass    = scoreResult["Reason"];
+        requiredAction = "None";
+        explanation    = "Score gate screening: " <> reasonClass <>
+          " (score=" <> ToString[Lookup[scoreResult, "Score", "?"]] <> ")",
+      
+      (* 全 Pass *)
+      True,
+        decision       = "Permit";
+        reasonClass    = "None";
+        requiredAction = "None";
+        explanation    = ""
+    ];
+    
+    <|"Decision"            -> decision,
+      "ReasonClass"         -> reasonClass,
+      "RequiredAction"      -> requiredAction,
+      "VisibleExplanation"  -> explanation,
+      "RouteAdvice"         -> Lookup[scoreResult, "Route",
+        NBRouteDecision[Lookup[obj, "AccessLevel", 0.5]]],
+      "GateResults"         -> <|
+        "Policy"      -> policyResult,
+        "Score"       -> scoreResult,
+        "Environment" -> envResult|>
+    |>
+  ];
+
+(* ════════════════════════════════════════════════════════
+   Phase 20: Function Security — 実装
+   
+   関数ごとに定義ラベル・実行ポリシー・リリースポリシーを
+   登録し、GuardedApply で安全な実行、Declassify で
+   結果のラベル引き下げを行う。
+   
+   設計原則:
+   - 定義ラベル (DefinitionLabel): コード自体の閲覧可否
+   - 実行ポリシー (ExecPolicy): Open / Guarded / Denied
+   - リリースポリシー (ReleasePolicy): 結果のラベル引き下げ条件
+   - GuardedApply は flow チェック後に実行し結果にラベルを付与
+   - Declassify は acts-for + ReleasePolicy の両方を要求
+   ════════════════════════════════════════════════════════ *)
+
+If[!AssociationQ[$iFunctionSecurityDB], $iFunctionSecurityDB = <||>];
+
+NBRegisterFunctionSecurity[sym_Symbol, spec_Association] :=
+  Module[{entry},
+    entry = <|
+      "Symbol"          -> sym,
+      "SymbolName"      -> SymbolName[sym],
+      "DefinitionLabel" -> Lookup[spec, "DefinitionLabel", NBLabelBottom[]],
+      "ExecPolicy"      -> Lookup[spec, "ExecPolicy", "Open"],
+      "ReleasePolicy"   -> Lookup[spec, "ReleasePolicy", <||>],
+      "Timestamp"       -> AbsoluteTime[]
+    |>;
+    $iFunctionSecurityDB[sym] = entry;
+    entry
+  ];
+
+NBFunctionDefinitionLabel[f_Symbol] :=
+  Module[{entry = Lookup[$iFunctionSecurityDB, f, None]},
+    If[AssociationQ[entry],
+      Lookup[entry, "DefinitionLabel", NBLabelBottom[]],
+      NBLabelBottom[]]
+  ];
+
+NBFunctionExecPolicy[f_Symbol] :=
+  Module[{entry = Lookup[$iFunctionSecurityDB, f, None]},
+    If[AssociationQ[entry],
+      Lookup[entry, "ExecPolicy", "Open"],
+      "Open"]
+  ];
+
+NBFunctionReleasePolicy[f_Symbol] :=
+  Module[{entry = Lookup[$iFunctionSecurityDB, f, None]},
+    If[AssociationQ[entry],
+      Lookup[entry, "ReleasePolicy", <||>],
+      <||>]
+  ];
+
+(* ── GuardedApply: ポリシーチェック付き関数実行 ──
+   1. ExecPolicy が "Denied" → 即拒否
+   2. ExecPolicy が "Open" → 通常実行、結果にラベル付与
+   3. ExecPolicy が "Guarded" → flow チェック → 実行 → ラベル付与
+   
+   返り値: <|"Success"->Bool, "Result"->...,
+             "ResultLabel"->label, "Error"->None|String|> *)
+GuardedApply[req_Association, f_Symbol, args___] :=
+  Module[{policy, defLabel, reqLabel, rawResult, resultLabel,
+          releasePolicy},
+    policy   = NBFunctionExecPolicy[f];
+    defLabel = NBFunctionDefinitionLabel[f];
+    
+    (* Denied → 即拒否 *)
+    If[policy === "Denied",
+      Return[<|"Success" -> False,
+        "Error" -> "ExecPolicy=Denied for " <> SymbolName[f],
+        "ResultLabel" -> NBLabelTop[]|>]];
+    
+    (* Guarded → flow チェック *)
+    If[policy === "Guarded",
+      reqLabel = Lookup[req, "SinkLabel", NBLabelBottom[]];
+      If[NBLabelQ[defLabel] && NBLabelQ[reqLabel] &&
+         !NBCanFlowToQ[defLabel, reqLabel],
+        (* flow 不可 → declassify 可能か *)
+        If[!NBCanDeclassifyQ[defLabel, reqLabel, req],
+          Return[<|"Success" -> False,
+            "Error" -> "PolicyFlowViolation: cannot flow " <>
+              SymbolName[f] <> " result to sink",
+            "ResultLabel" -> defLabel|>]]]];
+    
+    (* 実行 *)
+    rawResult = Quiet @ Check[f[args], $Failed];
+    
+    (* 結果ラベル: 関数の定義ラベル以上 *)
+    resultLabel = defLabel;
+    releasePolicy = NBFunctionReleasePolicy[f];
+    
+    <|"Success" -> (rawResult =!= $Failed),
+      "Result"       -> rawResult,
+      "ResultLabel"  -> resultLabel,
+      "ReleasePolicy" -> releasePolicy,
+      "Error"        -> If[rawResult === $Failed,
+        "Execution failed", None]|>
+  ];
+
+(* ── Declassify: ラベル引き下げ ──
+   条件:
+   1. req の Principal が src の全 owner に acts-for を持つ
+   2. releaseSpec が ReleasePolicy の条件を満たす
+   
+   返り値: <|"Success"->Bool, "DeclassifiedLabel"->label,
+             "Error"->None|String|> *)
+Declassify[obj_Association, req_Association, releaseSpec_Association] :=
+  Module[{srcLabel, dstLabel, principal, releasePolicy,
+          requiredFields, missingFields},
+    srcLabel = Lookup[obj, "ResultLabel",
+      Lookup[obj, "PolicyLabel", NBLabelBottom[]]];
+    dstLabel = Lookup[releaseSpec, "TargetLabel", NBLabelBottom[]];
+    principal = Lookup[req, "Principal", None];
+    
+    (* Principal の権限チェック *)
+    If[!StringQ[principal],
+      Return[<|"Success" -> False,
+        "Error" -> "No principal in request",
+        "DeclassifiedLabel" -> srcLabel|>]];
+    
+    If[!NBCanDeclassifyQ[srcLabel, dstLabel, req],
+      Return[<|"Success" -> False,
+        "Error" -> "ActsForInsufficient: " <> principal <>
+          " cannot declassify",
+        "DeclassifiedLabel" -> srcLabel|>]];
+    
+    (* ReleasePolicy 条件チェック *)
+    releasePolicy = Lookup[obj, "ReleasePolicy", <||>];
+    requiredFields = Lookup[releasePolicy, "RequiredFields", {}];
+    missingFields = Select[requiredFields,
+      !KeyExistsQ[releaseSpec, #] &];
+    If[Length[missingFields] > 0,
+      Return[<|"Success" -> False,
+        "Error" -> "ReleasePolicyMissing: " <>
+          StringRiffle[missingFields, ", "],
+        "DeclassifiedLabel" -> srcLabel|>]];
+    
+    <|"Success"           -> True,
+      "DeclassifiedLabel" -> dstLabel,
+      "Error"             -> None|>
+  ];
 
 End[];
 EndPackage[];
