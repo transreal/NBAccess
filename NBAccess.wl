@@ -466,6 +466,36 @@ NBGetAPIKey::usage =
   "AccessLevel >= 1.0 \:304c\:5fc5\:9808\:3002\:547c\:3073\:51fa\:3057\:5074\:3067 PrivacySpec -> <|\"AccessLevel\" -> 1.0|> \:3092\:660e\:793a\:6307\:5b9a\:3059\:308b\:3053\:3068\:3002\n" <>
   "SystemCredential \:3078\:306e\:30a2\:30af\:30bb\:30b9\:3092\:4e00\:5143\:7ba1\:7406\:3059\:308b\:3002";
 
+(* ---- \:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc\:306e API \:30ad\:30fc\:30a2\:30af\:30bb\:30b5\:30fc ---- *)
+NBGetLocalLLMAPIKey::usage =
+  "NBGetLocalLLMAPIKey[provider, url] \:306f \:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc (LM Studio \:7b49) \:306e\n" <>
+  "API \:30ad\:30fc\:3092 SystemCredential \:304b\:3089\:8fd4\:3059\:3002\:7167\:5408\:306f {provider, url} \:30da\:30a2\:3002\n" <>
+  "\:4f8b: NBGetLocalLLMAPIKey[\"lmstudio\", \"http://127.0.0.1:1234\"]\n" <>
+  "AccessLevel >= 1.0 \:304c\:5fc5\:9808\:3002PrivacySpec -> <|\"AccessLevel\"->1.0|> \:3092\:660e\:793a\:6307\:5b9a\:3059\:308b\:3053\:3068\:3002\n" <>
+  "\:89e3\:6c7a\:512a\:5148\:5ea6: (1) \:5b8c\:5168\:4e00\:81f4 (2) localhost\:2194127.0.0.1 \:7f6e\:63db\:7248 (3) \{provider, \"*\"\} \:30ef\:30a4\:30eb\:30c9\:30ab\:30fc\:30c9 (4) \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:540d ToUpperCase[provider]<>\"_API_KEY\"\:3002";
+
+NBSetLocalLLMAPIKey::usage =
+  "NBSetLocalLLMAPIKey[provider, url, credentialName] \:306f\:3001{provider, url} \:2192 credentialName \:306e\n" <>
+  "\:30de\:30c3\:30d4\:30f3\:30b0\:3092\:767b\:9332\:3059\:308b\:3002SystemCredential \:306e\:5b9f\:5024\:81ea\:4f53\:306f\:66f8\:304d\:8fbc\:307e\:306a\:3044 (\:540d\:524d\:306e\:7d10\:4ed8\:3051\:306e\:307f)\:3002\n" <>
+  "\:4f8b: NBSetLocalLLMAPIKey[\"lmstudio\", \"http://192.168.1.10:1234\", \"LMSTUDIO_STUDY_KEY\"]\n" <>
+  "\:8fd4\:308a\:5024: {provider, normalizedUrl} -> credentialName \:306e Rule\:3002";
+
+NBStoreLocalLLMAPIKey::usage =
+  "NBStoreLocalLLMAPIKey[provider, url, credentialName, key] \:306f\:4e0a\:8a18\:30de\:30c3\:30d4\:30f3\:30b0\:767b\:9332\:306b\:52a0\:3048\:3066\n" <>
+  "SystemCredential[credentialName] = key \:3082\:540c\:6642\:306b\:8a2d\:5b9a\:3059\:308b\:3002\:521d\:56de\:30bb\:30c3\:30c8\:30a2\:30c3\:30d7\:7528\:3002";
+
+NBRemoveLocalLLMAPIKey::usage =
+  "NBRemoveLocalLLMAPIKey[provider, url] \:306f {provider, url} \:306e\:30a8\:30f3\:30c8\:30ea\:3092\:524a\:9664\:3059\:308b\:3002\n" <>
+  "SystemCredential \:672c\:4f53\:306f\:5909\:66f4\:3057\:306a\:3044\:3002";
+
+NBLocalLLMAPIKeyMap::usage =
+  "NBLocalLLMAPIKeyMap[] \:306f\:73fe\:5728\:767b\:9332\:3055\:308c\:3066\:3044\:308b\:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc\:2192API\:30ad\:30fc\:540d\:30de\:30c3\:30d4\:30f3\:30b0\:3092\n" <>
+  "Dataset \:3067\:8fd4\:3059\:3002Configured \:5217\:306f SystemCredential \:304c\:5b9f\:969b\:306b\:8a2d\:5b9a\:6e08\:307f\:304b\:3069\:3046\:304b\:3092\:793a\:3059\:3002";
+
+NBLocalLLMCredentialName::usage =
+  "NBLocalLLMCredentialName[provider, url] \:306f SystemCredential \:540d\:306e\:307f\:3092\:8fd4\:3059 (\:5024\:306f\:53d6\:5f97\:3057\:306a\:3044)\:3002\n" <>
+  "AccessLevel \:30c1\:30a7\:30c3\:30af\:306a\:3057\:3002\:767b\:9332\:78ba\:8a8d\:7528\:3002";
+
 (* ---- \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:30e2\:30c7\:30eb / \:30d7\:30ed\:30d0\:30a4\:30c0\:30fc\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb API ---- *)
 NBSetFallbackModels::usage =
   "NBSetFallbackModels[models] \:306f\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:30e2\:30c7\:30eb\:30ea\:30b9\:30c8\:3092\:8a2d\:5b9a\:3059\:308b\:3002\n" <>
@@ -2970,6 +3000,149 @@ NBAccess`NBGetAPIKey[provider_String, opts:OptionsPattern[]] :=
 
 NBGetAPIKey::unkn = "\:672a\:77e5\:306e\:30d7\:30ed\:30d0\:30a4\:30c0: `1`\:3002\"anthropic\"\:3001\"openai\"\:3001\"github\" \:306e\:3044\:305a\:308c\:304b\:3092\:6307\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
 NBGetAPIKey::nokey = "`1` \:306e API \:30ad\:30fc\:304c\:898b\:3064\:304b\:308a\:307e\:305b\:3093\:3002SystemCredential[\"`2`\"] \:3092\:8a2d\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+
+
+(* ============================================================
+   \:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc (LM Studio \:7b49) \:306e API \:30ad\:30fc\:7ba1\:7406
+   \:30ad\:30fc\:306f {provider, normalizedUrl} \:306e\:30ea\:30b9\:30c8\:3002\:5024\:306f SystemCredential \:540d\:3002
+   (2026-04-24 \:8ffd\:52a0)
+   ============================================================ *)
+
+(* ---- \:65e2\:5b9a\:30de\:30c3\:30d4\:30f3\:30b0 ---- *)
+If[!AssociationQ[$iLocalLLMAPIKeyMap],
+  $iLocalLLMAPIKeyMap = <|
+    {"lmstudio", "http://127.0.0.1:1234"} -> "LMSTUDIO_API_KEY"
+  |>
+];
+
+(* ---- URL \:6b63\:898f\:5316 ----
+   \:7565: \:672b\:5c3e\:30b9\:30e9\:30c3\:30b7\:30e5\:9664\:53bb, \:30d1\:30b9\:9664\:53bb (scheme://host[:port] \:306e\:307f\:6b8b\:3059)\:3002
+   localhost \:3068 127.0.0.1 \:306f\:5225\:6271\:3044 (\:30e6\:30fc\:30b6\:30fc\:304c\:660e\:793a\:7684\:306b\:5206\:3051\:305f\:3044\:5834\:5408\:306b\:4f1d\:8fbe)\:3002 *)
+
+iNormalizeLocalLLMURL[url_String] :=
+  Module[{u = StringTrim[url], m},
+    While[StringEndsQ[u, "/"], u = StringDrop[u, -1]];
+    m = StringCases[u,
+          RegularExpression["^([a-zA-Z][a-zA-Z0-9+.\\-]*://[^/]+)"] :> "$1"];
+    If[ListQ[m] && Length[m] > 0 && StringQ[m[[1]]],
+      u = m[[1]]];
+    u
+  ];
+iNormalizeLocalLLMURL[_] := "";
+
+(* ---- credentialName \:3092\:5f15\:304f\:30d8\:30eb\:30d1 ----
+   \:89e3\:6c7a\:512a\:5148\:5ea6:
+     (1) {prov, nu} \:5b8c\:5168\:4e00\:81f4
+     (2) localhost\:2194127.0.0.1 \:7f6e\:63db\:7248
+     (3) {prov, "*"} \:30ef\:30a4\:30eb\:30c9\:30ab\:30fc\:30c9
+     (4) \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af: ToUpperCase[prov] <> "_API_KEY" *)
+
+iLocalLLMLookupCredential[provider_String, url_String] :=
+  Module[{prov = ToLowerCase[provider], nu = iNormalizeLocalLLMURL[url],
+          cred, altURL},
+    cred = Lookup[$iLocalLLMAPIKeyMap, Key[{prov, nu}], None];
+    If[StringQ[cred], Return[cred]];
+    altURL = Which[
+      StringContainsQ[nu, "127.0.0.1"],
+        StringReplace[nu, "127.0.0.1" -> "localhost"],
+      StringContainsQ[nu, "localhost"],
+        StringReplace[nu, "localhost" -> "127.0.0.1"],
+      True, None];
+    If[StringQ[altURL],
+      cred = Lookup[$iLocalLLMAPIKeyMap, Key[{prov, altURL}], None];
+      If[StringQ[cred], Return[cred]]];
+    cred = Lookup[$iLocalLLMAPIKeyMap, Key[{prov, "*"}], None];
+    If[StringQ[cred], Return[cred]];
+    ToUpperCase[prov] <> "_API_KEY"
+  ];
+
+(* ---- Public: \:540d\:524d\:306e\:307f\:89e3\:6c7a (SystemCredential \:306f\:89e6\:3089\:306a\:3044) ---- *)
+
+NBAccess`NBLocalLLMCredentialName[provider_String, url_String] :=
+  iLocalLLMLookupCredential[provider, url];
+
+(* ---- Public: SystemCredential \:304b\:3089\:5b9f\:5024\:53d6\:5f97 ---- *)
+
+Options[NBAccess`NBGetLocalLLMAPIKey] = {PrivacySpec -> Automatic};
+
+NBAccess`NBGetLocalLLMAPIKey[provider_String, url_String,
+                             opts:OptionsPattern[]] :=
+  Module[{al, credName, key},
+    al = iAccessLevel[OptionValue[PrivacySpec]];
+    If[al < 1.0, Return[$Failed]];
+    credName = iLocalLLMLookupCredential[provider, url];
+    If[!StringQ[credName] || credName === "",
+      Message[NBGetLocalLLMAPIKey::unkn, provider, url];
+      Return[$Failed]];
+    key = Quiet[SystemCredential[credName]];
+    If[!StringQ[key] || StringLength[key] === 0,
+      Message[NBGetLocalLLMAPIKey::nokey, provider, url, credName];
+      Return[$Failed]];
+    key
+  ];
+
+NBGetLocalLLMAPIKey::unkn =
+  "\:30ed\:30fc\:30ab\:30eb LLM `1` (`2`) \:306e API \:30ad\:30fc\:540d\:304c\:89e3\:6c7a\:3067\:304d\:307e\:305b\:3093\:3002" <>
+  "NBSetLocalLLMAPIKey[`1`, `2`, \"YOUR_CREDENTIAL_NAME\"] \:3067\:767b\:9332\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+NBGetLocalLLMAPIKey::nokey =
+  "\:30ed\:30fc\:30ab\:30eb LLM `1` (`2`) \:306b\:5bfe\:3059\:308b API \:30ad\:30fc\:304c\:898b\:3064\:304b\:308a\:307e\:305b\:3093\:3002" <>
+  "SystemCredential[\"`3`\"] = \"<your key>\" \:3092\:8a2d\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+
+(* ---- Public: \:30de\:30c3\:30d4\:30f3\:30b0\:767b\:9332 ---- *)
+
+NBAccess`NBSetLocalLLMAPIKey[provider_String, url_String,
+                             credName_String] :=
+  Module[{prov = ToLowerCase[provider], nu},
+    nu = If[url === "*", "*", iNormalizeLocalLLMURL[url]];
+    $iLocalLLMAPIKeyMap[{prov, nu}] = credName;
+    {prov, nu} -> credName
+  ];
+
+(* ---- Public: \:30de\:30c3\:30d4\:30f3\:30b0\:767b\:9332 + SystemCredential \:8a2d\:5b9a ---- *)
+
+NBAccess`NBStoreLocalLLMAPIKey[provider_String, url_String,
+                               credName_String, key_String] :=
+  Module[{prov = ToLowerCase[provider], nu, storeResult},
+    nu = If[url === "*", "*", iNormalizeLocalLLMURL[url]];
+    storeResult = Quiet @ Check[SystemCredential[credName] = key, $Failed];
+    If[storeResult === $Failed,
+      Message[NBStoreLocalLLMAPIKey::cantstore, credName];
+      Return[$Failed]];
+    $iLocalLLMAPIKeyMap[{prov, nu}] = credName;
+    True
+  ];
+NBStoreLocalLLMAPIKey::cantstore =
+  "SystemCredential[\"`1`\"] \:3078\:306e\:66f8\:304d\:8fbc\:307f\:306b\:5931\:6557\:3057\:307e\:3057\:305f\:3002" <>
+  "OS \:306e\:30ad\:30fc\:30c1\:30a7\:30fc\:30f3\:30a2\:30af\:30bb\:30b9\:6a29\:3084\:30a2\:30f3\:30ed\:30c3\:30af\:72b6\:614b\:3092\:78ba\:8a8d\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+
+(* ---- Public: \:30de\:30c3\:30d4\:30f3\:30b0\:524a\:9664 ---- *)
+
+NBAccess`NBRemoveLocalLLMAPIKey[provider_String, url_String] :=
+  Module[{prov = ToLowerCase[provider], nu},
+    nu = If[url === "*", "*", iNormalizeLocalLLMURL[url]];
+    $iLocalLLMAPIKeyMap = KeyDrop[$iLocalLLMAPIKeyMap, {{prov, nu}}];
+    Null
+  ];
+
+(* ---- Public: \:30de\:30c3\:30d4\:30f3\:30b0\:4e00\:89a7 (Dataset) ---- *)
+
+NBAccess`NBLocalLLMAPIKeyMap[] :=
+  Module[{rows},
+    rows = KeyValueMap[
+      Function[{k, v},
+        Module[{credSet = False},
+          credSet = Quiet @ Check[
+            Module[{s = SystemCredential[v]},
+              StringQ[s] && StringLength[s] > 0],
+            False];
+          <|"Provider"       -> k[[1]],
+            "URL"            -> k[[2]],
+            "CredentialName" -> v,
+            "Configured"     -> credSet|>
+        ]],
+      $iLocalLLMAPIKeyMap];
+    Dataset[rows]
+  ];
 
 
 (* ============================================================
