@@ -198,6 +198,8 @@ NBCellReadInputText[nb, 5]
 (* 例: "Plot[Sin[x], {x, 0, 2Pi}]" *)
 ```
 
+なお、`NBCellRead[nb, 3]` のような「セル参照式」が LLM 生成コード内で検出された場合は、参照セル番号のリスト（例: `{3}`）が自動抽出され、実行検証 API（後述）の `ReadCells` フィールドに反映されます。
+
 ### NBCellExprToText
 
 NotebookRead の結果 (Cell 式) からテキストを抽出します。
@@ -213,6 +215,14 @@ NBCellExprToText[cell]
 
 ```mathematica
 NBCellToText[nb, 3]
+```
+
+### NBCellGetText
+
+複数の取得経路を組み合わせ、堅牢にセルテキストを取得するヘルパーです。FrontEnd の InputText 取得 → `NBCellToText` → `NBCellExprToText` の順でフォールバックし、最終的にテキストが取得できなければ空文字列を返します。
+
+```mathematica
+NBCellGetText[nb, 3]
 ```
 
 ### iCellToInputText
@@ -603,6 +613,22 @@ NBCellWriteCode[nb, 3, "Plot[Sin[x], {x, 0, 2Pi}]"]
 
 `NBWriteCode` がノートブックの現在位置に新しいセルを書き込むのに対し、`NBCellWriteCode` は指定インデックスの**既存セル**を上書きします。
 
+### NBCellWriteText
+
+既存セルのテキスト内容を新しいテキストで置き換えます。セルスタイル・TaggingRules・オプション等の属性はそのまま保持されます。
+
+```mathematica
+NBCellWriteText[nb, 3, "新しいテキスト"]
+```
+
+### NBCellSetTaggingRule
+
+セルの TaggingRules に値をネストパス指定で書き込みます。`NBCellGetTaggingRule` の対となるセッター関数です。
+
+```mathematica
+NBCellSetTaggingRule[nb, 3, {"documentation", "idea"}, "元のアイデア"]
+```
+
 ### NBWriteSmartCode
 
 CellPrint パターンを自動検出してスマートに書き込みます。以下のパターンを認識します。
@@ -631,6 +657,14 @@ NBWriteCell[nb, Cell["Hello", "Text"], Before]
 ```mathematica
 NBWritePrintNotice[nb, "処理が完了しました", Green]
 NBWritePrintNotice[None, "同期出力", Blue]
+```
+
+### NBCellPrint
+
+CellPrint のラッパー関数です。評価セルの直後に出力セルを挿入します。カーソル位置に依存せず、常に EvaluationCell の直後に配置されます。ClaudeBackupDataset 等のタグ付き出力セルに使用します。
+
+```mathematica
+NBCellPrint[Cell[BoxData[...], "Output", TaggingRules -> <|...|>]]
 ```
 
 ### NBWriteDynamicCell
@@ -694,6 +728,19 @@ Input セルテンプレートを挿入します。セルを All で書き込み
 ```mathematica
 NBInsertInputTemplate[nb, MakeBoxes[ClaudeQuery[""]]]
 ```
+
+### NBCellTransformWithLLM
+
+セル内容を非同期で LLM に渡して変換し、結果をコールバックで受け取るユーティリティです。プロンプト生成関数 `promptFn` がセルテキストを受け取り送信プロンプトを返し、`completionFn` が結果 Association を受け取ります。セルのプライバシーレベルに応じて適切な LLM が自動選択され、`$NBLLMQueryFunc` が登録されていれば非同期実行されます。
+
+```mathematica
+NBCellTransformWithLLM[nb, 3,
+  Function[txt, "次の式を簡略化: " <> txt],
+  Function[res, Print[res["Response"]]],
+  Fallback -> True]
+```
+
+`completionFn` が受け取る Association は `<|"Response" -> 応答, "OriginalText" -> 元のセルテキスト, "PrivacyLevel" -> 0.0|1.0|>` の形式です。エラー時は `$Failed` が渡されます。
 
 ---
 
@@ -961,6 +1008,14 @@ NBHistoryDelete[nb, "chat-old"]
 NBHistoryReplaceEntries[nb, "chat", newEntries]
 ```
 
+### NBHistoryClearAll
+
+指定プレフィックスで始まる全履歴をまとめて削除します。`PrivacySpec -> <|"AccessLevel" -> 1.0|>` を必須引数として要求し、誤操作を防止します。セルレベルの機密タグ・依存タグは削除しません。ノートブックを他者に渡す際の履歴情報除去に使用します。
+
+```mathematica
+NBHistoryClearAll[nb, "chat", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
+```
+
 ### NBHistoryCacheClear
 
 全履歴キャッシュをクリアします。パッケージ再ロード時やセッション切替時に使用します。
@@ -1055,6 +1110,8 @@ NBGetAPIKey["github"]
 
 LM Studio などのローカル LLM サーバーに対して API キー認証が必要な場合に使用する API 群です。`{provider, url}` のペアを SystemCredential 名にマッピングする仕組みにより、複数のサーバー・エンドポイントの API キーを一元管理できます。
 
+キーは `{provider, normalizedUrl}` のリスト、値は SystemCredential 名です。
+
 #### LM Studio での API キー設定手順
 
 LM Studio で API キー認証を有効にするには、以下の手順を実施してください。
@@ -1081,6 +1138,8 @@ NBGetLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234"]
 2. `localhost` ↔ `127.0.0.1` 置換版での一致
 3. `{provider, "*"}` ワイルドカードでの一致
 4. フォールバック名 `ToUpperCase[provider] <> "_API_KEY"`
+
+API キーが見つからない場合、または API キー名が解決できない場合は、それぞれ `ローカル LLM <provider> (<url>) に対する API キーが見つかりません。` / `ローカル LLM <provider> (<url>) の API キー名が解決できません。` というメッセージとともに `$Failed` が返されます。
 
 #### NBSetLocalLLMAPIKey
 
@@ -1323,6 +1382,8 @@ NBDeleteCellsByTag[nb, "temp"]    (* タグで一括削除 *)
 NBEvaluatePreviousCell[nb]        (* 直前セルを評価（禁止パターンチェック付き） *)
 ```
 
+カーソル・セル選択・移動に関する処理全般では、内部的に `SelectionMove` に `AutoScroll -> False` を渡すよう統一されています。これにより、Claude 関数の自動書き込み中に意図しないスクロールが発生する問題が抑制されます。
+
 #### NBEvaluatePreviousCell の禁止パターンチェック
 
 `NBEvaluatePreviousCell` は単純な評価実行ではなく、`$NBAutoEvalProhibitedPatterns` に登録されたパターンを照合してから評価を行います。これは全 AutoEvaluate パスの最終防衛線であり、バイパスできません。
@@ -1371,27 +1432,48 @@ NBFilterHistoryEntry[entry, {"secretKey", "password"}]
 NBFilterHistoryEntry[entry, {"secretKey"}, <|"secretKey" -> 3900000000|>]
 ```
 
+### LLM 連携コールバック
+
+`$NBLLMQueryFunc` は非同期 LLM 呼び出し用のコールバック関数を保持するグローバル変数です。[claudecode](https://github.com/transreal/claudecode) パッケージがロード時に `ClaudeQueryAsync` を登録します。
+
+シグネチャ: `$NBLLMQueryFunc[prompt, callback, nb, Model -> spec, Fallback -> bool]`
+
+- `callback`: 応答文字列を受け取る関数
+- `nb`: 出力先 NotebookObject
+
+`NBCellTransformWithLLM` などの非同期処理は、この変数を介して LLM を呼び出します。claudecode をロードしない環境では未設定のままで、`NBCellTransformWithLLM` は同期的フォールバック動作となります。
+
 ---
 
 ## [実験的] ノートブックファイルのセル操作
 
 claudecode パッケージの `ClaudeProcessFile` と連携し、.nb ファイルのセルをプライバシーレベルに基づいて分割・処理・マージする機能を提供します。
 
-### NBFileOpen
+### NBFileOpen / NBFileClose / NBFileSave
 
-.nb ファイルを invisible（非表示）モードで開き、ノートブックオブジェクトを返します。
+.nb ファイルを invisible（非表示）モードで開閉・保存する低レベル API です。`NBFileOpen` はノートブックオブジェクトを返し、失敗時は `$Failed` を返します。
 
 ```mathematica
 nb = NBFileOpen["C:\\...\\sample.nb"]
+NBFileSave[nb, "C:\\...\\translated.nb"]   (* path が None なら上書き保存 *)
+NBFileClose[nb]
 ```
 
-### NBFileCells
+**重要**: 上位レイヤー（claudecode.wl 等）から .nb ファイルを直接 `NotebookOpen` / `NotebookGet` で開くことは禁止されています。必ず `NBFileOpen` を経由してください。
+
+### NBFileCells / NBFileReadCells / NBFileReadAllCells
 
 ノートブック内の各セルの情報（テキスト・スタイル・プライバシーレベル）を取得します。
 
 ```mathematica
 cells = NBFileCells[nb]
 (* {<|"CellIdx" -> 1, "Style" -> "Text", "Text" -> "...", "PrivacyLevel" -> 0.0|>, ...} *)
+
+(* PrivacySpec でフィルタリングして取得（機密セルはテキストを "[CONFIDENTIAL]" に置換） *)
+filtered = NBFileReadCells[nb, PrivacySpec -> <|"AccessLevel" -> 0.5|>]
+
+(* 全セルを分類して取得（機密セルも含む。PrivacyLevel フィールドで識別可能） *)
+all = NBFileReadAllCells[nb]
 ```
 
 プライバシーレベルは 3 段階で判定されます。
@@ -1402,24 +1484,63 @@ cells = NBFileCells[nb]
 | 0.75 | 秘匿依存 (dependent) | プライベート LLM |
 | 1.0 | 秘匿 (Confidential) | プライベート LLM ($ClaudePrivateModel) |
 
-### NBMergeNotebookCells
+### NBFileWriteCell / NBFileWriteAllCells
 
-処理済みセル（LLM からの変換結果）を元のノートブック構造にマージし、指定パスに保存します。
+開いているノートブックのセルテキストを置換します。スタイル・TaggingRules・機密マーク等の属性は保持されます。
 
 ```mathematica
-NBMergeNotebookCells[srcNB, processedResults, "C:\\...\\output.nb"]
+NBFileWriteCell[nb, 3, "This is a pen."]
+NBFileWriteAllCells[nb, <|2 -> "text", 3 -> "[CONFIDENTIAL]"|>]
+```
+
+### ObjectSpec API
+
+`NBFileSpec` / `NBValueSpec` / `NBPrivacyLevelToRoutes` は、ファイルや値のプライバシーレベルと必要なルーティング情報を返すユーティリティです。
+
+```mathematica
+NBFileSpec["C:\\path\\file.nb"]
+(* <|"PrivacyLevel" -> {0.5, 1.0}, ...|>  ※ .nb は公開・機密混在 *)
+
+NBValueSpec[dataset, 1.0]
+NBPrivacyLevelToRoutes[{0.5, 1.0}]
+(* {"cloud", "local"} *)
+```
+
+### NBFileReadCellsInRange
+
+指定範囲の PrivacyLevel のセルのみを取得します。
+
+```mathematica
+NBFileReadCellsInRange[nb, 0.5, 0.5]  (* 公開セルのみ *)
+NBFileReadCellsInRange[nb, 0.9, 1.0]  (* 機密セルのみ *)
+```
+
+### NBSplitNotebookCells / NBMergeNotebookCells
+
+.nb ファイルを公開・機密で分割し、別々の LLM で処理した結果を元の順序にマージします。
+
+```mathematica
+{pubCells, privCells} = NBSplitNotebookCells["file.nb", 0.5]
+
+(* それぞれ別の LLM で処理 ... *)
+
+NBMergeNotebookCells[srcPath, outputPath, pubResults, privResults]
 ```
 
 保存前後に同一パスの既存 invisible ノートブックをクリーンアップし、ファイルロック（エラー-43）を回避します。
 
-### 変更履歴
+### 変更履歴（実験的機能関連）
 
 以下のバグ修正・機能追加が行われました。
 
 - **`NBCellSetStyle` の追加**: Cell 式の第2引数（スタイル）を書き換える新関数です。`SetOptions[cell, CellStyle -> ...]` ではセルスタイルが変わらないため、Cell 式全体を読み書きする実装になっています。TaggingRules 等の属性は保持されます。
 - **`NBCellWriteCode` の追加**: 既存セルにコードを BoxData + Input スタイルで書き込む新関数です。FEParser で構文カラーリング付き BoxData に変換し、Cell 式全体を置換します。
+- **`NBCellWriteText` / `NBCellSetTaggingRule` の追加**: 既存セルのテキスト置換、および TaggingRules への値書き込みを行うセッター関数です。
+- **`NBCellGetText` の追加**: 複数経路を組み合わせてセルテキストを堅牢に取得します。
+- **`NBCellTransformWithLLM` の追加**: 非同期 LLM 呼び出しでセル内容を変換する高水準 API です。
 - **`NBResolveCell` の追加**: セルインデックスに対応する CellObject を返す新関数です。外部パッケージが低レベルのセル参照を必要とする場合に使用します。指定インデックスが無効な場合は `$Failed` を返します。
 - **`NBSelectCell` の追加**: セルブラケットを選択状態にする新関数です。パレット操作後のセル選択復元に使用します。
+- **`NBHistoryClearAll` の追加**: 履歴を一括クリアする高権限 API（AccessLevel 1.0 必須）です。
 - **ローカル LLM API キー管理の追加**: `NBGetLocalLLMAPIKey`、`NBSetLocalLLMAPIKey`、`NBStoreLocalLLMAPIKey`、`NBRemoveLocalLLMAPIKey`、`NBLocalLLMAPIKeyMap`、`NBLocalLLMCredentialName` の各関数が追加されました。LM Studio 等のローカル LLM サーバーの API キーを `{provider, url}` ペアで管理できます。
 - **`SelectionMove` の `AutoScroll -> False`**: セル選択・移動処理全般に `AutoScroll -> False` を追加し、操作中の意図しないスクロールを抑制しました。
 - **`iNBFileCellIsConfidential`**: TaggingRules が List 形式の場合にも対応（Extract → Lookup）
@@ -1432,7 +1553,9 @@ NBMergeNotebookCells[srcNB, processedResults, "C:\\...\\output.nb"]
 
 ## ClaudeRuntime との統合
 
-[ClaudeRuntime](https://github.com/transreal/ClaudeRuntime) は、NBAccess のセキュリティ基盤を利用して Claude エージェントの安全な実行環境を提供するパッケージです。ClaudeRuntime の導入にともない、NBAccess にはアクセス制御・ラベル代数・関数セキュリティに関する API 群が追加されました。
+[ClaudeRuntime](https://github.com/transreal/ClaudeRuntime) は、NBAccess のセキュリティ基盤を利用して Claude エージェントの安全な実行環境を提供するパッケージです。NBAccess には、ClaudeRuntime から呼び出されることを想定したアクセス制御・ラベル代数・関数セキュリティに関する API 群が本体に含まれており(2026-04-24 追加)、ClaudeRuntime を導入していなくても `Needs["NBAccess`"]` だけで個別に呼び出せます。
+
+ClaudeRuntime をロードすると、これらの API は Expression-Proposal ループの Validate / Execute / Route フェーズから自動的に呼び出され、`ClaudeEval` ユーザーが直接これらを意識する必要はありません。本節は、独自の adapter を作る場合や、安全実行ロジックを単体でテスト・組み込みする場合のリファレンスとして API を解説します。
 
 ### 導入の背景
 
@@ -1450,6 +1573,8 @@ LLM が生成した式を安全に実行するための API です。
 
 `HoldComplete[...]` に包まれた式を Allowed Expression Surface に照合し、実行可否を示す `AccessDecision` を返します。
 
+内部的には HoldComplete 内の式から `Module` / `With` / `Block` / `Function` のスコープ構造を除去（全体を `Null` に置換）した上で、残るトップレベルの `Set` / `SetDelayed` を「グローバルスコープでの代入」として `NeedsApproval` に格上げし、スコープ内の Set/SetDelayed はまとめて検査対象から外します。これにより、`2*v` のようなスコープ局所変数の値リーク（v=1 から結果 2 を逆算するなど）を防ぎつつ、グローバル代入のみをガードします。
+
 ```mathematica
 NBValidateHeldExpr[HoldComplete[Plot[Sin[x], {x, 0, 2Pi}]], accessSpec]
 (* <|"Decision" -> "Permit", ...|> *)
@@ -1463,6 +1588,8 @@ NBValidateHeldExpr[HoldComplete[Plot[Sin[x], {x, 0, 2Pi}]], accessSpec]
 | `"Deny"` | 実行を拒否します。 |
 | `"NeedsApproval"` | 人間の承認が必要です。 |
 | `"RepairNeeded"` | 式の修正が必要です。 |
+
+`HeldExpr` が渡されなかった場合は結果文字列ベースでフォールバックチェックが行われます。
 
 #### NBExecuteHeldExpr
 
@@ -1479,7 +1606,16 @@ result = NBExecuteHeldExpr[HoldComplete[1 + 1], accessSpec]
 
 ```mathematica
 NBRedactExecutionResult[rawResult, accessSpec]
-(* <|"RedactedResult" -> ..., "Summary" -> "...")|> *)
+(* <|"RedactedResult" -> ..., "Summary" -> "..."|> *)
+```
+
+#### NBMakeContextPacket
+
+ノートブックから安全なコンテキストパケットを構築します。プライバシーフィルタリング・スマート要約を適用したセル内容、AccessSpec、必要メタデータをまとめて返します。
+
+```mathematica
+NBMakeContextPacket[nb, accessSpec]
+(* <|"Input" -> ..., "Cells" -> ..., "AccessSpec" -> ..., ...|> *)
 ```
 
 ### 認可ゲート API
@@ -1495,7 +1631,7 @@ NBAuthorize[obj, req]
      "RouteAdvice" -> ...|> *)
 ```
 
-3つのサブゲートはそれぞれ独立して呼び出すこともできます。
+統合判定のルールは「いずれかが Deny → 全体 Deny」です。3つのサブゲートはそれぞれ独立して呼び出すこともできます。
 
 | 関数 | 役割 |
 |---|---|
@@ -1547,6 +1683,23 @@ NBRegisterFunctionSecurity[myFunc, <|
 | `NBFunctionExecPolicy[f]` | `"Open"` / `"Guarded"` / `"Denied"` を返します。 |
 | `NBFunctionReleasePolicy[f]` | 結果のラベル引き下げ条件を返します。 |
 
+#### ExecPolicy の挙動詳細
+
+`ExecPolicy` の値は以下のように `GuardedApply` で処理されます。
+
+1. `ExecPolicy` が `"Denied"` → 即拒否（Deny を返します）
+2. `ExecPolicy` が `"Open"` → 通常実行し、結果にラベルを付与します
+3. `ExecPolicy` が `"Guarded"` → flow チェック → 実行 → ラベル付与
+
+ラベルが設定されていない場合は通過します（後方互換）。
+
+#### ReleasePolicy
+
+`ReleasePolicy` は結果のラベル引き下げ（declassify）が許可される条件を定義します。`Declassify` 呼び出しは以下の両方を満たす必要があります。
+
+1. `req` の Principal が `src` の全 owner に対して `ActsFor` 権限を持つ
+2. `releaseSpec` が `ReleasePolicy` の条件を満たす
+
 #### GuardedApply
 
 `ExecPolicy` が `"Guarded"` の関数を安全に実行します。フローチェック後に実行し、結果に適切なラベルを付与します。
@@ -1579,6 +1732,8 @@ NBDisableCategory["FileIO"]        (* カテゴリを無効化します *)
 NBCategoryEnabled["Arithmetic"]    (* カテゴリが有効かを返します *)
 ```
 
+カテゴリの有効/無効切り替えは `$NBAllowedHeadsByCategory` の対応エントリを動的に `$NBAllowedHeads` に反映します。
+
 ### ルーティング判定
 
 ```mathematica
@@ -1591,6 +1746,12 @@ NBRouteDecision[accessSpec]
      "Thresholds" -> ...,
      "Reason" -> "..."|> *)
 ```
+
+判定ルール：
+
+- `EffectiveRiskScore < 0.5` → `CloudLLM` 候補
+- `0.5 <= score < 0.8` → `PrivateLLM` 候補
+- `0.8 <= score` → `LocalOnly`
 
 ルーティング判定は advisory（助言的）であり、`NBAuthorize` の permit/deny の主体ではありません。最終的なアクセス制御は `NBAuthorize` が担います。
 
@@ -1612,6 +1773,8 @@ NBReleaseResult[result, accessSpec]
 NBMakeRetryPacket[failureAssoc, accessSpec]
 ```
 
+`NBInferExprRequirements` は HoldComplete 内の式を解析し、`NBCellRead[nb, n]` のようなセル参照式から参照セル番号のリストを抽出して `ReadCells` フィールドに格納します。書き込み API（`NBCellWriteCode`, `NBWriteCell` 等）の引数からは `WriteCells` を推定します。
+
 ---
 
 ## ClaudeTestKit との連携
@@ -1628,6 +1791,7 @@ NBMakeRetryPacket[failureAssoc, accessSpec]
 | 履歴データベースの整合性 | `NBHistoryCreate`, `NBHistoryAppend`, `NBHistoryEntries` |
 | 認可ゲート | `NBAuthorize`, `NBPolicyGate`, `NBScoreGate`, `NBEnvironmentGate` |
 | 式実行検証 | `NBValidateHeldExpr`, `NBExecuteHeldExpr` |
+| 関数セキュリティ | `NBRegisterFunctionSecurity`, `GuardedApply`, `Declassify` |
 
 ### テスト用ユーティリティとの連携
 
@@ -1685,6 +1849,8 @@ ClaudeRuntime 連携のために追加された以下の API 群は、既存の 
 - 実行検証 API（`NBValidateHeldExpr`, `NBExecuteHeldExpr` 等）
 - カテゴリ管理 API（`NBEnableCategory`, `NBDisableCategory` 等）
 - ローカル LLM API キー管理 API（`NBGetLocalLLMAPIKey`, `NBStoreLocalLLMAPIKey` 等）
+- 履歴一括クリア API（`NBHistoryClearAll`）
+- LLM 連携コールバック（`$NBLLMQueryFunc`, `NBCellTransformWithLLM`）
 
 これらの新規 API は**オプトイン方式**です。明示的に呼び出さない限り、既存のワークフローには影響しません。
 

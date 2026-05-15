@@ -472,10 +472,10 @@ NBGetLocalLLMAPIKey::usage =
   "API \:30ad\:30fc\:3092 SystemCredential \:304b\:3089\:8fd4\:3059\:3002\:7167\:5408\:306f {provider, url} \:30da\:30a2\:3002\n" <>
   "\:4f8b: NBGetLocalLLMAPIKey[\"lmstudio\", \"http://127.0.0.1:1234\"]\n" <>
   "AccessLevel >= 1.0 \:304c\:5fc5\:9808\:3002PrivacySpec -> <|\"AccessLevel\"->1.0|> \:3092\:660e\:793a\:6307\:5b9a\:3059\:308b\:3053\:3068\:3002\n" <>
-  "\:89e3\:6c7a\:512a\:5148\:5ea6: (1) \:5b8c\:5168\:4e00\:81f4 (2) localhost\:2194127.0.0.1 \:7f6e\:63db\:7248 (3) \{provider, \"*\"\} \:30ef\:30a4\:30eb\:30c9\:30ab\:30fc\:30c9 (4) \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:540d ToUpperCase[provider]<>\"_API_KEY\"\:3002";
+  "\:89e3\:6c7a\:512a\:5148\:5ea6: (1) \:5b8c\:5168\:4e00\:81f4 (2) localhost\[LeftRightArrow]127.0.0.1 \:7f6e\:63db\:7248 (3) \{provider, \"*\"\} \:30ef\:30a4\:30eb\:30c9\:30ab\:30fc\:30c9 (4) \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:540d ToUpperCase[provider]<>\"_API_KEY\"\:3002";
 
 NBSetLocalLLMAPIKey::usage =
-  "NBSetLocalLLMAPIKey[provider, url, credentialName] \:306f\:3001{provider, url} \:2192 credentialName \:306e\n" <>
+  "NBSetLocalLLMAPIKey[provider, url, credentialName] \:306f\:3001{provider, url} \[RightArrow] credentialName \:306e\n" <>
   "\:30de\:30c3\:30d4\:30f3\:30b0\:3092\:767b\:9332\:3059\:308b\:3002SystemCredential \:306e\:5b9f\:5024\:81ea\:4f53\:306f\:66f8\:304d\:8fbc\:307e\:306a\:3044 (\:540d\:524d\:306e\:7d10\:4ed8\:3051\:306e\:307f)\:3002\n" <>
   "\:4f8b: NBSetLocalLLMAPIKey[\"lmstudio\", \"http://192.168.1.10:1234\", \"LMSTUDIO_STUDY_KEY\"]\n" <>
   "\:8fd4\:308a\:5024: {provider, normalizedUrl} -> credentialName \:306e Rule\:3002";
@@ -489,7 +489,7 @@ NBRemoveLocalLLMAPIKey::usage =
   "SystemCredential \:672c\:4f53\:306f\:5909\:66f4\:3057\:306a\:3044\:3002";
 
 NBLocalLLMAPIKeyMap::usage =
-  "NBLocalLLMAPIKeyMap[] \:306f\:73fe\:5728\:767b\:9332\:3055\:308c\:3066\:3044\:308b\:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc\:2192API\:30ad\:30fc\:540d\:30de\:30c3\:30d4\:30f3\:30b0\:3092\n" <>
+  "NBLocalLLMAPIKeyMap[] \:306f\:73fe\:5728\:767b\:9332\:3055\:308c\:3066\:3044\:308b\:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc\[RightArrow]API\:30ad\:30fc\:540d\:30de\:30c3\:30d4\:30f3\:30b0\:3092\n" <>
   "Dataset \:3067\:8fd4\:3059\:3002Configured \:5217\:306f SystemCredential \:304c\:5b9f\:969b\:306b\:8a2d\:5b9a\:6e08\:307f\:304b\:3069\:3046\:304b\:3092\:793a\:3059\:3002";
 
 NBLocalLLMCredentialName::usage =
@@ -655,177 +655,177 @@ NBConfidentialEpilogInstalledQ::usage =
   "NBConfidentialEpilogInstalledQ[nb, checkSymbol] \:306f\:6a5f\:5bc6\:8ffd\:8de1 CellEpilog \:304c\:30a4\:30f3\:30b9\:30c8\:30fc\:30eb\:6e08\:307f\:304b\:8fd4\:3059\:3002\n" <>
   "checkSymbol \:306f FreeQ \:30c1\:30a7\:30c3\:30af\:7528\:306e\:30de\:30fc\:30ab\:30fc\:30b7\:30f3\:30dc\:30eb\:3002";
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: Allowed Expression Surface & Runtime Integration API
-   ════════════════════════════════════════════════════════ *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 $NBAllowedHeads::usage =
-  "$NBAllowedHeads は LLM が自由に実行可能な head のリスト。";
+  "$NBAllowedHeads \:306f LLM \:304c\:81ea\:7531\:306b\:5b9f\:884c\:53ef\:80fd\:306a head \:306e\:30ea\:30b9\:30c8\:3002";
 
 $NBApprovalHeads::usage =
-  "$NBApprovalHeads は人間承認を要する head のリスト。";
+  "$NBApprovalHeads \:306f\:4eba\:9593\:627f\:8a8d\:3092\:8981\:3059\:308b head \:306e\:30ea\:30b9\:30c8\:3002";
 
 $NBDenyHeads::usage =
-  "$NBDenyHeads は常に拒否する head のリスト。";
+  "$NBDenyHeads \:306f\:5e38\:306b\:62d2\:5426\:3059\:308b head \:306e\:30ea\:30b9\:30c8\:3002";
 
 NBValidateHeldExpr::usage =
-  "NBValidateHeldExpr[heldExpr, accessSpec, opts] は HoldComplete[...] 式を\n" <>
-  "Allowed Expression Surface に照合し AccessDecision を返す。\n" <>
-  "返り値: <|\"Decision\" -> \"Permit\"|\"Deny\"|\"NeedsApproval\"|\"RepairNeeded\", ...)|>";
+  "NBValidateHeldExpr[heldExpr, accessSpec, opts] \:306f HoldComplete[...] \:5f0f\:3092\n" <>
+  "Allowed Expression Surface \:306b\:7167\:5408\:3057 AccessDecision \:3092\:8fd4\:3059\:3002\n" <>
+  "\:8fd4\:308a\:5024: <|\"Decision\" -> \"Permit\"|\"Deny\"|\"NeedsApproval\"|\"RepairNeeded\", ...)|>";
 
 NBExecuteHeldExpr::usage =
-  "NBExecuteHeldExpr[heldExpr, accessSpec, opts] は検証済み式を安全に実行し結果を返す。\n" <>
-  "返り値: <|\"Success\" -> True/False, \"RawResult\" -> ..., \"Error\" -> ...|>";
+  "NBExecuteHeldExpr[heldExpr, accessSpec, opts] \:306f\:691c\:8a3c\:6e08\:307f\:5f0f\:3092\:5b89\:5168\:306b\:5b9f\:884c\:3057\:7d50\:679c\:3092\:8fd4\:3059\:3002\n" <>
+  "\:8fd4\:308a\:5024: <|\"Success\" -> True/False, \"RawResult\" -> ..., \"Error\" -> ...|>";
 
 NBRedactExecutionResult::usage =
-  "NBRedactExecutionResult[result, accessSpec, opts] は実行結果を redact し安全な形で返す。\n" <>
-  "返り値: <|\"RedactedResult\" -> ..., \"Summary\" -> String|>";
+  "NBRedactExecutionResult[result, accessSpec, opts] \:306f\:5b9f\:884c\:7d50\:679c\:3092 redact \:3057\:5b89\:5168\:306a\:5f62\:3067\:8fd4\:3059\:3002\n" <>
+  "\:8fd4\:308a\:5024: <|\"RedactedResult\" -> ..., \"Summary\" -> String|>";
 
 NBMakeContextPacket::usage =
-  "NBMakeContextPacket[nb, accessSpec, opts] は notebook から安全な context packet を構築する。\n" <>
-  "返り値: <|\"Input\" -> ..., \"Cells\" -> ..., \"AccessSpec\" -> ..., ...)|>";
+  "NBMakeContextPacket[nb, accessSpec, opts] \:306f notebook \:304b\:3089\:5b89\:5168\:306a context packet \:3092\:69cb\:7bc9\:3059\:308b\:3002\n" <>
+  "\:8fd4\:308a\:5024: <|\"Input\" -> ..., \"Cells\" -> ..., \"AccessSpec\" -> ..., ...)|>";
 
 $NBRoutingThresholds::usage =
-  "$NBRoutingThresholds は routing 閾値の Association。\n" <>
+  "$NBRoutingThresholds \:306f routing \:95be\:5024\:306e Association\:3002\n" <>
   "<|\"Cloud\" -> 0.5, \"Private\" -> 0.8|>\n" <>
-  "EffectiveRiskScore < Cloud → CloudLLM 候補\n" <>
-  "Cloud <= score < Private → PrivateLLM 候補\n" <>
-  "Private <= score → LocalOnly";
+  "EffectiveRiskScore < Cloud \[RightArrow] CloudLLM \:5019\:88dc\n" <>
+  "Cloud <= score < Private \[RightArrow] PrivateLLM \:5019\:88dc\n" <>
+  "Private <= score \[RightArrow] LocalOnly";
 
 NBRouteDecision::usage =
-  "NBRouteDecision[scoreOrAccessSpec] は数値スコアまたは accessSpec から\n" <>
-  "routing 推奨を返す (advisory, not gatekeeping)。\n" <>
-  "返り値: <|\"Route\" -> \"CloudLLM\"|\"PrivateLLM\"|\"LocalOnly\",\n" <>
+  "NBRouteDecision[scoreOrAccessSpec] \:306f\:6570\:5024\:30b9\:30b3\:30a2\:307e\:305f\:306f accessSpec \:304b\:3089\n" <>
+  "routing \:63a8\:5968\:3092\:8fd4\:3059 (advisory, not gatekeeping)\:3002\n" <>
+  "\:8fd4\:308a\:5024: <|\"Route\" -> \"CloudLLM\"|\"PrivateLLM\"|\"LocalOnly\",\n" <>
   "  \"EffectiveRiskScore\" -> n, \"Thresholds\" -> ...,\n" <>
   "  \"Reason\" -> String|>";
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 14: Iterative Agent Loop Support APIs
-   ════════════════════════════════════════════════════════ *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 NBInferExprRequirements::usage =
-  "NBInferExprRequirements[heldExpr, accessSpec] は式が必要とする\n" <>
-  "アクセスレベル・書き込みターゲット・参照セル等を静的に推定する。\n" <>
-  "返り値: <|\"ReadCells\" -> {...}, \"WriteCells\" -> {...},\n" <>
+  "NBInferExprRequirements[heldExpr, accessSpec] \:306f\:5f0f\:304c\:5fc5\:8981\:3068\:3059\:308b\n" <>
+  "\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:30fb\:66f8\:304d\:8fbc\:307f\:30bf\:30fc\:30b2\:30c3\:30c8\:30fb\:53c2\:7167\:30bb\:30eb\:7b49\:3092\:9759\:7684\:306b\:63a8\:5b9a\:3059\:308b\:3002\n" <>
+  "\:8fd4\:308a\:5024: <|\"ReadCells\" -> {...}, \"WriteCells\" -> {...},\n" <>
   "  \"RequiredAccessLevel\" -> n, \"HasSideEffects\" -> True/False, ...)|>";
 
 NBReleaseResult::usage =
-  "NBReleaseResult[result, accessSpec, opts] は実行結果を\n" <>
-  "指定された sink に安全に release する。\n" <>
-  "redaction + routing check を行い、release 可能な形を返す。";
+  "NBReleaseResult[result, accessSpec, opts] \:306f\:5b9f\:884c\:7d50\:679c\:3092\n" <>
+  "\:6307\:5b9a\:3055\:308c\:305f sink \:306b\:5b89\:5168\:306b release \:3059\:308b\:3002\n" <>
+  "redaction + routing check \:3092\:884c\:3044\:3001release \:53ef\:80fd\:306a\:5f62\:3092\:8fd4\:3059\:3002";
 
 NBMakeRetryPacket::usage =
-  "NBMakeRetryPacket[failureAssoc, accessSpec] は失敗情報から\n" <>
-  "秘密を含まない安全な retry packet を構築する。";
+  "NBMakeRetryPacket[failureAssoc, accessSpec] \:306f\:5931\:6557\:60c5\:5831\:304b\:3089\n" <>
+  "\:79d8\:5bc6\:3092\:542b\:307e\:306a\:3044\:5b89\:5168\:306a retry packet \:3092\:69cb\:7bc9\:3059\:308b\:3002";
 
 NBAuthorize::usage =
-  "NBAuthorize[obj, req] は PolicyGate + ScoreGate + EnvironmentGate を\n" <>
-  "統合した AccessDecision を返す。\n" <>
-  "返り値: <|\"Decision\" -> \"Permit\"|\"Deny\"|\"Screen\"|\"RequireApproval\",\n" <>
+  "NBAuthorize[obj, req] \:306f PolicyGate + ScoreGate + EnvironmentGate \:3092\n" <>
+  "\:7d71\:5408\:3057\:305f AccessDecision \:3092\:8fd4\:3059\:3002\n" <>
+  "\:8fd4\:308a\:5024: <|\"Decision\" -> \"Permit\"|\"Deny\"|\"Screen\"|\"RequireApproval\",\n" <>
   "  \"ReasonClass\" -> ..., \"RequiredAction\" -> ...,\n" <>
   "  \"VisibleExplanation\" -> ..., \"RouteAdvice\" -> ...|>";
 
 NBPolicyGate::usage =
-  "NBPolicyGate[obj, req] は半順序ラベルに基づく flow 判定を返す。\n" <>
-  "PolicyLabel / ContainerLabel / SinkLabel を考慮する。";
+  "NBPolicyGate[obj, req] \:306f\:534a\:9806\:5e8f\:30e9\:30d9\:30eb\:306b\:57fa\:3065\:304f flow \:5224\:5b9a\:3092\:8fd4\:3059\:3002\n" <>
+  "PolicyLabel / ContainerLabel / SinkLabel \:3092\:8003\:616e\:3059\:308b\:3002";
 
 NBScoreGate::usage =
-  "NBScoreGate[obj, req] は数値スコアに基づく routing/screening 判定を返す。\n" <>
-  "advisory 体系: 判定は routing に影響するが permit/deny の主体ではない。";
+  "NBScoreGate[obj, req] \:306f\:6570\:5024\:30b9\:30b3\:30a2\:306b\:57fa\:3065\:304f routing/screening \:5224\:5b9a\:3092\:8fd4\:3059\:3002\n" <>
+  "advisory \:4f53\:7cfb: \:5224\:5b9a\:306f routing \:306b\:5f71\:97ff\:3059\:308b\:304c permit/deny \:306e\:4e3b\:4f53\:3067\:306f\:306a\:3044\:3002";
 
 NBEnvironmentGate::usage =
-  "NBEnvironmentGate[obj, req] は実行環境に基づく制約チェックを返す。\n" <>
-  "Sink / Environment / Principal を考慮する。";
+  "NBEnvironmentGate[obj, req] \:306f\:5b9f\:884c\:74b0\:5883\:306b\:57fa\:3065\:304f\:5236\:7d04\:30c1\:30a7\:30c3\:30af\:3092\:8fd4\:3059\:3002\n" <>
+  "Sink / Environment / Principal \:3092\:8003\:616e\:3059\:308b\:3002";
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 20: Function Security API
-   ════════════════════════════════════════════════════════ *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 NBRegisterFunctionSecurity::usage =
-  "NBRegisterFunctionSecurity[sym, spec] は関数 sym に\n" <>
-  "セキュリティメタデータを登録する。\n" <>
+  "NBRegisterFunctionSecurity[sym, spec] \:306f\:95a2\:6570 sym \:306b\n" <>
+  "\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:30e1\:30bf\:30c7\:30fc\:30bf\:3092\:767b\:9332\:3059\:308b\:3002\n" <>
   "spec: <|\"DefinitionLabel\" -> label,\n" <>
   "  \"ExecPolicy\" -> \"Open\"|\"Guarded\"|\"Denied\",\n" <>
   "  \"ReleasePolicy\" -> <|...|>|>";
 
 NBFunctionDefinitionLabel::usage =
-  "NBFunctionDefinitionLabel[f] は関数 f の定義ラベルを返す。\n" <>
-  "定義ラベルはコード自体の閲覧可否を制御する。";
+  "NBFunctionDefinitionLabel[f] \:306f\:95a2\:6570 f \:306e\:5b9a\:7fa9\:30e9\:30d9\:30eb\:3092\:8fd4\:3059\:3002\n" <>
+  "\:5b9a\:7fa9\:30e9\:30d9\:30eb\:306f\:30b3\:30fc\:30c9\:81ea\:4f53\:306e\:95b2\:89a7\:53ef\:5426\:3092\:5236\:5fa1\:3059\:308b\:3002";
 
 NBFunctionExecPolicy::usage =
-  "NBFunctionExecPolicy[f] は関数 f の実行ポリシーを返す。\n" <>
+  "NBFunctionExecPolicy[f] \:306f\:95a2\:6570 f \:306e\:5b9f\:884c\:30dd\:30ea\:30b7\:30fc\:3092\:8fd4\:3059\:3002\n" <>
   "\"Open\"|\"Guarded\"|\"Denied\"";
 
 NBFunctionReleasePolicy::usage =
-  "NBFunctionReleasePolicy[f] は関数 f の結果リリースポリシーを返す。\n" <>
-  "結果のラベル引き下げ条件を定義する。";
+  "NBFunctionReleasePolicy[f] \:306f\:95a2\:6570 f \:306e\:7d50\:679c\:30ea\:30ea\:30fc\:30b9\:30dd\:30ea\:30b7\:30fc\:3092\:8fd4\:3059\:3002\n" <>
+  "\:7d50\:679c\:306e\:30e9\:30d9\:30eb\:5f15\:304d\:4e0b\:3052\:6761\:4ef6\:3092\:5b9a\:7fa9\:3059\:308b\:3002";
 
 GuardedApply::usage =
-  "GuardedApply[req, f, args] は f[args] を\n" <>
-  "セキュリティポリシーに従って実行する。\n" <>
-  "ExecPolicy が \"Guarded\" の場合、flow チェック後に実行し、\n" <>
-  "結果に適切なラベルを付与する。";
+  "GuardedApply[req, f, args] \:306f f[args] \:3092\n" <>
+  "\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:30dd\:30ea\:30b7\:30fc\:306b\:5f93\:3063\:3066\:5b9f\:884c\:3059\:308b\:3002\n" <>
+  "ExecPolicy \:304c \"Guarded\" \:306e\:5834\:5408\:3001flow \:30c1\:30a7\:30c3\:30af\:5f8c\:306b\:5b9f\:884c\:3057\:3001\n" <>
+  "\:7d50\:679c\:306b\:9069\:5207\:306a\:30e9\:30d9\:30eb\:3092\:4ed8\:4e0e\:3059\:308b\:3002";
 
 Declassify::usage =
-  "Declassify[obj, req, releaseSpec] は obj のラベルを\n" <>
-  "releaseSpec に従って引き下げる。\n" <>
-  "req の Principal が acts-for 権限を持つ場合のみ許可。";
+  "Declassify[obj, req, releaseSpec] \:306f obj \:306e\:30e9\:30d9\:30eb\:3092\n" <>
+  "releaseSpec \:306b\:5f93\:3063\:3066\:5f15\:304d\:4e0b\:3052\:308b\:3002\n" <>
+  "req \:306e Principal \:304c acts-for \:6a29\:9650\:3092\:6301\:3064\:5834\:5408\:306e\:307f\:8a31\:53ef\:3002";
 
-(* ════════════════════════════════════════════════════════
-   Phase 14: Label Algebra (最小 API)
-   ════════════════════════════════════════════════════════ *)
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Phase 14: Label Algebra (\:6700\:5c0f API)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 NBLabelQ::usage =
-  "NBLabelQ[label] は label が有効な NBAccess ラベルかを判定する。";
+  "NBLabelQ[label] \:306f label \:304c\:6709\:52b9\:306a NBAccess \:30e9\:30d9\:30eb\:304b\:3092\:5224\:5b9a\:3059\:308b\:3002";
 
 NBLabelBottom::usage =
-  "NBLabelBottom[] は最小制約ラベル (public) を返す。";
+  "NBLabelBottom[] \:306f\:6700\:5c0f\:5236\:7d04\:30e9\:30d9\:30eb (public) \:3092\:8fd4\:3059\:3002";
 
 NBLabelTop::usage =
-  "NBLabelTop[] は最大制約ラベル (全拒否) を返す。";
+  "NBLabelTop[] \:306f\:6700\:5927\:5236\:7d04\:30e9\:30d9\:30eb (\:5168\:62d2\:5426) \:3092\:8fd4\:3059\:3002";
 
 NBLabelJoin::usage =
-  "NBLabelJoin[l1, l2] はラベルの join (最大下界の双対 = より制約的) を返す。\n" <>
-  "両方の制約を満たす方向。";
+  "NBLabelJoin[l1, l2] \:306f\:30e9\:30d9\:30eb\:306e join (\:6700\:5927\:4e0b\:754c\:306e\:53cc\:5bfe = \:3088\:308a\:5236\:7d04\:7684) \:3092\:8fd4\:3059\:3002\n" <>
+  "\:4e21\:65b9\:306e\:5236\:7d04\:3092\:6e80\:305f\:3059\:65b9\:5411\:3002";
 
 NBLabelMeet::usage =
-  "NBLabelMeet[l1, l2] はラベルの meet (最小上界 = より緩い) を返す。";
+  "NBLabelMeet[l1, l2] \:306f\:30e9\:30d9\:30eb\:306e meet (\:6700\:5c0f\:4e0a\:754c = \:3088\:308a\:7de9\:3044) \:3092\:8fd4\:3059\:3002";
 
 NBLabelLEQ::usage =
-  "NBLabelLEQ[l1, l2] は l1 ⪯ l2 (l1 の情報が l2 へ flow 可能) を判定する。";
+  "NBLabelLEQ[l1, l2] \:306f l1 \[PrecedesEqual] l2 (l1 \:306e\:60c5\:5831\:304c l2 \:3078 flow \:53ef\:80fd) \:3092\:5224\:5b9a\:3059\:308b\:3002";
 
 NBRegisterPrincipal::usage =
-  "NBRegisterPrincipal[name, opts] はアクセス主体を登録する。";
+  "NBRegisterPrincipal[name, opts] \:306f\:30a2\:30af\:30bb\:30b9\:4e3b\:4f53\:3092\:767b\:9332\:3059\:308b\:3002";
 
 NBGrantActsFor::usage =
-  "NBGrantActsFor[p, q] は principal p が q として行動できる委任を登録する。";
+  "NBGrantActsFor[p, q] \:306f principal p \:304c q \:3068\:3057\:3066\:884c\:52d5\:3067\:304d\:308b\:59d4\:4efb\:3092\:767b\:9332\:3059\:308b\:3002";
 
 NBActsForQ::usage =
-  "NBActsForQ[p, q] は p が q として行動可能か判定する。";
+  "NBActsForQ[p, q] \:306f p \:304c q \:3068\:3057\:3066\:884c\:52d5\:53ef\:80fd\:304b\:5224\:5b9a\:3059\:308b\:3002";
 
 NBCanFlowToQ::usage =
-  "NBCanFlowToQ[srcLabel, dstLabel] は src から dst への flow が許可されるか判定する。";
+  "NBCanFlowToQ[srcLabel, dstLabel] \:306f src \:304b\:3089 dst \:3078\:306e flow \:304c\:8a31\:53ef\:3055\:308c\:308b\:304b\:5224\:5b9a\:3059\:308b\:3002";
 
 NBCanDeclassifyQ::usage =
-  "NBCanDeclassifyQ[srcLabel, dstLabel, req] は declassify が正当か判定する。";
+  "NBCanDeclassifyQ[srcLabel, dstLabel, req] \:306f declassify \:304c\:6b63\:5f53\:304b\:5224\:5b9a\:3059\:308b\:3002";
 
 NBEffectiveLabel::usage =
-  "NBEffectiveLabel[obj, req] はオブジェクトと要求から実効ラベルを計算する。";
+  "NBEffectiveLabel[obj, req] \:306f\:30aa\:30d6\:30b8\:30a7\:30af\:30c8\:3068\:8981\:6c42\:304b\:3089\:5b9f\:52b9\:30e9\:30d9\:30eb\:3092\:8a08\:7b97\:3059\:308b\:3002";
 
 $NBAllowedHeadsByCategory::usage =
-  "$NBAllowedHeadsByCategory はカテゴリ別の許可 head リスト (Association)。";
+  "$NBAllowedHeadsByCategory \:306f\:30ab\:30c6\:30b4\:30ea\:5225\:306e\:8a31\:53ef head \:30ea\:30b9\:30c8 (Association)\:3002";
 
 $NBDisabledCategories::usage =
-  "$NBDisabledCategories は無効化されたカテゴリの追跡 (Association)。";
+  "$NBDisabledCategories \:306f\:7121\:52b9\:5316\:3055\:308c\:305f\:30ab\:30c6\:30b4\:30ea\:306e\:8ffd\:8de1 (Association)\:3002";
 
 NBEnableCategory::usage =
-  "NBEnableCategory[cat] はカテゴリを有効化する。";
+  "NBEnableCategory[cat] \:306f\:30ab\:30c6\:30b4\:30ea\:3092\:6709\:52b9\:5316\:3059\:308b\:3002";
 
 NBDisableCategory::usage =
-  "NBDisableCategory[cat] はカテゴリを無効化する。";
+  "NBDisableCategory[cat] \:306f\:30ab\:30c6\:30b4\:30ea\:3092\:7121\:52b9\:5316\:3059\:308b\:3002";
 
 NBCategoryEnabled::usage =
-  "NBCategoryEnabled[cat] はカテゴリが有効かを返す。";
+  "NBCategoryEnabled[cat] \:306f\:30ab\:30c6\:30b4\:30ea\:304c\:6709\:52b9\:304b\:3092\:8fd4\:3059\:3002";
 
 Begin["`Private`"];
 
@@ -863,7 +863,7 @@ If[!MatchQ[NBAccess`$NBLLMQueryFunc, _Function | _Symbol],
 
 (* \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:30e2\:30c7\:30eb\:30ea\:30b9\:30c8: {{provider, model}, {provider, model, url}, ...} *)
 If[!ListQ[$iFallbackModels],
-  $iFallbackModels = {{"anthropic", "claude-opus-4-6"}, {"openai", "gpt-5"}}];
+  $iFallbackModels = {{"anthropic", "claude-opus-4-6"}, {"openai", "gpt-5.5"}}];
 
 (* \:30d7\:30ed\:30d0\:30a4\:30c0\:30fc\:5225\:6700\:5927\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb: \:672a\:767b\:9332\:306f 0.5 *)
 If[!AssociationQ[$iProviderMaxAccessLevel],
@@ -1122,9 +1122,9 @@ NBAccess`NBCellSetOptions[nb_NotebookObject, cellIdx_Integer, opts__] :=
     If[cell =!= $Failed, Quiet[SetOptions[cell, opts]]]
   ];
 
-(* セルスタイルを変更する。Cell 式の第2引数を書き換え、他オプションは保持する。
-   SetOptions[cell, CellStyle -> ...] ではセルスタイルは変わらないため、
-   Cell 式全体を読み書きする。 *)
+(* \:30bb\:30eb\:30b9\:30bf\:30a4\:30eb\:3092\:5909\:66f4\:3059\:308b\:3002Cell \:5f0f\:306e\:7b2c2\:5f15\:6570\:3092\:66f8\:304d\:63db\:3048\:3001\:4ed6\:30aa\:30d7\:30b7\:30e7\:30f3\:306f\:4fdd\:6301\:3059\:308b\:3002
+   SetOptions[cell, CellStyle -> ...] \:3067\:306f\:30bb\:30eb\:30b9\:30bf\:30a4\:30eb\:306f\:5909\:308f\:3089\:306a\:3044\:305f\:3081\:3001
+   Cell \:5f0f\:5168\:4f53\:3092\:8aad\:307f\:66f8\:304d\:3059\:308b\:3002 *)
 NBAccess`NBCellSetStyle[nb_NotebookObject, cellIdx_Integer, newStyle_String] :=
   Module[{cell, cellExpr, newCellExpr},
     cell = iResolveCell[nb, cellIdx];
@@ -1135,14 +1135,14 @@ NBAccess`NBCellSetStyle[nb_NotebookObject, cellIdx_Integer, newStyle_String] :=
        Cell[content_, rest___]          :> Cell[content, newStyle, rest]}];
     NotebookWrite[cell, newCellExpr, All, AutoScroll -> False]];
 
-(* 既存セルにコードを BoxData + Input スタイルで書き込む。
-   FEParser で構文カラーリング付き BoxData に変換し、
-   Cell 式全体を内容とスタイルで置換する（TaggingRules 等は保持）。 *)
+(* \:65e2\:5b58\:30bb\:30eb\:306b\:30b3\:30fc\:30c9\:3092 BoxData + Input \:30b9\:30bf\:30a4\:30eb\:3067\:66f8\:304d\:8fbc\:3080\:3002
+   FEParser \:3067\:69cb\:6587\:30ab\:30e9\:30fc\:30ea\:30f3\:30b0\:4ed8\:304d BoxData \:306b\:5909\:63db\:3057\:3001
+   Cell \:5f0f\:5168\:4f53\:3092\:5185\:5bb9\:3068\:30b9\:30bf\:30a4\:30eb\:3067\:7f6e\:63db\:3059\:308b\:ff08TaggingRules \:7b49\:306f\:4fdd\:6301\:ff09\:3002 *)
 NBAccess`NBCellWriteCode[nb_NotebookObject, cellIdx_Integer, code_String] :=
   Module[{cell, cellExpr, result, box, newContent, newCellExpr},
     cell = iResolveCell[nb, cellIdx];
     If[cell === $Failed, Return[$Failed]];
-    (* FEParser でコードを BoxData に変換 *)
+    (* FEParser \:3067\:30b3\:30fc\:30c9\:3092 BoxData \:306b\:5909\:63db *)
     result = Quiet @ Check[
       MathLink`CallFrontEnd[
         FrontEnd`UndocumentedTestFEParserPacket[code, False]],
@@ -1153,7 +1153,7 @@ NBAccess`NBCellWriteCode[nb_NotebookObject, cellIdx_Integer, code_String] :=
       MatchQ[result, _BoxData],                    result,
       True,                                        $Failed];
     newContent = If[MatchQ[box, _BoxData], box, code];
-    (* Cell 式全体を読み出し、内容とスタイルを Input に置換 *)
+    (* Cell \:5f0f\:5168\:4f53\:3092\:8aad\:307f\:51fa\:3057\:3001\:5185\:5bb9\:3068\:30b9\:30bf\:30a4\:30eb\:3092 Input \:306b\:7f6e\:63db *)
     cellExpr = Quiet @ NotebookRead[cell];
     newCellExpr = Replace[cellExpr,
       {Cell[_, _String, rest___] :> Cell[newContent, "Input", rest],
@@ -1161,8 +1161,8 @@ NBAccess`NBCellWriteCode[nb_NotebookObject, cellIdx_Integer, code_String] :=
        _                         :> Cell[newContent, "Input"]}];
     NotebookWrite[cell, newCellExpr, All, AutoScroll -> False]];
 
-(* CellObject を返す。外部パッケージが低レベルのセル参照を必要とする場合に使用。
-   指定インデックスが無効な場合は $Failed を返す。 *)
+(* CellObject \:3092\:8fd4\:3059\:3002\:5916\:90e8\:30d1\:30c3\:30b1\:30fc\:30b8\:304c\:4f4e\:30ec\:30d9\:30eb\:306e\:30bb\:30eb\:53c2\:7167\:3092\:5fc5\:8981\:3068\:3059\:308b\:5834\:5408\:306b\:4f7f\:7528\:3002
+   \:6307\:5b9a\:30a4\:30f3\:30c7\:30c3\:30af\:30b9\:304c\:7121\:52b9\:306a\:5834\:5408\:306f $Failed \:3092\:8fd4\:3059\:3002 *)
 NBAccess`NBResolveCell[nb_NotebookObject, cellIdx_Integer] :=
   iResolveCell[nb, cellIdx];
 
@@ -3033,7 +3033,7 @@ iNormalizeLocalLLMURL[_] := "";
 (* ---- credentialName \:3092\:5f15\:304f\:30d8\:30eb\:30d1 ----
    \:89e3\:6c7a\:512a\:5148\:5ea6:
      (1) {prov, nu} \:5b8c\:5168\:4e00\:81f4
-     (2) localhost\:2194127.0.0.1 \:7f6e\:63db\:7248
+     (2) localhost\[LeftRightArrow]127.0.0.1 \:7f6e\:63db\:7248
      (3) {prov, "*"} \:30ef\:30a4\:30eb\:30c9\:30ab\:30fc\:30c9
      (4) \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af: ToUpperCase[prov] <> "_API_KEY" *)
 
@@ -3758,9 +3758,9 @@ NBAccess`NBWritePrintNotice[nb_NotebookObject, text_String, color_] :=
   NotebookWrite[nb, Cell[text, "Print", FontWeight -> Bold, FontColor -> color, FontSize -> 11,
     CellTags -> {"claudecode-notice"}], After];
 
-(* CellPrint ラッパー: 評価セルの直後に出力セルを挿入。
-   NotebookWrite と異なりカーソル位置に依存しない。
-   ClaudeBackupDataset 等のタグ付き出力セルに使用する。 *)
+(* CellPrint \:30e9\:30c3\:30d1\:30fc: \:8a55\:4fa1\:30bb\:30eb\:306e\:76f4\:5f8c\:306b\:51fa\:529b\:30bb\:30eb\:3092\:633f\:5165\:3002
+   NotebookWrite \:3068\:7570\:306a\:308a\:30ab\:30fc\:30bd\:30eb\:4f4d\:7f6e\:306b\:4f9d\:5b58\:3057\:306a\:3044\:3002
+   ClaudeBackupDataset \:7b49\:306e\:30bf\:30b0\:4ed8\:304d\:51fa\:529b\:30bb\:30eb\:306b\:4f7f\:7528\:3059\:308b\:3002 *)
 NBAccess`NBCellPrint[cellExpr_Cell] :=
   Quiet[CellPrint[cellExpr]];
 
@@ -4260,9 +4260,9 @@ NBAccess`NBMergeNotebookCells[sourcePath_String, outputPath_String,
   ];
 
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: Allowed Expression Surface
-   ════════════════════════════════════════════════════════ *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 If[!AssociationQ[$NBAllowedHeadsByCategory],
   $NBAllowedHeadsByCategory = <|
@@ -4352,7 +4352,7 @@ If[!AssociationQ[$NBAllowedHeadsByCategory],
     }
   |>];
 
-(* カテゴリ別有効/無効切り替え *)
+(* \:30ab\:30c6\:30b4\:30ea\:5225\:6709\:52b9/\:7121\:52b9\:5207\:308a\:66ff\:3048 *)
 If[!AssociationQ[$NBDisabledCategories],
   $NBDisabledCategories = <||>];
 
@@ -4360,16 +4360,16 @@ NBEnableCategory[cat_String] := ($NBDisabledCategories[cat] = False);
 NBDisableCategory[cat_String] := ($NBDisabledCategories[cat] = True);
 NBCategoryEnabled[cat_String] := !TrueQ[$NBDisabledCategories[cat]];
 
-(* $NBAllowedHeads は $NBAllowedHeadsByCategory から自動導出（後方互換） *)
-(* Set/SetDelayed は文脈依存チェック: Module/With/Block 内のみ許可。
-   $NBAllowedHeads からは除外し、iExtractGlobalSets で判定する。
-   Phase 16: グローバルスコープの Set は NeedsApproval に格上げ *)
+(* $NBAllowedHeads \:306f $NBAllowedHeadsByCategory \:304b\:3089\:81ea\:52d5\:5c0e\:51fa\:ff08\:5f8c\:65b9\:4e92\:63db\:ff09 *)
+(* Set/SetDelayed \:306f\:6587\:8108\:4f9d\:5b58\:30c1\:30a7\:30c3\:30af: Module/With/Block \:5185\:306e\:307f\:8a31\:53ef\:3002
+   $NBAllowedHeads \:304b\:3089\:306f\:9664\:5916\:3057\:3001iExtractGlobalSets \:3067\:5224\:5b9a\:3059\:308b\:3002
+   Phase 16: \:30b0\:30ed\:30fc\:30d0\:30eb\:30b9\:30b3\:30fc\:30d7\:306e Set \:306f NeedsApproval \:306b\:683c\:4e0a\:3052 *)
 If[!ListQ[$NBAllowedHeads],
   $NBAllowedHeads = Flatten[Values[
     Select[$NBAllowedHeadsByCategory,
       NBCategoryEnabled[First[#]] &] /. 
     Rule[k_, v_] :> If[NBCategoryEnabled[k], v, Nothing]]]];
-(* 実際には毎回再計算: 動的カテゴリ切り替え対応 *)
+(* \:5b9f\:969b\:306b\:306f\:6bce\:56de\:518d\:8a08\:7b97: \:52d5\:7684\:30ab\:30c6\:30b4\:30ea\:5207\:308a\:66ff\:3048\:5bfe\:5fdc *)
 iRecomputeAllowedHeads[] := (
   $NBAllowedHeads = Flatten @ KeyValueMap[
     If[NBCategoryEnabled[#1], #2, {}] &,
@@ -4378,7 +4378,7 @@ iRecomputeAllowedHeads[];
 
 If[!ListQ[$NBApprovalHeads],
   $NBApprovalHeads = {
-    (* NBAccess 書き込み系 *)
+    (* NBAccess \:66f8\:304d\:8fbc\:307f\:7cfb *)
     "NBCellWriteCode", "NBCellWriteText", "NBWriteText", "NBWriteCode",
     "NBWriteSmartCode", "NBWriteInputCellAndMaybeEvaluate",
     "NBInsertTextCells", "NBCellSetOptions", "NBCellSetStyle",
@@ -4388,7 +4388,7 @@ If[!ListQ[$NBApprovalHeads],
     "NBSetConfidentialTag", "NBSetTaggingRule", "NBDeleteTaggingRule",
     "NBFileWriteCell", "NBFileWriteAllCells",
     "NBMergeNotebookCells",
-    (* ファイル操作 *)
+    (* \:30d5\:30a1\:30a4\:30eb\:64cd\:4f5c *)
     "NBFileOpen", "NBFileClose", "NBFileSave",
     "NBSplitNotebookCells"
   }];
@@ -4405,12 +4405,12 @@ If[!ListQ[$NBDenyHeads],
     "SendMail", "CloudDeploy", "CloudPut",
     "Quit", "Exit", "Abort",
     "Unset", "Clear", "Remove",
-    "Evaluate" (* ReleaseHold経由の明示的eval阻止 *)
+    "Evaluate" (* ReleaseHold\:7d4c\:7531\:306e\:660e\:793a\:7684eval\:963b\:6b62 *)
   }];
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: NBValidateHeldExpr
-   ════════════════════════════════════════════════════════ *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 Options[NBValidateHeldExpr] = {"AllowedHeads" -> Automatic,
   "ApprovalHeads" -> Automatic, "DenyHeads" -> Automatic,
@@ -4425,16 +4425,16 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
         "VisibleExplanation" -> "Expected HoldComplete[expr], got " <> ToString[Head[heldExpr]],
         "SanitizedExpr" -> None|>]];
     
-    (* Phase 16: カテゴリ動的再計算 *)
+    (* Phase 16: \:30ab\:30c6\:30b4\:30ea\:52d5\:7684\:518d\:8a08\:7b97 *)
     iRecomputeAllowedHeads[];
     allowed  = Replace[OptionValue["AllowedHeads"],  Automatic -> $NBAllowedHeads];
     approval = Replace[OptionValue["ApprovalHeads"], Automatic -> $NBApprovalHeads];
     deny     = Replace[OptionValue["DenyHeads"],     Automatic -> $NBDenyHeads];
     
-    (* 式中の全 head を抽出 *)
+    (* \:5f0f\:4e2d\:306e\:5168 head \:3092\:62bd\:51fa *)
     heads = iExtractAllHeads[heldExpr];
     
-    (* 禁止 head チェック *)
+    (* \:7981\:6b62 head \:30c1\:30a7\:30c3\:30af *)
     denied = Select[heads, MemberQ[deny, #] &];
     If[Length[denied] > 0,
       Return[<|"Decision" -> "Deny",
@@ -4442,7 +4442,7 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
         "VisibleExplanation" -> "Forbidden heads: " <> StringRiffle[denied, ", "],
         "SanitizedExpr" -> iSanitizeExpr[heldExpr]|>]];
     
-    (* 承認要 head チェック *)
+    (* \:627f\:8a8d\:8981 head \:30c1\:30a7\:30c3\:30af *)
     needsApproval = Select[heads, MemberQ[approval, #] &];
     If[Length[needsApproval] > 0,
       Return[<|"Decision" -> "NeedsApproval",
@@ -4450,8 +4450,8 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
         "VisibleExplanation" -> "Heads requiring approval: " <> StringRiffle[needsApproval, ", "],
         "SanitizedExpr" -> heldExpr|>]];
     
-    (* 未知 head チェック — ただし Set/SetDelayed は文脈依存で判定 *)
-    (* Phase 16: Set/SetDelayed はグローバルスコープなら NeedsApproval *)
+    (* \:672a\:77e5 head \:30c1\:30a7\:30c3\:30af \[LongDash] \:305f\:3060\:3057 Set/SetDelayed \:306f\:6587\:8108\:4f9d\:5b58\:3067\:5224\:5b9a *)
+    (* Phase 16: Set/SetDelayed \:306f\:30b0\:30ed\:30fc\:30d0\:30eb\:30b9\:30b3\:30fc\:30d7\:306a\:3089 NeedsApproval *)
     Module[{globalSets, setHeadsInExpr},
       setHeadsInExpr = Select[heads, MemberQ[{"Set", "SetDelayed"}, #] &];
       If[Length[setHeadsInExpr] > 0,
@@ -4473,16 +4473,16 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
         "VisibleExplanation" -> "Unknown heads: " <> StringRiffle[unknown, ", "],
         "SanitizedExpr" -> heldExpr|>]];
     
-    (* confidential leak チェック *)
+    (* confidential leak \:30c1\:30a7\:30c3\:30af *)
     If[iContainsConfidentialLeak[heldExpr, accessSpec],
       Return[<|"Decision" -> "Deny",
         "ReasonClass" -> "ConfidentialLeakRisk",
         "VisibleExplanation" -> "Expression may leak confidential data",
         "SanitizedExpr" -> iSanitizeExpr[heldExpr]|>]];
     
-    (* ── Phase 15: label-aware validation ──
-       accessSpec に PolicyLabel / SinkLabel が設定されている場合のみ実行。
-       head チェック通過後に、ラベル半順序に基づく flow 判定を行う。 *)
+    (* \[HorizontalLine]\[HorizontalLine] Phase 15: label-aware validation \[HorizontalLine]\[HorizontalLine]
+       accessSpec \:306b PolicyLabel / SinkLabel \:304c\:8a2d\:5b9a\:3055\:308c\:3066\:3044\:308b\:5834\:5408\:306e\:307f\:5b9f\:884c\:3002
+       head \:30c1\:30a7\:30c3\:30af\:901a\:904e\:5f8c\:306b\:3001\:30e9\:30d9\:30eb\:534a\:9806\:5e8f\:306b\:57fa\:3065\:304f flow \:5224\:5b9a\:3092\:884c\:3046\:3002 *)
     labelCheck = Replace[OptionValue["LabelCheck"], Automatic ->
       KeyExistsQ[accessSpec, "PolicyLabel"] ||
       KeyExistsQ[accessSpec, "SinkLabel"]];
@@ -4502,7 +4502,7 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
         authResult = NBAuthorize[obj, req];
         authDecision = authResult["Decision"];
         
-        (* NBAuthorize の結果を validation decision にマッピング *)
+        (* NBAuthorize \:306e\:7d50\:679c\:3092 validation decision \:306b\:30de\:30c3\:30d4\:30f3\:30b0 *)
         Which[
           authDecision === "Deny",
             Return[<|"Decision" -> "Deny",
@@ -4517,7 +4517,7 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
               "SanitizedExpr" -> heldExpr,
               "RouteAdvice" -> authResult["RouteAdvice"]|>],
           authDecision === "Screen",
-            (* Screen は advisory — Permit するが RouteAdvice に反映 *)
+            (* Screen \:306f advisory \[LongDash] Permit \:3059\:308b\:304c RouteAdvice \:306b\:53cd\:6620 *)
             Null,
           True, (* Permit *)
             Null
@@ -4530,8 +4530,8 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
       "RouteAdvice" -> NBRouteDecision[accessSpec]|>
   ];
 
-(* head 抽出ヘルパー: 式中の全シンボル head を文字列リストで返す。
-   HoldComplete 内を Cases で走査するため評価は発生しない。 *)
+(* head \:62bd\:51fa\:30d8\:30eb\:30d1\:30fc: \:5f0f\:4e2d\:306e\:5168\:30b7\:30f3\:30dc\:30eb head \:3092\:6587\:5b57\:5217\:30ea\:30b9\:30c8\:3067\:8fd4\:3059\:3002
+   HoldComplete \:5185\:3092 Cases \:3067\:8d70\:67fb\:3059\:308b\:305f\:3081\:8a55\:4fa1\:306f\:767a\:751f\:3057\:306a\:3044\:3002 *)
 iExtractAllHeads[held_HoldComplete] :=
   DeleteDuplicates @ Cases[
     held,
@@ -4540,13 +4540,13 @@ iExtractAllHeads[held_HoldComplete] :=
 
 iExtractAllHeads[_] := {};
 
-(* sanitize: 文字列リテラルを伏せる *)
+(* sanitize: \:6587\:5b57\:5217\:30ea\:30c6\:30e9\:30eb\:3092\:4f0f\:305b\:308b *)
 iSanitizeExpr[heldExpr_] :=
   Replace[heldExpr,
     s_String /; StringLength[s] > 0 :> "[STRING]",
     {2, Infinity}];
 
-(* confidential leak 簡易チェック *)
+(* confidential leak \:7c21\:6613\:30c1\:30a7\:30c3\:30af *)
 iContainsConfidentialLeak[heldExpr_, accessSpec_Association] :=
   Module[{confSyms, exprStr},
     confSyms = Lookup[accessSpec, "ConfidentialSymbols",
@@ -4556,32 +4556,32 @@ iContainsConfidentialLeak[heldExpr_, accessSpec_Association] :=
     AnyTrue[confSyms, StringContainsQ[exprStr, ToString[#]] &]
   ];
 
-(* ════════════════════════════════════════════════════════
-   Phase 16: Set/SetDelayed 文脈依存チェック
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Phase 16: Set/SetDelayed \:6587\:8108\:4f9d\:5b58\:30c1\:30a7\:30c3\:30af
    
-   Set/SetDelayed は $NBAllowedHeads からは除外されている。
-   Module/With/Block 内のローカルスコープの Set のみ許可し、
-   グローバルスコープの Set は NeedsApproval に格上げする。
+   Set/SetDelayed \:306f $NBAllowedHeads \:304b\:3089\:306f\:9664\:5916\:3055\:308c\:3066\:3044\:308b\:3002
+   Module/With/Block \:5185\:306e\:30ed\:30fc\:30ab\:30eb\:30b9\:30b3\:30fc\:30d7\:306e Set \:306e\:307f\:8a31\:53ef\:3057\:3001
+   \:30b0\:30ed\:30fc\:30d0\:30eb\:30b9\:30b3\:30fc\:30d7\:306e Set \:306f NeedsApproval \:306b\:683c\:4e0a\:3052\:3059\:308b\:3002
    
-   方式: ReplaceAll でスコープ構造を除去し、残った Set を検出。
-   HoldAll + Set パターンの衝突を回避する安全な構造的アプローチ。
-   ════════════════════════════════════════════════════════ *)
+   \:65b9\:5f0f: ReplaceAll \:3067\:30b9\:30b3\:30fc\:30d7\:69cb\:9020\:3092\:9664\:53bb\:3057\:3001\:6b8b\:3063\:305f Set \:3092\:691c\:51fa\:3002
+   HoldAll + Set \:30d1\:30bf\:30fc\:30f3\:306e\:885d\:7a81\:3092\:56de\:907f\:3059\:308b\:5b89\:5168\:306a\:69cb\:9020\:7684\:30a2\:30d7\:30ed\:30fc\:30c1\:3002
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
-(* ── ヘルパー: 式中のグローバルスコープ Set/SetDelayed を検出 ── *)
-(* 戦略:
-   1. HoldComplete 内の式から Module/With/Block/Function を
-      丸ごと中立値 (Null) に置換
-   2. 置換後に残る Set/SetDelayed はグローバルスコープのもの
-   3. FreeQ で残存を判定
+(* \[HorizontalLine]\[HorizontalLine] \:30d8\:30eb\:30d1\:30fc: \:5f0f\:4e2d\:306e\:30b0\:30ed\:30fc\:30d0\:30eb\:30b9\:30b3\:30fc\:30d7 Set/SetDelayed \:3092\:691c\:51fa \[HorizontalLine]\[HorizontalLine] *)
+(* \:6226\:7565:
+   1. HoldComplete \:5185\:306e\:5f0f\:304b\:3089 Module/With/Block/Function \:3092
+      \:4e38\:3054\:3068\:4e2d\:7acb\:5024 (Null) \:306b\:7f6e\:63db
+   2. \:7f6e\:63db\:5f8c\:306b\:6b8b\:308b Set/SetDelayed \:306f\:30b0\:30ed\:30fc\:30d0\:30eb\:30b9\:30b3\:30fc\:30d7\:306e\:3082\:306e
+   3. FreeQ \:3067\:6b8b\:5b58\:3092\:5224\:5b9a
    
-   返り値: グローバルスコープにある Set/SetDelayed の head 名リスト。
-   空リスト = 全て安全 (ローカルスコープ内) *)
+   \:8fd4\:308a\:5024: \:30b0\:30ed\:30fc\:30d0\:30eb\:30b9\:30b3\:30fc\:30d7\:306b\:3042\:308b Set/SetDelayed \:306e head \:540d\:30ea\:30b9\:30c8\:3002
+   \:7a7a\:30ea\:30b9\:30c8 = \:5168\:3066\:5b89\:5168 (\:30ed\:30fc\:30ab\:30eb\:30b9\:30b3\:30fc\:30d7\:5185) *)
 
 iExtractGlobalSets[held_HoldComplete] :=
   Module[{stripped, result = {}},
-    (* スコープ構造を除去: Module/With/Block/Function の全体を Null に置換。
-       ReplaceAll は HoldComplete 内でも構造的に動作する。
-       スコープ内の Set/SetDelayed は一緒に消える。 *)
+    (* \:30b9\:30b3\:30fc\:30d7\:69cb\:9020\:3092\:9664\:53bb: Module/With/Block/Function \:306e\:5168\:4f53\:3092 Null \:306b\:7f6e\:63db\:3002
+       ReplaceAll \:306f HoldComplete \:5185\:3067\:3082\:69cb\:9020\:7684\:306b\:52d5\:4f5c\:3059\:308b\:3002
+       \:30b9\:30b3\:30fc\:30d7\:5185\:306e Set/SetDelayed \:306f\:4e00\:7dd2\:306b\:6d88\:3048\:308b\:3002 *)
     stripped = held /. {
       HoldPattern[(Module | With | Block)[_, _]] :> Null,
       HoldPattern[Function[_]] :> Null,
@@ -4589,7 +4589,7 @@ iExtractGlobalSets[held_HoldComplete] :=
       HoldPattern[Function[_, _, _]] :> Null
     };
     
-    (* 残った Set/SetDelayed はグローバルスコープ *)
+    (* \:6b8b\:3063\:305f Set/SetDelayed \:306f\:30b0\:30ed\:30fc\:30d0\:30eb\:30b9\:30b3\:30fc\:30d7 *)
     If[!FreeQ[stripped, HoldPattern[_Set]], AppendTo[result, "Set"]];
     If[!FreeQ[stripped, HoldPattern[_SetDelayed]], AppendTo[result, "SetDelayed"]];
     result
@@ -4597,9 +4597,9 @@ iExtractGlobalSets[held_HoldComplete] :=
 
 iExtractGlobalSets[_] := {};
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: NBExecuteHeldExpr
-   ════════════════════════════════════════════════════════ *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 Options[NBExecuteHeldExpr] = {"TimeConstraint" -> 30};
 
@@ -4609,16 +4609,15 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
       Return[<|"Success" -> False, "RawResult" -> None,
         "Error" -> "Invalid HoldComplete expression"|>]];
     timeout = OptionValue["TimeConstraint"];
-    result = Quiet @ Check[
+    (* Phase 30 (2026-05-13) fix: Trap #16 \:5bfe\:5fdc\:3002
+       Quiet @ Check[expr, $Failed] \:306f\:7121\:5bb3\:306a\:30e1\:30c3\:30bb\:30fc\:30b8 (\:4f8b: General::stop)
+       \:3067\:3082 $Failed \:3092\:8fd4\:3057\:3066\:5b9f\:884c\:3092\:6253\:3061\:5207\:3063\:3066\:3057\:307e\:3046\:30d0\:30b0\:3002
+       Check \:3092\:524a\:9664\:3057\:3001Quiet \:306e\:307f\:3067\:30e1\:30c3\:30bb\:30fc\:30b8\:3092\:6291\:5236\:3059\:308b\:3002 *)
+    result = Quiet[
       TimeConstrained[
         ReleaseHold[heldExpr],
         timeout,
-        $TimedOut],
-      $Failed];
-    If[result === $Failed,
-      <|"Success" -> False, "RawResult" -> None,
-        "HeldExpr" -> heldExpr,
-        "Error" -> "Execution failed"|>,
+        $TimedOut]];
     If[result === $TimedOut,
       <|"Success" -> False, "RawResult" -> None,
         "HeldExpr" -> heldExpr,
@@ -4626,12 +4625,12 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
       <|"Success" -> True, "RawResult" -> result,
         "HeldExpr" -> heldExpr,
         "Error" -> None|>
-    ]]
+    ]
   ];
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: NBRedactExecutionResult
-   ════════════════════════════════════════════════════════ *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 Options[NBRedactExecutionResult] = {"MaxSummaryLength" -> 500};
 
@@ -4642,23 +4641,23 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
     raw = Lookup[result, "RawResult", None];
     maxLen = OptionValue["MaxSummaryLength"];
     
-    (* 機密変数リストを統合 *)
+    (* \:6a5f\:5bc6\:5909\:6570\:30ea\:30b9\:30c8\:3092\:7d71\:5408 *)
     confVarNames = Lookup[accessSpec, "ConfidentialSymbols",
       If[ListQ[$NBConfidentialSymbols],
         Keys[$NBConfidentialSymbols], {}]];
-    (* Association 形式の $NBConfidentialSymbols からキーを取得 *)
+    (* Association \:5f62\:5f0f\:306e $NBConfidentialSymbols \:304b\:3089\:30ad\:30fc\:3092\:53d6\:5f97 *)
     If[AssociationQ[$NBConfidentialSymbols],
       confVarNames = DeleteDuplicates @ Join[confVarNames,
         Keys[$NBConfidentialSymbols]]];
     secrets = Lookup[accessSpec, "Secrets", {}];
-    (* confSyms = 全検出対象 (変数名 + API キー等) *)
+    (* confSyms = \:5168\:691c\:51fa\:5bfe\:8c61 (\:5909\:6570\:540d + API \:30ad\:30fc\:7b49) *)
     confSyms = DeleteDuplicates @ Join[confVarNames, secrets];
     
-    (* ── 機密依存チェック (Phase 17 fix) ──
-       実行した式 (HeldExpr) が機密変数を参照しているかを
-       静的にチェックする。参照していれば結果全体を redact。
-       これにより「2*v (v=1)→結果2」のような値リークを防ぐ。
-       注: HeldExpr チェックは confVarNames のみ (Secrets はコード内に現れない) *)
+    (* \[HorizontalLine]\[HorizontalLine] \:6a5f\:5bc6\:4f9d\:5b58\:30c1\:30a7\:30c3\:30af (Phase 17 fix) \[HorizontalLine]\[HorizontalLine]
+       \:5b9f\:884c\:3057\:305f\:5f0f (HeldExpr) \:304c\:6a5f\:5bc6\:5909\:6570\:3092\:53c2\:7167\:3057\:3066\:3044\:308b\:304b\:3092
+       \:9759\:7684\:306b\:30c1\:30a7\:30c3\:30af\:3059\:308b\:3002\:53c2\:7167\:3057\:3066\:3044\:308c\:3070\:7d50\:679c\:5168\:4f53\:3092 redact\:3002
+       \:3053\:308c\:306b\:3088\:308a\:300c2*v (v=1)\[RightArrow]\:7d50\:679c2\:300d\:306e\:3088\:3046\:306a\:5024\:30ea\:30fc\:30af\:3092\:9632\:3050\:3002
+       \:6ce8: HeldExpr \:30c1\:30a7\:30c3\:30af\:306f confVarNames \:306e\:307f (Secrets \:306f\:30b3\:30fc\:30c9\:5185\:306b\:73fe\:308c\:306a\:3044) *)
     heldExpr = Lookup[result, "HeldExpr", None];
     If[MatchQ[heldExpr, HoldComplete[_]] && Length[confVarNames] > 0,
       Module[{exprStr = ToString[heldExpr, InputForm]},
@@ -4667,8 +4666,8 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
             RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
               "(?![\\p{L}\\p{N}$])"]] &]]];
     
-    (* フォールバック: HeldExpr がない場合は結果文字列ベースでチェック
-       注: confVarNames のみ使用 (Secrets は StringReplace で処理) *)
+    (* \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af: HeldExpr \:304c\:306a\:3044\:5834\:5408\:306f\:7d50\:679c\:6587\:5b57\:5217\:30d9\:30fc\:30b9\:3067\:30c1\:30a7\:30c3\:30af
+       \:6ce8: confVarNames \:306e\:307f\:4f7f\:7528 (Secrets \:306f StringReplace \:3067\:51e6\:7406) *)
     If[!refsConfidential && Length[confVarNames] > 0,
       Module[{rawStr = ToString[Short[raw, 10]]},
         refsConfidential = AnyTrue[confVarNames,
@@ -4677,14 +4676,14 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
               "(?![\\p{L}\\p{N}$])"]] &]]];
     
     If[refsConfidential,
-      (* ── 機密依存: 型・サイズ・Head のスキーマ情報のみ返す ── *)
+      (* \[HorizontalLine]\[HorizontalLine] \:6a5f\:5bc6\:4f9d\:5b58: \:578b\:30fb\:30b5\:30a4\:30ba\:30fbHead \:306e\:30b9\:30ad\:30fc\:30de\:60c5\:5831\:306e\:307f\:8fd4\:3059 \[HorizontalLine]\[HorizontalLine] *)
       schemaInfo = iMakeResultSchema[raw];
       <|"RedactedResult" -> schemaInfo,
         "Summary" -> schemaInfo,
         "ConfidentialDependent" -> True|>,
-      (* ── 非機密: 従来通りの redaction ── *)
+      (* \[HorizontalLine]\[HorizontalLine] \:975e\:6a5f\:5bc6: \:5f93\:6765\:901a\:308a\:306e redaction \[HorizontalLine]\[HorizontalLine] *)
       redacted = ToString[Short[raw, 10]];
-      (* 変数名と Secrets の両方を文字列置換 *)
+      (* \:5909\:6570\:540d\:3068 Secrets \:306e\:4e21\:65b9\:3092\:6587\:5b57\:5217\:7f6e\:63db *)
       Do[redacted = StringReplace[redacted,
           RegularExpression["(?<![\\p{L}\\p{N}$])" <> s <>
             "(?![\\p{L}\\p{N}$])"] -> "[REDACTED]"],
@@ -4695,34 +4694,34 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
     ]
   ];
 
-(* 実行結果のスキーマ情報生成（機密依存時に値の代わりに返す） *)
+(* \:5b9f\:884c\:7d50\:679c\:306e\:30b9\:30ad\:30fc\:30de\:60c5\:5831\:751f\:6210\:ff08\:6a5f\:5bc6\:4f9d\:5b58\:6642\:306b\:5024\:306e\:4ee3\:308f\:308a\:306b\:8fd4\:3059\:ff09 *)
 iMakeResultSchema[raw_] :=
   Module[{head, info},
     head = Head[raw];
     info = Which[
-      raw === Null, "(* [機密依存: 副作用のみ] *)",
-      head === Integer, "(* [機密依存データ: Integer] *)",
-      head === Real, "(* [機密依存データ: Real] *)",
-      head === Complex, "(* [機密依存データ: Complex] *)",
-      head === String, "(* [機密依存データ: String, " <>
+      raw === Null, "(* [\:6a5f\:5bc6\:4f9d\:5b58: \:526f\:4f5c\:7528\:306e\:307f] *)",
+      head === Integer, "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: Integer] *)",
+      head === Real, "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: Real] *)",
+      head === Complex, "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: Complex] *)",
+      head === String, "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: String, " <>
         ToString[StringLength[raw]] <> " chars] *)",
       head === List, Module[{dims = Quiet @ Check[Dimensions[raw], {Length[raw]}]},
-        "(* [機密依存データ: List, dimensions " <> ToString[dims] <> "] *)"],
+        "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: List, dimensions " <> ToString[dims] <> "] *)"],
       head === Association, Module[{keys = Take[Keys[raw], UpTo[10]]},
-        "(* [機密依存データ: Association, " <> ToString[Length[raw]] <>
+        "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: Association, " <> ToString[Length[raw]] <>
         " keys: {" <> StringRiffle[ToString /@ keys, ", "] <> "}] *)"],
-      head === Dataset, "(* [機密依存データ: Dataset] *)",
-      head === SparseArray, "(* [機密依存データ: SparseArray] *)",
+      head === Dataset, "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: Dataset] *)",
+      head === SparseArray, "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: SparseArray] *)",
       MatchQ[raw, _Image | _Graphics | _Graphics3D],
-        "(* [機密依存データ: " <> ToString[head] <> "] *)",
-      True, "(* [機密依存データ: " <> ToString[head] <> "] *)"
+        "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: " <> ToString[head] <> "] *)",
+      True, "(* [\:6a5f\:5bc6\:4f9d\:5b58\:30c7\:30fc\:30bf: " <> ToString[head] <> "] *)"
     ];
     info
   ];
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: NBMakeContextPacket
-   ════════════════════════════════════════════════════════ *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 Options[NBMakeContextPacket] = {
   "CellRange" -> All,
@@ -4737,22 +4736,22 @@ NBMakeContextPacket[nb_, accessSpec_Association, opts:OptionsPattern[]] :=
     maxCells  = OptionValue["MaxCells"];
     threshold = Lookup[accessSpec, "AccessLevel", 0.5];
     
-    (* notebook が有効か *)
+    (* notebook \:304c\:6709\:52b9\:304b *)
     If[nb === $Failed || nb === None,
       Return[<|"Input" -> None, "Cells" -> {},
         "SelectedCells" -> {}, "AccessSpec" -> accessSpec,
         "NotebookValid" -> False, "TotalCellCount" -> 0|>]];
     
-    (* 全セル数を先に取得（フィルタ前） *)
+    (* \:5168\:30bb\:30eb\:6570\:3092\:5148\:306b\:53d6\:5f97\:ff08\:30d5\:30a3\:30eb\:30bf\:524d\:ff09 *)
     totalCellCount = Quiet @ Check[NBAccess`NBCellCount[nb], 0];
     
-    (* セル読み取り — Phase 17 fix:
-       NBGetCells は整数インデックスのリストを返すため、
-       各インデックスからセル Association を構築する。
-       旧 NBGetContext と同等の機密処理を適用:
-       - 機密セル (PrivacyLevel > threshold) → テキスト非表示マーカー
-       - 機密変数を含む行 → iRedactConfidentialLines で墨消し
-       - 機密依存 Output → iOutputSchemaText でスキーマ情報のみ *)
+    (* \:30bb\:30eb\:8aad\:307f\:53d6\:308a \[LongDash] Phase 17 fix:
+       NBGetCells \:306f\:6574\:6570\:30a4\:30f3\:30c7\:30c3\:30af\:30b9\:306e\:30ea\:30b9\:30c8\:3092\:8fd4\:3059\:305f\:3081\:3001
+       \:5404\:30a4\:30f3\:30c7\:30c3\:30af\:30b9\:304b\:3089\:30bb\:30eb Association \:3092\:69cb\:7bc9\:3059\:308b\:3002
+       \:65e7 NBGetContext \:3068\:540c\:7b49\:306e\:6a5f\:5bc6\:51e6\:7406\:3092\:9069\:7528:
+       - \:6a5f\:5bc6\:30bb\:30eb (PrivacyLevel > threshold) \[RightArrow] \:30c6\:30ad\:30b9\:30c8\:975e\:8868\:793a\:30de\:30fc\:30ab\:30fc
+       - \:6a5f\:5bc6\:5909\:6570\:3092\:542b\:3080\:884c \[RightArrow] iRedactConfidentialLines \:3067\:58a8\:6d88\:3057
+       - \:6a5f\:5bc6\:4f9d\:5b58 Output \[RightArrow] iOutputSchemaText \:3067\:30b9\:30ad\:30fc\:30de\:60c5\:5831\:306e\:307f *)
     cells = Quiet @ Check[
       Module[{indices, cellAssocs = {}},
         indices = Range[Min[maxCells, totalCellCount]];
@@ -4766,33 +4765,33 @@ NBMakeContextPacket[nb_, accessSpec_Association, opts:OptionsPattern[]] :=
             NBAccess`NBCellStyle[nb, idx], "Unknown"];
           
           If[privLevel > threshold,
-            (* ── 機密セル: テキスト非表示 ── *)
+            (* \[HorizontalLine]\[HorizontalLine] \:6a5f\:5bc6\:30bb\:30eb: \:30c6\:30ad\:30b9\:30c8\:975e\:8868\:793a \[HorizontalLine]\[HorizontalLine] *)
             AppendTo[cellAssocs, <|
               "CellIndex" -> idx,
               "CellStyle" -> style,
-              "InputText" -> "(* [機密セル: 非表示] *)",
+              "InputText" -> "(* [\:6a5f\:5bc6\:30bb\:30eb: \:975e\:8868\:793a] *)",
               "PrivacyLevel" -> privLevel,
               "Confidential" -> True|>],
-            (* ── 非機密セル: 機密変数の墨消し処理 ── *)
+            (* \[HorizontalLine]\[HorizontalLine] \:975e\:6a5f\:5bc6\:30bb\:30eb: \:6a5f\:5bc6\:5909\:6570\:306e\:58a8\:6d88\:3057\:51e6\:7406 \[HorizontalLine]\[HorizontalLine] *)
             text = Quiet @ Check[
               NBAccess`NBCellGetText[nb, idx], ""];
             If[!StringQ[text], text = ""];
             text = StringTake[text, UpTo[500]];
             {redactedText, wasRedacted} =
               iRedactConfidentialLines[text];
-            (* 機密変数依存の Output かチェック *)
+            (* \:6a5f\:5bc6\:5909\:6570\:4f9d\:5b58\:306e Output \:304b\:30c1\:30a7\:30c3\:30af *)
             depTag = Quiet @ Check[
               NBAccess`NBCellGetTaggingRule[nb, idx,
                 {"claudecode", "dependent"}], False];
             If[TrueQ[depTag] && (style === "Output"),
-              (* 機密依存 Output: スキーマ情報のみ *)
+              (* \:6a5f\:5bc6\:4f9d\:5b58 Output: \:30b9\:30ad\:30fc\:30de\:60c5\:5831\:306e\:307f *)
               AppendTo[cellAssocs, <|
                 "CellIndex" -> idx,
                 "CellStyle" -> style,
                 "InputText" -> iOutputSchemaText[nb, idx],
                 "PrivacyLevel" -> privLevel,
                 "ConfidentialDependent" -> True|>],
-              (* 通常セル / 墨消し済みセル *)
+              (* \:901a\:5e38\:30bb\:30eb / \:58a8\:6d88\:3057\:6e08\:307f\:30bb\:30eb *)
               AppendTo[cellAssocs, <|
                 "CellIndex" -> idx,
                 "CellStyle" -> style,
@@ -4807,13 +4806,13 @@ NBMakeContextPacket[nb_, accessSpec_Association, opts:OptionsPattern[]] :=
       ],
       {}];
     
-    (* 選択セルインデックス *)
+    (* \:9078\:629e\:30bb\:30eb\:30a4\:30f3\:30c7\:30c3\:30af\:30b9 *)
     If[TrueQ[OptionValue["IncludeSelection"]],
       selectedIdx = Quiet @ Check[
         NBAccess`NBSelectedCellIndices[nb], {}]];
     
     packet = <|
-      "Input" -> None, (* caller が設定 *)
+      "Input" -> None, (* caller \:304c\:8a2d\:5b9a *)
       "Cells" -> cells,
       "SelectedCells" -> selectedIdx,
       "AccessSpec" -> accessSpec,
@@ -4825,23 +4824,23 @@ NBMakeContextPacket[nb_, accessSpec_Association, opts:OptionsPattern[]] :=
     packet
   ];
 
-(* ════════════════════════════════════════════════════════
-   Phase 11: Score → Advisory Routing
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Phase 11: Score \[RightArrow] Advisory Routing
    
-   数値スコアは access control の主体ではなく、
-   routing / audit / visibility の advisory 体系として位置づける。
-   将来的に半順序ラベルが access control の主体系となる。
-   ════════════════════════════════════════════════════════ *)
+   \:6570\:5024\:30b9\:30b3\:30a2\:306f access control \:306e\:4e3b\:4f53\:3067\:306f\:306a\:304f\:3001
+   routing / audit / visibility \:306e advisory \:4f53\:7cfb\:3068\:3057\:3066\:4f4d\:7f6e\:3065\:3051\:308b\:3002
+   \:5c06\:6765\:7684\:306b\:534a\:9806\:5e8f\:30e9\:30d9\:30eb\:304c access control \:306e\:4e3b\:4f53\:7cfb\:3068\:306a\:308b\:3002
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
-(* ── Routing Thresholds ── *)
+(* \[HorizontalLine]\[HorizontalLine] Routing Thresholds \[HorizontalLine]\[HorizontalLine] *)
 If[!AssociationQ[$NBRoutingThresholds],
   $NBRoutingThresholds = <|
-    "Cloud"   -> 0.5,  (* score < 0.5 → cloud LLM 候補 *)
-    "Private" -> 0.8   (* 0.5 <= score < 0.8 → private LLM 候補 *)
-                       (* 0.8 <= score → local only *)
+    "Cloud"   -> 0.5,  (* score < 0.5 \[RightArrow] cloud LLM \:5019\:88dc *)
+    "Private" -> 0.8   (* 0.5 <= score < 0.8 \[RightArrow] private LLM \:5019\:88dc *)
+                       (* 0.8 <= score \[RightArrow] local only *)
   |>];
 
-(* ── NBRouteDecision ── *)
+(* \[HorizontalLine]\[HorizontalLine] NBRouteDecision \[HorizontalLine]\[HorizontalLine] *)
 NBRouteDecision[score_?NumericQ] :=
   Module[{cloudTh, privateTh, route, reason},
     cloudTh   = Lookup[$NBRoutingThresholds, "Cloud", 0.5];
@@ -4867,12 +4866,12 @@ NBRouteDecision[accessSpec_Association] :=
   NBRouteDecision[Lookup[accessSpec, "AccessLevel",
     Lookup[accessSpec, "EffectiveRiskScore", 0.5]]];
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 14: NBInferExprRequirements
    
-   式が必要とするリソースを静的に推定する。
-   将来の label-aware validation の基盤。
-   ════════════════════════════════════════════════════════ *)
+   \:5f0f\:304c\:5fc5\:8981\:3068\:3059\:308b\:30ea\:30bd\:30fc\:30b9\:3092\:9759\:7684\:306b\:63a8\:5b9a\:3059\:308b\:3002
+   \:5c06\:6765\:306e label-aware validation \:306e\:57fa\:76e4\:3002
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 Options[NBInferExprRequirements] = {"Depth" -> Infinity};
 
@@ -4889,12 +4888,12 @@ NBInferExprRequirements[heldExpr_, accessSpec_Association,
     writeHeads = Select[heads, MemberQ[$NBApprovalHeads, #] &];
     hasSideEffects = Length[writeHeads] > 0;
     
-    (* セル参照の抽出: NBCellRead[nb, 3] → {3} *)
+    (* \:30bb\:30eb\:53c2\:7167\:306e\:62bd\:51fa: NBCellRead[nb, 3] \[RightArrow] {3} *)
     cellRefs = Cases[heldExpr,
       HoldPattern[_Symbol[_, idx_Integer]] :> idx, {0, Infinity}];
     readCells  = DeleteDuplicates[cellRefs];
     
-    (* 必要アクセスレベル推定 *)
+    (* \:5fc5\:8981\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:63a8\:5b9a *)
     requiredLevel = Which[
       Length[writeHeads] > 0, 0.8,
       MemberQ[heads, "NBCellPrivacyLevel" | "NBGetConfidentialTag"], 0.7,
@@ -4903,18 +4902,18 @@ NBInferExprRequirements[heldExpr_, accessSpec_Association,
     <|"ReadHeads"            -> readHeads,
       "WriteHeads"           -> writeHeads,
       "ReadCells"            -> readCells,
-      "WriteCells"           -> {},  (* TODO: 書き込み先特定 *)
+      "WriteCells"           -> {},  (* TODO: \:66f8\:304d\:8fbc\:307f\:5148\:7279\:5b9a *)
       "HasSideEffects"       -> hasSideEffects,
       "RequiredAccessLevel"  -> requiredLevel,
       "AllHeads"             -> heads,
       "RouteAdvice"          -> NBRouteDecision[requiredLevel]|>
   ];
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 14: NBReleaseResult
    
-   実行結果を redact + routing check して安全に release する。
-   ════════════════════════════════════════════════════════ *)
+   \:5b9f\:884c\:7d50\:679c\:3092 redact + routing check \:3057\:3066\:5b89\:5168\:306b release \:3059\:308b\:3002
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 Options[NBReleaseResult] = {
   "Sink" -> "CloudLLM",
@@ -4924,11 +4923,11 @@ Options[NBReleaseResult] = {
 NBReleaseResult[result_Association, accessSpec_Association,
     opts:OptionsPattern[]] :=
   Module[{redacted, sink, route, score},
-    (* まず redact *)
+    (* \:307e\:305a redact *)
     redacted = NBRedactExecutionResult[result, accessSpec,
       "MaxSummaryLength" -> OptionValue["MaxSummaryLength"]];
     
-    (* routing チェック *)
+    (* routing \:30c1\:30a7\:30c3\:30af *)
     sink  = OptionValue["Sink"];
     route = NBRouteDecision[accessSpec];
     score = Lookup[route, "EffectiveRiskScore", 0.5];
@@ -4954,11 +4953,11 @@ NBReleaseResult[result_Association, accessSpec_Association,
     ]
   ];
 
-(* ════════════════════════════════════════════════════════
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 14: NBMakeRetryPacket
    
-   失敗情報から秘密を除去した安全な retry packet を構築する。
-   ════════════════════════════════════════════════════════ *)
+   \:5931\:6557\:60c5\:5831\:304b\:3089\:79d8\:5bc6\:3092\:9664\:53bb\:3057\:305f\:5b89\:5168\:306a retry packet \:3092\:69cb\:7bc9\:3059\:308b\:3002
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 NBMakeRetryPacket[failureAssoc_Association, accessSpec_Association] :=
   Module[{safePacket, secrets, confSyms},
@@ -4970,7 +4969,7 @@ NBMakeRetryPacket[failureAssoc_Association, accessSpec_Association] :=
       "Timestamp"         -> AbsoluteTime[]
     |>;
     
-    (* 秘密情報の redaction *)
+    (* \:79d8\:5bc6\:60c5\:5831\:306e redaction *)
     secrets  = Lookup[accessSpec, "Secrets", {}];
     confSyms = Lookup[accessSpec, "ConfidentialSymbols",
       If[ListQ[$NBConfidentialSymbols], $NBConfidentialSymbols, {}]];
@@ -4982,7 +4981,7 @@ NBMakeRetryPacket[failureAssoc_Association, accessSpec_Association] :=
         {s, secrets}];
       safePacket["VisibleExplanation"] = explanation];
     
-    (* SanitizedExpr は文字列化して秘密を除去 *)
+    (* SanitizedExpr \:306f\:6587\:5b57\:5217\:5316\:3057\:3066\:79d8\:5bc6\:3092\:9664\:53bb *)
     If[KeyExistsQ[failureAssoc, "SanitizedExpr"],
       Module[{exprStr = ToString[failureAssoc["SanitizedExpr"]]},
         Do[exprStr = StringReplace[exprStr, s -> "[REDACTED]"],
@@ -4992,15 +4991,15 @@ NBMakeRetryPacket[failureAssoc_Association, accessSpec_Association] :=
     safePacket
   ];
 
-(* ════════════════════════════════════════════════════════
-   Phase 14: Label Algebra (最小 API)
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Phase 14: Label Algebra (\:6700\:5c0f API)
    
-   DLM 風の半順序ラベル体系。
-   初期実装は reader policy ベース。
-   将来的に AccessLevel 数値に代わる主体系となる。
-   ════════════════════════════════════════════════════════ *)
+   DLM \:98a8\:306e\:534a\:9806\:5e8f\:30e9\:30d9\:30eb\:4f53\:7cfb\:3002
+   \:521d\:671f\:5b9f\:88c5\:306f reader policy \:30d9\:30fc\:30b9\:3002
+   \:5c06\:6765\:7684\:306b AccessLevel \:6570\:5024\:306b\:4ee3\:308f\:308b\:4e3b\:4f53\:7cfb\:3068\:306a\:308b\:3002
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
-(* ── Principal 管理 ── *)
+(* \[HorizontalLine]\[HorizontalLine] Principal \:7ba1\:7406 \[HorizontalLine]\[HorizontalLine] *)
 
 If[!AssociationQ[$iNBPrincipals], $iNBPrincipals = <||>];
 If[!AssociationQ[$iNBActsFor],    $iNBActsFor = <||>];
@@ -5027,11 +5026,11 @@ NBGrantActsFor[p_String, q_String] :=
 
 NBActsForQ[p_String, q_String] :=
   Catch[Module[{visited, queue, cur, delegates},
-    (* 自己同一性 *)
+    (* \:81ea\:5df1\:540c\:4e00\:6027 *)
     If[p === q, Throw[True, "actsfor"]];
-    (* 直接委任 *)
+    (* \:76f4\:63a5\:59d4\:4efb *)
     If[TrueQ[$iNBActsFor[{p, q}]], Throw[True, "actsfor"]];
-    (* 推移的閉包: BFS で p → ... → q のパスを探索 *)
+    (* \:63a8\:79fb\:7684\:9589\:5305: BFS \:3067 p \[RightArrow] ... \[RightArrow] q \:306e\:30d1\:30b9\:3092\:63a2\:7d22 *)
     visited = {p}; queue = {p};
     While[Length[queue] > 0,
       cur = First[queue];
@@ -5048,15 +5047,15 @@ NBActsForQ[p_String, q_String] :=
     False
   ], "actsfor"];
 
-(* ── Label 構造 ── *)
+(* \[HorizontalLine]\[HorizontalLine] Label \:69cb\:9020 \[HorizontalLine]\[HorizontalLine] *)
 
 (*
-  Label 形式:
+  Label \:5f62\:5f0f:
   <|"ReaderPolicies" -> <|owner1 -> {reader1, ...}, ...|>,
     "Categories"     -> {"Grades", "MethodIP", ...}|>
   
-  ReaderPolicies が空 = public (bottom)
-  ReaderPolicies が <|"*" -> {}|> = 誰も読めない (top)
+  ReaderPolicies \:304c\:7a7a = public (bottom)
+  ReaderPolicies \:304c <|"*" -> {}|> = \:8ab0\:3082\:8aad\:3081\:306a\:3044 (top)
 *)
 
 NBLabelQ[label_] := AssociationQ[label] &&
@@ -5073,7 +5072,7 @@ NBLabelJoin[l1_?NBLabelQ, l2_?NBLabelQ] :=
     rp1 = l1["ReaderPolicies"];
     rp2 = l2["ReaderPolicies"];
     owners = DeleteDuplicates[Join[Keys[rp1], Keys[rp2]]];
-    (* Join = 各 owner の reader set の交差 (より制約的) *)
+    (* Join = \:5404 owner \:306e reader set \:306e\:4ea4\:5dee (\:3088\:308a\:5236\:7d04\:7684) *)
     merged = Association @ Map[
       Function[{owner},
         owner -> Intersection[
@@ -5096,7 +5095,7 @@ NBLabelMeet[l1_?NBLabelQ, l2_?NBLabelQ] :=
     rp1 = l1["ReaderPolicies"];
     rp2 = l2["ReaderPolicies"];
     owners = DeleteDuplicates[Join[Keys[rp1], Keys[rp2]]];
-    (* Meet = 各 owner の reader set の和集合 (より緩い) *)
+    (* Meet = \:5404 owner \:306e reader set \:306e\:548c\:96c6\:5408 (\:3088\:308a\:7de9\:3044) *)
     merged = Association @ Map[
       Function[{owner},
         owner -> DeleteDuplicates[Join[
@@ -5113,12 +5112,12 @@ NBLabelLEQ[l1_?NBLabelQ, l2_?NBLabelQ] :=
   Module[{rp1, rp2},
     rp1 = l1["ReaderPolicies"];
     rp2 = l2["ReaderPolicies"];
-    (* l1 ⪯ l2 iff l1 の全 owner について、
-       l2 にも同 owner があり readers(l2) ⊆ readers(l1)。
-       つまり l2 が l1 以上に制約的なら flow OK。
-       Keys[rp1] で反復する: l1 の各 owner が l2 にも存在し、
-       l2 の readers が l1 の readers の部分集合であることを確認。 *)
-    If[Length[rp1] === 0, Return[True]]; (* bottom ⪯ anything *)
+    (* l1 \[PrecedesEqual] l2 iff l1 \:306e\:5168 owner \:306b\:3064\:3044\:3066\:3001
+       l2 \:306b\:3082\:540c owner \:304c\:3042\:308a readers(l2) \[SubsetEqual] readers(l1)\:3002
+       \:3064\:307e\:308a l2 \:304c l1 \:4ee5\:4e0a\:306b\:5236\:7d04\:7684\:306a\:3089 flow OK\:3002
+       Keys[rp1] \:3067\:53cd\:5fa9\:3059\:308b: l1 \:306e\:5404 owner \:304c l2 \:306b\:3082\:5b58\:5728\:3057\:3001
+       l2 \:306e readers \:304c l1 \:306e readers \:306e\:90e8\:5206\:96c6\:5408\:3067\:3042\:308b\:3053\:3068\:3092\:78ba\:8a8d\:3002 *)
+    If[Length[rp1] === 0, Return[True]]; (* bottom \[PrecedesEqual] anything *)
     AllTrue[Keys[rp1],
       Function[{owner},
         KeyExistsQ[rp2, owner] &&
@@ -5127,7 +5126,7 @@ NBLabelLEQ[l1_?NBLabelQ, l2_?NBLabelQ] :=
           Lookup[rp2, owner, {}]]]]
   ];
 
-(* ── Flow / Declassify 判定 ── *)
+(* \[HorizontalLine]\[HorizontalLine] Flow / Declassify \:5224\:5b9a \[HorizontalLine]\[HorizontalLine] *)
 
 NBCanFlowToQ[srcLabel_?NBLabelQ, dstLabel_?NBLabelQ] :=
   NBLabelLEQ[srcLabel, dstLabel];
@@ -5137,13 +5136,13 @@ NBCanDeclassifyQ[srcLabel_?NBLabelQ, dstLabel_?NBLabelQ,
   Module[{principal, hasAuthority},
     principal = Lookup[req, "Principal", None];
     If[!StringQ[principal], Return[False]];
-    (* principal が src の全 owner に対して acts-for を持つか *)
+    (* principal \:304c src \:306e\:5168 owner \:306b\:5bfe\:3057\:3066 acts-for \:3092\:6301\:3064\:304b *)
     hasAuthority = AllTrue[Keys[srcLabel["ReaderPolicies"]],
       NBActsForQ[principal, #] &];
     hasAuthority
   ];
 
-(* ── EffectiveLabel ── *)
+(* \[HorizontalLine]\[HorizontalLine] EffectiveLabel \[HorizontalLine]\[HorizontalLine] *)
 
 NBEffectiveLabel[obj_Association, req_Association] :=
   Module[{objLabel, containerLabel, sinkLabel},
@@ -5155,34 +5154,34 @@ NBEffectiveLabel[obj_Association, req_Association] :=
     NBLabelJoin[objLabel, containerLabel]
   ];
 
-(* ════════════════════════════════════════════════════════
-   Phase 15: NBAuthorize 分離
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Phase 15: NBAuthorize \:5206\:96e2
    
-   NBAuthorize を PolicyGate / ScoreGate / EnvironmentGate に
-   内部分離し、構造化された AccessDecision を返す。
+   NBAuthorize \:3092 PolicyGate / ScoreGate / EnvironmentGate \:306b
+   \:5185\:90e8\:5206\:96e2\:3057\:3001\:69cb\:9020\:5316\:3055\:308c\:305f AccessDecision \:3092\:8fd4\:3059\:3002
    
-   設計原則:
-   - PolicyGate (label-based): authoritative — flow 判定の主体系
-   - ScoreGate (score-based): advisory — routing 判定の副体系
-   - EnvironmentGate: 環境制約チェック
+   \:8a2d\:8a08\:539f\:5247:
+   - PolicyGate (label-based): authoritative \[LongDash] flow \:5224\:5b9a\:306e\:4e3b\:4f53\:7cfb
+   - ScoreGate (score-based): advisory \[LongDash] routing \:5224\:5b9a\:306e\:526f\:4f53\:7cfb
+   - EnvironmentGate: \:74b0\:5883\:5236\:7d04\:30c1\:30a7\:30c3\:30af
    
-   返り値 AccessDecision:
+   \:8fd4\:308a\:5024 AccessDecision:
    <|"Decision" -> "Permit"|"Deny"|"Screen"|"RequireApproval",
      "ReasonClass" -> String,
      "RequiredAction" -> "None"|"RepairProposal"|"HumanApproval"|"Declassify",
      "VisibleExplanation" -> String,
      "RouteAdvice" -> <|...|>,
      "GateResults" -> <|"Policy"->..., "Score"->..., "Environment"->...|>|>
-   ════════════════════════════════════════════════════════ *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
-(* ── PolicyGate: 半順序ラベルに基づく flow 判定 ── *)
+(* \[HorizontalLine]\[HorizontalLine] PolicyGate: \:534a\:9806\:5e8f\:30e9\:30d9\:30eb\:306b\:57fa\:3065\:304f flow \:5224\:5b9a \[HorizontalLine]\[HorizontalLine] *)
 
 NBPolicyGate[obj_Association, req_Association] :=
   Module[{effLabel, sinkLabel, canFlow, principal, canDecl},
     effLabel  = NBEffectiveLabel[obj, req];
     sinkLabel = Lookup[req, "SinkLabel", NBLabelBottom[]];
     
-    (* ラベルが設定されていない場合は通過（後方互換） *)
+    (* \:30e9\:30d9\:30eb\:304c\:8a2d\:5b9a\:3055\:308c\:3066\:3044\:306a\:3044\:5834\:5408\:306f\:901a\:904e\:ff08\:5f8c\:65b9\:4e92\:63db\:ff09 *)
     If[!NBLabelQ[effLabel] || !NBLabelQ[sinkLabel],
       Return[<|"Gate" -> "Policy", "Decision" -> "Pass",
         "Reason" -> "NoLabelsConfigured"|>]];
@@ -5192,7 +5191,7 @@ NBPolicyGate[obj_Association, req_Association] :=
       Return[<|"Gate" -> "Policy", "Decision" -> "Pass",
         "Reason" -> "FlowPermitted"|>]];
     
-    (* flow 不可 → declassify 可能か確認 *)
+    (* flow \:4e0d\:53ef \[RightArrow] declassify \:53ef\:80fd\:304b\:78ba\:8a8d *)
     principal = Lookup[req, "Principal", None];
     If[StringQ[principal],
       canDecl = NBCanDeclassifyQ[effLabel, sinkLabel, req];
@@ -5206,7 +5205,7 @@ NBPolicyGate[obj_Association, req_Association] :=
       "RequiredAction" -> "None"|>
   ];
 
-(* ── ScoreGate: 数値スコアに基づく advisory routing ── *)
+(* \[HorizontalLine]\[HorizontalLine] ScoreGate: \:6570\:5024\:30b9\:30b3\:30a2\:306b\:57fa\:3065\:304f advisory routing \[HorizontalLine]\[HorizontalLine] *)
 
 NBScoreGate[obj_Association, req_Association] :=
   Module[{score, sink, route, cloudTh, privateTh},
@@ -5219,17 +5218,17 @@ NBScoreGate[obj_Association, req_Association] :=
     privateTh = Lookup[$NBRoutingThresholds, "Private", 0.8];
     
     Which[
-      (* sink が CloudLLM だがスコアが高すぎる *)
+      (* sink \:304c CloudLLM \:3060\:304c\:30b9\:30b3\:30a2\:304c\:9ad8\:3059\:304e\:308b *)
       sink === "CloudLLM" && score >= cloudTh,
         <|"Gate" -> "Score", "Decision" -> "Screen",
           "Reason" -> "RiskAboveCloudThreshold",
           "Score" -> score, "Route" -> route|>,
-      (* sink が PrivateLLM だがスコアが高すぎる *)
+      (* sink \:304c PrivateLLM \:3060\:304c\:30b9\:30b3\:30a2\:304c\:9ad8\:3059\:304e\:308b *)
       sink === "PrivateLLM" && score >= privateTh,
         <|"Gate" -> "Score", "Decision" -> "Screen",
           "Reason" -> "RiskAbovePrivateThreshold",
           "Score" -> score, "Route" -> route|>,
-      (* 通過 *)
+      (* \:901a\:904e *)
       True,
         <|"Gate" -> "Score", "Decision" -> "Pass",
           "Reason" -> "ScoreWithinThreshold",
@@ -5237,7 +5236,7 @@ NBScoreGate[obj_Association, req_Association] :=
     ]
   ];
 
-(* ── EnvironmentGate: 実行環境制約チェック ── *)
+(* \[HorizontalLine]\[HorizontalLine] EnvironmentGate: \:5b9f\:884c\:74b0\:5883\:5236\:7d04\:30c1\:30a7\:30c3\:30af \[HorizontalLine]\[HorizontalLine] *)
 
 NBEnvironmentGate[obj_Association, req_Association] :=
   Module[{env, sink, principal, allowedSinks, deniedEnvs},
@@ -5245,7 +5244,7 @@ NBEnvironmentGate[obj_Association, req_Association] :=
     sink      = Lookup[req, "Sink", "CloudLLM"];
     principal = Lookup[req, "Principal", None];
     
-    (* 環境制約: 将来拡張ポイント *)
+    (* \:74b0\:5883\:5236\:7d04: \:5c06\:6765\:62e1\:5f35\:30dd\:30a4\:30f3\:30c8 *)
     allowedSinks = Lookup[obj, "AllowedSinks", {"CloudLLM", "PrivateLLM", "LocalOnly", "Notebook"}];
     deniedEnvs   = Lookup[obj, "DeniedEnvironments", {}];
     
@@ -5264,21 +5263,21 @@ NBEnvironmentGate[obj_Association, req_Association] :=
     ]
   ];
 
-(* ── NBAuthorize: 統合判定 ── *)
+(* \[HorizontalLine]\[HorizontalLine] NBAuthorize: \:7d71\:5408\:5224\:5b9a \[HorizontalLine]\[HorizontalLine] *)
 
 NBAuthorize[obj_Association, req_Association] :=
   Module[{policyResult, scoreResult, envResult, decision, reasonClass,
           requiredAction, explanation},
     
-    (* 各ゲートを順番に実行 *)
+    (* \:5404\:30b2\:30fc\:30c8\:3092\:9806\:756a\:306b\:5b9f\:884c *)
     policyResult = NBPolicyGate[obj, req];
     scoreResult  = NBScoreGate[obj, req];
     envResult    = NBEnvironmentGate[obj, req];
     
-    (* 判定統合: 最も制約の厳しい結果を採用
-       優先順位: Deny > RequireApproval > Screen > Pass *)
+    (* \:5224\:5b9a\:7d71\:5408: \:6700\:3082\:5236\:7d04\:306e\:53b3\:3057\:3044\:7d50\:679c\:3092\:63a1\:7528
+       \:512a\:5148\:9806\:4f4d: Deny > RequireApproval > Screen > Pass *)
     Which[
-      (* いずれかが Deny → 全体 Deny *)
+      (* \:3044\:305a\:308c\:304b\:304c Deny \[RightArrow] \:5168\:4f53 Deny *)
       policyResult["Decision"] === "Deny",
         decision       = "Deny";
         reasonClass    = policyResult["Reason"];
@@ -5297,7 +5296,7 @@ NBAuthorize[obj_Association, req_Association] :=
         requiredAction = Lookup[policyResult, "RequiredAction", "HumanApproval"];
         explanation    = "Policy gate requires approval: " <> reasonClass,
       
-      (* Score が Screen → advisory warning だが通過 *)
+      (* Score \:304c Screen \[RightArrow] advisory warning \:3060\:304c\:901a\:904e *)
       scoreResult["Decision"] === "Screen",
         decision       = "Screen";
         reasonClass    = scoreResult["Reason"];
@@ -5305,7 +5304,7 @@ NBAuthorize[obj_Association, req_Association] :=
         explanation    = "Score gate screening: " <> reasonClass <>
           " (score=" <> ToString[Lookup[scoreResult, "Score", "?"]] <> ")",
       
-      (* 全 Pass *)
+      (* \:5168 Pass *)
       True,
         decision       = "Permit";
         reasonClass    = "None";
@@ -5326,20 +5325,20 @@ NBAuthorize[obj_Association, req_Association] :=
     |>
   ];
 
-(* ════════════════════════════════════════════════════════
-   Phase 20: Function Security — 実装
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Phase 20: Function Security \[LongDash] \:5b9f\:88c5
    
-   関数ごとに定義ラベル・実行ポリシー・リリースポリシーを
-   登録し、GuardedApply で安全な実行、Declassify で
-   結果のラベル引き下げを行う。
+   \:95a2\:6570\:3054\:3068\:306b\:5b9a\:7fa9\:30e9\:30d9\:30eb\:30fb\:5b9f\:884c\:30dd\:30ea\:30b7\:30fc\:30fb\:30ea\:30ea\:30fc\:30b9\:30dd\:30ea\:30b7\:30fc\:3092
+   \:767b\:9332\:3057\:3001GuardedApply \:3067\:5b89\:5168\:306a\:5b9f\:884c\:3001Declassify \:3067
+   \:7d50\:679c\:306e\:30e9\:30d9\:30eb\:5f15\:304d\:4e0b\:3052\:3092\:884c\:3046\:3002
    
-   設計原則:
-   - 定義ラベル (DefinitionLabel): コード自体の閲覧可否
-   - 実行ポリシー (ExecPolicy): Open / Guarded / Denied
-   - リリースポリシー (ReleasePolicy): 結果のラベル引き下げ条件
-   - GuardedApply は flow チェック後に実行し結果にラベルを付与
-   - Declassify は acts-for + ReleasePolicy の両方を要求
-   ════════════════════════════════════════════════════════ *)
+   \:8a2d\:8a08\:539f\:5247:
+   - \:5b9a\:7fa9\:30e9\:30d9\:30eb (DefinitionLabel): \:30b3\:30fc\:30c9\:81ea\:4f53\:306e\:95b2\:89a7\:53ef\:5426
+   - \:5b9f\:884c\:30dd\:30ea\:30b7\:30fc (ExecPolicy): Open / Guarded / Denied
+   - \:30ea\:30ea\:30fc\:30b9\:30dd\:30ea\:30b7\:30fc (ReleasePolicy): \:7d50\:679c\:306e\:30e9\:30d9\:30eb\:5f15\:304d\:4e0b\:3052\:6761\:4ef6
+   - GuardedApply \:306f flow \:30c1\:30a7\:30c3\:30af\:5f8c\:306b\:5b9f\:884c\:3057\:7d50\:679c\:306b\:30e9\:30d9\:30eb\:3092\:4ed8\:4e0e
+   - Declassify \:306f acts-for + ReleasePolicy \:306e\:4e21\:65b9\:3092\:8981\:6c42
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 If[!AssociationQ[$iFunctionSecurityDB], $iFunctionSecurityDB = <||>];
 
@@ -5378,12 +5377,12 @@ NBFunctionReleasePolicy[f_Symbol] :=
       <||>]
   ];
 
-(* ── GuardedApply: ポリシーチェック付き関数実行 ──
-   1. ExecPolicy が "Denied" → 即拒否
-   2. ExecPolicy が "Open" → 通常実行、結果にラベル付与
-   3. ExecPolicy が "Guarded" → flow チェック → 実行 → ラベル付与
+(* \[HorizontalLine]\[HorizontalLine] GuardedApply: \:30dd\:30ea\:30b7\:30fc\:30c1\:30a7\:30c3\:30af\:4ed8\:304d\:95a2\:6570\:5b9f\:884c \[HorizontalLine]\[HorizontalLine]
+   1. ExecPolicy \:304c "Denied" \[RightArrow] \:5373\:62d2\:5426
+   2. ExecPolicy \:304c "Open" \[RightArrow] \:901a\:5e38\:5b9f\:884c\:3001\:7d50\:679c\:306b\:30e9\:30d9\:30eb\:4ed8\:4e0e
+   3. ExecPolicy \:304c "Guarded" \[RightArrow] flow \:30c1\:30a7\:30c3\:30af \[RightArrow] \:5b9f\:884c \[RightArrow] \:30e9\:30d9\:30eb\:4ed8\:4e0e
    
-   返り値: <|"Success"->Bool, "Result"->...,
+   \:8fd4\:308a\:5024: <|"Success"->Bool, "Result"->...,
              "ResultLabel"->label, "Error"->None|String|> *)
 GuardedApply[req_Association, f_Symbol, args___] :=
   Module[{policy, defLabel, reqLabel, rawResult, resultLabel,
@@ -5391,28 +5390,28 @@ GuardedApply[req_Association, f_Symbol, args___] :=
     policy   = NBFunctionExecPolicy[f];
     defLabel = NBFunctionDefinitionLabel[f];
     
-    (* Denied → 即拒否 *)
+    (* Denied \[RightArrow] \:5373\:62d2\:5426 *)
     If[policy === "Denied",
       Return[<|"Success" -> False,
         "Error" -> "ExecPolicy=Denied for " <> SymbolName[f],
         "ResultLabel" -> NBLabelTop[]|>]];
     
-    (* Guarded → flow チェック *)
+    (* Guarded \[RightArrow] flow \:30c1\:30a7\:30c3\:30af *)
     If[policy === "Guarded",
       reqLabel = Lookup[req, "SinkLabel", NBLabelBottom[]];
       If[NBLabelQ[defLabel] && NBLabelQ[reqLabel] &&
          !NBCanFlowToQ[defLabel, reqLabel],
-        (* flow 不可 → declassify 可能か *)
+        (* flow \:4e0d\:53ef \[RightArrow] declassify \:53ef\:80fd\:304b *)
         If[!NBCanDeclassifyQ[defLabel, reqLabel, req],
           Return[<|"Success" -> False,
             "Error" -> "PolicyFlowViolation: cannot flow " <>
               SymbolName[f] <> " result to sink",
             "ResultLabel" -> defLabel|>]]]];
     
-    (* 実行 *)
+    (* \:5b9f\:884c *)
     rawResult = Quiet @ Check[f[args], $Failed];
     
-    (* 結果ラベル: 関数の定義ラベル以上 *)
+    (* \:7d50\:679c\:30e9\:30d9\:30eb: \:95a2\:6570\:306e\:5b9a\:7fa9\:30e9\:30d9\:30eb\:4ee5\:4e0a *)
     resultLabel = defLabel;
     releasePolicy = NBFunctionReleasePolicy[f];
     
@@ -5424,12 +5423,12 @@ GuardedApply[req_Association, f_Symbol, args___] :=
         "Execution failed", None]|>
   ];
 
-(* ── Declassify: ラベル引き下げ ──
-   条件:
-   1. req の Principal が src の全 owner に acts-for を持つ
-   2. releaseSpec が ReleasePolicy の条件を満たす
+(* \[HorizontalLine]\[HorizontalLine] Declassify: \:30e9\:30d9\:30eb\:5f15\:304d\:4e0b\:3052 \[HorizontalLine]\[HorizontalLine]
+   \:6761\:4ef6:
+   1. req \:306e Principal \:304c src \:306e\:5168 owner \:306b acts-for \:3092\:6301\:3064
+   2. releaseSpec \:304c ReleasePolicy \:306e\:6761\:4ef6\:3092\:6e80\:305f\:3059
    
-   返り値: <|"Success"->Bool, "DeclassifiedLabel"->label,
+   \:8fd4\:308a\:5024: <|"Success"->Bool, "DeclassifiedLabel"->label,
              "Error"->None|String|> *)
 Declassify[obj_Association, req_Association, releaseSpec_Association] :=
   Module[{srcLabel, dstLabel, principal, releasePolicy,
@@ -5439,7 +5438,7 @@ Declassify[obj_Association, req_Association, releaseSpec_Association] :=
     dstLabel = Lookup[releaseSpec, "TargetLabel", NBLabelBottom[]];
     principal = Lookup[req, "Principal", None];
     
-    (* Principal の権限チェック *)
+    (* Principal \:306e\:6a29\:9650\:30c1\:30a7\:30c3\:30af *)
     If[!StringQ[principal],
       Return[<|"Success" -> False,
         "Error" -> "No principal in request",
@@ -5451,7 +5450,7 @@ Declassify[obj_Association, req_Association, releaseSpec_Association] :=
           " cannot declassify",
         "DeclassifiedLabel" -> srcLabel|>]];
     
-    (* ReleasePolicy 条件チェック *)
+    (* ReleasePolicy \:6761\:4ef6\:30c1\:30a7\:30c3\:30af *)
     releasePolicy = Lookup[obj, "ReleasePolicy", <||>];
     requiredFields = Lookup[releasePolicy, "RequiredFields", {}];
     missingFields = Select[requiredFields,
