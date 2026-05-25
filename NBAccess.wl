@@ -241,8 +241,20 @@ NBFileWriteAllCells::usage =
 (* ---- ObjectSpec API ---- *)
 NBFileSpec::usage =
   "NBFileSpec[path] \:306f\:30d5\:30a1\:30a4\:30eb\:306e\:30e1\:30bf\:60c5\:5831\:3068 PrivacyLevel \:3092 Association \:3067\:8fd4\:3059\:3002\n" <>
-  "PrivacyLevel: 0.5=\:30af\:30e9\:30a6\:30c9LLM\:53ef, 1.0=\:30ed\:30fc\:30ab\:30eb\:306e\:307f, {0.5,1.0}=\:6df7\:5728(.nb)\:3002\n" <>
+  "PrivacyLevel: <0.5=\:30af\:30e9\:30a6\:30c9LLM\:53ef, >=0.5=\:30ed\:30fc\:30ab\:30eb\:306e\:307f, {0.5,1.0}=\:6df7\:5728(.nb)\:3002\n" <>
   "\:4f8b: NBFileSpec[\"C:\\\\path\\\\file.nb\"]";
+
+NBFileSpecCacheClear::usage =
+  "NBFileSpecCacheClear[] clears the NBFileSpec base/projection caches introduced in Phase 4.3.";
+
+NBNormalizePath::usage =
+  "NBNormalizePath[path] \:306f\:7d76\:5bfe\:30d1\:30b9\:3092\:3001\:8907\:6570 PC \:9593\:3067\:5b89\:5b9a\:306a\:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:60c5\:5831\:306e Association \:306b\:6b63\:898f\:5316\:3059\:308b\:3002\n" <>
+  "\:623b\:308a\:5024: <|\"Kind\", \"RootId\", \"Parts\", \"SymbolicPath\", \"PhysicalPath\", \"ResolutionStatus\", \"MatchedBy\"|>\:3002\n" <>
+  "  ResolutionStatus: \"ResolvedOnThisPC\" (\:73fe PC \:5b9f\:4f53\:30eb\:30fc\:30c8\:914d\:4e0b) | \"AliasOnly\" (\:5225 PC \:30a8\:30a4\:30ea\:30a2\:30b9\:306b\:306e\:307f\:4e00\:81f4) | \"Unrooted\" (\:3069\:306e\:30eb\:30fc\:30c8\:306b\:3082\:975e\:8a72\:5f53)\:3002\n" <>
+  "  MatchedBy: \"LocalRoot\" | \"Alias\" | \"None\"\:3002\n" <>
+  "SourceVault \:304c\:30ed\:30fc\:30c9\:6e08\:307f\:306a\:3089 iSVSymbolicPath \:306e\:30af\:30ed\:30b9 PC \:6b63\:898f\:5316 (\:30a8\:30a4\:30ea\:30a2\:30b9\:5bfe\:5fdc) \:3092\:5229\:7528\:3059\:308b\:3002\n" <>
+  "\:91cd\:8981: \:623b\:308a\:5024\:306f\:540c\:4e00\:6027 (identity) \:306e\:305f\:3081\:306e\:60c5\:5831\:3067\:3042\:308a\:3001\:30a2\:30af\:30bb\:30b9\:6a29\:9650\:3092\:4e0e\:3048\:308b\:3082\:306e\:3067\:306f\:306a\:3044\:3002\n" <>
+  "\:6a29\:9650\:5224\:5b9a\:306f\:5fc5\:305a PhysicalPath \:3092\:73fe PC \:3067\:89e3\:6c7a\:30fb\:5b9f\:5728\:78ba\:8a8d\:3057\:305f\:4e0a\:3067 access mode \:3068 privacy \:3092\:898b\:308b\:3053\:3068 (rule 104)\:3002";
 
 NBValueSpec::usage =
   "NBValueSpec[expr, privacyLevel] \:306f\:5024\:306e\:578b\:60c5\:5831\:3068 PrivacyLevel \:3092\:8fd4\:3059\:3002\n" <>
@@ -275,7 +287,17 @@ NBSetConfidentialTag::usage =
   "NBSetConfidentialTag[nb, cellIdx, val] \:306f\:30bb\:30eb\:306e\:6a5f\:5bc6\:30bf\:30b0\:3092 val (True/False) \:306b\:8a2d\:5b9a\:3059\:308b\:3002";
 
 NBMarkCellConfidential::usage =
-  "NBMarkCellConfidential[nb, cellIdx] \:306f\:30bb\:30eb\:306b\:6a5f\:5bc6\:30de\:30fc\:30af\:ff08\:8d64\:80cc\:666f + WarningSign\:ff09\:3092\:4ed8\:3051\:308b\:3002";
+  "NBMarkCellConfidential[nb, cellIdx] \:306f\:30bb\:30eb\:3092\:6a5f\:5bc6 (PrivacyLevel 1.0) \:306b\:8a2d\:5b9a\:3057\:8d64\:80cc\:666f\:30de\:30fc\:30af\:3092\:4ed8\:3051\:308b\:3002\n" <>
+  "NBMarkCellConfidential[nb, cellIdx, level] \:306f\:30bb\:30eb\:306e PrivacyLevel \:3092\:4efb\:610f\:306e\:6570\:5024 (0.0-1.0) \:306b\:8a2d\:5b9a\:3059\:308b\:3002\n" <>
+  "level > 0.5 \:306e\:3068\:304d\:8d64\:80cc\:666f\:30de\:30fc\:30af\:3092\:4ed8\:3051\:3001level <= 0.5 \:306a\:3089\:30de\:30fc\:30af\:3092\:5916\:3059\:3002\n" <>
+  "Options: PrivacySpec -> Automatic\:3002\n" <>
+  "\:3053\:306e\:95a2\:6570\:306f $NBApprovalHeads \:306b\:767b\:9332\:3055\:308c\:3066\:304a\:308a\:3001\:5b9f\:884c\:6642\:306b\:627f\:8a8d\:30b2\:30fc\:30c8\:3092\:767a\:706b\:3055\:305b\:308b\:3002";
+
+NBSetSnapshotPrivacyLevel::usage =
+  "NBSetSnapshotPrivacyLevel[snapshotId, level] \:306f SourceVault snapshot \:306e PrivacyLevel \:3092\:8a2d\:5b9a\:3059\:308b\:3002\n" <>
+  "snapshot \:306e PrivacyLevel \:306f\:901a\:5e38\:30bb\:30eb\:5224\:5b9a\:304b\:3089\:306e\:5c0e\:51fa\:5024\:3060\:304c\:3001\:4eba\:9593\:304c\:660e\:793a\:7684\:306b\:4e0a\:66f8\:304d\:3057\:305f\:3044\:5834\:5408\:306b\:4f7f\:3046\:3002\n" <>
+  "Options: PrivacySpec -> Automatic\:3002SourceVault \:304c\:30ed\:30fc\:30c9\:3055\:308c\:3066\:3044\:308b\:5fc5\:8981\:304c\:3042\:308b\:3002\n" <>
+  "\:3053\:306e\:95a2\:6570\:306f $NBApprovalHeads \:306b\:767b\:9332\:3055\:308c\:3001\:5b9f\:884c\:6642\:306b\:627f\:8a8d\:30b2\:30fc\:30c8\:3092\:767a\:706b\:3055\:305b\:308b\:3002";
 
 NBMarkCellDependent::usage =
   "NBMarkCellDependent[nb, cellIdx] \:306f\:30bb\:30eb\:306b\:4f9d\:5b58\:6a5f\:5bc6\:30de\:30fc\:30af\:ff08\:6a59\:80cc\:666f + LockIcon\:ff09\:3092\:4ed8\:3051\:308b\:3002\n" <>
@@ -537,6 +559,30 @@ NBGetAccessibleDirs::usage =
   "NBGetAccessibleDirs[nb] \:306f\:4fdd\:5b58\:3055\:308c\:305f\:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:30c7\:30a3\:30ec\:30af\:30c8\:30ea\:30ea\:30b9\:30c8\:3092\:8fd4\:3059\:3002\n" <>
   "NBGetAccessibleDirs[] \:306f EvaluationNotebook[] \:304b\:3089\:53d6\:5f97\:3059\:308b\:3002";
 
+NBResolvePathRef::usage =
+  "NBResolvePathRef[pathRef] \:306f PathRef (NBNormalizePath \:304c\:8fd4\:3059 Association\:3001\:307e\:305f\:306f {\"$onWork\", ...} \:5f62\:5f0f\:306e\:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:30ea\:30b9\:30c8) \:3092\:73fe PC \:306e\:5b9f\:30d1\:30b9\:3078\:89e3\:6c7a\:3059\:308b\:3002\n" <>
+  "\:73fe PC \:3067\:89e3\:6c7a\:3067\:304d\:5b9f\:5728\:3059\:308c\:3070\:7d76\:5bfe\:30d1\:30b9\:6587\:5b57\:5217\:3001\:89e3\:6c7a\:3067\:304d\:306a\:3044 (\:30eb\:30fc\:30c8\:672a\:5b9a\:7fa9\:30fb\:5225 PC \:30a8\:30a4\:30ea\:30a2\:30b9\:306e\:307f) \:306a\:3089 Missing[...] \:3092\:8fd4\:3059\:3002\n" <>
+  "SourceVault \:304c\:30ed\:30fc\:30c9\:6e08\:307f\:306a\:3089 iSVResolvePath \:3092\:5229\:7528\:3059\:308b\:3002\n" <>
+  "rule 104: alias-only / root-missing \:306a PathRef \:306f\:5b9f\:30d1\:30b9\:306b\:89e3\:6c7a\:3055\:308c\:306a\:3044\:3002settings.json \:3078\:306e materialize \:306b\:306f\:89e3\:6c7a\:3067\:304d\:305f\:3082\:306e\:3060\:3051\:3092\:4f7f\:3046\:3002";
+
+NBSetAccessiblePathRefs::usage =
+  "NBSetAccessiblePathRefs[nb, refs] \:306f AccessPathRef \:306e\:30ea\:30b9\:30c8\:3092 notebook \:306e TaggingRules (claudeAccessiblePathRefs) \:306b\:4fdd\:5b58\:3059\:308b\:3002\n" <>
+  "NBSetAccessiblePathRefs[refs] \:306f EvaluationNotebook[] \:306b\:4fdd\:5b58\:3059\:308b\:3002\n" <>
+  "\:5404 AccessPathRef \:306f <|\"PathRef\" -> _, \"Mode\" -> \"List\"|\"Read\"|\"ReadWrite\", \"CloudSend\" -> False|True|\"Ask\"|> \:306e Association\:3002\n" <>
+  "Phase 2 \:3067\:306f claudeAccessiblePathRefs \:3092\:6b63\:672c (canonical) \:3068\:3059\:308b\:3002\:65e7 claudeAccessibleDirs \:306f read fallback \:3068\:3057\:3066\:306e\:307f\:6b8b\:3059\:3002\n" <>
+  "rule 104: PathRef \:306f\:540c\:4e00\:6027\:3067\:3042\:308a\:3001\:4fdd\:5b58\:81ea\:4f53\:304c\:6a29\:9650\:3092\:4e0e\:3048\:308b\:3082\:306e\:3067\:306f\:306a\:3044\:3002";
+
+NBGetAccessiblePathRefs::usage =
+  "NBGetAccessiblePathRefs[nb] \:306f notebook \:306b\:4fdd\:5b58\:3055\:308c\:305f AccessPathRef \:306e\:30ea\:30b9\:30c8\:3092\:8fd4\:3059\:3002\n" <>
+  "NBGetAccessiblePathRefs[] \:306f EvaluationNotebook[] \:304b\:3089\:53d6\:5f97\:3059\:308b\:3002\n" <>
+  "claudeAccessiblePathRefs \:304c\:7121\:3044\:65e7 notebook \:3067\:306f\:3001claudeAccessibleDirs (\:65e7\:5f62\:5f0f\:306e\:7d76\:5bfe\:30d1\:30b9\:30ea\:30b9\:30c8) \:3092 AccessPathRef \:306b\:5909\:63db\:3057\:3066\:8fd4\:3059 (read fallback)\:3002\n" <>
+  "\:623b\:308a\:5024\:306f notebook \:306b\:6c38\:7d9a\:5316\:3059\:308b canonical \:306a\:53c2\:7167\:30ea\:30b9\:30c8\:3002\:5b9f\:30d1\:30b9\:3078\:306e\:89e3\:6c7a\:306f NBResolvePathRef / NBGetAccessibleDirs \:3067\:884c\:3046\:3002";
+
+NBNormalizeAccessPathRef::usage =
+  "NBNormalizeAccessPathRef[dirOrRef] \:306f\:3001\:65e7\:5f62\:5f0f\:306e\:7d76\:5bfe\:30d1\:30b9\:6587\:5b57\:5217\:307e\:305f\:306f\:90e8\:5206\:7684\:306a\:6307\:5b9a\:3092\:3001\:5b8c\:5168\:306a AccessPathRef Association \:306b\:6b63\:898f\:5316\:3059\:308b\:3002\n" <>
+  "\:6587\:5b57\:5217\:304c\:6e21\:3055\:308c\:305f\:5834\:5408\:306f NBNormalizePath \:3067 PathRef \:5316\:3057\:3001Mode -> \"Read\"\:3001CloudSend -> \"Ask\" \:3092\:65e2\:5b9a\:3068\:3059\:308b\:3002\n" <>
+  "\:65e2\:306b AccessPathRef Association \:306a\:3089\:4e0d\:8db3\:30ad\:30fc\:3092\:65e2\:5b9a\:3067\:88dc\:3046\:3002NBSetAccessibleDirs \:4e92\:63db\:30e9\:30c3\:30d1\:304c\:5185\:90e8\:3067\:4f7f\:3046\:3002";
+
 
 NBMoveToEnd::usage =
   "NBMoveToEnd[nb] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:672b\:5c3e\:306b\:30ab\:30fc\:30bd\:30eb\:3092\:79fb\:52d5\:3059\:308b\:3002";
@@ -718,6 +764,30 @@ NBMakeRetryPacket::usage =
   "NBMakeRetryPacket[failureAssoc, accessSpec] \:306f\:5931\:6557\:60c5\:5831\:304b\:3089\n" <>
   "\:79d8\:5bc6\:3092\:542b\:307e\:306a\:3044\:5b89\:5168\:306a retry packet \:3092\:69cb\:7bc9\:3059\:308b\:3002";
 
+NBMakeFileAccessRequest::usage =
+  "NBMakeFileAccessRequest[pathOrSpec, operation, opts] \:306f file \:7528\:306e AccessRequest Association \:3092\:7d44\:307f\:7acb\:3066\:308b helper\:3002\n" <>
+  "operation: \"ReadValue\" | \"WriteCell\" | \"WriteLog\" | \"SendExternal\" \:7b49\:3002\n" <>
+  "Sink / Networked / Route / Provider / AccessLevel \:306f operation \:304b\:3089\:65e2\:5b9a\:304c\:6c7a\:307e\:308b (\:30aa\:30d7\:30b7\:30e7\:30f3\:3067\:4e0a\:66f8\:304d\:53ef)\:3002\n" <>
+  "Phase 4.1: cloud send \:306f Sink -> \"CloudLLM\"\:3001local read/write \:306f Sink -> \"LocalOnly\" / \"Notebook\" \:3068\:3059\:308b\:3002";
+
+NBAuthorizeFile::usage =
+  "NBAuthorizeFile[pathOrSpec, req] \:306f NBFileSpec / file spec \:3092 NBAuthorize \:306b\:6e21\:3059\:305f\:3081\:306e adapter\:3002\n" <>
+  "pathOrSpec \:304c\:6587\:5b57\:5217\:306a\:3089 NBFileSpec \:3067 base spec \:3092\:53d6\:5f97\:3001Association \:306a\:3089\:305d\:306e\:307e\:307e\:4f7f\:3046\:3002\n" <>
+  "\:3044\:305a\:308c\:3082 iNBFileSpecForAuthorize \:3067\:6b63\:898f\:5316 (projection key \:9664\:53bb\:30fbPrivacyLevel \:7531\:6765\:306e score \:88dc\:5b8c) \:3057\:3066\:304b\:3089 NBAuthorize \:306b\:6e21\:3059\:3002\n" <>
+  "\:65b0\:3057\:3044 authorization engine \:3067\:306f\:306a\:304f\:3001\:65e2\:5b58 NBAuthorize \:3078\:306e\:8584\:3044 adapter \:3067\:3042\:308b\:3002";
+
+NBPermitQ::usage =
+  "NBPermitQ[decision] \:306f NBAuthorize \:306e AccessDecision \:3092 Boolean projection \:306b\:843d\:3068\:3059 fail-closed helper\:3002\n" <>
+  "Decision \:304c \"Permit\" \:306e\:3068\:304d\:3060\:3051 True\:3002\"Deny\" / \"Screen\" / \"RequireApproval\" / $Failed / Missing / \:4f8b\:5916\:306f\:3059\:3079\:3066 False\:3002\n" <>
+  "\:5224\:5b9a\:4e0d\:80fd\:306a\:3089 False \:306b\:5012\:3059 (\:7279\:306b cloud send \:306f\:300c\:5224\:5b9a\:4e0d\:80fd\:306a\:3089\:9001\:3089\:306a\:3044\:300d)\:3002";
+
+NBDefaultFilePolicyLabel::usage =
+  "NBDefaultFilePolicyLabel[spec] \:306f Phase 4 \:521d\:671f\:306e placeholder file policy label \:3092\:8fd4\:3059\:3002\n" <>
+  "DLM / LabelJoin \:306e\:5b8c\:5168\:5b9f\:88c5\:307e\:3067\:306e\:6700\:5c0f\:5b9f\:88c5\:3002";
+
+NBNoExtraContainerLabel::usage =
+  "NBNoExtraContainerLabel[] \:306f Phase 4 \:521d\:671f\:306e placeholder container label \:3092\:8fd4\:3059\:3002";
+
 NBAuthorize::usage =
   "NBAuthorize[obj, req] \:306f PolicyGate + ScoreGate + EnvironmentGate \:3092\n" <>
   "\:7d71\:5408\:3057\:305f AccessDecision \:3092\:8fd4\:3059\:3002\n" <>
@@ -827,6 +897,162 @@ NBDisableCategory::usage =
 NBCategoryEnabled::usage =
   "NBCategoryEnabled[cat] \:306f\:30ab\:30c6\:30b4\:30ea\:304c\:6709\:52b9\:304b\:3092\:8fd4\:3059\:3002";
 
+
+(* ============================================================
+   Notebook semantic access API (Stage 9 P1 Step 6 \:7528)
+   ------------------------------------------------------------
+   \:30d5\:30a1\:30a4\:30eb\:76f4\:63a5\:7d4c\:8def (Import[\"Notebook\"] / Export[\"NB\"]) \:3067 closed notebook \:3082\:64cd\:4f5c\:53ef\:3002
+   FrontEnd \:4e0d\:8981\:3002AccessSpec Association \:3067 RBAC \:5236\:5fa1\:3002
+   \:8aad\:307f\:53d6\:308a\:7cfb\:306f\:30c7\:30d5\:30a9\:30eb\:30c8\:3067 AccessLevel = 0.5 (Public) \:6271\:3044\:3002\:66f8\:304d\:8fbc\:307f\:7cfb\:306f\:5225\:9014\:8ffd\:52a0\:3002
+   ============================================================ *)
+
+NBReadHeader::usage =
+  "NBReadHeader[path, opts:OptionsPattern[]] \:306f notebook \:306e SourceVault \:30d8\:30c3\:30c0\:30fc\:3092\:62bd\:51fa\:3059\:308b\:3002\n" <>
+  "\:5bfe\:8c61\:30bb\:30eb: TaggingRules \= \"SourceVault\" \:307e\:305f\:306f Header style cell\:3002\n" <>
+  "Stage 9 P1 \:5225\:4ef6 2: Input cell \:5185\:306e BoxData (\:751f Association) \:3082 MakeExpression \:7d4c\:7531\:3067\:53d6\:5f97\:53ef\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"AccessSpec\" -> <|\"AccessLevel\" -> 0.5, ...|>   - NBAccess RBAC \:6307\:5b9a\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\",\n" <>
+  "  \"Keywords\" -> {...}, \"Status\" -> _, \"Deadline\" -> _, \"NextReview\" -> _,\n" <>
+  "  \"Owner\" -> _, \"PathHint\" -> _, ...\n" <>
+  "  \"RawHeader\" -> <|...|>,\n" <>
+  "  \"Source\" -> \"TaggingRules\"|\"HeaderCell\"|\"BoxData\"|\"None\"|>";
+
+NBReadTodos::usage =
+  "NBReadTodos[path, opts:OptionsPattern[]] \:306f notebook \:306e Todo cell \:3092\:5168\:62bd\:51fa\:3059\:308b\:3002\n" <>
+  "\:5bfe\:8c61\:30bb\:30eb: Item style cell\:3001\:307e\:305f\:306f TaggingRules \= \"SourceVault\" \:3067 TodoStatus \:8a2d\:5b9a\:6e08\:3002\n" <>
+  "CellGroupData \:30cd\:30b9\:30c8\:3082\:518d\:5e30\:7684\:306b\:5c55\:958b\:3057\:3066\:5168\:30bb\:30eb\:3092\:8d70\:67fb\:3059\:308b\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"AccessSpec\" -> <|\"AccessLevel\" -> 0.5, ...|>   - NBAccess RBAC \:6307\:5b9a\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\",\n" <>
+  "  \"Todos\" -> { <|\"Index\" -> n, \"Text\" -> ..., \"Status\" -> \"Open\"|\"Done\"|\"Pass\",\n" <>
+  "                  \"CellPath\" -> {_Integer...}, \"StatusSource\" -> \"TaggingRules\"|\"StyleHeuristic\"|...,\n" <>
+  "                  \"ExpressionUUID\" -> _String|_Missing |> ... } |>";
+
+NBFindCellByPredicate::usage =
+  "NBFindCellByPredicate[path, predicate, opts:OptionsPattern[]] \:306f predicate \:304c True \:3092\:8fd4\:3059 cell \:3092\:8fd4\:3059\:3002\n" <>
+  "predicate: Function \:3001Cell expr \:3092\:53d7\:3051\:53d6\:308a True/False \:3092\:8fd4\:3059\:3002\n" <>
+  "CellGroupData \:30cd\:30b9\:30c8\:3082\:518d\:5e30\:7684\:306b\:5c55\:958b\:3057\:3066\:5168\:30bb\:30eb\:3092\:8d70\:67fb\:3059\:308b\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"AccessSpec\" -> <|...|>                          - NBAccess RBAC\n" <>
+  "  \"MaxResults\" -> All|_Integer                     - All \:307e\:305f\:306f\:6700\:5927\:4ef6\:6570\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\",\n" <>
+  "  \"Matches\" -> { <|\"CellIndex\" -> n (flat index), \"CellPath\" -> {_Integer...},\n" <>
+  "                    \"Cell\" -> HoldComplete[Cell[...]],\n" <>
+  "                    \"Style\" -> _, \"ExpressionUUID\" -> _String|_Missing |> ... } |>";
+
+
+(* \:2500\:2500 \:66f8\:304d\:8fbc\:307f\:7cfb (Stage 9 P1 Step 6 \:7528) \:2500\:2500 *)
+
+NBSetCellOptionsByPredicate::usage =
+  "NBSetCellOptionsByPredicate[path, predicate, optionRules_List, opts:OptionsPattern[]] \:306f\n" <>
+  "predicate \:304c True \:3092\:8fd4\:3059 cell \:306e options \:3092 optionRules \:3067\:4e0a\:66f8\:304d\:3059\:308b\:3002\n" <>
+  "optionRules: \:4f8b {FontVariations -> {\"StrikeThrough\" -> True}, FontColor -> RGBColor[0,0.5,0]}\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"AccessSpec\" -> <|\"AccessLevel\" -> 0.7, ...|>    - \:66f8\:304d\:8fbc\:307f\:306b\:306f >= 0.7 \:5fc5\:8981 (default 0.7)\n" <>
+  "  \"DryRun\" -> True|False                            - True \:306f\:30d7\:30ec\:30d3\:30e5\:30fc\:306e\:307f (default True)\n" <>
+  "  \"MaxResults\" -> All|_Integer                       - \:7de8\:96c6\:5bfe\:8c61\:30bb\:30eb\:6570\:4e0a\:9650 (default All)\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\"|\"DryRunOK\",\n" <>
+  "  \"Modified\" -> { <|\"CellPath\" -> ..., \"Before\" -> ..., \"After\" -> ...|> ... },\n" <>
+  "  \"DryRun\" -> _Boolean, \"AccessLevel\" -> _Real|>";
+
+NBSetCellTaggingRuleByPredicate::usage =
+  "NBSetCellTaggingRuleByPredicate[path, predicate, taggingKeyPath_List, value, opts:OptionsPattern[]] \:306f\n" <>
+  "predicate \:304c True \:3092\:8fd4\:3059 cell \:306e TaggingRules \:5185\:90e8\:306e key \:30d1\:30b9\:3092 value \:3067\:8a2d\:5b9a\:3059\:308b\:3002\n" <>
+  "\:4f8b: taggingKeyPath = {\"SourceVault\", \"TodoStatus\"}, value = \"Done\"\n" <>
+  "      \:2192 Cell \:306e TaggingRules \:306b <|\"SourceVault\" -> <|\"TodoStatus\" -> \"Done\"|>|> \:3092\:30de\:30fc\:30b8\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3: NBSetCellOptionsByPredicate \:3068\:540c\:69d8\:3002\n" <>
+  "\:623b\:308a\:5024: NBSetCellOptionsByPredicate \:3068\:540c\:5f62\:3002";
+
+NBWriteHeader::usage =
+  "NBWriteHeader[path, key, value, opts:OptionsPattern[]] \:306f notebook \:306e SourceVault \:30d8\:30c3\:30c0\:30fc 1 \:30d5\:30a3\:30fc\:30eb\:30c9\:3092\:66f4\:65b0\:3059\:308b\:3002\n" <>
+  "Notebook \:5168\:4f53\:306e TaggingRules \= SourceVault \:914d\:4e0b\:306b key -> value \:3092\:30de\:30fc\:30b8\:3059\:308b\:3002\n" <>
+  "key: \"Status\"/\"Keywords\"/\"Deadline\"/\"NextReview\"/\"Owner\"/\"PathHint\" \:7b49\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"AccessSpec\" -> <|\"AccessLevel\" -> 0.7, ...|>    - \:66f8\:304d\:8fbc\:307f\:306b\:306f >= 0.7 \:5fc5\:8981 (default 0.7)\n" <>
+  "  \"DryRun\" -> True|False                            - True \:306f\:30d7\:30ec\:30d3\:30e5\:30fc\:306e\:307f (default True)\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\"|\"DryRunOK\",\n" <>
+  "  \"Before\" -> _, \"After\" -> _, \"DryRun\" -> _Boolean, \"Path\" -> _String|>";
+
+NBWriteTodoStatus::usage =
+  "NBWriteTodoStatus[path, todoKey, newStatus, opts:OptionsPattern[]] \:306f\n" <>
+  "todoKey \:3067\:7279\:5b9a\:3055\:308c\:308b Todo cell \:306e Status \:3092 newStatus \:306b\:5909\:66f4\:3059\:308b\:3002\n" <>
+  "todoKey: <|\"Index\" -> n, \"Text\" -> \"...\"|>  (\:4e21\:65b9\:4e00\:81f4\:3059\:308b cell \:306e\:307f\:7de8\:96c6\:3001\:5b89\:5168\:5074)\n" <>
+  "newStatus: \"Open\"/\"Done\"/\"Pass\"\n" <>
+  "\:5909\:66f4\:5185\:5bb9: FontVariations StrikeThrough on/off + FontColor (\:7dd1/\:7070) + TaggingRules SourceVault TodoStatus\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"AccessSpec\" -> <|\"AccessLevel\" -> 0.7, ...|>    - \:66f8\:304d\:8fbc\:307f\:306b\:306f >= 0.7 \:5fc5\:8981 (default 0.7)\n" <>
+  "  \"DryRun\" -> True|False                            - True \:306f\:30d7\:30ec\:30d3\:30e5\:30fc\:306e\:307f (default True)\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\"|\"DryRunOK\",\n" <>
+  "  \"MatchedTodo\" -> <|\"Index\" -> ..., \"Text\" -> ...|>,\n" <>
+  "  \"OldStatus\" -> _, \"NewStatus\" -> _, \"CellPath\" -> {_Integer...}|>";
+
+
+(* \:2500\:2500 \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5358\:4f4d\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00 (Stage 9 P1 \:62e1\:5f35) \:2500\:2500 *)
+
+NBGetCloudPublishable::usage =
+  "NBGetCloudPublishable[path] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:81ea\:8eab\:306e\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00\:3092\:8aad\:307f\:53d6\:308b\:3002\n" <>
+  "Notebook \:5168\:4f53\:306e TaggingRules > SourceVault > \"CloudPublishable\" \:3092\:8aad\:3080\:3002\n" <>
+  "\:623b\:308a\:5024:\n" <>
+  "  True                          - \:30af\:30e9\:30a6\:30c9 LLM \:53ef\:3068\:5ba3\:8a00\:6e08\:307f\n" <>
+  "  False                         - \:660e\:793a\:7684\:306b\:30af\:30e9\:30a6\:30c9\:7981\:6b62\:3068\:5ba3\:8a00\:6e08\:307f\n" <>
+  "  Missing[\"NotDeclared\"]        - \:5ba3\:8a00\:7121\:3057 (\:30c7\:30d5\:30a9\:30eb\:30c8: \:30d1\:30b9\:30d9\:30fc\:30b9\:5224\:5b9a\:306b\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af)\n" <>
+  "  Missing[\"NoHeader\"] / Missing[\"NoRawHeader\"] - \:5185\:90e8\:30a8\:30e9\:30fc";
+
+NBSetCloudPublishable::usage =
+  "NBSetCloudPublishable[path, True|False, opts:OptionsPattern[]] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:81ea\:8eab\:306e\n" <>
+  "\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00\:3092\:8a2d\:5b9a\:3059\:308b (Notebook \:5168\:4f53\:306e TaggingRules > SourceVault > CloudPublishable)\:3002\n" <>
+  "\:5ba3\:8a00\:8a2d\:5b9a\:5f8c\:306f\:30bb\:30eb\:6a5f\:5bc6\:30c1\:30a7\:30c3\:30af\:3068\:7d44\:307f\:5408\:308f\:3055\:308a\:3066 NBFileSpec \:306e PrivacyLevel \:304c\:81ea\:52d5\:7684\:306b\n" <>
+  "0.4 / 0.5 / 1.0 / {0.5, 1.0} \:306b\:6c7a\:5b9a\:3055\:308c\:308b\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"AccessSpec\" -> <|\"AccessLevel\" -> 0.7, ...|>    - \:66f8\:304d\:8fbc\:307f\:306b\:306f >= 0.7 \:5fc5\:8981 (default 0.7)\n" <>
+  "  \"DryRun\" -> True|False                            - default False (\:30c8\:30b0\:30eb\:64cd\:4f5c\:306a\:306e\:3067\:5b9f\:884c\:5074)\n" <>
+  "\:623b\:308a\:5024: NBWriteHeader \:3068\:540c\:5f62 (<|\"Status\" -> ..., \"Before\" -> _, \"After\" -> True|False, ...|>)";
+
+NBClearCloudPublishable::usage =
+  "NBClearCloudPublishable[path, opts:OptionsPattern[]] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00\:3092\n" <>
+  "\:300c\:672a\:6307\:5b9a\:300d\:72b6\:614b\:306b\:623b\:3059 (TaggingRules > SourceVault > CloudPublishable \:30ad\:30fc\:3092\:524a\:9664)\:3002\n" <>
+  "\:524a\:9664\:5f8c SourceVault Association \:304c\:7a7a\:306b\:306a\:308c\:3070 SourceVault \:30ad\:30fc\:3082\:524a\:9664\:3001TaggingRules \:304c\n" <>
+  "\:7a7a\:306b\:306a\:308c\:3070 TaggingRules \:30aa\:30d7\:30b7\:30e7\:30f3\:81ea\:4f53\:3082\:524a\:9664 (\:30af\:30ea\:30fc\:30f3\:30a2\:30c3\:30d7)\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"AccessSpec\" -> <|\"AccessLevel\" -> 0.7, ...|>    - \:66f8\:304d\:8fbc\:307f\:306b\:306f >= 0.7 \:5fc5\:8981 (default 0.7)\n" <>
+  "  \"DryRun\" -> True|False                            - default False\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"DryRunOK\"|\"Failed\",\n" <>
+  "  \"Before\" -> True|False|Missing[\"NotPresent\"], \"After\" -> Missing[\"Removed\"|\"NotPresent\"],\n" <>
+  "  \"NoOp\" -> True (\:30ad\:30fc\:304c\:5143\:3005\:7121\:3044\:5834\:5408\:306e\:307f), \"Path\" -> _String|>";
+
+
+(* \:2500\:2500 .nb \:30d5\:30a1\:30a4\:30eb\:306e outline cache \:4fee\:5fa9 (Stage 9 P1 Step 2 Hotfix 4) \:2500\:2500 *)
+
+NBRepairNotebookCache::usage =
+  "NBRepairNotebookCache[path] \:306f .nb \:30d5\:30a1\:30a4\:30eb\:306e outline cache \:3092\:6b63\:898f\:5316\:3059\:308b\:3002\n" <>
+  "\:7528\:9014: \:300c\:5f00\:3053\:3046\:3068\:3057\:305f\:30d5\:30a1\:30a4\:30eb\:306f Wolfram \:30b7\:30b9\:30c6\:30e0\:5916\:3067\:7de8\:96c6\:3055\:308c\:305f\:3088\:3046\:3067\:3059\:300d\n" <>
+  "\:30c0\:30a4\:30a2\:30ed\:30b0\:304c\:7e70\:308a\:8fd4\:3057\:51fa\:308b .nb \:3092\:30af\:30ea\:30fc\:30f3\:30a2\:30c3\:30d7\:3059\:308b\:3002frontend \:7d4c\:7531\:3067\n" <>
+  "NotebookSave \:3092\:547c\:3076\:3068\:30d8\:30c3\:30c0\:306e NotebookDataLength / OutlinePosition / CellTagsIndexPosition\n" <>
+  "\:7b49\:306e\:30d0\:30a4\:30c8\:4f4d\:7f6e\:30ad\:30e3\:30c3\:30b7\:30e5\:304c\:518d\:751f\:6210\:3055\:308c\:308b\:3002\n" <>
+  "\:30d5\:30a1\:30a4\:30eb\:306e\:5185\:5bb9 (Notebook expression) \:306f\:5909\:308f\:3089\:306a\:3044\:3002\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\", \"Path\" -> _String, \"WasAlreadyOpen\" -> True|False|>";
+
+NBRepairNotebookCacheFolder::usage =
+  "NBRepairNotebookCacheFolder[dir, opts:OptionsPattern[]] \:306f dir \:914d\:4e0b\:306e .nb \:3092\:5168\:90e8\:4fee\:5fa9\:3059\:308b\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"Recursive\" -> True|False    - \:30b5\:30d6\:30c7\:30a3\:30ec\:30af\:30c8\:30ea\:3082\:30b9\:30ad\:30e3\:30f3 (default True)\n" <>
+  "\:623b\:308a\:5024: <|\"Status\", \"Directory\", \"TotalFiles\", \"Succeeded\", \"Failed\", \"Details\"|>";
+
+NBCleanupTmpFiles::usage =
+  "NBCleanupTmpFiles[dir, opts:OptionsPattern[]] \:306f dir \:914d\:4e0b\:306e .nb.tmp-* \:6b8b\:9ab8\:3092\:524a\:9664\:3059\:308b\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"Recursive\" -> True|False    - \:30b5\:30d6\:30c7\:30a3\:30ec\:30af\:30c8\:30ea\:3082\:30b9\:30ad\:30e3\:30f3 (default True)\n" <>
+  "\:623b\:308a\:5024: <|\"Status\", \"Directory\", \"Deleted\", \"Files\"|>";
+
+NBRepairNotebookCacheStrict::usage =
+  "NBRepairNotebookCacheStrict[path] \:306f NBRepairNotebookCache \:304c\:6548\:679c\:306a\:304b\:3063\:305f\:5834\:5408\:306e\n" <>
+  "\:5f37\:529b\:7248 fallback\:3002\:30d5\:30a1\:30a4\:30eb\:3092 NotebookImport \:3067\:8aad\:307f\:3001CreateDocument \:3067\:65b0\:30ce\:30fc\:30c8\:3092\n" <>
+  "\:4f5c\:6210\:3057\:3066 NotebookSave[..., path] \:3067\:5143\:30d1\:30b9\:306b\:4e0a\:66f8\:304d\:4fdd\:5b58\:3059\:308b\:3002\:5e2f\:540c\:30aa\:30d7\:30b7\:30e7\:30f3\n" <>
+  "(TaggingRules\:7b49) \:3082\:53d6\:308a\:8fbc\:3080\:3002\:5b9f\:884c\:524d\:306b\:65e2\:306b\:958b\:304b\:308c\:3066\:3044\:308b\:30ce\:30fc\:30c8\:306f\:9589\:3058\:3089\:308c\:308b\:3002\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\", \"Path\", \"Method\" -> \"RecreateAndSave\"|>";
+
+
 Begin["`Private`"];
 
 (* ============================================================
@@ -883,6 +1109,13 @@ If[!AssociationQ[$iProviderMaxAccessLevel],
 
 $iCellsCache = <||>;
 $iCellStyleCache = <||>;
+
+(* Phase 4.3: NBFileSpec caches.
+   Base cache depends only on file content metadata.
+   Projection cache additionally depends on policy fingerprint. *)
+If[!AssociationQ[$iNBFileSpecBaseCache], $iNBFileSpecBaseCache = <||>];
+If[!AssociationQ[$iNBFileSpecProjectionCache], $iNBFileSpecProjectionCache = <||>];
+If[!IntegerQ[$iNBFileProjectionPolicyVersion], $iNBFileProjectionPolicyVersion = 1];
 
 iResolveCells[nb_NotebookObject] :=
   Module[{cached},
@@ -1283,9 +1516,12 @@ NBAccess`NBCellReadInputText[nb_NotebookObject, cellIdx_Integer] :=
    ============================================================ *)
 
 NBAccess`NBCellPrivacyLevel[nb_NotebookObject, cellIdx_Integer] :=
-  Module[{cell, tag, depTag},
+  Module[{cell, tag, depTag, numTag},
     cell = iResolveCell[nb, cellIdx];
     If[cell === $Failed, Return[0.0]];
+    (* Stage 9 P1 Step 7: \:6570\:5024 privacyLevel \:30bf\:30b0\:304c\:3042\:308c\:3070\:6700\:512a\:5148 *)
+    numTag = iGetCellPrivacyLevelTag[cell];
+    If[NumericQ[numTag], Return[numTag]];
     tag    = iGetConfTag[cell];
     depTag = Quiet[CurrentValue[cell, {TaggingRules, "claudecode", "dependent"}]];
     Which[
@@ -1856,6 +2092,41 @@ NBAccess`NBSetConfidentialTag[nb_NotebookObject, cellIdx_Integer, val_] :=
     Quiet[SetOptions[cell, TaggingRules -> tags]]
   ];
 
+(* ============================================================
+   Stage 9 P1 Step 7: \:30bb\:30eb\:5358\:4f4d\:306e\:6570\:5024 PrivacyLevel
+   ------------------------------------------------------------
+   \:5f93\:6765\:306e confidential \:30bf\:30b0 (True/False) \:306b\:52a0\:3048\:3001
+   claudecode \:30bf\:30ae\:30f3\:30b0\:30eb\:30fc\:30eb\:5185\:306b "privacyLevel" \:6570\:5024\:30ad\:30fc\:3092\:6301\:3064\:3002
+   NBCellPrivacyLevel \:306f\:3053\:306e\:6570\:5024\:3092\:6700\:512a\:5148\:3067\:8aad\:3080\:3002
+   ============================================================ *)
+
+(* \:30bb\:30eb\:306e\:6570\:5024 privacyLevel \:30bf\:30b0\:3092\:8aad\:3080\:3002\:7121\:3051\:308c\:3070 Missing[]\:3002 *)
+iGetCellPrivacyLevelTag[cell_] :=
+  Module[{v},
+    v = Quiet[CurrentValue[cell,
+      {TaggingRules, "claudecode", "privacyLevel"}]];
+    If[NumericQ[v], N[v], Missing[]]
+  ];
+
+(* \:30bb\:30eb\:306e\:6570\:5024 privacyLevel \:30bf\:30b0\:3092\:8a2d\:5b9a\:3002level \:304c Missing/None \:306a\:3089\:524a\:9664\:3002 *)
+iSetCellPrivacyLevelTag[nb_NotebookObject, cellIdx_Integer, level_] :=
+  Module[{cell, tags, cc},
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[$Failed]];
+    tags = Replace[Quiet[CurrentValue[cell, TaggingRules]],
+             Except[_List | _Association] -> {}];
+    cc   = Replace[Lookup[tags, "claudecode", {}],
+             Except[_List | _Association] -> {}];
+    cc   = If[AssociationQ[cc], Normal[cc], cc];
+    cc   = DeleteCases[cc, "privacyLevel" -> _];
+    cc   = If[NumericQ[level],
+      Append[cc, "privacyLevel" -> N[level]], cc];
+    tags = If[AssociationQ[tags], Normal[tags], tags];
+    tags = DeleteCases[tags, "claudecode" -> _];
+    tags = Append[tags, "claudecode" -> cc];
+    Quiet[SetOptions[cell, TaggingRules -> tags]]
+  ];
+
 (* \:6a5f\:5bc6\:30de\:30fc\:30af: \:8d64\:80cc\:666f + WarningSign\:ff08\:67a0\:306a\:3057 \[LongDash] CellFrame \:306f documentation \:7cfb\:304c\:7ba1\:7406\:ff09 *)
 NBAccess`$NBConfidentialCellOpts = {
   Background    -> RGBColor[1, 0.90, 0.90],
@@ -1884,10 +2155,63 @@ NBAccess`$NBDeclassifiedDependentCellOpts = {
     FontColor -> RGBColor[0.70, 0.50, 0.25], FontSize -> 12]
 };
 
-NBAccess`NBMarkCellConfidential[nb_NotebookObject, cellIdx_Integer] := (
-  NBAccess`NBSetConfidentialTag[nb, cellIdx, True];
-  NBAccess`NBCellSetOptions[nb, cellIdx, Sequence @@ NBAccess`$NBConfidentialCellOpts]
-);
+(* Stage 9 P1 Step 7: NBMarkCellConfidential \:3092\:6570\:5024\:30ec\:30d9\:30eb\:5bfe\:5fdc\:306b\:62e1\:5f35\:3002
+   - NBMarkCellConfidential[nb, idx]            \[Rule] level = 1.0 (\:5f93\:6765\:4e92\:63db)
+   - NBMarkCellConfidential[nb, idx, level]     \[Rule] \:4efb\:610f\:306e\:6570\:5024 0.0-1.0
+   level > 0.5 \:306e\:3068\:304d\:8996\:899a\:30de\:30fc\:30af (\:80cc\:666f\:8272) \:3092\:4ed8\:3051\:3001
+   level <= 0.5 \:306a\:3089\:8996\:899a\:30de\:30fc\:30af\:3092\:5916\:3059\:3002
+   confidential \:30bf\:30b0 (True/False) \:3082 level \:306b\:5fdc\:3058\:3066\:9023\:52d5\:3055\:305b\:3001
+   \:65e7\:30b3\:30fc\:30c9\:3068\:306e\:4e92\:63db\:6027\:3092\:4fdd\:3064\:3002
+   NBAccess \:898f\:7d04\:306b\:5f93\:3044 PrivacySpec \:30aa\:30d7\:30b7\:30e7\:30f3\:3092\:6301\:3064\:3002 *)
+Options[NBAccess`NBMarkCellConfidential] = {PrivacySpec -> Automatic};
+
+NBAccess`NBMarkCellConfidential[nb_NotebookObject, cellIdx_Integer,
+    opts:OptionsPattern[]] :=
+  NBAccess`NBMarkCellConfidential[nb, cellIdx, 1.0, opts];
+
+NBAccess`NBMarkCellConfidential[nb_NotebookObject, cellIdx_Integer,
+    level_?NumericQ, opts:OptionsPattern[]] :=
+  Module[{lv},
+    lv = N[Clip[level, {0.0, 1.0}]];
+    (* \:6570\:5024 privacyLevel \:30bf\:30b0\:3092\:8a2d\:5b9a *)
+    iSetCellPrivacyLevelTag[nb, cellIdx, lv];
+    (* confidential \:30bf\:30b0\:3092 level \:306b\:9023\:52d5 (> 0.5 \:3067 True) *)
+    NBAccess`NBSetConfidentialTag[nb, cellIdx, lv > 0.5];
+    (* \:8996\:899a\:30de\:30fc\:30af: level > 0.5 \:306a\:3089\:6a5f\:5bc6\:8272\:3001\:305d\:308c\:4ee5\:4e0b\:306f\:89e3\:9664 *)
+    If[lv > 0.5,
+      NBAccess`NBCellSetOptions[nb, cellIdx,
+        Sequence @@ NBAccess`$NBConfidentialCellOpts],
+      NBAccess`NBCellSetOptions[nb, cellIdx,
+        Background -> Inherited, CellDingbat -> Inherited]];
+    lv
+  ];
+
+(* ============================================================
+   Stage 9 P1 Step 7: NBSetSnapshotPrivacyLevel (API \:30b9\:30bf\:30d6)
+   ------------------------------------------------------------
+   SourceVault snapshot \:306e PrivacyLevel \:30d5\:30a3\:30fc\:30eb\:30c9\:3092\:66f4\:65b0\:3059\:308b\:3002
+   snapshot \:306e PrivacyLevel \:306f\:901a\:5e38\:30bb\:30eb\:5224\:5b9a\:304b\:3089\:306e\:5c0e\:51fa\:5024\:3060\:304c\:3001
+   \:4eba\:9593\:304c\:660e\:793a\:7684\:306b\:4e0a\:66f8\:304d\:3057\:305f\:3044\:5834\:5408\:306b\:4f7f\:3046\:3002
+   \:3053\:306e\:95a2\:6570\:306f $NBApprovalHeads \:306b\:767b\:9332\:3055\:308c\:3001\:5b9f\:884c\:6642\:306b\:627f\:8a8d\:30b2\:30fc\:30c8\:3092\:767a\:706b\:3055\:305b\:3002
+   NBAccess \:898f\:7d04\:306b\:5f93\:3044 PrivacySpec \:30aa\:30d7\:30b7\:30e7\:30f3\:3092\:6301\:3064\:3002
+
+   \:73fe\:6bb5\:968e\:306f\:6700\:5c0f\:5b9f\:88c5: SourceVault \:304c\:30ed\:30fc\:30c9\:3055\:308c\:3066\:3044\:308c\:3070\:3001
+   snapshot record \:306e PrivacyLevel \:3092\:66f4\:65b0\:3059\:308b\:95a2\:6570\:3092\:547c\:3076\:3002 *)
+Options[NBAccess`NBSetSnapshotPrivacyLevel] = {PrivacySpec -> Automatic};
+
+NBAccess`NBSetSnapshotPrivacyLevel[snapshotId_String, level_?NumericQ,
+    opts:OptionsPattern[]] :=
+  Module[{lv, fn},
+    lv = N[Clip[level, {0.0, 1.0}]];
+    (* SourceVault \:304c\:30ed\:30fc\:30c9\:3055\:308c\:3066\:3044\:308c\:3070\:59d4\:8b72 *)
+    If[Length[Names["SourceVault`SourceVaultSetSnapshotPrivacyLevel"]] > 0,
+      fn = Symbol["SourceVault`SourceVaultSetSnapshotPrivacyLevel"];
+      fn[snapshotId, lv],
+      <|"Status" -> "Failed",
+        "Reason" -> "SourceVaultNotLoaded",
+        "Detail" ->
+          "SourceVault \:304c\:30ed\:30fc\:30c9\:3055\:308c\:3066\:3044\:307e\:305b\:3093\:3002snapshot \:64cd\:4f5c\:306b\:306f SourceVault \:304c\:5fc5\:8981\:3067\:3059\:3002"|>]
+  ];
 
 NBAccess`NBMarkCellDependent[nb_NotebookObject, cellIdx_Integer] := (
   Module[{cell, tags, cc},
@@ -1919,7 +2243,8 @@ NBAccess`NBUnmarkCell[nb_NotebookObject, cellIdx_Integer] := (
     cc   = Replace[Lookup[tags, "claudecode", {}],
              Except[_List | _Association] -> {}];
     cc   = If[AssociationQ[cc], Normal[cc], cc];
-    cc   = DeleteCases[cc, "dependent" -> _];
+    (* Stage 9 P1 Step 7: \:6570\:5024 privacyLevel \:30bf\:30b0\:3082\:30af\:30ea\:30a2 *)
+    cc   = DeleteCases[cc, "dependent" -> _ | "privacyLevel" -> _];
     tags = If[AssociationQ[tags], Normal[tags], tags];
     tags = DeleteCases[tags, "claudecode" -> _];
     If[Length[cc] > 0, tags = Append[tags, "claudecode" -> cc]];
@@ -3149,17 +3474,156 @@ NBAccess`NBLocalLLMAPIKeyMap[] :=
    \:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:30c7\:30a3\:30ec\:30af\:30c8\:30ea API
    ============================================================ *)
 
+(* \:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500
+   Phase 2: AccessPathRef API + NBSetAccessibleDirs \:4e92\:63db\:30e9\:30c3\:30d1
+   \:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500
+   cross-PC path policy v3 \:00a75.3 / \:00a712.2 \:6e96\:62e0\:3002
+   claudeAccessiblePathRefs \:3092\:6b63\:672c (canonical) \:3068\:3057\:3001\:65e7 claudeAccessibleDirs \:306f
+   read fallback \:3068\:3057\:3066\:306e\:307f\:6b8b\:3059\:3002rule 104: PathRef \:306f identity \:3067\:3042\:3063\:3066\:6a29\:9650\:3067\:306f\:306a\:3044\:3002 *)
+
+(* PathRef (Association \:307e\:305f\:306f {"$root", ...} \:30ea\:30b9\:30c8) \:304b\:3089
+   {RootId, Parts} \:306e\:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:30ea\:30b9\:30c8\:3092\:53d6\:308a\:51fa\:3059\:3002
+   \:53d6\:308a\:51fa\:305b\:306a\:3051\:308c\:3070 Missing[]\:3002 *)
+iNBPathRefToSymList[pathRef_] :=
+  Which[
+    (* {"$onWork", "a", "b.nb"} \:5f62\:5f0f\:306e\:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:30ea\:30b9\:30c8 *)
+    ListQ[pathRef] && Length[pathRef] >= 1 && AllTrue[pathRef, StringQ],
+      pathRef,
+    (* NBNormalizePath \:304c\:8fd4\:3059 Association *)
+    AssociationQ[pathRef] && KeyExistsQ[pathRef, "SymbolicPath"] &&
+      ListQ[pathRef["SymbolicPath"]],
+      pathRef["SymbolicPath"],
+    (* {RootId, Parts} \:3060\:3051\:6301\:3064 Association *)
+    AssociationQ[pathRef] && KeyExistsQ[pathRef, "RootId"] &&
+      KeyExistsQ[pathRef, "Parts"] && StringQ[pathRef["RootId"]] &&
+      ListQ[pathRef["Parts"]],
+      Prepend[pathRef["Parts"], pathRef["RootId"]],
+    True,
+      Missing["InvalidPathRef"]
+  ];
+
+(* PathRef \:3092\:73fe PC \:306e\:5b9f\:30d1\:30b9\:3078\:89e3\:6c7a\:3059\:308b\:3002
+   SourceVault \:30ed\:30fc\:30c9\:6e08\:307f\:306a\:3089 iSVResolvePath \:306b\:59d4\:8b72\:3002
+   \:89e3\:6c7a\:3067\:304d\:306a\:3044 (\:30eb\:30fc\:30c8\:672a\:5b9a\:7fa9\:30fb\:5225 PC \:30a8\:30a4\:30ea\:30a2\:30b9\:306e\:307f) \:306a\:3089 Missing[...]\:3002
+   rule 104: alias-only / root-missing \:306f\:5b9f\:30d1\:30b9\:306b\:89e3\:6c7a\:3057\:306a\:3044\:3002 *)
+NBAccess`NBResolvePathRef[pathRef_] :=
+  Module[{symList, head, resolved},
+    symList = iNBPathRefToSymList[pathRef];
+    If[MissingQ[symList], Return[symList]];
+    If[symList === {}, Return[Missing["EmptyPathRef"]]];
+    head = First[symList];
+    (* <ABS> \:306f\:7d76\:5bfe\:30d1\:30b9\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af: \:305d\:306e\:307e\:307e\:5b9f\:30d1\:30b9\:6271\:3044 *)
+    If[head === "<ABS>",
+      Return[If[Length[symList] >= 2 && StringQ[symList[[2]]],
+        symList[[2]], Missing["InvalidAbsPathRef"]]]];
+    (* SourceVault \:30ed\:30fc\:30c9\:6e08\:307f\:306a\:3089 iSVResolvePath \:306b\:59d4\:8b72 *)
+    If[iNBSourceVaultPathAvailableQ[] &&
+       Quiet @ Check[DownValues[SourceVault`iSVResolvePath] =!= {}, False],
+      resolved = Quiet @ Check[SourceVault`iSVResolvePath[symList], Missing[]];
+      If[StringQ[resolved], Return[resolved]];
+      Return[Missing["RootMissing"]]];
+    (* SourceVault \:672a\:30ed\:30fc\:30c9: \:73fe PC \:5b9f\:4f53\:30eb\:30fc\:30c8\:306e\:307f\:3067\:89e3\:6c7a *)
+    Module[{bare, v},
+      bare = StringTrim[head, "$"];
+      v = Quiet @ ToExpression["Global`$" <> bare];
+      If[!StringQ[v] || !DirectoryQ[v],
+        Return[Missing["RootMissing"]]];
+      If[Length[symList] === 1,
+        ExpandFileName[v],
+        FileNameJoin[Prepend[Rest[symList], ExpandFileName[v]]]]]
+  ];
+
+NBAccess`NBResolvePathRef[___] := Missing["InvalidPathRefArgument"];
+
+(* \:65e7\:5f62\:5f0f\:306e\:7d76\:5bfe\:30d1\:30b9\:6587\:5b57\:5217\:3001\:307e\:305f\:306f\:90e8\:5206\:7684\:306a\:6307\:5b9a\:3092\:5b8c\:5168\:306a AccessPathRef \:306b\:6b63\:898f\:5316\:3002
+   \:6587\:5b57\:5217\:306a\:3089 NBNormalizePath \:3067 PathRef \:5316\:3001Mode -> "Read"\:3001CloudSend -> "Ask" \:65e2\:5b9a\:3002
+   \:65e2\:306b AccessPathRef Association \:306a\:3089\:4e0d\:8db3\:30ad\:30fc\:3092\:88dc\:3046\:3002 *)
+NBAccess`NBNormalizeAccessPathRef[dir_String] :=
+  Module[{norm},
+    norm = Quiet @ Check[NBAccess`NBNormalizePath[dir], $Failed];
+    <|
+      "PathRef" -> If[AssociationQ[norm],
+        KeyTake[norm, {"Kind", "RootId", "Parts"}],
+        Missing["NormalizeFailed"]],
+      "SymbolicPath" -> If[AssociationQ[norm],
+        Lookup[norm, "SymbolicPath", Missing[]], Missing[]],
+      "Mode" -> "Read",
+      "CloudSend" -> "Ask",
+      "LegacyDir" -> dir
+    |>
+  ];
+
+NBAccess`NBNormalizeAccessPathRef[ref_Association] :=
+  Module[{pr, sym},
+    pr = Lookup[ref, "PathRef", Missing["NoPathRef"]];
+    sym = Lookup[ref, "SymbolicPath", Missing[]];
+    <|
+      "PathRef" -> pr,
+      "SymbolicPath" -> sym,
+      "Mode" -> Lookup[ref, "Mode", "Read"],
+      "CloudSend" -> Lookup[ref, "CloudSend", "Ask"]
+    |>
+  ];
+
+NBAccess`NBNormalizeAccessPathRef[other_] :=
+  <|"PathRef" -> Missing["InvalidAccessPathRef"],
+    "Mode" -> "None", "CloudSend" -> False|>;
+
+(* \:2500\:2500 AccessPathRef \:3092 notebook TaggingRules \:306b\:4fdd\:5b58\:30fb\:53d6\:5f97 \:2500\:2500 *)
+
+NBAccess`NBSetAccessiblePathRefs[nb_NotebookObject, refs_List] :=
+  NBAccess`NBSetTaggingRule[nb, "claudeAccessiblePathRefs",
+    Map[NBAccess`NBNormalizeAccessPathRef, refs]];
+
+NBAccess`NBSetAccessiblePathRefs[refs_List] :=
+  NBAccess`NBSetAccessiblePathRefs[EvaluationNotebook[], refs];
+
+NBAccess`NBGetAccessiblePathRefs[nb_NotebookObject] :=
+  Module[{val, legacy},
+    val = NBAccess`NBGetTaggingRule[nb, "claudeAccessiblePathRefs"];
+    If[ListQ[val] && val =!= {},
+      Return[Select[val, AssociationQ]]];
+    (* read fallback: \:65e7 claudeAccessibleDirs \:3092 AccessPathRef \:306b\:5909\:63db *)
+    legacy = NBAccess`NBGetTaggingRule[nb, "claudeAccessibleDirs"];
+    If[ListQ[legacy],
+      Map[NBAccess`NBNormalizeAccessPathRef,
+        Select[legacy, StringQ[#] && StringLength[#] > 0 &]],
+      {}]
+  ];
+
+NBAccess`NBGetAccessiblePathRefs[] :=
+  NBAccess`NBGetAccessiblePathRefs[EvaluationNotebook[]];
+
+(* \:2500\:2500 \:5f8c\:65b9\:4e92\:63db API: NBSetAccessibleDirs / NBGetAccessibleDirs \:2500\:2500
+   policy v3 \:00a712.2: claudeAccessiblePathRefs \:3092\:6b63\:672c\:3068\:3057\:3001\:65e7 dir \:30ea\:30b9\:30c8\:306f
+   read fallback\:3002NBGetAccessibleDirs \:306f\:5f93\:6765\:901a\:308a\:300c\:73fe PC \:5b9f\:30d1\:30b9\:306e List\:300d\:3092\:8fd4\:3059
+   \:5951\:7d04\:3092\:7dad\:6301\:3059\:308b (claudecode.wl \:5074\:3092\:5909\:66f4\:4e0d\:8981\:306b\:3059\:308b\:305f\:3081)\:3002 *)
+
 NBAccess`NBSetAccessibleDirs[nb_NotebookObject, dirs_List] :=
-  NBAccess`NBSetTaggingRule[nb, "claudeAccessibleDirs",
-    Select[dirs, StringQ[#] && StringLength[#] > 0 &]];
+  NBAccess`NBSetAccessiblePathRefs[nb,
+    Map[NBAccess`NBNormalizeAccessPathRef,
+      Select[dirs, StringQ[#] && StringLength[#] > 0 &]]];
 
 NBAccess`NBSetAccessibleDirs[dirs_List] :=
   NBAccess`NBSetAccessibleDirs[EvaluationNotebook[], dirs];
 
 NBAccess`NBGetAccessibleDirs[nb_NotebookObject] :=
-  Module[{val},
-    val = NBAccess`NBGetTaggingRule[nb, "claudeAccessibleDirs"];
-    If[ListQ[val], val, {}]
+  Module[{refs, resolved},
+    refs = NBAccess`NBGetAccessiblePathRefs[nb];
+    (* \:5404 AccessPathRef \:3092\:73fe PC \:306e\:5b9f\:30d1\:30b9\:3078 materialize\:3002
+       alias-only / root-missing \:306f\:89e3\:6c7a\:3055\:308c\:305a\:9664\:5916\:3055\:308c\:308b (rule 104)\:3002 *)
+    resolved = Map[
+      Function[r,
+        Module[{pr, p},
+          pr = Lookup[r, "PathRef", Missing[]];
+          p = NBAccess`NBResolvePathRef[pr];
+          If[StringQ[p] && (DirectoryQ[p] || FileExistsQ[p]),
+            p,
+            (* PathRef \:304c\:89e3\:6c7a\:3067\:304d\:306a\:3044\:5834\:5408\:3001\:65e7 dir \:6587\:5b57\:5217\:304c\:3042\:308c\:3070\:6700\:5f8c\:306e\:624b\:6bb5\:3067\:4f7f\:3046 *)
+            With[{ld = Lookup[r, "LegacyDir", Missing[]]},
+              If[StringQ[ld] && DirectoryQ[ld], ld, Nothing]]]]],
+      refs];
+    DeleteDuplicates[Select[resolved, StringQ]]
   ];
 
 NBAccess`NBGetAccessibleDirs[] :=
@@ -4064,9 +4528,23 @@ NBAccess`NBGetAvailableFallbackModels[requestedLevel_?NumericQ] :=
      .nb \:30d5\:30a1\:30a4\:30eb\:306f\:79d8\:533f\:30bb\:30eb\:306e\:6709\:7121\:3067 {0.5,1.0} \:306b\:5909\:308f\:308b\:53ef\:80fd\:6027
    ============================================================ *)
 
-(* \:30d5\:30a1\:30a4\:30eb\:306e\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb\:3092\:6c7a\:5b9a\:3059\:308b (pure, \:30d5\:30a1\:30a4\:30eb\:30b7\:30b9\:30c6\:30e0\:60c5\:5831\:3060\:3051\:4f7f\:7528) *)
+(* \:30d5\:30a1\:30a4\:30eb\:306e\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb\:3092\:6c7a\:5b9a\:3059\:308b\:3002
+   Stage 9 P1 Step \:300c\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00\:300d \:62e1\:5f35:
+     (1) \:30ce\:30fc\:30c8\:81ea\:8eab\:306e TaggingRules > SourceVault > CloudPublishable \:3092\:6700\:512a\:5148
+         True  \[Rule] 0.4 (\:30af\:30e9\:30a6\:30c9 LLM \:53ef)
+         False \[Rule] 1.0 (\:30ed\:30fc\:30ab\:30eb\:306e\:307f, \:660e\:793a\:7684\:7981\:6b62)
+     (2) \:5ba3\:8a00\:7121\:3057\:306e\:5834\:5408\:306f\:5f93\:6765\:901a\:308a $packageDirectory / $ClaudeAccessibleDirs \:3092\:898b\:308b
+     (3) \:305d\:308c\:4ee5\:5916\:306f 1.0
+   \:6ce8: \:6df7\:5728\:5224\:5b9a (\:6a5f\:5bc6\:30bb\:30eb\:306e\:6709\:7121) \:306f iNBFileCellPrivacyRange \:5074\:3067 refine \:3055\:308c\:308b\:306e\:3067\:3001
+       \:3053\:3053\:3067\:306f base level (ファイル全体宣言) のみ返す。 *)
 iNBFilePrivacyLevel[path_String] :=
-  Module[{dir, pkgDir, accessDirs, isSafe},
+  Module[{declared, dir, pkgDir, accessDirs, isSafe},
+    (* (1) \:30ce\:30fc\:30c8\:81ea\:8eab\:306e\:5ba3\:8a00 *)
+    declared = iNBFileDeclaredPublishable[path];
+    If[TrueQ[declared],    Return[0.4]];
+    If[declared === False, Return[1.0]];
+
+    (* (2) \:65e2\:5b58: \:30d1\:30b9\:5e95\:306e\:5b89\:5168\:5224\:5b9a *)
     dir        = DirectoryName[path];
     pkgDir     = Quiet @ Symbol["Global`$packageDirectory"];
     accessDirs = Quiet @ If[ListQ[Symbol["Global`$ClaudeAccessibleDirs"]],
@@ -4084,8 +4562,11 @@ iNBFilePrivacyLevel[path_String] :=
 iNBFileCellPrivacyRange[path_String] :=
   Module[{nb2, allCells, hasConf, hasPublic, baseLevel},
     baseLevel = iNBFilePrivacyLevel[path];
+    If[NumericQ[baseLevel] && baseLevel < 0.5,
+      (* Explicit CloudPublishable -> True: cloud-safe score must be below 0.5. *)
+      Return[baseLevel]];
     If[baseLevel === 0.5,
-      (* $packageDirectory \:5185 .nb \:306f\:5e38\:306b\:30a2\:30af\:30bb\:30b9\:53ef *)
+      (* Path-accessible but not cloud-send by default. *)
       Return[0.5]];
     nb2 = Quiet @ NBAccess`NBFileOpen[path];
     If[Head[nb2] =!= NotebookObject, Return[1.0]];
@@ -4097,6 +4578,9 @@ iNBFileCellPrivacyRange[path_String] :=
     Which[
       hasConf && hasPublic, {0.5, 1.0},   (* \:6df7\:5728 *)
       hasConf,              1.0,           (* \:5168\:3066\:79d8\:533f *)
+      (* Stage 9 P1 \:62e1\:5f35: \:30ce\:30fc\:30c8\:81ea\:8eab\:304c CloudPublishable -> False \:3068\:660e\:793a\:5ba3\:8a00\:3057\:3066\:3044\:308b\:5834\:5408\:306f\:3001
+         \:5168\:30bb\:30eb\:516c\:958b\:3067\:3082\:5f37\:5236 1.0 (\:65e2\:5b58\:7de9\:548c\:3092 skip)\:3002 *)
+      iNBFileDeclaredPublishable[path] === False, 1.0,
       True,                 0.5            (* \:5168\:3066\:516c\:958b \[LongDash] \:30d5\:30a1\:30a4\:30eb\:306f1.0\:3060\:304c\:30bb\:30eb\:304c\:5168\:516c\:958b *)
     ]
   ];
@@ -4104,9 +4588,366 @@ iNBFileCellPrivacyRange[path_String] :=
 (* \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
    NBObjectSpec: \:30d5\:30a1\:30a4\:30eb\:307e\:305f\:306f\:5024\:306e\:30e1\:30bf\:60c5\:5831 + PrivacyLevel
    \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine] *)
-Options[NBAccess`NBFileSpec] = {PrivacySpec -> Automatic};
-NBAccess`NBFileSpec[path_String, opts:OptionsPattern[]] :=
-  Module[{exists, ext, fsize, privLevel, nb2, allCells,
+(* \:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500
+   NBNormalizePath: \:7d76\:5bfe\:30d1\:30b9 \:2192 \:30af\:30ed\:30b9 PC \:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:60c5\:5831
+   \:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500
+   Phase 1 (\:51fa\:529b\:62e1\:5f35\:306e\:307f)\:3002authorization \:30ed\:30b8\:30c3\:30af\:306f\:4e00\:5207\:5909\:66f4\:3057\:306a\:3044\:3002
+   rule 104: \:623b\:308a\:5024\:306f identity \:3067\:3042\:3063\:3066\:6a29\:9650\:3067\:306f\:306a\:3044\:3002
+
+   root \:89e3\:6c7a\:65b9\:91dd (SourceVault \:59d4\:8b72\:6848):
+   - SourceVault \:304c\:30ed\:30fc\:30c9\:6e08\:307f (iSVSymbolicPath \:304c\:5b9a\:7fa9\:6e08\:307f) \:306a\:3089\:3001\:305d\:308c\:306b\:59d4\:8b72\:3059\:308b\:3002
+     iSVSymbolicPath \:306f\:30af\:30ed\:30b9 PC \:30a8\:30a4\:30ea\:30a2\:30b9 ($SourceVaultCloudRootAliases) \:306b\:5bfe\:5fdc\:3059\:308b\:3002
+   - \:672a\:30ed\:30fc\:30c9\:306a\:3089\:73fe PC \:5b9f\:4f53\:30eb\:30fc\:30c8\:306e\:307f\:3067\:7c21\:6613\:89e3\:6c7a\:3057\:3001\:30a8\:30a4\:30ea\:30a2\:30b9\:7167\:5408\:306f\:3057\:306a\:3044\:3002
+   \:3044\:305a\:308c\:306e\:5834\:5408\:3082 $NBPathRootRegistry \:306e\:3088\:3046\:306a\:65b0\:3057\:3044\:72b6\:614b\:306f NBAccess \:306b\:6301\:305f\:305b\:306a\:3044
+   (\:4e8c\:91cd\:7ba1\:7406\:3092\:907f\:3051\:308b\:3002rule 104 / cross-PC path policy \:00a76.1.1)\:3002 *)
+
+(* SourceVault`iSVSymbolicPath \:304c\:5229\:7528\:53ef\:80fd\:304b (\:5b9a\:7fa9\:6e08\:307f\:304b) \:3092\:5224\:5b9a\:3002 *)
+iNBSourceVaultPathAvailableQ[] :=
+  Quiet @ Check[
+    DownValues[SourceVault`iSVSymbolicPath] =!= {},
+    False];
+
+(* \:73fe PC \:5b9f\:4f53\:30eb\:30fc\:30c8\:306e\:307f\:306e\:7c21\:6613\:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:5316 (SourceVault \:672a\:30ed\:30fc\:30c9\:6642\:306e fallback)\:3002
+   SourceVault \:3068\:540c\:3058 root \:540d\:96c6\:5408 / \:540c\:3058 Global \:5909\:6570\:89e3\:6c7a\:65b9\:5f0f\:3092\:4f7f\:3046\:304c\:3001
+   \:30a8\:30a4\:30ea\:30a2\:30b9\:306f\:898b\:306a\:3044\:3002\:3069\:306e\:30eb\:30fc\:30c8\:306b\:3082\:5f53\:305f\:3089\:306a\:3051\:308c\:3070 {"<ABS>", abs}\:3002 *)
+iNBLocalSymbolicPath[abs_String] :=
+  Module[{rootNames, cands, best, sep},
+    sep = "/";
+    rootNames = {"$packageDirectory", "$dropbox", "$onWork",
+                 "$offWork", "$mathematicaWork"};
+    cands = Map[
+      Function[symName,
+        Module[{bare, v, rootAbs, rootKey, absKey},
+          bare = StringTrim[symName, "$"];
+          v = Quiet @ ToExpression["Global`$" <> bare];
+          If[!StringQ[v] || !DirectoryQ[v], Nothing,
+            rootAbs = ExpandFileName[v];
+            (* \:30bb\:30d1\:30ec\:30fc\:30bf\:7d71\:4e00 + \:672b\:5c3e\:9664\:53bb + \:5c0f\:6587\:5b57\:5316 (Windows \:5927\:5c0f\:7121\:8996) *)
+            rootKey = ToLowerCase @ StringReplace[
+              StringReplace[rootAbs, "\\" -> sep],
+              RegularExpression["/+$"] -> ""];
+            absKey = ToLowerCase @ StringReplace[
+              StringReplace[abs, "\\" -> sep],
+              RegularExpression["/+$"] -> ""];
+            If[rootKey =!= "" &&
+               (absKey === rootKey ||
+                StringStartsQ[absKey, rootKey <> sep]),
+              {symName, rootKey,
+               StringReplace[StringReplace[abs, "\\" -> sep],
+                 RegularExpression["/+$"] -> ""]},
+              Nothing]]]],
+      rootNames];
+    If[cands === {},
+      {"<ABS>", abs},
+      (* \:6700\:9577\:30de\:30c3\:30c1 (\:5165\:308c\:5b50\:30eb\:30fc\:30c8\:5bfe\:7b56) *)
+      best = First @ SortBy[cands, -StringLength[#[[2]]] &];
+      Module[{symName = best[[1]], rootKey = best[[2]],
+              absSlash = best[[3]], rest},
+        rest = StringDrop[absSlash, StringLength[rootKey]];
+        rest = StringSplit[StringTrim[rest, sep], sep];
+        Prepend[rest, symName]]]
+  ];
+
+(* \:7d76\:5bfe\:30d1\:30b9\:3092\:6b63\:898f\:5316\:3057 identity \:7528 Association \:3092\:8fd4\:3059\:3002 *)
+NBAccess`NBNormalizePath[path_String] :=
+  Module[{abs, symPath, head, rootId, parts, matchedBy,
+          resolutionStatus, physicalPath},
+    abs = ExpandFileName[path];
+    (* \:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:53d6\:5f97: SourceVault \:512a\:5148\:3001\:7121\:3051\:308c\:3070 local fallback *)
+    symPath = If[iNBSourceVaultPathAvailableQ[],
+      Quiet @ Check[SourceVault`iSVSymbolicPath[abs], {"<ABS>", abs}],
+      iNBLocalSymbolicPath[abs]];
+    If[!ListQ[symPath] || symPath === {},
+      symPath = {"<ABS>", abs}];
+    head = First[symPath];
+    If[head === "<ABS>",
+      (* \:3069\:306e\:30eb\:30fc\:30c8\:306b\:3082\:5f53\:305f\:3089\:306a\:3044\:30d5\:30a1\:30a4\:30eb *)
+      Return[<|
+        "Kind" -> "AbsolutePath",
+        "RootId" -> Missing["Unrooted"],
+        "Parts" -> {},
+        "SymbolicPath" -> symPath,
+        "PhysicalPath" -> abs,
+        "ResolutionStatus" -> "Unrooted",
+        "MatchedBy" -> "None"|>]];
+    (* \:30eb\:30fc\:30c8\:4ed8\:304d\:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9 *)
+    rootId = head;
+    parts = Rest[symPath];
+    (* \:73fe PC \:5b9f\:4f53\:30eb\:30fc\:30c8\:306b\:5f53\:305f\:308b\:304b: PhysicalPath \:304c\:73fe PC \:306b\:5b58\:5728\:3059\:308b\:304b\:3067\:5224\:5b9a\:3002
+       SourceVault \:59d4\:8b72\:6642\:3001iSVSymbolicPath \:306f\:30a8\:30a4\:30ea\:30a2\:30b9\:306b\:3082\:5f53\:305f\:308b\:305f\:3081\:3001
+       \:5b9f\:4f53\:89e3\:6c7a\:3067\:304d\:305f\:304b\:3069\:3046\:304b\:3092\:3053\:3053\:3067\:78ba\:304b\:3081\:308b\:3002 *)
+    physicalPath = abs;
+    Which[
+      DirectoryQ[abs] || FileExistsQ[abs],
+        resolutionStatus = "ResolvedOnThisPC";
+        matchedBy = "LocalRoot",
+      True,
+        (* path \:304c\:73fe PC \:306b\:5b58\:5728\:3057\:306a\:3044: \:5225 PC \:306e\:30a8\:30a4\:30ea\:30a2\:30b9\:7531\:6765\:3068\:307f\:306a\:3059\:3002
+           identity \:306b\:306f\:4f7f\:3048\:308b\:304c PhysicalPath \:306f\:4fe1\:7528\:3057\:306a\:3044\:3002 *)
+        resolutionStatus = "AliasOnly";
+        matchedBy = "Alias";
+        physicalPath = Missing["AliasOnly"]
+    ];
+    <|
+      "Kind" -> "RootedPath",
+      "RootId" -> rootId,
+      "Parts" -> parts,
+      "SymbolicPath" -> symPath,
+      "PhysicalPath" -> physicalPath,
+      "ResolutionStatus" -> resolutionStatus,
+      "MatchedBy" -> matchedBy|>
+  ];
+
+NBAccess`NBNormalizePath[_] := Missing["InvalidPathArgument"];
+
+(* NBFileSpec \:3078\:30de\:30fc\:30b8\:3059\:308b PathRef \:7cfb\:30d5\:30a3\:30fc\:30eb\:30c9\:3092 Association \:3067\:8fd4\:3059\:3002
+   NBNormalizePath \:304c\:5931\:6557\:3057\:3066\:3082 NBFileSpec \:5168\:4f53\:306f\:58ca\:3055\:306a\:3044 (Missing \:3092\:8fd4\:3059\:3060\:3051)\:3002
+   rule 104: \:3053\:308c\:3089\:306f identity \:7528\:30d5\:30a3\:30fc\:30eb\:30c9\:3067\:3042\:308a authorization \:306b\:306f\:4f7f\:308f\:306a\:3044\:3002 *)
+iNBPathRefFields[path_String] :=
+  Module[{pr},
+    pr = Quiet @ Check[NBAccess`NBNormalizePath[path], $Failed];
+    If[AssociationQ[pr],
+      <|
+        "PathRef" -> KeyTake[pr, {"Kind", "RootId", "Parts"}],
+        "SymbolicPath" -> Lookup[pr, "SymbolicPath", Missing[]],
+        "PathResolutionStatus" -> Lookup[pr, "ResolutionStatus", "Unknown"]
+      |>,
+      <|
+        "PathRef" -> Missing["NormalizeFailed"],
+        "SymbolicPath" -> Missing["NormalizeFailed"],
+        "PathResolutionStatus" -> "Unknown"
+      |>]
+  ];
+iNBPathRefFields[_] :=
+  <|"PathRef" -> Missing["InvalidPathArgument"],
+    "SymbolicPath" -> Missing["InvalidPathArgument"],
+    "PathResolutionStatus" -> "Unknown"|>;
+
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Phase 4.1 / 4.2: File authorization adapter + projection field
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   cross-PC path policy Phase 4 (revised3) \:6e96\:62e0\:3002
+   CloudSendAllowed \:7b49\:306f\:4e00\:6b21\:30dd\:30ea\:30b7\:30fc\:3067\:306f\:306a\:304f NBAuthorize \:7d50\:679c\:306e projection\:3002
+   NBAuthorizeFile \:306f\:65b0 engine \:3067\:306f\:306a\:304f\:65e2\:5b58 NBAuthorize \:3078\:306e adapter\:3002 *)
+
+(* NBFileSpec \:306e projection key \:4e00\:89a7\:3002authorization \:5165\:529b\:304b\:3089\:306f\:843d\:3068\:3059\:3002 *)
+$NBFileProjectionKeys = {
+  "ReadableByAgent", "WritableByAgent", "CloudSendAllowed",
+  "ReadDecision", "WriteDecision", "CloudSendDecision",
+  "ProjectionSource", "ProjectionComputedAt"};
+
+(* Phase 4 \:521d\:671f\:306e placeholder label\:3002DLM \:5b8c\:5168\:5b9f\:88c5\:307e\:3067\:306f\:3053\:306e\:6700\:5c0f\:5f62\:3002 *)
+NBAccess`NBDefaultFilePolicyLabel[spec_Association] :=
+  <|"Kind" -> "DefaultFilePolicyLabel"|>;
+NBAccess`NBDefaultFilePolicyLabel[_] :=
+  <|"Kind" -> "DefaultFilePolicyLabel"|>;
+NBAccess`NBNoExtraContainerLabel[] :=
+  <|"Kind" -> "NoExtraContainerLabel"|>;
+
+(* PrivacyLevel \:304b\:3089 score \:3092\:5f97\:308b\:3002
+   \:6570\:5024\:306a\:3089\:305d\:306e\:5024\:3002{0.5,1.0} \:7b49\:306e\:6df7\:5728\:306f Max (whole-file projection \:306f\:5b89\:5168\:5074)\:3002
+   \:4e0d\:660e\:306f 1.0 (\:6700\:3082\:53b3\:683c)\:3002 *)
+iNBPrivacyLevelToScore[pl_] :=
+  Which[
+    NumericQ[pl], N[pl],
+    ListQ[pl] && pl =!= {} && AllTrue[pl, NumericQ], N[Max[pl]],
+    True, 1.0
+  ];
+
+(* NBFileSpec \:306e\:751f Association \:3092 NBAuthorize \:306e object \:5951\:7d04\:306b\:6b63\:898f\:5316\:3059\:308b\:3002
+   - projection key \:3092\:843d\:3068\:3059
+   - PrivacyLevel \:304b\:3089 BasePrivacyScore \:3068 EffectiveRiskScore \:3092\:88dc\:5b8c
+     (revised3 ScoreGate \:4e3b\:5c0e\:6848: \:73fe\:884c NBScoreGate \:306f EffectiveRiskScore \:3092\:512a\:5148\:53c2\:7167\:3059\:308b\:3002
+      BasePrivacyScore \:3060\:3051\:3067\:306f ScoreGate \:304c\:52b9\:304b\:306a\:3044\:3002)
+   - PolicyLabel / ContainerLabel / ContainerRisk / Tags \:3092\:65e2\:5b9a\:3067\:88dc\:5b8c *)
+iNBFileSpecForAuthorize[spec_Association] :=
+  Module[{base, score},
+    base = KeyDrop[spec, $NBFileProjectionKeys];
+    score = iNBPrivacyLevelToScore[Lookup[base, "PrivacyLevel", 1.0]];
+    <|
+      "Kind" -> Lookup[base, "Kind", "File"],
+      "Path" -> Lookup[base, "Path", Missing["Path"]],
+      "CanonicalPath" ->
+        Lookup[base, "CanonicalPath", Lookup[base, "Path", Missing[]]],
+      "PrivacyLevel" -> Lookup[base, "PrivacyLevel", 1.0],
+      "BasePrivacyScore" -> Lookup[base, "BasePrivacyScore", score],
+      (* \:73fe\:884c NBScoreGate \:304c\:512a\:5148\:7684\:306b\:898b\:308b score\:3002\:3053\:308c\:304c\:9632\:5fa1\:306e\:4e3b\:7d4c\:8def\:3002 *)
+      "EffectiveRiskScore" -> Lookup[base, "EffectiveRiskScore", score],
+      "PolicyLabel" ->
+        Lookup[base, "PolicyLabel", NBAccess`NBDefaultFilePolicyLabel[base]],
+      "ContainerLabel" ->
+        Lookup[base, "ContainerLabel", NBAccess`NBNoExtraContainerLabel[]],
+      "ContainerRisk" -> Lookup[base, "ContainerRisk", 0.0],
+      "Tags" -> Lookup[base, "Tags", {}],
+      "SourceSpecVersion" -> "NBFileAuthorizationSpec/v1"
+    |>
+  ];
+iNBFileSpecForAuthorize[_] :=
+  <|"Kind" -> "File", "PrivacyLevel" -> 1.0,
+    "BasePrivacyScore" -> 1.0, "EffectiveRiskScore" -> 1.0,
+    "SourceSpecVersion" -> "NBFileAuthorizationSpec/v1"|>;
+
+(* file \:7528 AccessRequest \:3092\:7d44\:307f\:7acb\:3066\:308b\:3002
+   Sink / Networked / AccessLevel \:306f operation \:304b\:3089\:65e2\:5b9a\:304c\:6c7a\:307e\:308b\:3002
+   Phase 4.1: cloud send \:306f\:73fe\:884c NBScoreGate \:306b\:5408\:308f\:305b Sink -> "CloudLLM"\:3002 *)
+Options[NBAccess`NBMakeFileAccessRequest] = {
+  "Subject" -> "ClaudeAgent", "Module" -> "claudecode",
+  "Sink" -> Automatic, "Networked" -> Automatic, "Route" -> Automatic,
+  "Provider" -> Automatic, "ModelIntent" -> Automatic,
+  "AccessLevel" -> Automatic};
+
+NBAccess`NBMakeFileAccessRequest[
+    pathOrSpec_, operation_String, opts:OptionsPattern[]] :=
+  Module[{sink, networked, route, accessLevel, cloudTh},
+    cloudTh = Lookup[$NBRoutingThresholds, "Cloud", 0.5];
+    (* Sink \:65e2\:5b9a: \:73fe\:884c NBEnvironmentGate \:306e AllowedSinks \:65e2\:5b9a\:96c6\:5408
+       {"CloudLLM","PrivateLLM","LocalOnly","Notebook"} \:306b\:5408\:308f\:305b\:308b\:3002
+       "KernelValue" / "NotebookCell" \:306f\:96c6\:5408\:5916\:306a\:306e\:3067 SinkNotAllowed \:3067 Deny \:3055\:308c\:308b\:3002
+       Phase 4.1 \:3067\:306f AccessRequest \:306e\:62bd\:8c61\:540d\:3088\:308a\:73fe\:884c gate \:304c\:8a8d\:8b58\:3059\:308b\:540d\:3092\:512a\:5148\:3059\:308b\:3002 *)
+    sink = Replace[OptionValue["Sink"], Automatic :>
+      Switch[operation,
+        "SendExternal", "CloudLLM",
+        "ReadValue",    "LocalOnly",
+        "WriteCell",    "Notebook",
+        "WriteLog",     "LocalOnly",
+        _,              "LocalOnly"]];
+    networked = Replace[OptionValue["Networked"], Automatic :>
+      (operation === "SendExternal")];
+    route = Replace[OptionValue["Route"], Automatic :>
+      If[operation === "SendExternal", "CloudLLM", "LocalAgent"]];
+    (* AccessLevel \:65e2\:5b9a: cloud \:306f threshold\:3001\:305d\:306e\:4ed6\:306f\:30ed\:30fc\:30ab\:30eb\:306a\:306e\:3067\:7de9\:3044 1.0\:3002
+       \:6ce8: \:73fe\:884c NBScoreGate \:306f obj \:5074 EffectiveRiskScore \:3092\:512a\:5148\:53c2\:7167\:3059\:308b\:305f\:3081\:3001
+       obj \:306b score \:304c\:3042\:308b\:9650\:308a req["AccessLevel"] \:306f\:5224\:5b9a\:306b\:76f4\:63a5\:306f\:52b9\:304b\:306a\:3044\:3002 *)
+    accessLevel = Replace[OptionValue["AccessLevel"], Automatic :>
+      Switch[operation, "SendExternal", cloudTh, _, 1.0]];
+    <|
+      "Subject" -> OptionValue["Subject"],
+      "Module" -> OptionValue["Module"],
+      "Operation" -> operation,
+      "Sink" -> sink,
+      "Environment" -> <|
+        "Networked" -> TrueQ[networked],
+        "Route" -> route,
+        "Provider" -> OptionValue["Provider"],
+        "ModelIntent" -> OptionValue["ModelIntent"]|>,
+      "AccessLevel" -> accessLevel
+    |>
+  ];
+
+(* file spec \:3092 NBAuthorize \:306b\:6e21\:3059 adapter\:3002
+   \:751f spec \:3092\:305d\:306e\:307e\:307e\:6e21\:3055\:305a iNBFileSpecForAuthorize \:3067\:6b63\:898f\:5316\:3059\:308b\:3002
+   NBAuthorize \:304c\:5931\:6557\:3057\:305f\:3089 Deny \:306b\:5012\:3059 (fail-closed)\:3002 *)
+NBAccess`NBAuthorizeFile[pathOrSpec_, req_Association] :=
+  Module[{rawSpec, authSpec},
+    rawSpec = If[AssociationQ[pathOrSpec],
+      pathOrSpec,
+      Quiet @ Check[
+        NBAccess`NBFileSpec[pathOrSpec, "IncludeProjections" -> False],
+        $Failed]];
+    If[!AssociationQ[rawSpec],
+      Return[<|"Decision" -> "Deny",
+        "ReasonClass" -> "FileSpecError",
+        "VisibleExplanation" -> "Could not build file spec."|>]];
+    authSpec = iNBFileSpecForAuthorize[rawSpec];
+    Quiet @ Check[
+      NBAccess`NBAuthorize[authSpec, req],
+      <|"Decision" -> "Deny",
+        "ReasonClass" -> "AuthorizationError",
+        "VisibleExplanation" -> "File authorization failed."|>]
+  ];
+
+(* AccessDecision \:3092 fail-closed \:306a Boolean projection \:306b\:843d\:3068\:3059\:3002
+   "Permit" \:306e\:3068\:304d\:3060\:3051 True\:3002\:305d\:308c\:4ee5\:5916\:30fb$Failed\:30fbMissing\:30fb\:4f8b\:5916\:306f\:3059\:3079\:3066 False\:3002 *)
+NBAccess`NBPermitQ[decision_] :=
+  TrueQ @ Quiet @ Check[
+    AssociationQ[decision] &&
+      Lookup[decision, "Decision", None] === "Permit",
+    False];
+
+(* NBFileSpec base spec \:304b\:3089 projection field \:3092\:8a08\:7b97\:3059\:308b\:3002
+   notebook \:3092\:958b\:304d\:76f4\:3055\:306a\:3044 (base spec \:306e\:60c5\:5831\:3060\:3051\:3092\:4f7f\:3046)\:3002
+   3 \:3064\:306e projection \:306f\:540c\:4e00\:306e base \:306b\:5bfe\:3059\:308b NBAuthorizeFile \:306e\:7d50\:679c\:3002 *)
+iNBFileSpecProjections[base_Association] :=
+  Module[{readReq, writeReq, cloudReq, readDec, writeDec, cloudDec},
+    readReq = NBAccess`NBMakeFileAccessRequest[base, "ReadValue",
+      "Sink" -> "LocalOnly", "Networked" -> False, "AccessLevel" -> 1.0];
+    writeReq = NBAccess`NBMakeFileAccessRequest[base, "WriteCell",
+      "Sink" -> "Notebook", "Networked" -> False, "AccessLevel" -> 1.0];
+    cloudReq = NBAccess`NBMakeFileAccessRequest[base, "SendExternal",
+      "Sink" -> "CloudLLM", "Networked" -> True, "Route" -> "CloudLLM"];
+    readDec  = NBAccess`NBAuthorizeFile[base, readReq];
+    writeDec = NBAccess`NBAuthorizeFile[base, writeReq];
+    cloudDec = NBAccess`NBAuthorizeFile[base, cloudReq];
+    <|
+      "ReadableByAgent" -> NBAccess`NBPermitQ[readDec],
+      "WritableByAgent" -> NBAccess`NBPermitQ[writeDec],
+      "CloudSendAllowed" -> NBAccess`NBPermitQ[cloudDec],
+      "ReadDecision" -> readDec,
+      "WriteDecision" -> writeDec,
+      "CloudSendDecision" -> cloudDec,
+      "ProjectionSource" -> "NBAuthorize",
+      (* projection \:3092\:5b9f\:969b\:306b\:8a08\:7b97\:3057\:305f\:6642\:523b\:3002cache key \:306b\:306f\:542b\:3081\:306a\:3044\:3002 *)
+      "ProjectionComputedAt" -> DateObject[]
+    |>
+  ];
+
+(* Phase 4.3: file content cache key for NBFileSpec base cache. *)
+iNBFileContentCacheKey[path_String] :=
+  Module[{canonical, exists, mtime, bytes},
+    canonical = Quiet @ Check[ExpandFileName[path], path];
+    exists = FileExistsQ[canonical];
+    mtime = If[exists, Quiet @ Check[FileDate[canonical], Missing["FileDateFailed"]],
+      Missing["FileDoesNotExist"]];
+    bytes = If[exists && !DirectoryQ[canonical],
+      Quiet @ Check[FileByteCount[canonical], Missing["FileByteCountFailed"]],
+      Missing["NoByteCount"]];
+    <|
+      "CanonicalPath" -> canonical,
+      "Exists" -> exists,
+      "FileMTime" -> mtime,
+      "FileByteCount" -> bytes
+    |>
+  ];
+iNBFileContentCacheKey[other_] :=
+  <|"InvalidPath" -> HoldComplete[other]|>;
+
+iNBProviderMaxAccessLevelsSnapshot[] :=
+  If[AssociationQ[$iProviderMaxAccessLevel],
+    Association @ SortBy[Normal[$iProviderMaxAccessLevel], ToString[First[#], InputForm] &],
+    <||>];
+
+iNBNormalizePolicyPathForFingerprint[path_String] :=
+  Quiet @ Check[ExpandFileName[path], path];
+iNBNormalizePolicyPathForFingerprint[other_] := other;
+
+iNBNormalizedAccessibleDirsSnapshot[] :=
+  Module[{dirs},
+    dirs = Quiet @ Check[NBAccess`NBGetAccessibleDirs[], {}];
+    If[!ListQ[dirs], dirs = {}];
+    SortBy[
+      DeleteDuplicates[Map[iNBNormalizePolicyPathForFingerprint, dirs]],
+      ToString[#, InputForm] &]
+  ];
+
+(* Phase 4.3: projection policy fingerprint.
+   Do not include ProjectionComputedAt or current time. *)
+iNBProjectionPolicyFingerprint[] :=
+  Hash[
+    <|
+      "NBRoutingThresholds" -> If[AssociationQ[$NBRoutingThresholds],
+        Association @ SortBy[Normal[$NBRoutingThresholds], ToString[First[#], InputForm] &],
+        $NBRoutingThresholds],
+      "NBPrivacySpec" -> NBAccess`$NBPrivacySpec,
+      "AccessibleDirs" -> iNBNormalizedAccessibleDirsSnapshot[],
+      "ProviderMaxAccessLevels" -> iNBProviderMaxAccessLevelsSnapshot[],
+      "ProjectionPolicyVersion" -> $iNBFileProjectionPolicyVersion
+    |>,
+    "SHA256"
+  ];
+
+(* Base spec without projection fields. This is the old NBFileSpec body. *)
+iNBFileSpecBase[path_String] :=
+  Module[{exists, ext, fsize, privLevel, declared, nb2, allCells,
           nConf = 0, nPublic = 0, nTotal = 0},
     exists = FileExistsQ[path];
     If[!exists,
@@ -4114,7 +4955,7 @@ NBAccess`NBFileSpec[path_String, opts:OptionsPattern[]] :=
                "PrivacyLevel" -> 1.0|>]];
     ext   = ToLowerCase[FileExtension[path]];
     fsize = Quiet @ Check[FileByteCount[path], 0];
-    (* .nb \:30d5\:30a1\:30a4\:30eb\:306f\:30bb\:30eb\:60c5\:5831\:3082\:53d6\:5f97 *)
+    (* .nb file: get cell privacy summary. *)
     If[ext === "nb",
       privLevel = iNBFileCellPrivacyRange[path];
       nb2 = Quiet @ NBAccess`NBFileOpen[path];
@@ -4127,18 +4968,107 @@ NBAccess`NBFileSpec[path_String, opts:OptionsPattern[]] :=
           nPublic = nTotal - nConf]]];
     If[ext =!= "nb",
       privLevel = iNBFilePrivacyLevel[path]];
-    <|
-      "Type"          -> "File",
-      "FileType"      -> If[ext =!= "", ext, "unknown"],
-      "Path"          -> path,
-      "Exists"        -> True,
-      "FileSize"      -> fsize,
-      "PrivacyLevel"  -> privLevel,
-      (* .nb \:56fa\:6709\:30d5\:30a3\:30fc\:30eb\:30c9 *)
-      If[ext === "nb", "CellCount"            -> nTotal,   Nothing],
-      If[ext === "nb", "PublicCellCount"       -> nPublic,  Nothing],
-      If[ext === "nb", "ConfidentialCellCount" -> nConf,    Nothing]
-    |>
+
+    (* Phase 4.6c: final file-spec override.
+       Notebook-level CloudPublishable declaration must win at the NBFileSpec
+       boundary too, so downstream code never sees 0.5 for an explicitly
+       publishable notebook. *)
+    If[ext === "nb",
+      declared = iNBFileDeclaredPublishable[path];
+      If[TrueQ[declared], privLevel = 0.4];
+      If[declared === False, privLevel = 1.0]];
+
+    Join[
+      <|
+        "Type"          -> "File",
+        "FileType"      -> If[ext =!= "", ext, "unknown"],
+        "Path"          -> path,
+        "Exists"        -> True,
+        "FileSize"      -> fsize,
+        "PrivacyLevel"  -> privLevel,
+        If[ext === "nb", "CellCount"            -> nTotal,   Nothing],
+        If[ext === "nb", "PublicCellCount"       -> nPublic,  Nothing],
+        If[ext === "nb", "ConfidentialCellCount" -> nConf,    Nothing]
+      |>,
+      iNBPathRefFields[path]
+    ]
+  ];
+
+iNBFileSpecBaseCached[path_String] :=
+  Module[{keyData, key},
+    keyData = iNBFileContentCacheKey[path];
+    key = Hash[keyData, "SHA256"];
+    If[KeyExistsQ[$iNBFileSpecBaseCache, key],
+      Return[$iNBFileSpecBaseCache[key]]];
+    $iNBFileSpecBaseCache[key] = iNBFileSpecBase[path]
+  ];
+
+(* Phase 4.6d: repair at NBFileSpec public boundary.
+   This is intentionally applied after the base cache, so stale or older base
+   spec construction cannot hide an explicit notebook-level CloudPublishable
+   declaration from projections. *)
+iNBApplyDeclaredPublishableToFileSpec[base_Association] :=
+  Module[{path, fileType, declared},
+    path = Lookup[base, "Path", Missing["NoPath"]];
+    fileType = ToLowerCase @ ToString @ Lookup[base, "FileType",
+      If[StringQ[path], FileExtension[path], ""]];
+    If[!StringQ[path] || ToLowerCase[FileExtension[path]] =!= "nb",
+      Return[base]];
+
+    (* Phase 4.6e: use the public reader here.
+       result7.nb showed NBGetCloudPublishable[path] -> True while the
+       private declared helper did not reach the public NBFileSpec boundary. *)
+    declared = Quiet @ Check[NBAccess`NBGetCloudPublishable[path],
+      Missing["CloudPublishableReadFailed"]];
+
+    Which[
+      TrueQ[declared],
+        Join[base, <|"PrivacyLevel" -> 0.4,
+                    "DeclaredCloudPublishable" -> True,
+                    "DeclaredCloudPublishableSource" -> "NBGetCloudPublishable"|>],
+      declared === False,
+        Join[base, <|"PrivacyLevel" -> 1.0,
+                    "DeclaredCloudPublishable" -> False,
+                    "DeclaredCloudPublishableSource" -> "NBGetCloudPublishable"|>],
+      True,
+        base
+    ]
+  ];
+iNBApplyDeclaredPublishableToFileSpec[other_] := other;
+
+iNBFileSpecProjectionsCached[base_Association] :=
+  Module[{path, baseKeyData, keyData, key},
+    path = Lookup[base, "Path", Missing["NoPath"]];
+    baseKeyData = If[StringQ[path],
+      iNBFileContentCacheKey[path],
+      Hash[KeyDrop[base, $NBFileProjectionKeys], "SHA256"]];
+    keyData = <|
+      "BaseKey" -> baseKeyData,
+      "PolicyFingerprint" -> iNBProjectionPolicyFingerprint[]
+    |>;
+    key = Hash[keyData, "SHA256"];
+    If[KeyExistsQ[$iNBFileSpecProjectionCache, key],
+      Return[$iNBFileSpecProjectionCache[key]]];
+    $iNBFileSpecProjectionCache[key] = iNBFileSpecProjections[base]
+  ];
+
+NBAccess`NBFileSpecCacheClear[] :=
+  (
+    $iNBFileSpecBaseCache = <||>;
+    $iNBFileSpecProjectionCache = <||>;
+    Null
+  );
+
+Options[NBAccess`NBFileSpec] = {
+  PrivacySpec -> Automatic,
+  "IncludeProjections" -> False};
+NBAccess`NBFileSpec[path_String, opts:OptionsPattern[]] :=
+  Module[{base},
+    base = iNBApplyDeclaredPublishableToFileSpec[
+      iNBFileSpecBaseCached[path]];
+    If[TrueQ[OptionValue["IncludeProjections"]],
+      Join[base, iNBFileSpecProjectionsCached[base]],
+      base]
   ];
 
 (* \:5909\:6570/\:5024\:306e ObjectSpec (\:578b\:60c5\:5831 + \:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb) *)
@@ -4159,15 +5089,16 @@ NBAccess`NBValueSpec[expr_, privacyLevel_:0.5] :=
 
 (* PrivacyLevel \:304b\:3089\:5fc5\:8981\:306a\:30e2\:30c7\:30eb\:30eb\:30fc\:30c8\:3092\:6c7a\:5b9a *)
 NBAccess`NBPrivacyLevelToRoutes[privacyLevel_] :=
-  Which[
-    privacyLevel === 0.5 || privacyLevel == 0.5,
-      {"cloud"},                   (* ClaudeCode/API \:306e\:307f *)
-    privacyLevel === 1.0 || privacyLevel == 1.0,
-      {"local"},                   (* $ClaudePrivateModel \:306e\:307f *)
-    ListQ[privacyLevel] && Length[privacyLevel] == 2,
-      {"cloud", "local"},          (* \:4e26\:52172\:30ce\:30fc\:30c9 *)
-    True,
-      {"cloud"}
+  Module[{routes},
+    Which[
+      NumericQ[privacyLevel],
+        If[privacyLevel < 0.5, {"cloud"}, {"local"}],
+      ListQ[privacyLevel] && AllTrue[privacyLevel, NumericQ],
+        routes = DeleteDuplicates[If[# < 0.5, "cloud", "local"] & /@ privacyLevel];
+        If[routes === {}, {"local"}, routes],
+      True,
+        {"local"}
+    ]
   ];
 
 (* \:30bb\:30eb\:3092\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:7bc4\:56f2\:3067\:30d5\:30a3\:30eb\:30bf:
@@ -4386,6 +5317,7 @@ If[!ListQ[$NBApprovalHeads],
     "NBDeleteCellsByTag", "NBMoveAfterCell",
     "NBMarkCellConfidential", "NBMarkCellDependent", "NBUnmarkCell",
     "NBSetConfidentialTag", "NBSetTaggingRule", "NBDeleteTaggingRule",
+    "NBSetSnapshotPrivacyLevel",
     "NBFileWriteCell", "NBFileWriteAllCells",
     "NBMergeNotebookCells",
     (* \:30d5\:30a1\:30a4\:30eb\:64cd\:4f5c *)
@@ -5465,6 +6397,1227 @@ Declassify[obj_Association, req_Association, releaseSpec_Association] :=
       "DeclassifiedLabel" -> dstLabel,
       "Error"             -> None|>
   ];
+
+
+(* ============================================================
+   Notebook semantic access API \:5b9f\:88c5
+   Stage 9 P1 Step 6 \:7528\:3001\:8aad\:307f\:53d6\:308a\:7cfb\:306e\:307f (\:66f8\:304d\:8fbc\:307f\:7cfb\:306f\:5225\:9014\:8ffd\:52a0)
+   ============================================================ *)
+
+(* ---- \:30c7\:30d5\:30a9\:30eb\:30c8 AccessSpec / \:30d0\:30ea\:30c7\:30fc\:30b7\:30e7\:30f3 ---- *)
+
+iNBDefaultAccessSpec[] := <|
+  "AccessLevel" -> 0.5,
+  "Environment" -> "Notebook",
+  "AllowedSinks" -> {"LocalOnly", "Notebook"}
+|>;
+
+iNBNormalizeAccessSpec[accessSpec_] := Which[
+  AssociationQ[accessSpec],
+    Join[iNBDefaultAccessSpec[], accessSpec],
+  True,
+    iNBDefaultAccessSpec[]
+];
+
+(* ---- File I/O ---- *)
+
+(* notebook \:30d5\:30a1\:30a4\:30eb\:3092 Notebook[\:30bb\:30eb\:30ea\:30b9\:30c8, options...] \:5f0f\:3068\:3057\:3066\:8aad\:307f\:8fbc\:3080 (\:7f60 #21 \:6e96\:62e0)
+   \:623b\:308a\:5024:
+     \:6210\:529f \[Rule] <|\"Status\" -> \"OK\", \"NotebookExpr\" -> Notebook[...]|>
+     \:5931\:6557 \[Rule] <|\"Status\" -> \"Failed\", \"Reason\" -> _String|>
+*)
+iNBFileLoadAsExpr[path_String] :=
+  Module[{abs, raw, nbExpr},
+    abs = ExpandFileName[path];
+    If[!FileExistsQ[abs],
+      Return[<|"Status" -> "Failed", "Reason" -> "FileNotFound", "Path" -> abs|>]];
+    raw = Quiet @ Import[abs, "Notebook"];
+    Which[
+      MatchQ[raw, _Notebook],
+        <|"Status" -> "OK", "NotebookExpr" -> raw, "Path" -> abs|>,
+      MatchQ[raw, HoldComplete[_Notebook]],
+        nbExpr = ReleaseHold[raw];
+        <|"Status" -> "OK", "NotebookExpr" -> nbExpr, "Path" -> abs|>,
+      MatchQ[raw, $Failed],
+        <|"Status" -> "Failed", "Reason" -> "ImportFailed", "Path" -> abs|>,
+      True,
+        <|"Status" -> "Failed", "Reason" -> "UnexpectedImportShape",
+          "Path" -> abs, "ImportHeadName" -> SymbolName[Head[raw]]|>
+    ]
+  ];
+
+(* Notebook[...] \:304b\:3089\:5168\:30bb\:30eb\:30ea\:30b9\:30c8\:3092\:53d6\:5f97\:3002\:7f60 #23 \:6e96\:62e0\:3067 SymbolName[Head[]] \:6bd4\:8f03\:3002 *)
+iNBNotebookCells[nbExpr_] :=
+  If[Length[nbExpr] >= 1 && ListQ[nbExpr[[1]]],
+    nbExpr[[1]],
+    {}
+  ];
+
+(* \:5168\:30bb\:30eb\:30ea\:30b9\:30c8\:3092\:8d70\:67fb\:3002CellGroupData \:30cd\:30b9\:30c8\:3082\:5c55\:958b\:3057\:3066 Cell \:3060\:3051\:3092\:8a2a\:308c\:308b\:3002
+   fn \:306f Function[{cell, cellPath, accInOut}, ...] \:3067\:3001
+     cellPath: \:30c8\:30c3\:30d7\:304b\:3089\:306e\:30a4\:30f3\:30c7\:30c3\:30af\:30b9\:30ea\:30b9\:30c8 ({2, 1, 3} \:7b49)
+     acc \:3092\:66f4\:65b0\:3057\:305f Association \:3092\:8fd4\:3059\:3002
+   \:7d50\:679c\:306f acc\:3002\:7f60 #26: Import[\"Notebook\"] \:306f Cell[CellGroupData[{...}, Open]] \:3067\:30cd\:30b9\:30c8\:3055\:308c\:308b\:3002 *)
+iNBWalkCells[cells_List, fn_, initAcc_] :=
+  Module[{flatList, acc = initAcc},
+    flatList = iNBFlattenCells[cells, {}];
+    Do[
+      acc = fn[entry[[1]], entry[[2]], acc],
+      {entry, flatList}];
+    acc
+  ];
+
+(* cells (List of Cell or Cell[CellGroupData[...]]) \:3092 flatten \:3057\:3066
+   {{cell, path}, {cell, path}, ...} \:3092\:8fd4\:3059\:3002\:518d\:5e30\:5c55\:958b\:3002 *)
+iNBFlattenCells[cells_List, basePath_List] :=
+  Module[{result = {}, n = Length[cells], cell, hName, innerCells, sub},
+    Do[
+      cell = cells[[i]];
+      hName = SymbolName[Head[cell]];
+      Which[
+        (* Cell[CellGroupData[{...}, Open|Closed|...]] \:306e\:30cd\:30b9\:30c8 *)
+        hName === "Cell" && Length[cell] >= 1 &&
+          SymbolName[Head[cell[[1]]]] === "CellGroupData" &&
+          Length[cell[[1]]] >= 1 && ListQ[cell[[1, 1]]],
+          innerCells = cell[[1, 1]];
+          sub = iNBFlattenCells[innerCells, Append[basePath, i]];
+          result = Join[result, sub],
+        (* \:901a\:5e38\:306e Cell *)
+        hName === "Cell",
+          AppendTo[result, {cell, Append[basePath, i]}],
+        True, Null
+      ],
+      {i, n}];
+    result
+  ];
+
+(* Cell expr \:304b\:3089 ExpressionUUID \:3092\:62bd\:51fa (\:7121\:3051\:308c\:3070 Missing) *)
+iNBCellExpressionUUID[cell_] :=
+  Module[{opts, uuid},
+    If[!(SymbolName[Head[cell]] === "Cell" && Length[cell] >= 2),
+      Return[Missing["NotACell"]]];
+    opts = Drop[List @@ cell, 2];
+    uuid = Lookup[Association @@ Cases[opts, _Rule | _RuleDelayed],
+      ExpressionUUID, Missing["NotPresent"]];
+    If[StringQ[uuid], uuid, Missing["NotPresent"]]
+  ];
+
+(* Cell expr \:306e Style \:3092\:62bd\:51fa (String \:307e\:305f\:306f List \:306e\:5148\:982d) *)
+iNBCellStyle[cell_] :=
+  Module[{style},
+    If[!(SymbolName[Head[cell]] === "Cell" && Length[cell] >= 2),
+      Return[Missing["NotACell"]]];
+    style = cell[[2]];
+    Which[
+      StringQ[style], style,
+      ListQ[style] && Length[style] > 0 && StringQ[First[style]], First[style],
+      True, Missing["UnknownStyleShape"]
+    ]
+  ];
+
+(* Cell expr \:306e TaggingRules \:3092\:62bd\:51fa (Association \:307e\:305f\:306f Missing) *)
+iNBCellTaggingRules[cell_] :=
+  Module[{opts, tr},
+    If[!(SymbolName[Head[cell]] === "Cell" && Length[cell] >= 2),
+      Return[Missing["NotACell"]]];
+    opts = Drop[List @@ cell, 2];
+    tr = Lookup[Association @@ Cases[opts, _Rule | _RuleDelayed],
+      TaggingRules, Missing["NotPresent"]];
+    Which[
+      AssociationQ[tr], tr,
+      ListQ[tr], Association @@ Cases[tr, _Rule | _RuleDelayed],
+      True, Missing["NotPresent"]
+    ]
+  ];
+
+
+(* ---- \:4e2d\:30ec\:30d9\:30eb API: NBFindCellByPredicate ---- *)
+
+Options[NBFindCellByPredicate] = {
+  "AccessSpec" -> Automatic,
+  "MaxResults" -> All
+};
+
+NBFindCellByPredicate[path_String, predicate_, opts:OptionsPattern[]] :=
+  Module[{accessSpec, maxResults, loaded, cells, matches, maxN, flatIdx},
+    accessSpec = iNBNormalizeAccessSpec[OptionValue["AccessSpec"]];
+    maxResults = OptionValue["MaxResults"];
+    maxN = If[IntegerQ[maxResults] && maxResults >= 0, maxResults, Infinity];
+
+    loaded = iNBFileLoadAsExpr[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK",
+      Return[loaded]];
+
+    cells = iNBNotebookCells[Lookup[loaded, "NotebookExpr"]];
+    flatIdx = 0;
+    matches = iNBWalkCells[cells,
+      Function[{cell, cellPath, acc},
+        flatIdx = flatIdx + 1;
+        If[Length[acc] < maxN && TrueQ[predicate[cell]],
+          Append[acc, <|
+            "CellIndex" -> flatIdx,
+            "CellPath" -> cellPath,
+            "Cell" -> HoldComplete[cell],
+            "Style" -> iNBCellStyle[cell],
+            "ExpressionUUID" -> iNBCellExpressionUUID[cell]|>],
+          acc]],
+      {}];
+
+    <|"Status" -> "OK", "Matches" -> matches,
+      "Path" -> Lookup[loaded, "Path"],
+      "AccessSpec" -> accessSpec|>
+  ];
+
+
+(* ---- \:9ad8\:30ec\:30d9\:30eb API: NBReadHeader ---- *)
+
+Options[NBReadHeader] = {
+  "AccessSpec" -> Automatic
+};
+
+(* Notebook \:5168\:4f53\:306e TaggingRules \:304b\:3089 SourceVault \:30d8\:30c3\:30c0\:30fc\:3092\:62bd\:51fa
+   \:307e\:305f\:306f Header style cell \:304b\:3089 fallback \:3067\:62bd\:51fa\:3002 *)
+iNBExtractHeaderFromNotebookTaggingRules[nbExpr_] :=
+  Module[{opts, tr, svHeader},
+    opts = Drop[List @@ nbExpr, 1];
+    tr = Lookup[Association @@ Cases[opts, _Rule | _RuleDelayed],
+      TaggingRules, Missing["NotPresent"]];
+    Which[
+      AssociationQ[tr],
+        svHeader = Lookup[tr, "SourceVault", Missing["NotPresent"]];
+        Which[
+          AssociationQ[svHeader], svHeader,
+          iNBIsHeaderLikeAssoc[tr], tr,
+          True, Missing["NotPresent"]],
+      ListQ[tr],
+        Module[{trAssoc, sv},
+          trAssoc = Association @@ Cases[tr, _Rule | _RuleDelayed];
+          sv = Lookup[trAssoc, "SourceVault", Missing["NotPresent"]];
+          Which[
+            AssociationQ[sv], sv,
+            iNBIsHeaderLikeAssoc[trAssoc], trAssoc,
+            True, Missing["NotPresent"]]],
+      True, Missing["NotPresent"]
+    ]
+  ];
+
+(* Header \:3089\:3057\:3055\:306e\:5224\:5b9a: Header \:3068\:3057\:3066\:6709\:610f\:7fa9\:306a\:30ad\:30fc\:3092\:5c11\:306a\:304f\:3068\:30821\:3064\:542b\:3080 Association
+   \:30c8\:30c3\:30d7\:30ec\:30d9\:30eb\:306b TodoStatus \:5358\:72ec\:306e Association \:306f Todo cell \:306e metadata \:306a\:306e\:3067\:6392\:9664 *)
+iNBIsHeaderLikeAssoc[assoc_Association] :=
+  AnyTrue[{"Keywords", "Status", "Deadline", "NextReview",
+    "Owner", "PathHint", "Title", "CloudPublishable"},
+    KeyExistsQ[assoc, #] &] &&
+  Length[assoc] > 0;
+iNBIsHeaderLikeAssoc[_] := False;
+
+(* InitializationCell \:30b9\:30bf\:30a4\:30eb / Input \:30b9\:30bf\:30a4\:30eb\:306e Cell \:304b\:3089 BoxData \:5185\:306e
+   Association \:3092 MakeExpression \:7d4c\:7531\:3067\:62bd\:51fa\:3059\:308b (\:7f60 #22 \:6e96\:62e0)\:3002
+   whitelist \:306a\:3057 (\:751f Association \:3092\:8fd4\:3059\:3001NBAccess \:306f\:4e2d\:7acb\:7684\:30d5\:30a1\:30a4\:30eb I/O \:5c64) *)
+iNBExtractHeaderFromBoxData[nbExpr_] :=
+  Module[{cells, flat, found = Missing["NotPresent"]},
+    cells = iNBNotebookCells[nbExpr];
+    flat = iNBFlattenCells[cells, {}];
+    (* \:5404 Cell \:3092\:8d70\:67fb\:3001Initialization Input \:307e\:305f\:306f Input \:30b9\:30bf\:30a4\:30eb\:306e\:30bb\:30eb\:304b\:3089\:8a66\:3057\:3066\:3001
+       \:5408\:81f4\:3059\:308b\:3082\:306e\:3092\:898b\:3064\:3051\:305f\:6642\:70b9\:3067\:7d42\:4e86 *)
+    Scan[Function[entry,
+      If[MissingQ[found],
+        Module[{cell, style, content, isInitInput, isInput, held, value},
+          cell = entry[[1]];
+          style = iNBCellStyle[cell];
+          If[!(StringQ[style] && MemberQ[{"Input"}, style]),
+            Return[Null, Module]];
+          content = cell[[1]];
+          (* \:5024\:304c BoxData \:307e\:305f\:306f\:751f\:6587\:5b57\:5217 \:3092\:60f3\:5b9a *)
+          If[!(MatchQ[content, _BoxData] || StringQ[content]),
+            Return[Null, Module]];
+          held = Quiet[MakeExpression[content, StandardForm]];
+          If[!MatchQ[held, HoldComplete[_Association]],
+            Return[Null, Module]];
+          value = ReleaseHold[held];
+          If[AssociationQ[value], found = value]]]], flat];
+    found
+  ];
+
+NBReadHeader[path_String, opts:OptionsPattern[]] :=
+  Module[{accessSpec, loaded, nbExpr, headerFromNB, headerFromCells,
+          headerFromBoxData, header, source},
+    accessSpec = iNBNormalizeAccessSpec[OptionValue["AccessSpec"]];
+
+    loaded = iNBFileLoadAsExpr[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
+    nbExpr = Lookup[loaded, "NotebookExpr"];
+
+    (* 1. Notebook \:5168\:4f53\:306e TaggingRules \:7d4c\:7531\:3092\:512a\:5148 *)
+    headerFromNB = iNBExtractHeaderFromNotebookTaggingRules[nbExpr];
+    (* Header \:3089\:3057\:3055\:30c1\:30a7\:30c3\:30af *)
+    If[!MissingQ[headerFromNB] && !iNBIsHeaderLikeAssoc[headerFromNB],
+      headerFromNB = Missing["NotHeaderLike"]];
+
+    (* 2. fallback: cell \:5358\:4f4d\:306e TaggingRules \:304b\:3089 (Header \:3089\:3057\:3055\:30d5\:30a3\:30eb\:30bf\:30fc\:9069\:7528) *)
+    headerFromCells = If[!MissingQ[headerFromNB], <||>,
+      Module[{cells, found},
+        cells = iNBNotebookCells[nbExpr];
+        found = iNBWalkCells[cells,
+          Function[{cell, cellPath, acc},
+            If[acc === None,
+              Module[{tr, sv},
+                tr = iNBCellTaggingRules[cell];
+                If[AssociationQ[tr],
+                  sv = Lookup[tr, "SourceVault", Missing["NotPresent"]];
+                  (* Header \:3089\:3057\:3044 SourceVault Association \:306e\:307f\:63a1\:7528 *)
+                  If[AssociationQ[sv] && iNBIsHeaderLikeAssoc[sv], sv, acc],
+                  acc]],
+              acc]],
+          None];
+        If[AssociationQ[found], found, <||>]
+      ]];
+
+    (* 3. fallback (Stage 9 P1 \:5225\:4ef6 2): Input cell \:306e BoxData \:5185\:306e Association \:3092 MakeExpression \:7d4c\:7531\:3067 *)
+    headerFromBoxData = If[!MissingQ[headerFromNB] ||
+        (AssociationQ[headerFromCells] && Length[headerFromCells] > 0),
+      Missing["NotAttempted"],
+      iNBExtractHeaderFromBoxData[nbExpr]];
+
+    Which[
+      AssociationQ[headerFromNB],
+        header = headerFromNB; source = "TaggingRules",
+      AssociationQ[headerFromCells] && Length[headerFromCells] > 0,
+        header = headerFromCells; source = "HeaderCell",
+      AssociationQ[headerFromBoxData],
+        header = headerFromBoxData; source = "BoxData",
+      True,
+        header = <||>; source = "None"
+    ];
+
+    <|"Status" -> "OK",
+      "Keywords" -> Lookup[header, "Keywords", {}],
+      "Status" -> Lookup[header, "Status", Missing["NotPresent"]],
+      "Deadline" -> Lookup[header, "Deadline", Missing["NotPresent"]],
+      "NextReview" -> Lookup[header, "NextReview", Missing["NotPresent"]],
+      "Owner" -> Lookup[header, "Owner", Missing["NotPresent"]],
+      "PathHint" -> Lookup[header, "PathHint", Missing["NotPresent"]],
+      "RawHeader" -> header,
+      "Source" -> source,
+      "Path" -> Lookup[loaded, "Path"],
+      "AccessSpec" -> accessSpec|>
+  ];
+
+
+(* ---- \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:81ea\:5df1\:5ba3\:8a00: CloudPublishable ----
+   NBReadHeader \:7d4c\:7531\:3067 TaggingRules > SourceVault > "CloudPublishable" \:3092\:8aad\:3080\:3002
+   \:6ce8: NBReadHeader \:306e\:623b\:308a\:5024\:306e \"Status\" \:30ad\:30fc\:306f Association \:6700\:7d42\:69cb\:7bc9\:6642\:306b
+       Header \:5185\:306e \"Status\" (Todo / Done / ...) \:3067\:4e0a\:66f8\:304d\:3055\:308c\:308b\:305f\:3081\:3001
+       \:5b9f\:884c\:6210\:5426\:5224\:5b9a\:306b\:306f \"RawHeader\" \:30ad\:30fc\:306e\:5b58\:5728\:6709\:7121\:3092\:898b\:308b (Path \:30ad\:30fc\:3082\:53ef)\:3002
+   \:623b\:308a\:5024:
+     True                          - \:30af\:30e9\:30a6\:30c9\:516c\:958b\:8a31\:53ef\:3068\:5ba3\:8a00\:6e08\:307f
+     False                         - \:660e\:793a\:7684\:306b\:30af\:30e9\:30a6\:30c9\:7981\:6b62\:3068\:5ba3\:8a00\:6e08\:307f
+     Missing["NotDeclared"]        - Header \:306f\:3042\:308b\:304c CloudPublishable \:5ba3\:8a00\:7121\:3057
+     Missing["NoHeader"]           - NBReadHeader \:81ea\:4f53\:304c\:5931\:6557 (RawHeader \:306a\:3057)
+     Missing["NoRawHeader"]        - RawHeader \:30d5\:30a3\:30fc\:30eb\:30c9\:306a\:3057 *)
+iNBCloudPublishableValue[raw_Association] :=
+  Module[{direct, sv},
+    direct = Lookup[raw, "CloudPublishable", Missing["NotDeclared"]];
+    If[MemberQ[{True, False}, direct], Return[direct]];
+    sv = Lookup[raw, "SourceVault", Missing["NotPresent"]];
+    If[AssociationQ[sv],
+      direct = Lookup[sv, "CloudPublishable", Missing["NotDeclared"]];
+      If[MemberQ[{True, False}, direct], Return[direct]]];
+    Missing["NotDeclared"]
+  ];
+iNBCloudPublishableValue[_] := Missing["NotDeclared"];
+
+iNBFileDeclaredPublishable[path_String] :=
+  Module[{header, raw},
+    header = Quiet @ NBAccess`NBReadHeader[path,
+      "AccessSpec" -> <|"AccessLevel" -> 1.0|>];
+    (* NBReadHeader \:304c\:30d5\:30a1\:30a4\:30eb\:5931\:6557\:7b49\:3067 "RawHeader" \:7121\:3057\:306e\:8fd4\:308a\:5024\:3092\:51fa\:3057\:305f\:5834\:5408 *)
+    If[!AssociationQ[header] || !KeyExistsQ[header, "RawHeader"],
+      Return[Missing["NoHeader"]]];
+    raw = Lookup[header, "RawHeader", <||>];
+    If[!AssociationQ[raw], Return[Missing["NoRawHeader"]]];
+    iNBCloudPublishableValue[raw]
+  ];
+
+
+(* ---- \:9ad8\:30ec\:30d9\:30eb API: NBReadTodos ---- *)
+
+Options[NBReadTodos] = {
+  "AccessSpec" -> Automatic
+};
+
+(* \:30bb\:30eb\:304c Todo \:5bfe\:8c61\:304b\:5224\:5b9a (Item / TodoItem* style \:307e\:305f\:306f TaggingRules=TodoStatus) *)
+iNBIsTodoCell[cell_] :=
+  Module[{style, tr},
+    style = iNBCellStyle[cell];
+    If[StringQ[style] &&
+       (style === "Item" || StringStartsQ[style, "TodoItem"]),
+      Return[True]];
+    tr = iNBCellTaggingRules[cell];
+    If[AssociationQ[tr],
+      Module[{sv},
+        sv = Lookup[tr, "SourceVault", Missing["NotPresent"]];
+        If[AssociationQ[sv] && KeyExistsQ[sv, "TodoStatus"], Return[True]]]];
+    False
+  ];
+
+(* Cell expr \:304b\:3089 Todo Status \:3092\:5224\:5b9a\:3002
+   \:512a\:5148\:5ea6: (1) TaggingRules SourceVault TodoStatus, (2) StrikeThrough\:30fbFontColor, (3) Open *)
+iNBTodoStatusFromCell[cell_] :=
+  Module[{tr, sv, status, opts, fontVar, fontColor, hasStrike,
+          isGray, isGreen},
+    tr = iNBCellTaggingRules[cell];
+    If[AssociationQ[tr],
+      sv = Lookup[tr, "SourceVault", Missing["NotPresent"]];
+      If[AssociationQ[sv],
+        status = Lookup[sv, "TodoStatus", Missing["NotPresent"]];
+        If[MemberQ[{"Open", "Done", "Pass"}, status],
+          Return[<|"Status" -> status, "Source" -> "TaggingRules"|>]]]];
+
+    (* StrikeThrough \:30fb FontColor \:6307\:5b9a\:304b\:3089\:5224\:5b9a *)
+    opts = Drop[List @@ cell, 2];
+    fontVar = Lookup[Association @@ Cases[opts, _Rule | _RuleDelayed],
+      FontVariations, Missing["NotPresent"]];
+    fontColor = Lookup[Association @@ Cases[opts, _Rule | _RuleDelayed],
+      FontColor, Missing["NotPresent"]];
+
+    hasStrike = Which[
+      MissingQ[fontVar], False,
+      AssociationQ[fontVar],
+        TrueQ[Lookup[fontVar, "StrikeThrough", False]],
+      ListQ[fontVar],
+        MemberQ[fontVar, Rule["StrikeThrough", True]] ||
+        MemberQ[fontVar, RuleDelayed["StrikeThrough", True]],
+      True, False
+    ];
+
+    isGray = !MissingQ[fontColor] &&
+      (MatchQ[fontColor, GrayLevel[_?(0.3 <= # <= 0.7 &)]] ||
+       MatchQ[fontColor, RGBColor[r_, g_, b_] /;
+         NumericQ[r] && NumericQ[g] && NumericQ[b] &&
+         Abs[r - g] < 0.1 && Abs[g - b] < 0.1 && 0.3 <= r <= 0.7]);
+    isGreen = !MissingQ[fontColor] &&
+      MatchQ[fontColor, RGBColor[r_, g_, b_] /;
+        NumericQ[r] && NumericQ[g] && NumericQ[b] &&
+        g > r && g > b && g > 0.4];
+
+    Which[
+      !TrueQ[hasStrike],
+        <|"Status" -> "Open", "Source" -> "StyleHeuristic"|>,
+      TrueQ[hasStrike] && isGreen,
+        <|"Status" -> "Done", "Source" -> "StyleHeuristic"|>,
+      TrueQ[hasStrike] && isGray,
+        <|"Status" -> "Pass", "Source" -> "StyleHeuristic"|>,
+      TrueQ[hasStrike],
+        <|"Status" -> "Done", "Source" -> "StyleHeuristicDefault"|>,
+      True,
+        <|"Status" -> "Open", "Source" -> "StyleHeuristicFallback"|>
+    ]
+  ];
+
+(* Cell expr \:304b\:3089\:30c6\:30ad\:30b9\:30c8\:3092\:62bd\:51fa\:3002\:6700\:5c0f\:5b9f\:88c5: String / TextData[..] / RowBox \:7b49\:3092 ToString *)
+iNBCellTextExtract[cell_] :=
+  Module[{content, raw},
+    If[!(SymbolName[Head[cell]] === "Cell" && Length[cell] >= 1),
+      Return[""]];
+    content = cell[[1]];
+    Which[
+      StringQ[content], content,
+      MatchQ[content, _BoxData] || MatchQ[content, _TextData],
+        raw = StringReplace[ToString[content, InputForm],
+          {"BoxData[" -> "", "TextData[" -> "", "RowBox[" -> "",
+           "\"" -> "", "]" -> "", "{" -> "", "}" -> "",
+           "," -> "", "  " -> " "}];
+        StringTrim[raw],
+      True,
+        StringTrim @ StringReplace[ToString[content, InputForm],
+          {"\"" -> ""}]
+    ]
+  ];
+
+NBReadTodos[path_String, opts:OptionsPattern[]] :=
+  Module[{accessSpec, loaded, nbExpr, cells, todos, todoCount},
+    accessSpec = iNBNormalizeAccessSpec[OptionValue["AccessSpec"]];
+
+    loaded = iNBFileLoadAsExpr[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
+    nbExpr = Lookup[loaded, "NotebookExpr"];
+    cells = iNBNotebookCells[nbExpr];
+
+    todoCount = 0;
+    todos = iNBWalkCells[cells,
+      Function[{cell, cellPath, acc},
+        If[iNBIsTodoCell[cell],
+          todoCount = todoCount + 1;
+          Module[{statusInfo, txt},
+            statusInfo = iNBTodoStatusFromCell[cell];
+            txt = iNBCellTextExtract[cell];
+            Append[acc, <|
+              "Index" -> todoCount,
+              "Text" -> txt,
+              "Status" -> Lookup[statusInfo, "Status", "Open"],
+              "StatusSource" -> Lookup[statusInfo, "Source", "Unknown"],
+              "CellPath" -> cellPath,
+              "ExpressionUUID" -> iNBCellExpressionUUID[cell],
+              "Style" -> iNBCellStyle[cell]|>]],
+          acc]],
+      {}];
+
+    <|"Status" -> "OK",
+      "Todos" -> todos,
+      "Count" -> todoCount,
+      "Path" -> Lookup[loaded, "Path"],
+      "AccessSpec" -> accessSpec|>
+  ];
+
+
+(* ============================================================
+   Notebook semantic access API \:5b9f\:88c5 (\:66f8\:304d\:8fbc\:307f\:7cfb)
+   Stage 9 P1 Step 6 \:7528\:3001\:30d5\:30a1\:30a4\:30eb\:76f4\:63a5\:7de8\:96c6\:7d4c\:8def
+   ============================================================ *)
+
+(* AccessLevel \:30c1\:30a7\:30c3\:30af (\:66f8\:304d\:8fbc\:307f\:306b\:306f >= 0.7 \:5fc5\:8981) *)
+iNBCheckWriteAccess[accessSpec_Association] :=
+  Module[{level},
+    level = Lookup[accessSpec, "AccessLevel", 0.0];
+    If[!NumericQ[level], level = 0.0];
+    If[level >= 0.7,
+      <|"Status" -> "OK", "Level" -> level|>,
+      <|"Status" -> "Failed",
+        "Reason" -> "AccessLevelTooLow",
+        "Required" -> 0.7,
+        "Provided" -> level|>]
+  ];
+
+(* Notebook expr \:3092 atomic \:306b\:30d5\:30a1\:30a4\:30eb\:306b\:66f8\:304d\:8fbc\:3080
+   tmp \:30d5\:30a1\:30a4\:30eb\:7d4c\:7531 + Rename\:3002Export[..., "NB"] \:3092\:4f7f\:7528\:3002
+   Stage 9 P1 Step 2 Hotfix 3: Rename \:5931\:6557\:6642 \:306b\:306f\:76f4\:63a5 Export \:3078 fallback\:3002
+   Stage 9 P1 Step 2 Hotfix 4: Export \:5f8c\:306b frontend \:7d4c\:7531\:306e\:30ea\:30bb\:30fc\:30d6\:3067 outline cache \:3092\:6b63\:898f\:5316\:3002
+   Export \:306f Notebook expr \:3092 S \:5f0f\:30c6\:30ad\:30b9\:30c8\:306b\:5909\:63db\:3059\:308b\:304c\:3001\:30d8\:30c3\:30c0\:306e
+   NotebookDataLength / NotebookOutlinePosition / CellTagsIndexPosition \:7b49\:306e\:30d0\:30a4\:30c8\:4f4d\:7f6e\:30ad\:30e3\:30c3\:30b7\:30e5\:3092\:6b63\:3057\:304f\:66f8\:304d\:76f4\:3055\:306a\:3044\:305f\:3081\:3001
+   frontend \:304c\:300c\:30b7\:30b9\:30c6\:30e0\:5916\:3067\:7de8\:96c6\:3055\:308c\:305f\:300d\:3068\:8b66\:544a\:3092\:51fa\:3059\:3002
+   frontend \:7d4c\:7531\:3067\:30ea\:30bb\:30fc\:30d6\:3059\:308b\:3068\:30ad\:30e3\:30c3\:30b7\:30e5\:304c\:6b63\:898f\:5316\:3055\:308c\:308b\:3002 *)
+iNBFileSaveExpr[path_String, nbExpr_] :=
+  Module[{abs, tmpPath, result, renameOk, directOk, writeMode},
+    abs = ExpandFileName[path];
+    tmpPath = abs <> ".tmp-" <> ToString[$ProcessID] <> "-" <>
+      ToString[Hash[SessionTime[]]];
+    result = Quiet @ Check[
+      Export[tmpPath, nbExpr, "NB"],
+      $Failed];
+    If[result === $Failed || !FileExistsQ[tmpPath],
+      Quiet[DeleteFile[tmpPath]];
+      Return[<|"Status" -> "Failed", "Reason" -> "ExportFailed",
+        "Path" -> abs|>]];
+
+    (* (1) Atomic rename \:3092\:8a66\:884c (Windows \:3067 abs \:304c\:5b58\:5728\:3059\:308c\:3070\:5148\:306b\:524a\:9664) *)
+    renameOk = TrueQ @ Quiet @ Check[
+      If[FileExistsQ[abs], DeleteFile[abs]];
+      RenameFile[tmpPath, abs];
+      True,
+      False];
+    writeMode = If[renameOk, "Rename", "DirectExport"];
+
+    If[!renameOk,
+      (* (2) Rename \:304c\:5931\:6557 \[Rule] \:76f4\:63a5 Export \:3078 fallback *)
+      Quiet[DeleteFile[tmpPath]];
+      directOk = TrueQ @ Quiet @ Check[
+        Export[abs, nbExpr, "NB"];
+        True,
+        False];
+      If[!directOk,
+        Return[<|"Status" -> "Failed", "Reason" -> "RenameFailed",
+          "Path" -> abs, "TmpPath" -> tmpPath|>]]];
+
+    (* (3) Hotfix 4: frontend \:7d4c\:7531\:3067 outline cache \:3092\:6b63\:898f\:5316 *)
+    iNBNormalizeNotebookCache[abs];
+
+    <|"Status" -> "OK", "Path" -> abs, "WriteMode" -> writeMode|>
+  ];
+
+
+(* Frontend \:7d4c\:7531\:3067 .nb \:306e outline cache \:3092\:6b63\:898f\:5316\:3059\:308b\:3002
+   \:65e2\:306b\:958b\:304b\:308c\:3066\:3044\:308b NotebookObject \:304c\:3042\:308c\:3070\:305d\:308c\:3092\:4f7f\:7528\:3057\:3001
+   \:7121\:3051\:308c\:3070 Visible -> False \:3067\:30b5\:30a4\:30ec\:30f3\:30c8\:306b\:958b\:304d\:301c\:9589\:3058\:308b\:3002
+   \:5931\:6557\:3057\:3066\:3082\:8b66\:544a\:7b49\:306f\:7121\:3057 (best-effort)\:3002 *)
+iNBNormalizeNotebookCache[abs_String] :=
+  Module[{absExp, allNbs, openedNb, openedHere = False, nb},
+    absExp = ExpandFileName[abs];
+    allNbs = Quiet @ Notebooks[];
+    If[!ListQ[allNbs], Return[Null]];
+    openedNb = SelectFirst[allNbs,
+      With[{p = Quiet @ NotebookFileName[#]},
+        StringQ[p] && ExpandFileName[p] === absExp] &,
+      None];
+    nb = If[openedNb =!= None,
+      openedNb,
+      openedHere = True;
+      Quiet @ NotebookOpen[absExp, Visible -> False]];
+    If[Head[nb] === NotebookObject,
+      (* Hotfix 4.1: \:30c0\:30fc\:30c6\:30a3\:5316\:3057\:3066 NotebookSave \:3092\:78ba\:5b9f\:306b\:5b9f\:884c\:3055\:305b\:308b *)
+      Quiet @ Check[
+        SetOptions[nb, NotebookEventActions -> {}];
+        SetOptions[nb, NotebookEventActions -> Inherited],
+        Null];
+      Quiet @ NotebookSave[nb];
+      If[openedHere, Quiet @ NotebookClose[nb]]];
+    Null
+  ];
+
+(* Cell expr (List \[Function]) \:306e options \:90e8\:5206\:3092 newOpts \:3067\:30de\:30fc\:30b8\:3002
+   newOpts: List of Rule, \:65e2\:5b58\:540c key \:306f\:4e0a\:66f8\:304d *)
+iNBMergeCellOptions[cell_, newOpts_List] :=
+  Module[{content, style, existingOpts, optsAssoc, newAssoc, mergedAssoc,
+          mergedOpts},
+    If[!(SymbolName[Head[cell]] === "Cell" && Length[cell] >= 2),
+      Return[cell]];
+    content = cell[[1]];
+    style = cell[[2]];
+    existingOpts = Drop[List @@ cell, 2];
+    optsAssoc = Association @@ Cases[existingOpts, _Rule | _RuleDelayed];
+    newAssoc = Association @@ Cases[newOpts, _Rule | _RuleDelayed];
+    mergedAssoc = Join[optsAssoc, newAssoc];
+    mergedOpts = Normal[mergedAssoc];
+    (* \:7d50\:679c\:3092 Cell[content, style, opts...] \:3068\:3057\:3066\:518d\:69cb\:7bc9 *)
+    Apply[Cell, Join[{content, style}, mergedOpts]]
+  ];
+
+(* Cell expr \:306e TaggingRules \:5185\:90e8\:306e key \:30d1\:30b9\:306b value \:3092\:30de\:30fc\:30b8\:3002
+   taggingKeyPath: List \:3001\:4f8b {\"SourceVault\", \"TodoStatus\"} \:2192 \:5185\:5074\:306b\:306c\:308b *)
+iNBMergeCellTaggingRule[cell_, taggingKeyPath_List, value_] :=
+  Module[{tr, trAssoc, updated, opts},
+    tr = iNBCellTaggingRules[cell];
+    trAssoc = If[AssociationQ[tr], tr, <||>];
+    (* Nested association \:306b value \:3092 set *)
+    updated = iNBSetNestedAssoc[trAssoc, taggingKeyPath, value];
+    iNBMergeCellOptions[cell, {TaggingRules -> updated}]
+  ];
+
+(* Association \:306b key \:30d1\:30b9\:7d4c\:7531\:3067 value \:3092 set (\:5165\:308c\:5b50\:81ea\:52d5\:751f\:6210) *)
+iNBSetNestedAssoc[assoc_Association, {}, value_] := value;
+iNBSetNestedAssoc[assoc_Association, {k_, rest___}, value_] :=
+  Module[{inner, currentInner},
+    currentInner = Lookup[assoc, k, <||>];
+    inner = If[AssociationQ[currentInner], currentInner, <||>];
+    Append[assoc, k -> iNBSetNestedAssoc[inner, {rest}, value]]
+  ];
+
+(* CellPath ({2, 1, 3}) \:3067 nbExpr \:5185\:306e Cell \:306b\:30a2\:30af\:30bb\:30b9\:3002
+   CellPath \:306f cells[[i]] -> cells[[i,1,1,j]] -> ... \:306e\:69cb\:9020\:3002
+   \:5024\:306f Cell \:3092\:65b0\:3057\:3044 newCell \:3067\:7f6e\:63db\:3057\:305f nbExpr \:3092\:8fd4\:3059\:3002 *)
+iNBReplaceCellByPath[nbExpr_, cellPath_List, newCell_] :=
+  Module[{cells, newCells},
+    cells = iNBNotebookCells[nbExpr];
+    newCells = iNBReplaceCellInList[cells, cellPath, newCell];
+    ReplacePart[nbExpr, 1 -> newCells]
+  ];
+
+(* cells (List) \:5185\:306e path \:4f4d\:7f6e\:306e Cell \:3092 newCell \:3067\:7f6e\:63db\:3002
+   path \:306f {i, j, k, ...} \:3067\:3001CellGroupData \:30cd\:30b9\:30c8\:3092\:6271\:3046\:3002 *)
+iNBReplaceCellInList[cells_List, {i_Integer}, newCell_] :=
+  ReplacePart[cells, i -> newCell];
+
+iNBReplaceCellInList[cells_List, {i_Integer, rest__}, newCell_] :=
+  Module[{cell, inner, newInner, newCellGroup, hName},
+    cell = cells[[i]];
+    hName = SymbolName[Head[cell]];
+    If[hName === "Cell" && Length[cell] >= 1 &&
+        SymbolName[Head[cell[[1]]]] === "CellGroupData",
+      inner = cell[[1, 1]];
+      newInner = iNBReplaceCellInList[inner, {rest}, newCell];
+      newCellGroup = ReplacePart[cell[[1]], 1 -> newInner];
+      ReplacePart[cells, i -> ReplacePart[cell, 1 -> newCellGroup]],
+      (* path \:304c\:5408\:308f\:306a\:3044\:5834\:5408\:306f\:5143\:306e\:307e\:307e *)
+      cells]
+  ];
+
+
+(* ---- \:4e2d\:30ec\:30d9\:30eb API: NBSetCellOptionsByPredicate ---- *)
+
+Options[NBSetCellOptionsByPredicate] = {
+  "AccessSpec" -> Automatic,
+  "DryRun" -> True,
+  "MaxResults" -> All
+};
+
+NBSetCellOptionsByPredicate[path_String, predicate_, optionRules_List,
+    opts:OptionsPattern[]] :=
+  Module[{accessSpec, dryRun, maxResults, accessCheck,
+          loaded, nbExpr, cells, flat, matches, maxN,
+          newNbExpr, modified, saveResult},
+    accessSpec = iNBNormalizeAccessSpec[OptionValue["AccessSpec"]];
+    dryRun = TrueQ[OptionValue["DryRun"]];
+    maxResults = OptionValue["MaxResults"];
+    maxN = If[IntegerQ[maxResults] && maxResults >= 0, maxResults, Infinity];
+
+    accessCheck = iNBCheckWriteAccess[accessSpec];
+    If[Lookup[accessCheck, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed",
+        "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
+        accessCheck]]];
+
+    loaded = iNBFileLoadAsExpr[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
+    nbExpr = Lookup[loaded, "NotebookExpr"];
+    cells = iNBNotebookCells[nbExpr];
+
+    flat = iNBFlattenCells[cells, {}];
+    matches = Select[flat,
+      TrueQ[predicate[#[[1]]]] &];
+    matches = Take[matches, UpTo[maxN]];
+
+    If[Length[matches] === 0,
+      Return[<|"Status" -> "OK",
+        "Modified" -> {},
+        "DryRun" -> dryRun,
+        "AccessLevel" -> Lookup[accessSpec, "AccessLevel"],
+        "Path" -> Lookup[loaded, "Path"],
+        "Note" -> "NoMatch"|>]];
+
+    (* \:5404\:30de\:30c3\:30c1\:306b\:5bfe\:3057 nbExpr \:5185\:3092\:9806\:6b21\:7f6e\:63db *)
+    newNbExpr = nbExpr;
+    modified = {};
+    Do[
+      Module[{cell, cellPath, newCell},
+        cell = entry[[1]];
+        cellPath = entry[[2]];
+        newCell = iNBMergeCellOptions[cell, optionRules];
+        newNbExpr = iNBReplaceCellByPath[newNbExpr, cellPath, newCell];
+        AppendTo[modified, <|
+          "CellPath" -> cellPath,
+          "Before" -> With[{c = cell}, HoldComplete[c]],
+          "After" -> With[{nc = newCell}, HoldComplete[nc]]|>]],
+      {entry, matches}];
+
+    If[dryRun,
+      Return[<|"Status" -> "DryRunOK",
+        "Modified" -> modified,
+        "DryRun" -> True,
+        "AccessLevel" -> Lookup[accessSpec, "AccessLevel"],
+        "Path" -> Lookup[loaded, "Path"]|>]];
+
+    (* \:5b9f\:884c\:30e2\:30fc\:30c9: \:30d5\:30a1\:30a4\:30eb\:306b\:66f8\:304d\:8fbc\:3080 *)
+    saveResult = iNBFileSaveExpr[Lookup[loaded, "Path"], newNbExpr];
+    If[Lookup[saveResult, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed"|>, saveResult]]];
+
+    <|"Status" -> "OK",
+      "Modified" -> modified,
+      "DryRun" -> False,
+      "AccessLevel" -> Lookup[accessSpec, "AccessLevel"],
+      "Path" -> Lookup[loaded, "Path"]|>
+  ];
+
+
+(* ---- \:4e2d\:30ec\:30d9\:30eb API: NBSetCellTaggingRuleByPredicate ---- *)
+
+Options[NBSetCellTaggingRuleByPredicate] = {
+  "AccessSpec" -> Automatic,
+  "DryRun" -> True,
+  "MaxResults" -> All
+};
+
+NBSetCellTaggingRuleByPredicate[path_String, predicate_,
+    taggingKeyPath_List, value_, opts:OptionsPattern[]] :=
+  Module[{accessSpec, dryRun, maxResults, accessCheck,
+          loaded, nbExpr, cells, flat, matches, maxN,
+          newNbExpr, modified, saveResult},
+    accessSpec = iNBNormalizeAccessSpec[OptionValue["AccessSpec"]];
+    dryRun = TrueQ[OptionValue["DryRun"]];
+    maxResults = OptionValue["MaxResults"];
+    maxN = If[IntegerQ[maxResults] && maxResults >= 0, maxResults, Infinity];
+
+    accessCheck = iNBCheckWriteAccess[accessSpec];
+    If[Lookup[accessCheck, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed",
+        "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
+        accessCheck]]];
+
+    loaded = iNBFileLoadAsExpr[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
+    nbExpr = Lookup[loaded, "NotebookExpr"];
+    cells = iNBNotebookCells[nbExpr];
+
+    flat = iNBFlattenCells[cells, {}];
+    matches = Select[flat,
+      TrueQ[predicate[#[[1]]]] &];
+    matches = Take[matches, UpTo[maxN]];
+
+    If[Length[matches] === 0,
+      Return[<|"Status" -> "OK", "Modified" -> {},
+        "DryRun" -> dryRun, "Path" -> Lookup[loaded, "Path"],
+        "Note" -> "NoMatch"|>]];
+
+    newNbExpr = nbExpr;
+    modified = {};
+    Do[
+      Module[{cell, cellPath, newCell},
+        cell = entry[[1]];
+        cellPath = entry[[2]];
+        newCell = iNBMergeCellTaggingRule[cell, taggingKeyPath, value];
+        newNbExpr = iNBReplaceCellByPath[newNbExpr, cellPath, newCell];
+        AppendTo[modified, <|
+          "CellPath" -> cellPath,
+          "Before" -> With[{c = cell}, HoldComplete[c]],
+          "After" -> With[{nc = newCell}, HoldComplete[nc]]|>]],
+      {entry, matches}];
+
+    If[dryRun,
+      Return[<|"Status" -> "DryRunOK", "Modified" -> modified,
+        "DryRun" -> True, "Path" -> Lookup[loaded, "Path"]|>]];
+
+    saveResult = iNBFileSaveExpr[Lookup[loaded, "Path"], newNbExpr];
+    If[Lookup[saveResult, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed"|>, saveResult]]];
+
+    <|"Status" -> "OK", "Modified" -> modified,
+      "DryRun" -> False, "Path" -> Lookup[loaded, "Path"]|>
+  ];
+
+
+(* ---- \:9ad8\:30ec\:30d9\:30eb API: NBWriteHeader ---- *)
+
+Options[NBWriteHeader] = {
+  "AccessSpec" -> Automatic,
+  "DryRun" -> True
+};
+
+NBWriteHeader[path_String, key_String, value_, opts:OptionsPattern[]] :=
+  Module[{accessSpec, dryRun, accessCheck,
+          loaded, nbExpr, nbOpts, optsAssoc, trCurrent, svCurrent,
+          svUpdated, trUpdated, newNbExpr, before, after, saveResult},
+    accessSpec = iNBNormalizeAccessSpec[OptionValue["AccessSpec"]];
+    dryRun = TrueQ[OptionValue["DryRun"]];
+
+    accessCheck = iNBCheckWriteAccess[accessSpec];
+    If[Lookup[accessCheck, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed",
+        "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
+        accessCheck]]];
+
+    loaded = iNBFileLoadAsExpr[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
+    nbExpr = Lookup[loaded, "NotebookExpr"];
+
+    nbOpts = Drop[List @@ nbExpr, 1];
+    optsAssoc = Association @@ Cases[nbOpts, _Rule | _RuleDelayed];
+    trCurrent = Lookup[optsAssoc, TaggingRules, <||>];
+    If[ListQ[trCurrent],
+      trCurrent = Association @@ Cases[trCurrent, _Rule | _RuleDelayed]];
+    If[!AssociationQ[trCurrent], trCurrent = <||>];
+
+    svCurrent = Lookup[trCurrent, "SourceVault", <||>];
+    If[!AssociationQ[svCurrent], svCurrent = <||>];
+
+    before = Lookup[svCurrent, key, Missing["NotPresent"]];
+    svUpdated = Append[svCurrent, key -> value];
+    trUpdated = Append[trCurrent, "SourceVault" -> svUpdated];
+
+    newNbExpr = Apply[Notebook,
+      Join[
+        {Lookup[loaded, "NotebookExpr"][[1]]},
+        Normal[Append[optsAssoc, TaggingRules -> trUpdated]]]];
+    after = value;
+
+    If[dryRun,
+      Return[<|"Status" -> "DryRunOK",
+        "Key" -> key, "Before" -> before, "After" -> after,
+        "DryRun" -> True, "Path" -> Lookup[loaded, "Path"]|>]];
+
+    saveResult = iNBFileSaveExpr[Lookup[loaded, "Path"], newNbExpr];
+    If[Lookup[saveResult, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed"|>, saveResult]]];
+
+    <|"Status" -> "OK",
+      "Key" -> key, "Before" -> before, "After" -> after,
+      "DryRun" -> False, "Path" -> Lookup[loaded, "Path"]|>
+  ];
+
+
+(* ---- \:9ad8\:30ec\:30d9\:30eb API: NBGetCloudPublishable / NBSetCloudPublishable ----
+   \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5358\:4f4d\:306e\:300c\:30af\:30e9\:30a6\:30c9 LLM \:516c\:958b\:8a31\:53ef\:300d\:5ba3\:8a00\:3092\:8aad\:307f\:66f8\:304d\:3059\:308b\:3002
+   \:683c\:7d0d\:5148: Notebook \:5168\:4f53\:306e TaggingRules > SourceVault > "CloudPublishable"\:3002
+   \:8aad\:307f\:53d6\:308a\:306f iNBFileDeclaredPublishable \:7d4c\:7531 (\:30bb\:30eb\:6a5f\:5bc6\:5224\:5b9a\:3068\:306f\:72ec\:7acb)\:3002 *)
+
+NBGetCloudPublishable[path_String] :=
+  iNBFileDeclaredPublishable[path];
+
+Options[NBSetCloudPublishable] = {
+  "AccessSpec" -> Automatic,    (* Automatic \:306f\:6e96\:5099\:6cd5\:5185\:3067 AccessLevel 0.7 \:306b\:5c55\:958b *)
+  "DryRun" -> False     (* \:30c8\:30b0\:30eb\:64cd\:4f5c\:306a\:306e\:3067 default \:306f\:5b9f\:884c *)
+};
+
+(* \:66f8\:304d\:8fbc\:307f\:306b\:306f AccessLevel >= 0.7 \:5fc5\:9808\:3002Automatic \:306e\:6642\:306f 0.7 \:3092\:88dc\:5145\:3059\:308b\:3002
+   (\:5168\:74b0\:5883\:30c7\:30d5\:30a9\:30eb\:30c8 NBAccess`$NBPrivacySpec = AccessLevel 0.5 \:3060\:3068\:62d2\:5426\:3055\:308c\:308b\:305f\:3081) *)
+NBSetCloudPublishable[path_String, val:(True|False),
+    opts:OptionsPattern[]] :=
+  Module[{accessSpec, result},
+    accessSpec = OptionValue["AccessSpec"];
+    If[accessSpec === Automatic,
+      accessSpec = <|"AccessLevel" -> 0.7|>];
+    result = NBWriteHeader[path, "CloudPublishable", val,
+      "AccessSpec" -> accessSpec,
+      "DryRun" -> TrueQ[OptionValue["DryRun"]]];
+    If[AssociationQ[result] && Lookup[result, "Status", ""] === "OK",
+      Quiet @ NBFileSpecCacheClear[]];
+    result
+  ];
+
+
+(* ---- NBClearCloudPublishable: TaggingRules \:304b\:3089 CloudPublishable \:30ad\:30fc\:3092\:524a\:9664 ----
+   "\:672a\:6307\:5b9a" \:72b6\:614b\:306b\:623b\:3059\:3002\:524a\:9664\:5f8c SourceVault Association \:304c\:7a7a\:306b\:306a\:308c\:3070\:3055\:3089\:306b SourceVault \:30ad\:30fc\:3082\:524a\:9664\:3001
+   TaggingRules Association \:304c\:7a7a\:306b\:306a\:308c\:3070 TaggingRules option \:81ea\:4f53\:3082\:524a\:9664 (\:30af\:30ea\:30fc\:30f3\:30a2\:30c3\:30d7)\:3002 *)
+
+Options[NBClearCloudPublishable] = {
+  "AccessSpec" -> Automatic,
+  "DryRun" -> False
+};
+
+NBClearCloudPublishable[path_String, opts:OptionsPattern[]] :=
+  Module[{accessSpec, dryRun, accessCheck,
+          loaded, nbExpr, nbOpts, optsAssoc, trCurrent, svCurrent,
+          svUpdated, trUpdated, newOptsAssoc, newNbExpr, before, saveResult},
+    accessSpec = OptionValue["AccessSpec"];
+    If[accessSpec === Automatic,
+      accessSpec = <|"AccessLevel" -> 0.7|>];
+    accessSpec = iNBNormalizeAccessSpec[accessSpec];
+    dryRun = TrueQ[OptionValue["DryRun"]];
+
+    accessCheck = iNBCheckWriteAccess[accessSpec];
+    If[Lookup[accessCheck, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed",
+        "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
+        accessCheck]]];
+
+    loaded = iNBFileLoadAsExpr[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
+    nbExpr = Lookup[loaded, "NotebookExpr"];
+
+    nbOpts = Drop[List @@ nbExpr, 1];
+    optsAssoc = Association @@ Cases[nbOpts, _Rule | _RuleDelayed];
+    trCurrent = Lookup[optsAssoc, TaggingRules, <||>];
+    If[ListQ[trCurrent],
+      trCurrent = Association @@ Cases[trCurrent, _Rule | _RuleDelayed]];
+    If[!AssociationQ[trCurrent], trCurrent = <||>];
+
+    svCurrent = Lookup[trCurrent, "SourceVault", <||>];
+    If[!AssociationQ[svCurrent], svCurrent = <||>];
+
+    before = Lookup[svCurrent, "CloudPublishable", Missing["NotPresent"]];
+
+    (* \:30ad\:30fc\:304c\:5143\:3005\:7121\:3044\:5834\:5408\:306f no-op (\:30d5\:30a1\:30a4\:30eb\:66f8\:304d\:8fbc\:307f\:81ea\:4f53\:3092\:30b9\:30ad\:30c3\:30d7) *)
+    If[MissingQ[before],
+      Return[<|"Status" -> "OK",
+        "Key" -> "CloudPublishable",
+        "Before" -> Missing["NotPresent"],
+        "After" -> Missing["NotPresent"],
+        "DryRun" -> dryRun,
+        "NoOp" -> True,
+        "Path" -> Lookup[loaded, "Path"]|>]];
+
+    svUpdated = KeyDrop[svCurrent, "CloudPublishable"];
+    trUpdated = If[Length[svUpdated] === 0,
+      (* SourceVault Association \:304c\:7a7a \[RightArrow] SourceVault \:30ad\:30fc\:3054\:3068\:524a\:9664 *)
+      KeyDrop[trCurrent, "SourceVault"],
+      Append[trCurrent, "SourceVault" -> svUpdated]];
+
+    newOptsAssoc = If[Length[trUpdated] === 0,
+      (* TaggingRules Association \:304c\:7a7a \[RightArrow] TaggingRules \:30aa\:30d7\:30b7\:30e7\:30f3\:81ea\:4f53\:3092\:524a\:9664 *)
+      KeyDrop[optsAssoc, TaggingRules],
+      Append[optsAssoc, TaggingRules -> trUpdated]];
+
+    newNbExpr = Apply[Notebook,
+      Join[{nbExpr[[1]]}, Normal[newOptsAssoc]]];
+
+    If[dryRun,
+      Return[<|"Status" -> "DryRunOK",
+        "Key" -> "CloudPublishable",
+        "Before" -> before,
+        "After" -> Missing["Removed"],
+        "DryRun" -> True,
+        "Path" -> Lookup[loaded, "Path"]|>]];
+
+    saveResult = iNBFileSaveExpr[Lookup[loaded, "Path"], newNbExpr];
+    If[Lookup[saveResult, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed"|>, saveResult]]];
+
+    <|"Status" -> "OK",
+      "Key" -> "CloudPublishable",
+      "Before" -> before,
+      "After" -> Missing["Removed"],
+      "DryRun" -> False,
+      "Path" -> Lookup[loaded, "Path"]|>
+  ];
+
+
+(* \:2500\:2500 .nb \:30d5\:30a1\:30a4\:30eb\:306e outline cache \:4fee\:5fa9 (Stage 9 P1 Step 2 Hotfix 4) \:2500\:2500
+   iNBNormalizeNotebookCache \:3092\:516c\:958b API \:3068\:3057\:3066\:30e9\:30c3\:30d7\:3059\:308b\:3002 *)
+
+NBRepairNotebookCache[path_String] :=
+  Module[{absExp, allNbs, openedNb, openedHere = False, nb,
+          origWindowSize, dummyDirtied},
+    If[!FileExistsQ[path],
+      Return[<|"Status" -> "Failed", "Reason" -> "FileNotFound",
+        "Path" -> path|>]];
+    absExp = ExpandFileName[path];
+    allNbs = Quiet @ Notebooks[];
+    If[!ListQ[allNbs], allNbs = {}];
+    openedNb = SelectFirst[allNbs,
+      With[{p = Quiet @ NotebookFileName[#]},
+        StringQ[p] && ExpandFileName[p] === absExp] &,
+      None];
+    nb = If[openedNb =!= None,
+      openedNb,
+      openedHere = True;
+      Quiet @ NotebookOpen[absExp, Visible -> False]];
+    If[Head[nb] =!= NotebookObject,
+      Return[<|"Status" -> "Failed", "Reason" -> "OpenFailed",
+        "Path" -> absExp|>]];
+
+    (* Hotfix 4.1: frontend \:306b\:300c\:5909\:66f4\:3042\:308a\:300d\:3068\:5f37\:5236\:8a8d\:8b58\:3055\:305b\:308b\:305f\:3081
+       NotebookEventActions \:30c0\:30df\:30fc SetOptions \:3092\:884c\:3046\:3002
+       \:5024\:306f\:5143\:306b\:623b\:3059\:306e\:3067 .nb \:30d5\:30a1\:30a4\:30eb\:5185\:5bb9\:306f\:5b9f\:8cea\:5909\:308f\:3089\:306a\:3044\:304c\:3001
+       frontend \:306e\:30c0\:30fc\:30c6\:30a3\:30d5\:30e9\:30b0\:304c\:7acb\:3061\:3001NotebookSave \:3067\:78ba\:5b9f\:306b\:518d\:751f\:6210\:3055\:308c\:308b\:3002 *)
+    dummyDirtied = Quiet @ Check[
+      SetOptions[nb, NotebookEventActions -> {}];
+      SetOptions[nb, NotebookEventActions -> Inherited];
+      True,
+      False];
+
+    Quiet @ NotebookSave[nb];
+
+    If[openedHere, Quiet @ NotebookClose[nb]];
+    <|"Status" -> "OK", "Path" -> absExp,
+      "WasAlreadyOpen" -> (openedNb =!= None),
+      "Dirtied" -> TrueQ[dummyDirtied]|>
+  ];
+
+
+Options[NBRepairNotebookCacheFolder] = {"Recursive" -> True};
+
+NBRepairNotebookCacheFolder[dir_String, opts:OptionsPattern[]] :=
+  Module[{files, results, succeeded, failed},
+    files = If[TrueQ[OptionValue["Recursive"]],
+      FileNames["*.nb", dir, Infinity],
+      FileNames["*.nb", dir]];
+    files = Select[files, !StringContainsQ[FileBaseName[#], ".tmp-"] &];
+    results = Map[NBRepairNotebookCache, files];
+    succeeded = Count[results,
+      _?(AssociationQ[#] && Lookup[#, "Status", ""] === "OK" &)];
+    failed = Length[results] - succeeded;
+    <|"Status" -> "OK",
+      "Directory" -> ExpandFileName[dir],
+      "TotalFiles" -> Length[files],
+      "Succeeded" -> succeeded,
+      "Failed"    -> failed,
+      "Details"   -> results|>
+  ];
+
+
+Options[NBCleanupTmpFiles] = {"Recursive" -> True};
+
+NBCleanupTmpFiles[dir_String, opts:OptionsPattern[]] :=
+  Module[{files},
+    files = If[TrueQ[OptionValue["Recursive"]],
+      FileNames["*.tmp-*", dir, Infinity],
+      FileNames["*.tmp-*", dir]];
+    files = Select[files, StringContainsQ[FileBaseName[#], ".nb"] &];
+    Quiet @ DeleteFile /@ files;
+    <|"Status" -> "OK",
+      "Directory" -> ExpandFileName[dir],
+      "Deleted" -> Length[files],
+      "Files" -> files|>
+  ];
+
+
+(* ---- NBRepairNotebookCacheStrict: \:5f37\:529b\:7248\:4fee\:5fa9 (Stage 9 P1 Step 2 Hotfix 4.1) ----
+   NBRepairNotebookCache \:304c\:300c\:30c0\:30fc\:30c6\:30a3\:5316 \[Rule] NotebookSave\:300d\:3067\:6548\:679c\:7121\:3057\:306e\:5834\:5408\:306e fallback\:3002
+   \:30d5\:30a1\:30a4\:30eb\:3092 NotebookImport \:3067\:8aad\:3093\:3067 cells \:3092\:5f97\:308b \[Rule] CreateDocument \:3067\:65b0\:30ce\:30fc\:30c8\:3092\:4f5c\:308b \[Rule]
+   NotebookSave[..., path] \:3067\:5143\:30d1\:30b9\:306b\:4e0a\:66f8\:304d \[Rule] \:65b0\:30ce\:30fc\:30c8\:3092\:9589\:3058\:308b\:3002
+   \:5e2f\:540c\:30aa\:30d7\:30b7\:30e7\:30f3 (TaggingRules \:7b49) \:3082\:53d6\:308a\:8fbc\:3080\:3002 *)
+
+NBRepairNotebookCacheStrict[path_String] :=
+  Module[{absExp, allNbs, openedNb, importedCells, importedOpts,
+          newNb, saveResult},
+    If[!FileExistsQ[path],
+      Return[<|"Status" -> "Failed", "Reason" -> "FileNotFound",
+        "Path" -> path|>]];
+    absExp = ExpandFileName[path];
+
+    (* \:65e2\:306b frontend \:3067\:958b\:3044\:3066\:3044\:308c\:3070\:5148\:306b\:9589\:3058\:308b (\:30ed\:30c3\:30af\:56de\:907f) *)
+    allNbs = Quiet @ Notebooks[];
+    If[ListQ[allNbs],
+      openedNb = SelectFirst[allNbs,
+        With[{p = Quiet @ NotebookFileName[#]},
+          StringQ[p] && ExpandFileName[p] === absExp] &,
+        None];
+      If[openedNb =!= None,
+        Quiet @ NotebookClose[openedNb, Interrupt -> False]]];
+
+    (* \:30d5\:30a1\:30a4\:30eb\:3092 Import \:3057\:3066 cells \:3068 options \:3092\:53d6\:308a\:51fa\:3059 *)
+    importedCells = Quiet @ Check[
+      Import[absExp, "Notebook"],
+      $Failed];
+    If[Head[importedCells] =!= Notebook,
+      Return[<|"Status" -> "Failed", "Reason" -> "ImportFailed",
+        "Path" -> absExp|>]];
+
+    (* CreateDocument \:3067\:65b0\:30ce\:30fc\:30c8\:3092\:4f5c\:6210 (\:898b\:3048\:306a\:3044\:3088\:3046\:306b) *)
+    newNb = Quiet @ Check[
+      CreateDocument[
+        Sequence @@ Apply[List, importedCells],
+        Visible -> False],
+      $Failed];
+    If[Head[newNb] =!= NotebookObject,
+      Return[<|"Status" -> "Failed", "Reason" -> "CreateDocumentFailed",
+        "Path" -> absExp|>]];
+
+    (* \:65b0\:30ce\:30fc\:30c8\:3092 path \:306b\:4fdd\:5b58 \[Rule] frontend \:304c\:6b63\:3057\:3044\:30ad\:30e3\:30c3\:30b7\:30e5\:3092\:751f\:6210 *)
+    saveResult = Quiet @ Check[
+      NotebookSave[newNb, absExp];
+      True,
+      False];
+
+    (* \:65b0\:30ce\:30fc\:30c8\:3092\:9589\:3058\:308b *)
+    Quiet @ NotebookClose[newNb, Interrupt -> False];
+
+    If[TrueQ[saveResult],
+      <|"Status" -> "OK", "Path" -> absExp,
+        "Method" -> "RecreateAndSave"|>,
+      <|"Status" -> "Failed", "Reason" -> "SaveFailed",
+        "Path" -> absExp|>]
+  ];
+
+
+(* ---- \:9ad8\:30ec\:30d9\:30eb API: NBWriteTodoStatus ---- *)
+
+(* Status \:3068 cell options \:306e\:5bfe\:5fdc\:8868 *)
+iNBStatusToCellOpts[status_String] :=
+  Switch[status,
+    "Open",
+      {FontVariations -> {"StrikeThrough" -> False},
+       FontColor -> Automatic},
+    "Done",
+      {FontVariations -> {"StrikeThrough" -> True},
+       FontColor -> RGBColor[0.0, 0.5, 0.0]},
+    "Pass",
+      {FontVariations -> {"StrikeThrough" -> True},
+       FontColor -> GrayLevel[0.5]},
+    _, {}
+  ];
+
+Options[NBWriteTodoStatus] = {
+  "AccessSpec" -> Automatic,
+  "DryRun" -> True
+};
+
+NBWriteTodoStatus[path_String, todoKey_Association, newStatus_String,
+    opts:OptionsPattern[]] :=
+  Module[{accessSpec, dryRun, accessCheck,
+          loaded, nbExpr, cells, flat, todoCount, candidates,
+          matched, cell, cellPath, oldStatusInfo, newCell,
+          newNbExpr, saveResult, idxKey, textKey},
+    accessSpec = iNBNormalizeAccessSpec[OptionValue["AccessSpec"]];
+    dryRun = TrueQ[OptionValue["DryRun"]];
+
+    If[!MemberQ[{"Open", "Done", "Pass"}, newStatus],
+      Return[<|"Status" -> "Failed",
+        "Reason" -> "InvalidNewStatus",
+        "NewStatus" -> newStatus,
+        "ValidValues" -> {"Open", "Done", "Pass"}|>]];
+
+    accessCheck = iNBCheckWriteAccess[accessSpec];
+    If[Lookup[accessCheck, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed",
+        "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
+        accessCheck]]];
+
+    idxKey = Lookup[todoKey, "Index", Missing["NotPresent"]];
+    textKey = Lookup[todoKey, "Text", Missing["NotPresent"]];
+
+    loaded = iNBFileLoadAsExpr[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
+    nbExpr = Lookup[loaded, "NotebookExpr"];
+    cells = iNBNotebookCells[nbExpr];
+
+    (* Todo cell \:3092\:5217\:6319\:3057 Index \:3092\:632f\:308b *)
+    flat = iNBFlattenCells[cells, {}];
+    todoCount = 0;
+    candidates = {};
+    Do[
+      Module[{c, p},
+        c = entry[[1]]; p = entry[[2]];
+        If[iNBIsTodoCell[c],
+          todoCount = todoCount + 1;
+          AppendTo[candidates, <|
+            "Index" -> todoCount,
+            "Text" -> iNBCellTextExtract[c],
+            "Cell" -> c,
+            "CellPath" -> p,
+            "ExpressionUUID" -> iNBCellExpressionUUID[c]|>]]],
+      {entry, flat}];
+
+    (* Index + Text \:4e21\:65b9\:4e00\:81f4\:3059\:308b cell \:3092\:9078\:629e (\:5b89\:5168\:5074) *)
+    matched = Select[candidates,
+      And[
+        IntegerQ[idxKey] && #["Index"] === idxKey,
+        StringQ[textKey] && #["Text"] === textKey
+      ] &];
+
+    Which[
+      Length[matched] === 0,
+        Return[<|"Status" -> "Failed",
+          "Reason" -> "NoMatchingTodo",
+          "TodoKey" -> todoKey,
+          "Candidates" -> candidates,
+          "Path" -> Lookup[loaded, "Path"]|>],
+      Length[matched] > 1,
+        Return[<|"Status" -> "Failed",
+          "Reason" -> "AmbiguousTodoKey",
+          "TodoKey" -> todoKey,
+          "Matched" -> matched,
+          "Path" -> Lookup[loaded, "Path"]|>]
+    ];
+
+    matched = First[matched];
+    cell = matched["Cell"];
+    cellPath = matched["CellPath"];
+    oldStatusInfo = iNBTodoStatusFromCell[cell];
+
+    (* Cell \:3092\:5909\:66f4: cell options + TaggingRules \:540c\:6642\:8a2d\:5b9a *)
+    newCell = iNBMergeCellOptions[cell, iNBStatusToCellOpts[newStatus]];
+    newCell = iNBMergeCellTaggingRule[newCell,
+      {"SourceVault", "TodoStatus"}, newStatus];
+
+    newNbExpr = iNBReplaceCellByPath[nbExpr, cellPath, newCell];
+
+    If[dryRun,
+      Return[<|"Status" -> "DryRunOK",
+        "MatchedTodo" -> <|"Index" -> matched["Index"],
+          "Text" -> matched["Text"]|>,
+        "OldStatus" -> Lookup[oldStatusInfo, "Status", "Unknown"],
+        "NewStatus" -> newStatus,
+        "CellPath" -> cellPath,
+        "ExpressionUUID" -> matched["ExpressionUUID"],
+        "Before" -> With[{c = cell}, HoldComplete[c]],
+        "After" -> With[{nc = newCell}, HoldComplete[nc]],
+        "DryRun" -> True,
+        "Path" -> Lookup[loaded, "Path"]|>]];
+
+    saveResult = iNBFileSaveExpr[Lookup[loaded, "Path"], newNbExpr];
+    If[Lookup[saveResult, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed"|>, saveResult]]];
+
+    <|"Status" -> "OK",
+      "MatchedTodo" -> <|"Index" -> matched["Index"],
+        "Text" -> matched["Text"]|>,
+      "OldStatus" -> Lookup[oldStatusInfo, "Status", "Unknown"],
+      "NewStatus" -> newStatus,
+      "CellPath" -> cellPath,
+      "ExpressionUUID" -> matched["ExpressionUUID"],
+      "DryRun" -> False,
+      "Path" -> Lookup[loaded, "Path"]|>
+  ];
+
 
 End[];
 EndPackage[];
