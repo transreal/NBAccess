@@ -123,8 +123,9 @@ NBCellSetTaggingRule::usage =
 $NBLLMQueryFunc::usage =
   "$NBLLMQueryFunc \:306f\:975e\:540c\:671f LLM \:547c\:3073\:51fa\:3057\:7528\:30b3\:30fc\:30eb\:30d0\:30c3\:30af\:95a2\:6570\:3002\n" <>
   "ClaudeCode \:30d1\:30c3\:30b1\:30fc\:30b8\:304c\:81ea\:52d5\:7684\:306b ClaudeQueryAsync \:3092\:767b\:9332\:3059\:308b\:3002\n" <>
-  "\:30b7\:30b0\:30cd\:30c1\:30e3: $NBLLMQueryFunc[prompt, callback, nb, Model -> spec, Fallback -> bool]\n" <>
+  "\:30b7\:30b0\:30cd\:30c1\:30e3: $NBLLMQueryFunc[prompt, callback, nb, Model -> spec, Fallback -> bool, Integrations -> {...}]\n" <>
   "callback \:306f\:5fdc\:7b54\:6587\:5b57\:5217\:3092\:53d7\:3051\:53d6\:308b\:95a2\:6570\:3002nb \:306f\:51fa\:529b\:5148 NotebookObject\:3002\n" <>
+  "Integrations \:306f LM Studio MCP \:7528 (lmstudio \:30e2\:30c7\:30eb\:6642\:306e\:307f\:6709\:52b9\:3001Automatic \:306a\:3089\:7121\:8996)\:3002\n" <>
   "\:30ab\:30fc\:30cd\:30eb\:3092\:30d6\:30ed\:30c3\:30af\:3057\:306a\:3044\:3002";
 
 NBCellGetText::usage =
@@ -140,6 +141,7 @@ NBCellTransformWithLLM::usage =
   "Options:\n" <>
   "  Fallback -> False\n" <>
   "  InputText -> Automatic: \:30bb\:30eb\:30c6\:30ad\:30b9\:30c8\:306e\:4ee3\:308f\:308a\:306b\:4f7f\:7528\:3059\:308b\:5165\:529b\:30c6\:30ad\:30b9\:30c8\:3002\n" <>
+  "  Integrations -> Automatic: LM Studio MCP \:30b5\:30fc\:30d0\:30fc\:30ea\:30b9\:30c8 (lmstudio \:30e2\:30c7\:30eb\:6642\:306e\:307f)\:3002\n" <>
   "completionFn \:304c\:53d7\:3051\:53d6\:308b Association:\n" <>
   "  <|\"Response\" -> text, \"OriginalText\" -> orig, \"PrivacyLevel\" -> pl|>\n" <>
   "\:4f8b: NBCellTransformWithLLM[nb, 3, promptFn, Print, Fallback -> True]";
@@ -391,6 +393,14 @@ NBGetTaggingRule::usage =
   "NBGetTaggingRule[nb, {key1, key2, ...}] \:306f\:30cd\:30b9\:30c8\:3057\:305f\:30d1\:30b9\:3092\:6307\:5b9a\:53ef\:80fd\:3002\n" <>
   "\:30ad\:30fc\:304c\:5b58\:5728\:3057\:306a\:3044\:5834\:5408\:306f Missing[] \:3092\:8fd4\:3059\:3002";
 
+NBSetNotebookDefaultModel::usage =
+  "NBSetNotebookDefaultModel[nb, provider, modelName] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:30c7\:30d5\:30a9\:30eb\:30c8\:30e2\:30c7\:30eb\n" <>
+  "(claudecode \:30d1\:30ec\:30c3\:30c8\:8a2d\:5b9a paletteProvider/paletteModelName) \:3092\:66f8\:304d\:63db\:3048\:308b\:3002\n" <>
+  "NBAccess \:4ee5\:5916\:304c\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5185\:90e8\:30c7\:30fc\:30bf\:3092\:66f8\:304d\:63db\:3048\:306a\:3044\:539f\:5247\:306b\:5f93\:3044\:66f8\:304d\:8fbc\:307f\:306f NBAccess \:304c\:884c\:3046\:3002";
+
+NBGetNotebookDefaultModel::usage =
+  "NBGetNotebookDefaultModel[nb] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:30c7\:30d5\:30a9\:30eb\:30c8\:30e2\:30c7\:30eb {provider, modelName} \:3092\:8fd4\:3059\:3002\:672a\:8a2d\:5b9a\:306a\:3089 Missing[\"NotDeclared\"]\:3002";
+
 NBSetTaggingRule::usage =
   "NBSetTaggingRule[nb, key, value] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e TaggingRules \:306b key -> value \:3092\:8a2d\:5b9a\:3059\:308b\:3002\n" <>
   "NBSetTaggingRule[nb, {key1, key2}, value] \:306f\:30cd\:30b9\:30c8\:3057\:305f\:30d1\:30b9\:3092\:6307\:5b9a\:53ef\:80fd\:3002";
@@ -488,6 +498,15 @@ NBGetAPIKey::usage =
   "AccessLevel >= 1.0 \:304c\:5fc5\:9808\:3002\:547c\:3073\:51fa\:3057\:5074\:3067 PrivacySpec -> <|\"AccessLevel\" -> 1.0|> \:3092\:660e\:793a\:6307\:5b9a\:3059\:308b\:3053\:3068\:3002\n" <>
   "SystemCredential \:3078\:306e\:30a2\:30af\:30bb\:30b9\:3092\:4e00\:5143\:7ba1\:7406\:3059\:308b\:3002";
 
+NBListProviderModels::usage =
+  "NBListProviderModels[provider] \:306f\:30af\:30e9\:30a6\:30c9\:30d7\:30ed\:30d0\:30a4\:30c0 (anthropic / openai) \:306e\n" <>
+  "\:5229\:7528\:53ef\:80fd\:30e2\:30c7\:30eb ID \:30ea\:30b9\:30c8\:3092\:8fd4\:3059\:3002API \:30ad\:30fc\:306f\:5185\:90e8\:3067 SystemCredential \:304b\:3089\:8aad\:307f\:3001\n" <>
+  "\:5916\:90e8\:306b\:306f\:51fa\:3055\:306a\:3044\:3002\:8fd4\:3059\:306e\:306f\:30e2\:30c7\:30eb\:540d\:30ea\:30b9\:30c8 (\:79d8\:533f\:6027\:306a\:3057) \:3060\:3051\:306a\:306e\:3067\:3001\n" <>
+  "PrivacySpec / AccessLevel \:306e\:6307\:5b9a\:306f\:4e0d\:8981\:3002\:4e00\:822c\:30d1\:30c3\:30b1\:30fc\:30b8 (SourceVault \:7b49) \:304b\:3089\n" <>
+  "API \:30ad\:30fc\:3092\:76f4\:63a5\:8aad\:307e\:305a\:306b\:30e2\:30c7\:30eb\:4e00\:89a7\:3092\:53d6\:5f97\:3059\:308b\:305f\:3081\:306e\:516c\:958b\:95a2\:6570\:3002\n" <>
+  "provider: \"anthropic\" | \"openai\"\:3002\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> _, \"Provider\" -> _, \"Models\" -> {_String..}|>\:3002";
+
 (* ---- \:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc\:306e API \:30ad\:30fc\:30a2\:30af\:30bb\:30b5\:30fc ---- *)
 NBGetLocalLLMAPIKey::usage =
   "NBGetLocalLLMAPIKey[provider, url] \:306f \:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc (LM Studio \:7b49) \:306e\n" <>
@@ -524,6 +543,32 @@ NBSetFallbackModels::usage =
   "models: {{\"provider\",\"model\"}, {\"provider\",\"model\",\"url\"}, ...}\n" <>
   "\:4f8b: NBSetFallbackModels[{{\"anthropic\",\"claude-opus-4-6\"},{\"lmstudio\",\"gpt-oss-20b\",\"http://127.0.0.1:1234\"}}]";
 
+NBRegisterTrustedLocalServer::usage =
+  "NBRegisterTrustedLocalServer[assoc] \:306f\:4fe1\:983c\:3067\:304d\:308b\:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:3092\:767b\:9332\:3059\:308b\:3002\n" <>
+  "assoc: <|\"MachineName\" -> _, \"Subnet\" -> _, \"Provider\" -> _, \"URL\" -> _|>\:3002\n" <>
+  "IP / \:30b5\:30d6\:30cd\:30c3\:30c8\:306f\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:5883\:754c\:306a\:306e\:3067 NBAccess \:304c\:7ba1\:7406\:3059\:308b\:3002\:30e2\:30c7\:30eb\:540d (Qwen \:306e\:679d\:756a\:7b49) \:306f\n" <>
+  "\:542b\:3081\:306a\:3044 (\:305d\:308c\:306f SourceVault \:304c intent \:89e3\:6c7a\:3067\:6271\:3046)\:3002\:8d77\:52d5\:30d5\:30a1\:30a4\:30eb\:304b\:3089\:547c\:3093\:3067\:4fe1\:983c\:30ea\:30b9\:30c8\:306b\:8ffd\:52a0\:3059\:308b\:3002\n" <>
+  "\:4f8b: NBRegisterTrustedLocalServer[<|\"MachineName\"->\"phoenix\", \"Subnet\"->\"192.168.2\", \"Provider\"->\"lmstudio\", \"URL\"->\"http://192.168.2.110:1234\"|>]";
+
+NBResolveLocalServer::usage =
+  "NBResolveLocalServer[] \:306f\:73fe\:5728\:306e\:30de\:30b7\:30f3\:74b0\:5883 ($MachineName \:3068\:81ea IP \:306e\:30b5\:30d6\:30cd\:30c3\:30c8) \:3092\:4fe1\:983c\:30ea\:30b9\:30c8\:3068\n" <>
+  "\:7167\:5408\:3057\:3001\:4fe1\:983c\:3067\:304d\:308b\:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0 <|\"Provider\" -> _, \"URL\" -> _, \"Trusted\" -> _, ...|> \:3092\:8fd4\:3059\:3002\n" <>
+  "\:672a\:77e5\:306e\:30b5\:30d6\:30cd\:30c3\:30c8 (\:4fe1\:983c\:30ea\:30b9\:30c8\:306b\:7121\:3044) \:3067\:306f\:5b89\:5168\:5074\:306b\:5012\:3057\:3001localhost (127.0.0.1) \:306e\:30ed\:30fc\:30ab\:30eb\:30b5\:30fc\:30d0\:306e\:307f\:3092\:8fd4\:3059\:3002\n" <>
+  "\:30ea\:30e2\:30fc\:30c8 IP \:306e LM Studio \:306b\:306f\:4fe1\:983c\:30b5\:30d6\:30cd\:30c3\:30c8\:5185\:3067\:306e\:307f\:63a5\:7d9a\:3059\:308b\:3002\:30e2\:30c7\:30eb\:540d\:306f\:8fd4\:3055\:306a\:3044 (SourceVault \:304c\:89e3\:6c7a)\:3002";
+
+NBTrustedLocalServers::usage =
+  "NBTrustedLocalServers[] \:306f\:73fe\:5728\:767b\:9332\:3055\:308c\:3066\:3044\:308b\:4fe1\:983c\:30ed\:30fc\:30ab\:30eb\:30b5\:30fc\:30d0\:306e\:30ea\:30b9\:30c8 (Dataset) \:3092\:8fd4\:3059\:3002";
+
+NBSyncClaudeModelVars::usage =
+  "NBSyncClaudeModelVars[opts] \:306f SourceVault \:306b\:30ad\:30e3\:30c3\:30b7\:30e5\:3055\:308c\:3066\:3044\:308b\:30e2\:30c7\:30eb\:3067\n" <>
+  "ClaudeCode \:306e $ClaudeModel / $ClaudeDocModel / $ClaudePrivateModel / $ClaudeFallbackModels \:3092\n" <>
+  "\:66f4\:65b0\:3059\:308b\:3002SourceVault \:304c intent \:5272\:308a\:5f53\:3066\:30de\:30c3\:30d7 (SourceVaultModelIntentMap) \:3092\:4fdd\:6301\:3057\:3001\n" <>
+  "NBAccess \:304c\:305d\:308c\:3092\:8aad\:307f\:53d6\:3063\:3066 SourceVaultResolve \:3067\:30e2\:30c7\:30eb ID \:306b\:89e3\:6c7a\:3057\:3001\:30ed\:30fc\:30ab\:30eb\:30b5\:30fc\:30d0\:306e\n" <>
+  "URL \:306f NBResolveLocalServer \:3067\:5b89\:5168\:306b\:89e3\:6c7a\:3057\:3066\:5b9f\:5909\:6570\:3078\:4ee3\:5165\:3059\:308b\:3002\:30e2\:30c7\:30eb\:5909\:6570\:306e\:4ee3\:5165\:306f\n" <>
+  "\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:60c5\:5831 ($ClaudePrivateModel \:306e URL) \:3092\:542b\:3080\:305f\:3081\:3001\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:5883\:754c\:3092\:7ba1\:7406\:3059\:308b\n" <>
+  "NBAccess \:306b\:4e00\:5143\:5316\:3059\:308b\:3002SourceVault \:304c\:672a\:30ed\:30fc\:30c9\:306a\:3089\:4f55\:3082\:3057\:306a\:3044 (claudecode \:5358\:4f53\:306e\:5f8c\:65b9\:4e92\:63db)\:3002\n" <>
+  "SourceVault \:30ed\:30fc\:30c9\:6642\:306b\:81ea\:52d5\:5b9f\:884c\:3055\:308c\:308b\:3002\:30aa\:30d7\:30b7\:30e7\:30f3: Verbose (\:65e2\:5b9a False)\:3002";
+
 NBGetFallbackModels::usage =
   "NBGetFallbackModels[] \:306f\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:30e2\:30c7\:30eb\:30ea\:30b9\:30c8\:5168\:4f53\:3092\:8fd4\:3059\:3002";
 
@@ -548,6 +593,19 @@ NBProviderCanAccess::usage =
   "NBProviderCanAccess[provider, accessLevel] \:306f\:30d7\:30ed\:30d0\:30a4\:30c0\:30fc\:304c\:6307\:5b9a\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:306e\n" <>
   "\:30c7\:30fc\:30bf\:306b\:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:304b\:3092\:8fd4\:3059 (True/False)\:3002\n" <>
   "MaxAccessLevel >= accessLevel \:306a\:3089 True\:3002";
+
+NBModelCanHandleAccessLevel::usage =
+  "NBModelCanHandleAccessLevel[modelSpec, accessLevel] \:306f\:30e2\:30c7\:30eb\:6307\:5b9a\:304c\:305d\:306e\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:306e\n" <>
+  "\:30c7\:30fc\:30bf\:3092\:6271\:3048\:308b\:304b\:3092\:8fd4\:3059 (True/False)\:3002Private \:30ce\:30fc\:30c8 (\:30ec\:30d9\:30eb 1.0) \:3067\:30af\:30e9\:30a6\:30c9\:30e2\:30c7\:30eb\n" <>
+  "(claudecode/anthropic/openai = 0.5) \:3092\:62d2\:5426\:3057\:3001\:30ed\:30fc\:30ab\:30eb LLM (lmstudio = 1.0) \:306e\:307f\:901a\:3059\:305f\:3081\:306b\:4f7f\:3046\:3002\n" <>
+  "modelSpec: {provider, model} | {provider, model, url} | \"model\" | Automatic (\:672a\:6307\:5b9a\:306f True)\:3002";
+
+NBModelProviderName::usage =
+  "NBModelProviderName[modelSpec] \:306f modelSpec \:304b\:3089 provider \:6587\:5b57\:5217\:3092\:53d6\:308a\:51fa\:3059\:3002";
+
+NBNotebookRequiredAccessLevel::usage =
+  "NBNotebookRequiredAccessLevel[nb] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:304c\:8981\:6c42\:3059\:308b\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:3092\:8fd4\:3059\:3002\n" <>
+  "Private \:5ba3\:8a00 (CloudPublishable -> False) \:306a\:3089 1.0 (\:30af\:30e9\:30a6\:30c9\:7981\:6b62)\:3001\:305d\:308c\:4ee5\:5916\:306f 0.0\:3002";
 
 (* ---- \:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:30c7\:30a3\:30ec\:30af\:30c8\:30ea API ---- *)
 NBSetAccessibleDirs::usage =
@@ -1053,6 +1111,11 @@ NBRepairNotebookCacheStrict::usage =
   "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\", \"Path\", \"Method\" -> \"RecreateAndSave\"|>";
 
 
+
+
+NBAuditCodexAccessibleDirs::usage =
+  "NBAuditCodexAccessibleDirs[dirs] audits the directories that would be exposed to ChatGPT Codex for files whose contents could exceed the Codex provider max access level (.env, *secret*, *credential*, *token*, private keys, API-key-like content). It is the mandatory gate before generating a Codex permission profile. Default behaviour is fail-stop: a Failure is returned when a dangerous file is found, so Codex is not started with that directory exposed. Options: \"MaxDepth\" (default Infinity, no depth limit; a finite limit that leaves part of the tree unscanned makes the audit fail-closed), \"OnDanger\" (\"Fail\" default | \"DenyAndContinue\" opt-in), \"ScanContents\" (default True), \"MaxFileScanBytes\". Returns <|\"Status\", \"Gate\", \"Findings\", \"AuditedDirs\", \"FileCount\", \"Truncated\", \"SuggestedDenyRules\"|> on pass or opt-in continue.";
+
 Begin["`Private`"];
 
 (* ============================================================
@@ -1515,8 +1578,30 @@ NBAccess`NBCellReadInputText[nb_NotebookObject, cellIdx_Integer] :=
    \:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb: 0.0..1.0
    ============================================================ *)
 
+(* Stage 9 P1.5: NotebookObject \:304c Private (CloudPublishable -> False) \:3068
+   \:660e\:793a\:5ba3\:8a00\:3055\:308c\:3066\:3044\:308b\:304b\:3092 frontend memory \:306e TaggingRules \:304b\:3089\:8efd\:91cf\:306b\:8aad\:3080\:3002
+   NBCellPrivacyLevel \:304b\:3089\:30bb\:30eb\:6bce\:306b\:547c\:3070\:308c\:308b\:306e\:3067\:30d5\:30a1\:30a4\:30eb I/O \:3092\:907f\:3051\:308b\:3002
+   \:683c\:7d0d\:5834\:6240: {TaggingRules, "SourceVault", "CloudPublishable"}\:3002
+   False \:306e\:3068\:304d\:306e\:307f True\:3002True/\:672a\:5ba3\:8a00\:306f False (\:30aa\:30fc\:30d0\:30fc\:30e9\:30a4\:30c9\:3057\:306a\:3044)\:3002 *)
+iNBNotebookDeclaredPrivateQ[nb_NotebookObject] :=
+  Module[{tr, sv, cp},
+    tr = Quiet @ CurrentValue[nb, TaggingRules];
+    If[ListQ[tr], tr = Association @@ Cases[tr, _Rule | _RuleDelayed]];
+    If[!AssociationQ[tr], Return[False]];
+    sv = Lookup[tr, "SourceVault", <||>];
+    If[ListQ[sv], sv = Association @@ Cases[sv, _Rule | _RuleDelayed]];
+    If[!AssociationQ[sv], Return[False]];
+    cp = Lookup[sv, "CloudPublishable", Missing["NotDeclared"]];
+    cp === False
+  ];
+iNBNotebookDeclaredPrivateQ[___] := False;
+
 NBAccess`NBCellPrivacyLevel[nb_NotebookObject, cellIdx_Integer] :=
   Module[{cell, tag, depTag, numTag},
+    (* Stage 9 P1.5: \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5168\:4f53\:304c Private (CloudPublishable -> False) \:5ba3\:8a00\:6e08\:307f\:306a\:3089\:3001
+       \:5168\:30bb\:30eb\:306e\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb\:3092 1.0 \:3068\:3057\:3066\:6271\:3046 (\:30af\:30e9\:30a6\:30c9 LLM \:3078\:306e
+       \:6295\:5165\:3092\:660e\:793a\:7684\:306b\:7981\:6b62)\:3002\:500b\:5225\:30bb\:30eb\:306e\:6a5f\:5bc6\:30bf\:30b0\:3088\:308a\:512a\:5148\:3059\:308b\:3002 *)
+    If[iNBNotebookDeclaredPrivateQ[nb], Return[1.0]];
     cell = iResolveCell[nb, cellIdx];
     If[cell === $Failed, Return[0.0]];
     (* Stage 9 P1 Step 7: \:6570\:5024 privacyLevel \:30bf\:30b0\:304c\:3042\:308c\:3070\:6700\:512a\:5148 *)
@@ -1596,11 +1681,11 @@ NBAccess`NBCellGetText[nb_NotebookObject, cellIdx_Integer] :=
    $NBLLMQueryFunc \:306f ClaudeCode \:304c\:30ed\:30fc\:30c9\:6642\:306b\:767b\:9332\:3059\:308b\:30b3\:30fc\:30eb\:30d0\:30c3\:30af\:3002
    ============================================================ *)
 
-Options[NBAccess`NBCellTransformWithLLM] = {Fallback -> False, InputText -> Automatic};
+Options[NBAccess`NBCellTransformWithLLM] = {Fallback -> False, InputText -> Automatic, Integrations -> Automatic};
 
 NBAccess`NBCellTransformWithLLM[nb_NotebookObject, cellIdx_Integer,
     promptFn_, completionFn_, opts:OptionsPattern[]] :=
-  Module[{text, inputOverride, privLevel, useFallback, prompt, cellTag},
+  Module[{text, inputOverride, privLevel, useFallback, integ, prompt, cellTag},
     NBAccess`NBInvalidateCellsCache[nb];
 
     (* \:30b3\:30fc\:30eb\:30d0\:30c3\:30af\:672a\:767b\:9332\:30c1\:30a7\:30c3\:30af *)
@@ -1618,6 +1703,7 @@ NBAccess`NBCellTransformWithLLM[nb_NotebookObject, cellIdx_Integer,
     (* \:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb\:53d6\:5f97 *)
     privLevel = NBAccess`NBCellPrivacyLevel[nb, cellIdx];
     useFallback = TrueQ[OptionValue[Fallback]];
+    integ = OptionValue[Integrations];
 
     (* \:30d7\:30ed\:30f3\:30d7\:30c8\:69cb\:7bc9 *)
     prompt = promptFn[text];
@@ -1632,7 +1718,7 @@ NBAccess`NBCellTransformWithLLM[nb_NotebookObject, cellIdx_Integer,
 
     (* \:975e\:540c\:671f LLM \:547c\:3073\:51fa\:3057 *)
     With[{nb2 = nb, origIdx = cellIdx, origText = text, pl = privLevel,
-          doneFn = completionFn, tag = cellTag},
+          doneFn = completionFn, tag = cellTag, ig = integ},
       NBAccess`$NBLLMQueryFunc[prompt,
         Function[response,
           Module[{idx},
@@ -1668,7 +1754,8 @@ NBAccess`NBCellTransformWithLLM[nb_NotebookObject, cellIdx_Integer,
               doneFn[$Failed]]]],
         nb,
         PrivacyLevel -> privLevel,
-        Fallback -> useFallback]
+        Fallback -> useFallback,
+        Integrations -> ig]
     ];
   ];
 
@@ -3292,6 +3379,38 @@ NBAccess`NBListTaggingRuleKeys[nb_NotebookObject, prefix_String] :=
   Select[NBAccess`NBListTaggingRuleKeys[nb],
     StringQ[#] && StringMatchQ[#, prefix ~~ ___] &];
 
+(* Stage 9 P1.5: \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:30c7\:30d5\:30a9\:30eb\:30c8\:30e2\:30c7\:30eb (claudecode \:30d1\:30ec\:30c3\:30c8\:8a2d\:5b9a) \:3092
+   \:66f8\:304d\:63db\:3048\:308b\:3002NBAccess \:4ee5\:5916\:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5185\:90e8\:30c7\:30fc\:30bf\:3092\:66f8\:304d\:63db\:3048\:3066\:306f
+   \:306a\:3089\:306a\:3044\:539f\:5247\:306b\:5f93\:3044\:3001\:66f8\:304d\:8fbc\:307f\:306f\:3053\:306e\:95a2\:6570 (NBAccess) \:304c\:5b9f\:884c\:3059\:308b\:3002
+   claudecode \:306f Private/Public \:5207\:66ff\:6642\:306b\:66f8\:304d\:8fbc\:3080\:3079\:304d {provider, modelName} \:3092
+   \:5f15\:6570\:3067\:6e21\:3059 ((1) \:65b9\:5f0f)\:3002\:30ad\:30fc\:69cb\:9020\:306f claudecode \:306e
+   iLoadPaletteSettings / iSavePaletteSettings \:3068\:6574\:5408\:3092\:53d6\:308b:
+   {TaggingRules, "claudecode", "paletteProvider" / "paletteModelName"}\:3002 *)
+NBAccess`NBSetNotebookDefaultModel[nb_NotebookObject,
+    provider_String, modelName_String] :=
+  Module[{},
+    Quiet[CurrentValue[nb,
+      {TaggingRules, "claudecode", "paletteProvider"}] = provider];
+    Quiet[CurrentValue[nb,
+      {TaggingRules, "claudecode", "paletteModelName"}] = modelName];
+    <|"Status" -> "OK", "Provider" -> provider, "ModelName" -> modelName|>
+  ];
+NBAccess`NBSetNotebookDefaultModel[___] :=
+  <|"Status" -> "Failed", "Reason" -> "InvalidArguments"|>;
+
+(* \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:30c7\:30d5\:30a9\:30eb\:30c8\:30e2\:30c7\:30eb\:3092\:8aad\:3080 ({provider, modelName} \:307e\:305f\:306f Missing) *)
+NBAccess`NBGetNotebookDefaultModel[nb_NotebookObject] :=
+  Module[{p, m},
+    p = Quiet[CurrentValue[nb,
+      {TaggingRules, "claudecode", "paletteProvider"}]];
+    m = Quiet[CurrentValue[nb,
+      {TaggingRules, "claudecode", "paletteModelName"}]];
+    If[StringQ[p] && StringQ[m],
+      {p, m},
+      Missing["NotDeclared"]]
+  ];
+NBAccess`NBGetNotebookDefaultModel[___] := Missing["NotDeclared"];
+
 
 (* ============================================================
    API \:30ad\:30fc\:30a2\:30af\:30bb\:30b5\:30fc
@@ -3325,6 +3444,77 @@ NBAccess`NBGetAPIKey[provider_String, opts:OptionsPattern[]] :=
 
 NBGetAPIKey::unkn = "\:672a\:77e5\:306e\:30d7\:30ed\:30d0\:30a4\:30c0: `1`\:3002\"anthropic\"\:3001\"openai\"\:3001\"github\" \:306e\:3044\:305a\:308c\:304b\:3092\:6307\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
 NBGetAPIKey::nokey = "`1` \:306e API \:30ad\:30fc\:304c\:898b\:3064\:304b\:308a\:307e\:305b\:3093\:3002SystemCredential[\"`2`\"] \:3092\:8a2d\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+
+
+(* ============================================================
+   NBListProviderModels: \:30af\:30e9\:30a6\:30c9\:30d7\:30ed\:30d0\:30a4\:30c0\:306e\:30e2\:30c7\:30eb\:4e00\:89a7\:53d6\:5f97\:3002
+
+   API \:30ad\:30fc\:306f SystemCredential \:304b\:3089\:5185\:90e8\:3067\:8aad\:307f\:3001\:5916\:90e8\:306b\:51fa\:3055\:306a\:3044\:3002
+   \:8fd4\:3059\:306e\:306f\:30e2\:30c7\:30eb\:540d\:30ea\:30b9\:30c8 (\:79d8\:533f\:6027\:306a\:3057) \:3060\:3051\:306a\:306e\:3067\:3001PrivacySpec /
+   AccessLevel \:306f\:4e0d\:8981\:3002\:4e00\:822c\:30d1\:30c3\:30b1\:30fc\:30b8 (SourceVault \:7b49) \:304c API \:30ad\:30fc\:3092
+   \:76f4\:63a5\:8aad\:307e\:305a\:306b\:30e2\:30c7\:30eb\:4e00\:89a7\:3092\:53d6\:5f97\:3059\:308b\:305f\:3081\:306e\:516c\:958b\:95a2\:6570 (\:30ad\:30fc\:3092\:4f7f\:3046\:51e6\:7406\:306f
+   NBAccess \:306b\:9589\:3058\:8fbc\:3081\:308b\:3068\:3044\:3046\:8a2d\:8a08\:65b9\:91dd\:306b\:5f93\:3046)\:3002
+   ============================================================ *)
+
+$iProviderModelsURL = <|
+  "anthropic" -> "https://api.anthropic.com/v1/models",
+  "openai"    -> "https://api.openai.com/v1/models"
+|>;
+
+(* OpenAI \:4e92\:63db /v1/models JSON \:304b\:3089 model id \:3092\:62bd\:51fa\:3059\:308b\:3002
+   {"data": [{"id": "..."}, ...]} \:5f62\:5f0f\:3002 *)
+iNBExtractModelIds[body_String] :=
+  Module[{json, data},
+    json = Quiet @ Check[
+      Developer`ReadRawJSONString[body], $Failed];
+    If[!AssociationQ[json], Return[{}]];
+    data = Lookup[json, "data", {}];
+    If[!ListQ[data], Return[{}]];
+    Select[
+      Map[Lookup[#, "id", Missing[]] &,
+        Select[data, AssociationQ]],
+      StringQ]];
+iNBExtractModelIds[_] := {};
+
+NBAccess`NBListProviderModels[provider_String] :=
+  Module[{prov, url, credName, key, headers, resp, status, body, ids},
+    prov = ToLowerCase[provider];
+    url = Lookup[$iProviderModelsURL, prov, None];
+    If[url === None,
+      Return[<|"Status" -> "Failed", "Provider" -> provider,
+        "Reason" -> "UnknownProvider", "Models" -> {}|>]];
+    (* API \:30ad\:30fc\:306f\:5185\:90e8\:3067\:53d6\:5f97 (\:3053\:306e\:95a2\:6570\:81ea\:4f53\:304c NBAccess \:306a\:306e\:3067
+       SystemCredential \:306b\:76f4\:63a5\:30a2\:30af\:30bb\:30b9\:3067\:304d\:308b)\:3002\:5916\:90e8\:306b\:306f\:51fa\:3055\:306a\:3044\:3002 *)
+    credName = Lookup[$iAPIKeyMap, prov, None];
+    If[credName === None,
+      Return[<|"Status" -> "Failed", "Provider" -> provider,
+        "Reason" -> "NoCredentialMapping", "Models" -> {}|>]];
+    key = Quiet[SystemCredential[credName]];
+    If[!StringQ[key] || StringLength[key] === 0,
+      Return[<|"Status" -> "NoAPIKey", "Provider" -> provider,
+        "Reason" -> "CredentialNotSet",
+        "CredentialName" -> credName, "Models" -> {}|>]];
+    headers = Which[
+      prov === "anthropic",
+        {"x-api-key" -> key, "anthropic-version" -> "2023-06-01"},
+      prov === "openai",
+        {"Authorization" -> "Bearer " <> key},
+      True, {}];
+    resp = Quiet @ Check[
+      URLRead[HTTPRequest[url, <|"Headers" -> headers|>]], $Failed];
+    If[Head[resp] =!= HTTPResponse,
+      Return[<|"Status" -> "Failed", "Provider" -> provider,
+        "Reason" -> "RequestFailed", "Models" -> {}|>]];
+    status = resp["StatusCode"];
+    If[status =!= 200,
+      Return[<|"Status" -> "Failed", "Provider" -> provider,
+        "Reason" -> "HTTP" <> ToString[status], "Models" -> {}|>]];
+    body = Quiet @ Check[resp["Body"], ""];
+    ids = iNBExtractModelIds[If[StringQ[body], body, ""]];
+    <|"Status" -> "OK", "Provider" -> provider, "Models" -> ids|>
+  ];
+NBAccess`NBListProviderModels[___] :=
+  <|"Status" -> "Failed", "Reason" -> "InvalidArguments", "Models" -> {}|>;
 
 
 (* ============================================================
@@ -4494,6 +4684,245 @@ NBAccess`NBSetFallbackModels[models_List] :=
 NBAccess`NBGetFallbackModels[] :=
   If[ListQ[$iFallbackModels], $iFallbackModels, {}];
 
+
+(* ============================================================
+   \:4fe1\:983c\:3067\:304d\:308b\:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:306e\:89e3\:6c7a (\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:5883\:754c)
+
+   IP / \:30b5\:30d6\:30cd\:30c3\:30c8\:306e\:5224\:5b9a\:306f\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:306b\:76f4\:7d50\:3059\:308b\:306e\:3067 NBAccess \:304c
+   \:7ba1\:7406\:3059\:308b\:3002\:4fe1\:983c\:30ea\:30b9\:30c8\:306f {MachineName, Subnet, Provider, URL} \:306e
+   \:7d44\:3067\:3001IP \:00d7 \:30b5\:30d6\:30cd\:30c3\:30c8\:306f\:30cf\:30fc\:30c9\:30b3\:30fc\:30c9\:53ef (\:6ec5\:591a\:306b\:5909\:308f\:3089\:306a\:3044)\:3002
+   \:305d\:306e\:4e0a\:3067\:52d5\:304f\:30e2\:30c7\:30eb\:540d (Qwen \:306e\:679d\:756a\:7b49) \:306f\:542b\:3081\:306a\:3044\:3002\:30e2\:30c7\:30eb\:306f
+   SourceVault \:304c intent \:89e3\:6c7a\:3067\:6271\:3046\:3002
+
+   \:672a\:77e5\:306e\:30b5\:30d6\:30cd\:30c3\:30c8\:3067\:306f\:5b89\:5168\:5074\:306b\:5012\:3057\:3001localhost \:306e\:307f\:3092\:8fd4\:3059\:3002
+   ============================================================ *)
+
+(* \:30c7\:30d5\:30a9\:30eb\:30c8\:4fe1\:983c\:30b5\:30fc\:30d0 (\:8d77\:52d5\:30d5\:30a1\:30a4\:30eb\:304b\:3089 NBRegisterTrustedLocalServer \:3067
+   \:8ffd\:52a0\:30fb\:4e0a\:66f8\:304d\:3067\:304d\:308b)\:3002\:7a7a\:3067\:521d\:671f\:5316\:3057\:3001\:30e6\:30fc\:30b6\:30fc\:304c\:767b\:9332\:3059\:308b\:65b9\:5f0f (Q3=(a))\:3002 *)
+If[!ListQ[$iTrustedLocalServers],
+  $iTrustedLocalServers = {}];
+
+NBAccess`NBRegisterTrustedLocalServer[assoc_Association] :=
+  Module[{entry},
+    entry = <|
+      "MachineName" -> Lookup[assoc, "MachineName", All],
+      "Subnet"      -> Lookup[assoc, "Subnet", All],
+      "Provider"    -> Lookup[assoc, "Provider", "lmstudio"],
+      "URL"         -> Lookup[assoc, "URL", ""]|>;
+    (* \:540c\:4e00 {MachineName, Subnet, URL} \:306f\:7f6e\:304d\:63db\:3048\:308b *)
+    $iTrustedLocalServers = Append[
+      Select[$iTrustedLocalServers,
+        !(Lookup[#, "MachineName", All] === entry["MachineName"] &&
+          Lookup[#, "Subnet", All] === entry["Subnet"] &&
+          Lookup[#, "URL", ""] === entry["URL"]) &],
+      entry];
+    entry];
+NBAccess`NBRegisterTrustedLocalServer[___] :=
+  <|"Status" -> "Failed", "Reason" -> "InvalidArguments"|>;
+
+NBAccess`NBTrustedLocalServers[] :=
+  If[$iTrustedLocalServers === {},
+    Dataset[{}],
+    Dataset[$iTrustedLocalServers]];
+
+(* \:81ea\:30de\:30b7\:30f3\:306e IP \:30a2\:30c9\:30ec\:30b9\:4e00\:89a7\:3092\:53d6\:5f97\:3059\:308b\:3002$MachineAddresses \:304c\:4f7f\:3048\:308b
+   \:74b0\:5883\:3067\:306f\:305d\:308c\:3092\:3001\:7121\:3051\:308c\:3070 SystemInformation \:304b\:3089\:62fe\:3046\:3002\:5931\:6557\:6642\:306f {}\:3002 *)
+iNBMachineIPAddresses[] :=
+  Module[{addrs},
+    addrs = Quiet @ Check[
+      Which[
+        ValueQ[$MachineAddresses] && ListQ[$MachineAddresses],
+          $MachineAddresses,
+        True,
+          (* \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af: \:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:60c5\:5831\:304b\:3089 IPv4 \:3092\:62fe\:3046 *)
+          Cases[
+            Flatten[{
+              Quiet @ SystemInformation["Network", "IPAddresses"]}],
+            _String]],
+      {}];
+    If[!ListQ[addrs], addrs = {}];
+    Select[addrs, StringQ]];
+
+(* IP \:6587\:5b57\:5217\:304c subnet \:30d7\:30ec\:30d5\:30a3\:30c3\:30af\:30b9 (\:4f8b "192.168.2") \:306b\:5c5e\:3059\:308b\:304b *)
+iNBIPInSubnet[ip_String, subnet_String] :=
+  StringStartsQ[ip, subnet <> "."] || ip === subnet;
+iNBIPInSubnet[_, _] := False;
+
+(* URL \:304c localhost / 127.0.0.1 \:3092\:6307\:3059\:304b *)
+iNBIsLocalhostURL[url_String] :=
+  StringContainsQ[url, "127.0.0.1"] ||
+  StringContainsQ[url, "localhost"] ||
+  StringContainsQ[url, "[::1]"];
+iNBIsLocalhostURL[_] := False;
+
+NBAccess`NBResolveLocalServer[] :=
+  Module[{machine, ips, matched, localhostEntry},
+    machine = Quiet @ Check[$MachineName, ""];
+    If[!StringQ[machine], machine = ""];
+    ips = iNBMachineIPAddresses[];
+
+    (* (1) \:30de\:30b7\:30f3\:540d\:3068\:30b5\:30d6\:30cd\:30c3\:30c8\:306e\:4e21\:65b9 (\:307e\:305f\:306f All) \:3067\:30de\:30c3\:30c1\:3059\:308b
+       \:4fe1\:983c\:30b5\:30fc\:30d0\:3092\:63a2\:3059\:3002\:30b5\:30d6\:30cd\:30c3\:30c8\:304c All \:3067\:306a\:3051\:308c\:3070\:81ea IP \:306e\:3044\:305a\:308c\:304b\:304c
+       \:305d\:306e\:30b5\:30d6\:30cd\:30c3\:30c8\:306b\:5c5e\:3059\:308b\:3053\:3068\:3092\:8981\:6c42\:3059\:308b\:3002 *)
+    matched = Select[$iTrustedLocalServers,
+      Function[srv,
+        Module[{mn, sn, url, mnOK, snOK},
+          mn = Lookup[srv, "MachineName", All];
+          sn = Lookup[srv, "Subnet", All];
+          url = Lookup[srv, "URL", ""];
+          mnOK = (mn === All) || (StringQ[mn] && mn === machine);
+          snOK = (sn === All) ||
+            (StringQ[sn] &&
+             (iNBIsLocalhostURL[url] ||
+              AnyTrue[ips, iNBIPInSubnet[#, sn] &]));
+          mnOK && snOK]]];
+
+    (* (2) \:30de\:30c3\:30c1\:3057\:305f\:4e2d\:3067\:3001\:30ea\:30e2\:30fc\:30c8 URL \:306f\:4fe1\:983c\:30b5\:30d6\:30cd\:30c3\:30c8\:78ba\:8a8d\:6e08\:307f\:306e\:3082\:306e
+       \:3060\:3051\:3092\:8a31\:53ef\:3002localhost URL \:306f\:5e38\:306b\:8a31\:53ef\:3002\:512a\:5148\:9806\:4f4d: \:3088\:308a\:5177\:4f53\:7684\:306a
+       (MachineName \:6307\:5b9a\:3042\:308a > Subnet \:6307\:5b9a\:3042\:308a > All) \:3092\:5148\:306b\:3002 *)
+    matched = SortBy[matched,
+      Function[srv,
+        {If[Lookup[srv, "MachineName", All] === All, 1, 0],
+         If[Lookup[srv, "Subnet", All] === All, 1, 0]}]];
+
+    If[matched =!= {},
+      Return[Module[{best = First[matched]},
+        <|"Provider" -> Lookup[best, "Provider", "lmstudio"],
+          "URL" -> Lookup[best, "URL", ""],
+          "Trusted" -> True,
+          "MatchedBy" -> <|
+            "MachineName" -> Lookup[best, "MachineName", All],
+            "Subnet" -> Lookup[best, "Subnet", All]|>,
+          "Machine" -> machine|>]]];
+
+    (* (3) \:30de\:30c3\:30c1\:7121\:3057 = \:672a\:77e5\:30b5\:30d6\:30cd\:30c3\:30c8\:3002\:5b89\:5168\:5074: localhost \:306e\:307f\:3002
+       \:4fe1\:983c\:30ea\:30b9\:30c8\:306b localhost \:30a8\:30f3\:30c8\:30ea\:304c\:3042\:308c\:3070\:305d\:308c\:3092\:3001\:7121\:3051\:308c\:3070
+       \:65e2\:5b9a\:306e 127.0.0.1:1234 \:3092\:8fd4\:3059\:3002 *)
+    localhostEntry = SelectFirst[$iTrustedLocalServers,
+      iNBIsLocalhostURL[Lookup[#, "URL", ""]] &, None];
+    If[localhostEntry =!= None,
+      Return[<|"Provider" -> Lookup[localhostEntry, "Provider", "lmstudio"],
+        "URL" -> Lookup[localhostEntry, "URL", "http://127.0.0.1:1234"],
+        "Trusted" -> True, "MatchedBy" -> "localhost-fallback",
+        "Machine" -> machine|>]];
+    <|"Provider" -> "lmstudio",
+      "URL" -> "http://127.0.0.1:1234",
+      "Trusted" -> False,
+      "MatchedBy" -> "default-localhost",
+      "Machine" -> machine,
+      "Note" -> "unknown subnet; restricted to localhost for safety"|>
+  ];
+
+
+
+(* ============================================================
+   NBSyncClaudeModelVars: SourceVault \:30ad\:30e3\:30c3\:30b7\:30e5\:306e\:30e2\:30c7\:30eb\:3067
+   ClaudeCode \:306e\:30e2\:30c7\:30eb\:5909\:6570\:3092\:66f4\:65b0\:3059\:308b\:3002
+
+   \:8cac\:52d9\:5206\:96e2:
+   - intent \:5272\:308a\:5f53\:3066\:30de\:30c3\:30d7 ($ClaudeModel -> {provider, intent} \:7b49) \:306f
+     SourceVault \:304c\:4fdd\:6301\:3057\:3001SourceVault`SourceVaultModelIntentMap[] \:3067\:8aad\:3080\:3002
+   - \:5404 intent \:3092 SourceVault`SourceVaultResolve \:3067\:30e2\:30c7\:30eb ID \:306b\:89e3\:6c7a\:3002
+   - \:30ed\:30fc\:30ab\:30eb\:30b5\:30fc\:30d0\:306e URL \:306f NBResolveLocalServer \:3067\:5b89\:5168\:306b\:89e3\:6c7a
+     (\:672a\:77e5\:30b5\:30d6\:30cd\:30c3\:30c8\:306f localhost \:306e\:307f)\:3002
+   - \:3053\:308c\:3089\:3092\:5408\:6210\:3057\:3066 ClaudeCode \:306e\:5b9f\:5909\:6570\:306b\:4ee3\:5165\:3059\:308b\:3002
+
+   \:30e2\:30c7\:30eb\:5909\:6570\:306e\:4ee3\:5165\:306f\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:60c5\:5831 ($ClaudePrivateModel \:306e URL) \:3092
+   \:542b\:3080\:305f\:3081\:3001\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:5883\:754c\:3092\:7ba1\:7406\:3059\:308b NBAccess \:306b\:4e00\:5143\:5316\:3059\:308b\:3002
+   SourceVault \:304c\:672a\:30ed\:30fc\:30c9\:306a\:3089\:4f55\:3082\:3057\:306a\:3044 (claudecode \:5358\:4f53\:306e\:5f8c\:65b9\:4e92\:63db)\:3002
+   ============================================================ *)
+
+(* spec {provider, intent} \:3092 SourceVaultResolve \:3067 {provider, modelId} \:306b
+   \:89e3\:6c7a\:3059\:308b\:3002SourceVault \:5fc5\:9808\:3002\:5931\:6557\:6642\:306f Missing\:3002 *)
+iNBResolveIntentTuple[spec_] :=
+  Module[{provider, intent, resolved, mid},
+    If[!ListQ[spec] || Length[spec] < 2, Return[Missing["BadSpec", spec]]];
+    provider = spec[[1]]; intent = spec[[2]];
+    If[!StringQ[provider], provider = ToString[provider]];
+    If[!StringQ[intent], intent = ToString[intent]];
+    If[provider === "" || intent === "", Return[Missing["EmptySpec", spec]]];
+    resolved = Quiet @ Check[
+      SourceVault`SourceVaultResolve["Model",
+        <|"Provider" -> provider, "Intent" -> intent|>],
+      $Failed];
+    If[!AssociationQ[resolved], Return[Missing["Unresolved", {provider, intent}]]];
+    mid = Lookup[resolved, "ModelId", Missing[]];
+    If[!StringQ[mid], Return[Missing["NoModelId", {provider, intent}]]];
+    {provider, mid}];
+
+Options[NBAccess`NBSyncClaudeModelVars] = {"Verbose" -> False};
+
+NBAccess`NBSyncClaudeModelVars[opts:OptionsPattern[]] :=
+  Module[{verbose, report = <||>, intentMap, mainSpec, docSpec,
+          privSpec, fbSpec, mainTuple, docTuple, privTuple,
+          localServer, fbResolved},
+    verbose = TrueQ[OptionValue["Verbose"]];
+
+    (* SourceVault \:304c\:672a\:30ed\:30fc\:30c9\:306a\:3089 no-op (\:5f8c\:65b9\:4e92\:63db) *)
+    If[Length[Names["SourceVault`SourceVaultModelIntentMap"]] === 0,
+      If[verbose,
+        Print["[NBSyncClaudeModelVars] SourceVault not loaded; no-op"]];
+      Return[<|"Status" -> "Skipped",
+        "Reason" -> "SourceVaultNotLoaded"|>]];
+
+    (* intent \:30de\:30c3\:30d4\:30f3\:30b0\:3092 SourceVault \:304b\:3089\:53d6\:5f97 *)
+    intentMap = Quiet @ Check[
+      SourceVault`SourceVaultModelIntentMap[], <||>];
+    If[!AssociationQ[intentMap] || Length[intentMap] === 0,
+      Return[<|"Status" -> "Skipped",
+        "Reason" -> "EmptyIntentMap"|>]];
+
+    (* --- $ClaudeModel --- *)
+    mainSpec = Lookup[intentMap, "$ClaudeModel", {"claudecode", "code-heavy"}];
+    mainTuple = iNBResolveIntentTuple[mainSpec];
+    If[ListQ[mainTuple],
+      ClaudeCode`$ClaudeModel = mainTuple;
+      report["$ClaudeModel"] = mainTuple,
+      report["$ClaudeModel_FAILED"] =
+        <|"Spec" -> mainSpec, "Result" -> mainTuple|>];
+
+    (* --- $ClaudeDocModel --- *)
+    docSpec = Lookup[intentMap, "$ClaudeDocModel", {"claudecode", "extraction"}];
+    docTuple = iNBResolveIntentTuple[docSpec];
+    If[ListQ[docTuple],
+      ClaudeCode`$ClaudeDocModel = docTuple;
+      report["$ClaudeDocModel"] = docTuple,
+      report["$ClaudeDocModel_FAILED"] =
+        <|"Spec" -> docSpec, "Result" -> docTuple|>];
+
+    (* --- $ClaudePrivateModel ---
+       provider/URL \:306f NBResolveLocalServer (\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:5883\:754c)\:3001
+       \:30e2\:30c7\:30eb\:540d\:306f SourceVault \:306e intent \:89e3\:6c7a\:3002\:4e21\:8005\:3092\:5408\:6210\:3002 *)
+    localServer = Quiet @ Check[NBAccess`NBResolveLocalServer[], <||>];
+    privSpec = Lookup[intentMap, "$ClaudePrivateModel", {"lmstudio", "extraction"}];
+    privTuple = iNBResolveIntentTuple[privSpec];
+    If[AssociationQ[localServer] &&
+       StringQ[Lookup[localServer, "URL", Missing[]]],
+      Module[{prov, url, mid, privModel},
+        prov = Lookup[localServer, "Provider", "lmstudio"];
+        url = Lookup[localServer, "URL", "http://127.0.0.1:1234"];
+        mid = If[ListQ[privTuple] && Length[privTuple] >= 2,
+          privTuple[[2]], Missing[]];
+        privModel = If[StringQ[mid], {prov, mid, url}, {prov, url}];
+        ClaudeCode`$ClaudePrivateModel = privModel;
+        report["$ClaudePrivateModel"] = privModel;
+        report["LocalServerTrusted"] = Lookup[localServer, "Trusted", False]]];
+
+    (* --- $ClaudeFallbackModels --- *)
+    fbSpec = Lookup[intentMap, "$ClaudeFallbackModels", {}];
+    If[ListQ[fbSpec],
+      fbResolved = DeleteCases[Map[iNBResolveIntentTuple, fbSpec], _Missing];
+      If[fbResolved =!= {},
+        ClaudeCode`$ClaudeFallbackModels = fbResolved;
+        report["$ClaudeFallbackModels"] = fbResolved]];
+
+    If[verbose, Print["[NBSyncClaudeModelVars] ", report]];
+    <|"Status" -> "OK", "Assigned" -> report|>
+  ];
+NBAccess`NBSyncClaudeModelVars[___] :=
+  <|"Status" -> "Failed", "Reason" -> "InvalidArguments"|>;
+
+
 (* \:30d7\:30ed\:30d0\:30a4\:30c0\:30fc\:5225\:6700\:5927\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:7ba1\:7406 *)
 NBAccess`NBSetProviderMaxAccessLevel[provider_String, level_?NumericQ] :=
   ($iProviderMaxAccessLevel[ToLowerCase[provider]] = Clip[level, {0., 1.}]);
@@ -4504,6 +4933,46 @@ NBAccess`NBGetProviderMaxAccessLevel[provider_String] :=
 (* \:30d7\:30ed\:30d0\:30a4\:30c0\:30fc\:304c\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:306b\:5bfe\:5fdc\:53ef\:80fd\:304b\:5224\:5b9a *)
 NBAccess`NBProviderCanAccess[provider_String, accessLevel_?NumericQ] :=
   Lookup[$iProviderMaxAccessLevel, ToLowerCase[provider], 0.5] >= accessLevel;
+
+(* Stage 9 P1.5: \:30e2\:30c7\:30eb\:6307\:5b9a (modelSpec) \:304c\:6307\:5b9a\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:306e
+   \:30c7\:30fc\:30bf\:3092\:6271\:3048\:308b\:304b\:5224\:5b9a\:3059\:308b\:3002Private \:30ce\:30fc\:30c8 (\:30ec\:30d9\:30eb 1.0) \:3067
+   \:30af\:30e9\:30a6\:30c9\:30e2\:30c7\:30eb (claudecode/anthropic/openai = 0.5) \:3092\:62d2\:5426\:3057\:3001
+   \:30ed\:30fc\:30ab\:30eb LLM (lmstudio = 1.0) \:306e\:307f\:901a\:3059\:305f\:3081\:306b\:4f7f\:3046\:3002
+   modelSpec: {provider, model} | {provider, model, url} | "model" (= claudecode) |
+              Automatic (\:30e2\:30c7\:30eb\:6307\:5b9a\:7121\:3057\:3002\:5224\:5b9a\:5bfe\:8c61\:5916\:3068\:3057\:3066 True)\:3002 *)
+NBAccess`NBModelCanHandleAccessLevel[modelSpec_, accessLevel_?NumericQ] :=
+  Module[{provider},
+    provider = Which[
+      (* Automatic: \:30e2\:30c7\:30eb\:672a\:6307\:5b9a\:3002\:547c\:3073\:51fa\:3057\:5074\:304c $ClaudePrivateModel \:7b49\:306b
+         \:632f\:308a\:5206\:3051\:308b\:306e\:3067\:3001\:3053\:3053\:3067\:306f\:5236\:7d04\:3057\:306a\:3044 (True) *)
+      modelSpec === Automatic, Return[True],
+      (* {provider, ...} \:5f62\:5f0f *)
+      ListQ[modelSpec] && Length[modelSpec] >= 1 && StringQ[modelSpec[[1]]],
+        modelSpec[[1]],
+      (* "model" \:6587\:5b57\:5217\:5358\:4f53 = claudecode \:6271\:3044 *)
+      StringQ[modelSpec], "claudecode",
+      True, Missing["BadModelSpec"]];
+    If[!StringQ[provider], Return[False]];
+    NBAccess`NBProviderCanAccess[provider, accessLevel]
+  ];
+NBAccess`NBModelCanHandleAccessLevel[___] := False;
+
+(* modelSpec \:304b\:3089 provider \:6587\:5b57\:5217\:3092\:53d6\:308a\:51fa\:3059\:88dc\:52a9 (\:62d2\:5426\:30e1\:30c3\:30bb\:30fc\:30b8\:7528) *)
+NBAccess`NBModelProviderName[modelSpec_] :=
+  Which[
+    modelSpec === Automatic, "Automatic",
+    ListQ[modelSpec] && Length[modelSpec] >= 1 && StringQ[modelSpec[[1]]],
+      modelSpec[[1]],
+    StringQ[modelSpec], "claudecode",
+    True, "unknown"];
+
+(* Stage 9 P1.5: \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:304c\:8981\:6c42\:3059\:308b\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:3092\:8fd4\:3059\:3002
+   Private \:5ba3\:8a00 (CloudPublishable -> False) \:306a\:3089 1.0 (\:30af\:30e9\:30a6\:30c9\:7981\:6b62)\:3002
+   \:305d\:308c\:4ee5\:5916\:306f 0.0 (\:500b\:5225\:30bb\:30eb\:306e\:6a5f\:5bc6\:6027\:306f\:30bb\:30eb\:5358\:4f4d\:3067\:5224\:5b9a\:3055\:308c\:308b)\:3002
+   claudecode \:304c Private \:691c\:8a3c\:306b\:4f7f\:3046\:516c\:958b\:95a2\:6570\:3002 *)
+NBAccess`NBNotebookRequiredAccessLevel[nb_NotebookObject] :=
+  If[iNBNotebookDeclaredPrivateQ[nb], 1.0, 0.0];
+NBAccess`NBNotebookRequiredAccessLevel[___] := 0.0;
 
 (* \:6307\:5b9a\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:3067\:5229\:7528\:53ef\:80fd\:306a\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:30e2\:30c7\:30eb\:306e\:307f\:8fd4\:3059 *)
 NBAccess`NBGetAvailableFallbackModels[requestedLevel_?NumericQ] :=
@@ -4536,7 +5005,7 @@ NBAccess`NBGetAvailableFallbackModels[requestedLevel_?NumericQ] :=
      (2) \:5ba3\:8a00\:7121\:3057\:306e\:5834\:5408\:306f\:5f93\:6765\:901a\:308a $packageDirectory / $ClaudeAccessibleDirs \:3092\:898b\:308b
      (3) \:305d\:308c\:4ee5\:5916\:306f 1.0
    \:6ce8: \:6df7\:5728\:5224\:5b9a (\:6a5f\:5bc6\:30bb\:30eb\:306e\:6709\:7121) \:306f iNBFileCellPrivacyRange \:5074\:3067 refine \:3055\:308c\:308b\:306e\:3067\:3001
-       \:3053\:3053\:3067\:306f base level (ファイル全体宣言) のみ返す。 *)
+       \:3053\:3053\:3067\:306f base level (\:30d5\:30a1\:30a4\:30eb\:5168\:4f53\:5ba3\:8a00) \:306e\:307f\:8fd4\:3059\:3002 *)
 iNBFilePrivacyLevel[path_String] :=
   Module[{declared, dir, pkgDir, accessDirs, isSafe},
     (* (1) \:30ce\:30fc\:30c8\:81ea\:8eab\:306e\:5ba3\:8a00 *)
@@ -7617,6 +8086,181 @@ NBWriteTodoStatus[path_String, todoKey_Association, newStatus_String,
       "DryRun" -> False,
       "Path" -> Lookup[loaded, "Path"]|>
   ];
+
+
+(* ===================================================================
+   Phase 2.1: Codex provider max access + accessible-dirs audit
+   (Codex integration spec 5th review, sections 10.1 / 10.3)
+   NBAccess is the single source of truth for provider max access.
+   =================================================================== *)
+
+(* ---- spec 10.1: Codex provider max access level ----
+   $iProviderMaxAccessLevel is initialised earlier; here we backfill
+   the Codex providers without overwriting a user-set value. *)
+If[AssociationQ[$iProviderMaxAccessLevel],
+  If[!KeyExistsQ[$iProviderMaxAccessLevel, "chatgptcodex"],
+    $iProviderMaxAccessLevel["chatgptcodex"] = 0.5];
+  If[!KeyExistsQ[$iProviderMaxAccessLevel, "codex"],
+    $iProviderMaxAccessLevel["codex"] = 0.5]];
+
+(* ---- spec 10.3: accessible-dirs audit ---- *)
+
+(* dangerous file name heuristics -> reason string or Null *)
+iCodexDangerFileName[name_String] :=
+  Module[{lc},
+    lc = ToLowerCase[name];
+    Which[
+      lc === ".env" || StringStartsQ[lc, ".env."],
+        "filename matches .env",
+      StringContainsQ[lc, "secret"],
+        "filename contains \"secret\"",
+      StringContainsQ[lc, "credential"],
+        "filename contains \"credential\"",
+      StringContainsQ[lc, "token"],
+        "filename contains \"token\"",
+      StringContainsQ[lc, "apikey"] ||
+        StringContainsQ[lc, "api_key"] ||
+        StringContainsQ[lc, "api-key"],
+        "filename suggests an API key",
+      StringMatchQ[lc, "id_rsa" ~~ ___] ||
+        StringMatchQ[lc, "id_dsa" ~~ ___] ||
+        StringMatchQ[lc, "id_ecdsa" ~~ ___] ||
+        StringMatchQ[lc, "id_ed25519" ~~ ___],
+        "filename suggests an SSH private key",
+      StringMatchQ[lc, ___ ~~ (".pem" | ".key" | ".p12" | ".pfx")],
+        "filename suggests a private key or certificate",
+      True, Null]];
+
+iCodexDangerFileName[_] := Null;
+
+(* dangerous file content heuristics -> reason string or Null *)
+iCodexDangerContent[path_String, maxBytes_] :=
+  Module[{bytes, text, patterns, hit},
+    If[!FileExistsQ[path], Return[Null]];
+    If[!IntegerQ[maxBytes] || FileByteCount[path] > maxBytes,
+      Return[Null]];
+    bytes = Quiet @ ReadByteArray[path];
+    If[!ByteArrayQ[bytes], Return[Null]];
+    (* skip binary-looking files: a NUL byte is present *)
+    If[MemberQ[Normal[bytes], 0], Return[Null]];
+    text = Quiet @ ByteArrayToString[bytes, "UTF-8"];
+    If[!StringQ[text], Return[Null]];
+    patterns = {
+      "sk-[A-Za-z0-9]{20,}" ->
+        "possible API secret key (sk- prefix)",
+      "AKIA[0-9A-Z]{16}" ->
+        "possible AWS access key id",
+      "ghp_[A-Za-z0-9]{30,}" ->
+        "possible GitHub personal access token",
+      "xox[baprs]-[A-Za-z0-9-]{10,}" ->
+        "possible Slack token",
+      "AIza[0-9A-Za-z_-]{30,}" ->
+        "possible Google API key",
+      "-----BEGIN [A-Z ]*PRIVATE KEY-----" ->
+        "PEM private key block"};
+    hit = SelectFirst[patterns,
+      StringContainsQ[text, RegularExpression[First[#]]] &,
+      Null];
+    If[hit === Null, Null, Last[hit]]];
+
+iCodexDangerContent[___] := Null;
+
+(* collect files under dirs; report truncation for a finite MaxDepth *)
+iCodexAuditCollectFiles[dirs_List, maxDepth_] :=
+  Module[{files, truncated},
+    files = {};
+    truncated = False;
+    Do[
+      If[StringQ[d] && DirectoryQ[d],
+        Module[{got, deeper},
+          got = Quiet @ FileNames["*", d,
+            If[maxDepth === Infinity, Infinity, maxDepth]];
+          If[!ListQ[got], got = {}];
+          got = Select[got, !DirectoryQ[#] &];
+          files = Join[files, got];
+          If[maxDepth =!= Infinity && IntegerQ[maxDepth],
+            deeper = Quiet @ FileNames["*", d, maxDepth + 1];
+            If[ListQ[deeper] &&
+              Length[Select[deeper, !DirectoryQ[#] &]] >
+                Length[got],
+              truncated = True]]]],
+      {d, dirs}];
+    {DeleteDuplicates[files], truncated}];
+
+Options[NBAuditCodexAccessibleDirs] = {
+  "MaxDepth"         -> Infinity,
+  "OnDanger"         -> "Fail",
+  "ScanContents"     -> True,
+  "MaxFileScanBytes" -> 262144
+};
+
+NBAuditCodexAccessibleDirs[dirs_List, opts:OptionsPattern[]] :=
+  Module[{maxDepth, onDanger, scanContents, maxBytes,
+          allFiles, truncated, findings, fileCount, gate, status,
+          report},
+    maxDepth     = OptionValue["MaxDepth"];
+    onDanger     = OptionValue["OnDanger"];
+    scanContents = TrueQ[OptionValue["ScanContents"]];
+    maxBytes     = OptionValue["MaxFileScanBytes"];
+
+    {allFiles, truncated} =
+      iCodexAuditCollectFiles[dirs, maxDepth];
+    fileCount = Length[allFiles];
+
+    findings = {};
+    Do[
+      Module[{nameReason, contentReason},
+        nameReason = iCodexDangerFileName[FileNameTake[f]];
+        If[StringQ[nameReason],
+          AppendTo[findings, <|
+            "Path"     -> f,
+            "Category" -> "filename",
+            "Reason"   -> nameReason|>]];
+        If[scanContents && !StringQ[nameReason],
+          contentReason = iCodexDangerContent[f, maxBytes];
+          If[StringQ[contentReason],
+            AppendTo[findings, <|
+              "Path"     -> f,
+              "Category" -> "content",
+              "Reason"   -> contentReason|>]]]],
+      {f, allFiles}];
+
+    gate = If[findings === {} && !truncated, "Pass", "Fail"];
+    status = Which[
+      findings =!= {}, "DangerFound",
+      truncated,       "Incomplete",
+      True,            "OK"];
+
+    report = <|
+      "Status"             -> status,
+      "Gate"               -> gate,
+      "Findings"           -> findings,
+      "AuditedDirs"        -> dirs,
+      "FileCount"          -> fileCount,
+      "Truncated"          -> truncated,
+      "SuggestedDenyRules" ->
+        DeleteDuplicates[Lookup[#, "Path"] & /@ findings]|>;
+
+    Which[
+      gate === "Pass",
+        report,
+      onDanger === "DenyAndContinue",
+        report,
+      True,
+        Failure["CodexAccessibleDirsAudit", <|
+          "MessageTemplate" ->
+            "Codex accessible-dirs audit failed: `n` finding(s)" <>
+            (If[truncated, " and an unscanned sub-tree", ""]) <>
+            "; do not start Codex with these directories exposed.",
+          "MessageParameters" -> <|"n" -> Length[findings]|>,
+          "Report" -> report|>]]];
+
+NBAuditCodexAccessibleDirs[___] :=
+  Failure["CodexAccessibleDirsAudit", <|
+    "MessageTemplate" ->
+      "NBAuditCodexAccessibleDirs expects a list of directories.",
+    "MessageParameters" -> <||>|>];
+
 
 
 End[];
