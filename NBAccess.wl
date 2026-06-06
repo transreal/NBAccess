@@ -722,7 +722,22 @@ $NBSeparationIgnoreList::usage =
 (* ---- \:5206\:96e2API\:8ffd\:52a0: \:30bb\:30eb\:66f8\:304d\:8fbc\:307f ---- *)
 NBWriteCell::usage =
   "NBWriteCell[nb, cellExpr] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306b Cell \:5f0f\:3092\:66f8\:304d\:8fbc\:3080 (After)\:3002\n" <>
-  "NBWriteCell[nb, cellExpr, pos] \:306f pos (After/Before/All) \:3092\:6307\:5b9a\:53ef\:80fd\:3002";
+  "NBWriteCell[nb, cellExpr, pos] \:306f pos (After/Before/All) \:3092\:6307\:5b9a\:53ef\:80fd\:3002\n" <>
+  "\:9045\:5ef6\:51fa\:529b\:304c\:6709\:52b9 (NBBeginDeferredOutput \:5f8c) \:306e\:3068\:304d\:306f After \:66f8\:304d\:8fbc\:307f\:3092\n" <>
+  "\:30d0\:30c3\:30d5\:30a1\:306b\:6e9c\:3081\:3001NBFlushDeferredOutput \:3067\:4e00\:62ec\:51fa\:529b\:3059\:308b\:3002";
+
+NBBeginDeferredOutput::usage =
+  "NBBeginDeferredOutput[] \:306f\:51fa\:529b\:9045\:5ef6 (\:96c6\:7d04) \:30e2\:30fc\:30c9\:3092\:6709\:52b9\:306b\:3059\:308b\:3002\:4ee5\:964d NBWriteCell[nb, cell] (After) \:306f notebook \:306b\:5373\:66f8\:304d\:305b\:305a\:30d0\:30c3\:30d5\:30a1\:306b\:6e9c\:3081\:308b\:3002\:5bfe\:7b562: \:975e\:540c\:671f\:4e26\:5217\:51e6\:7406\:3084\:30d6\:30ed\:30c3\:30af\:56de\:907f\:6642\:306b\:4f7f\:3046\:3002NBEndDeferredOutput \:3068\:5bfe\:3002";
+NBEndDeferredOutput::usage =
+  "NBEndDeferredOutput[] \:306f\:51fa\:529b\:9045\:5ef6\:30e2\:30fc\:30c9\:3092\:7121\:52b9\:306b\:623b\:3059 (\:30d0\:30c3\:30d5\:30a1\:306f\:6b8b\:308b\:306e\:3067 NBFlushDeferredOutput \:3067\:51fa\:529b\:3059\:308b\:3053\:3068)\:3002";
+NBFlushDeferredOutput::usage =
+  "NBFlushDeferredOutput[nb] \:306f\:6e9c\:3081\:305f Cell \:3092 notebook \:306b\:4e00\:62ec\:66f8\:304d\:8fbc\:307f\:30d0\:30c3\:30d5\:30a1\:3092\:30af\:30ea\:30a2\:3059\:308b\:3002\:623b\:308a\:5024: \:51fa\:529b\:3057\:305f Cell \:6570\:3002\:7f60 #30: FrontEnd \:64cd\:4f5c\:306a\:306e\:3067\:30e1\:30a4\:30f3\:30ab\:30fc\:30cd\:30eb\:8a55\:4fa1\:3067\:547c\:3076\:3053\:3068\:3002NBFlushDeferredOutput[] (nb \:7701\:7565) \:306f CellPrint \:3067\:51fa\:529b\:3059\:308b\:3002";
+NBDeferredOutputActiveQ::usage =
+  "NBDeferredOutputActiveQ[] \:306f\:51fa\:529b\:9045\:5ef6\:30e2\:30fc\:30c9\:304c\:6709\:52b9\:304b\:3092\:8fd4\:3059\:3002";
+NBDeferredOutputCount::usage =
+  "NBDeferredOutputCount[] \:306f\:30d0\:30c3\:30d5\:30a1\:306b\:6e9c\:307e\:3063\:3066\:3044\:308b Cell \:6570\:3092\:8fd4\:3059\:3002";
+NBDiscardDeferredOutput::usage =
+  "NBDiscardDeferredOutput[] \:306f\:30d0\:30c3\:30d5\:30a1\:3092\:30d5\:30e9\:30c3\:30b7\:30e5\:305b\:305a\:7834\:68c4\:3059\:308b\:3002";
 
 NBWritePrintNotice::usage =
   "NBWritePrintNotice[nb, text, color] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306b\:901a\:77e5\:7528 Print \:30bb\:30eb\:3092\:66f8\:304d\:8fbc\:3080\:3002\n" <>
@@ -781,9 +796,29 @@ NBExecuteHeldExpr::usage =
   "NBExecuteHeldExpr[heldExpr, accessSpec, opts] \:306f\:691c\:8a3c\:6e08\:307f\:5f0f\:3092\:5b89\:5168\:306b\:5b9f\:884c\:3057\:7d50\:679c\:3092\:8fd4\:3059\:3002\n" <>
   "\:8fd4\:308a\:5024: <|\"Success\" -> True/False, \"RawResult\" -> ..., \"Error\" -> ...|>";
 
+NBTryExecuteFinalActionHeld::usage =
+  "NBTryExecuteFinalActionHeld[held, accessSpec, opts] \:306f\:627f\:8a8d wrapper (NBOpenFolderWithApproval \:7b49) \:3092\n" <>
+  "head \:306e context \:306b\:4f9d\:5b58\:305b\:305a (SymbolName \:3067\:691c\:51fa)\:3001\:5f15\:6570\:30d1\:30b9\:5f0f\:3092\:5b89\:5168\:8a55\:4fa1\:3057\:3066\n" <>
+  "OpenDesktopItem action \:306b\:6b63\:898f\:5316\:3057\:3001NBExecuteApprovedAction \:7d4c\:7531\:3067\:5b9f\:884c\:3059\:308b\:3002\n" <>
+  "Global` shadow \:3084 $ContextPath \:306b\:5de6\:53f3\:3055\:308c\:306a\:3044\:3002\:5bfe\:8c61\:5916\:306a\:3089 <|\"Handled\" -> False|>\:3002";
+
+NBResolveDesktopActionPath::usage =
+  "NBResolveDesktopActionPath[held, accessSpec] \:306f desktop action wrapper \:304b\:3089\n" <>
+  "SystemOpen \:3092\:547c\:3070\:305a\:30d1\:30b9\:3092\:5b89\:5168\:89e3\:6c7a\:30fb\:691c\:8a3c\:3060\:3051\:884c\:3046\:3002SystemOpen \:306f SessionSubmit/\n" <>
+  "ScheduledTask \:7cfb\:3067\:306f\:52b9\:304b\:305a\:30e1\:30a4\:30f3\:30ab\:30fc\:30cd\:30eb\:8a55\:4fa1\:3067\:306e\:307f\:52b9\:304f\:305f\:3081\:3001\:5b9f\:884c\:306f\:547c\:3073\:51fa\:3057\:5074\:306b\:59d4\:306d\:308b\:3002\n" <>
+  "\:8fd4\:308a\:5024: <|\"IsDesktopAction\" -> .., \"Validated\" -> .., \"Path\" -> ..|>";
+
 NBRedactExecutionResult::usage =
   "NBRedactExecutionResult[result, accessSpec, opts] \:306f\:5b9f\:884c\:7d50\:679c\:3092 redact \:3057\:5b89\:5168\:306a\:5f62\:3067\:8fd4\:3059\:3002\n" <>
+  "accessSpec \:306b \"ConfidentialLineNumbers\" -> {n, ...} \:304c\:3042\:308c\:3070\:3001\:5b9f\:884c\:5f0f\:304c\n" <>
+  "Out[n] / In[n] / InString[n] / % \:7b49\:3067\:6a5f\:5bc6\:30bb\:30eb\:3092\:53c2\:7167\:3057\:305f\:5834\:5408\:3082\:6a5f\:5bc6\:4f9d\:5b58\:3068\:3057\:3066\:30b9\:30ad\:30fc\:30de\:5316\:3059\:308b\:3002\n" <>
   "\:8fd4\:308a\:5024: <|\"RedactedResult\" -> ..., \"Summary\" -> String|>";
+
+NBConfidentialLineNumbers::usage =
+  "NBConfidentialLineNumbers[nb, accessSpec] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5185\:306e\:6a5f\:5bc6\:30fb\:6a5f\:5bc6\:4f9d\:5b58\n" <>
+  "Input/Code/Output \:30bb\:30eb\:306e\:8a55\:4fa1\:884c\:756a\:53f7 (\:6574\:6570 n; In[n] \:3068 Out[n] \:306f\:540c\:4e00 n) \:306e\:30ea\:30b9\:30c8\:3092\:8fd4\:3059\:3002\n" <>
+  "LLM \:304c Out[n] / In[n] / InString[n] / % \:3067\:6a5f\:5bc6\:30bb\:30eb\:3092\:76f4\:63a5\:53c2\:7167\:3057\:305f\:3068\:304d\:306e\n" <>
+  "\:6f0f\:6d29\:691c\:51fa (NBRedactExecutionResult) \:306b\:7528\:3044\:308b\:3002";
 
 NBMakeContextPacket::usage =
   "NBMakeContextPacket[nb, accessSpec, opts] \:306f notebook \:304b\:3089\:5b89\:5168\:306a context packet \:3092\:69cb\:7bc9\:3059\:308b\:3002\n" <>
@@ -1079,6 +1114,14 @@ NBClearCloudPublishable::usage =
   "  \"Before\" -> True|False|Missing[\"NotPresent\"], \"After\" -> Missing[\"Removed\"|\"NotPresent\"],\n" <>
   "  \"NoOp\" -> True (\:30ad\:30fc\:304c\:5143\:3005\:7121\:3044\:5834\:5408\:306e\:307f), \"Path\" -> _String|>";
 
+NBSetNotebookPrivate::usage =
+  "NBSetNotebookPrivate[nb] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5168\:4f53\:3092 Private (CloudPublishable -> False) \:5ba3\:8a00\:3057\:3001\n" <>
+  "\:5168\:30bb\:30eb\:306e PrivacyLevel \:3092 1.0 \:306b\:3057\:3066\:30af\:30e9\:30a6\:30c9 LLM \:3078\:306e\:6295\:5165\:3092\:7981\:6b62\:3059\:308b\:3002\n" <>
+  "\:30e9\:30a4\:30d6\:306e NotebookObject \:306b\:5373\:6642\:53cd\:6620\:3057 (\:4fdd\:5b58\:306a\:3057\:3067\:3082\:6709\:52b9)\:3001\:4fdd\:5b58\:6e08\:307f\:306a\:3089\n" <>
+  "NBSetCloudPublishable \:3067\:30d5\:30a1\:30a4\:30eb\:30d8\:30c3\:30c0\:306b\:3082\:6c38\:7d9a\:5316\:3059\:308b\:3002\n" <>
+  "NBSetNotebookPrivate[nb, False] \:3067\:5ba3\:8a00\:3092\:89e3\:9664\:3002\n" <>
+  "NBSetNotebookPrivate[] \:306f EvaluationNotebook[] \:3092\:5bfe\:8c61\:306b\:3059\:308b\:3002";
+
 
 (* \:2500\:2500 .nb \:30d5\:30a1\:30a4\:30eb\:306e outline cache \:4fee\:5fa9 (Stage 9 P1 Step 2 Hotfix 4) \:2500\:2500 *)
 
@@ -1115,6 +1158,106 @@ NBRepairNotebookCacheStrict::usage =
 
 NBAuditCodexAccessibleDirs::usage =
   "NBAuditCodexAccessibleDirs[dirs] audits the directories that would be exposed to ChatGPT Codex for files whose contents could exceed the Codex provider max access level (.env, *secret*, *credential*, *token*, private keys, API-key-like content). It is the mandatory gate before generating a Codex permission profile. Default behaviour is fail-stop: a Failure is returned when a dangerous file is found, so Codex is not started with that directory exposed. Options: \"MaxDepth\" (default Infinity, no depth limit; a finite limit that leaves part of the tree unscanned makes the audit fail-closed), \"OnDanger\" (\"Fail\" default | \"DenyAndContinue\" opt-in), \"ScanContents\" (default True), \"MaxFileScanBytes\". Returns <|\"Status\", \"Gate\", \"Findings\", \"AuditedDirs\", \"FileCount\", \"Truncated\", \"SuggestedDenyRules\"|> on pass or opt-in continue.";
+
+
+(* ============================================================
+   Phase A1 (ClaudeEval async-compat spec): Policy Snapshot API
+   - main kernel の動的 NBAccess policy を凍結し、subkernel へ
+     accessSpec 経由で渡すための snapshot 機構。
+   - 新規追加のみ。既存 head 集合・iRecomputeAllowedHeads 等の
+     定義には一切触れない。
+   ============================================================ *)
+
+NBPolicySnapshot::usage =
+  "NBPolicySnapshot[] は現在の NBAccess 動的 policy (導出済み AllowedHeads, ApprovalHeads, DenyHeads, ConfidentialSymbols) を凍結した Association を返す。snapshot mode の NBValidateHeldExpr / subkernel 検証はこの snapshot を判定入力とし、カテゴリ定義系 global を参照しない。キー: \"SnapshotID\", \"CreatedAt\", \"NBAccessPolicyVersion\", \"AllowedHeads\", \"ApprovalHeads\", \"DenyHeads\", \"ConfidentialSymbols\", \"Digest\", \"Source\"。";
+
+NBAcceptPolicySnapshot::usage =
+  "NBAcceptPolicySnapshot[snapshot] は snapshot の必須キーと Digest を検証し、<|\"Valid\" -> True|False, \"Digest\" -> _, \"Reason\" -> _|> を返す。Digest は NBPolicySnapshot 生成時と同一の内部 helper で再計算して照合する。Valid のとき subkernel 内 $NBActivePolicySnapshot に保存してよいが、実行判定の正本は実行ごとの accessSpec[\"PolicySnapshot\"] とする。snapshot install は許可拡張に使ってはならない。";
+
+$NBActivePolicySnapshot::usage =
+  "$NBActivePolicySnapshot は NBAcceptPolicySnapshot が Valid と判定した最新 snapshot を保持する (主に subkernel 側)。参考情報であり、実行判定の正本ではない。";
+
+NBValidateNotebookPreActions::usage =
+  "NBValidateNotebookPreActions[actions, accessSpec] は PreExecutionNotebookActions のリストを検証し、許可された action だけを返す。P0 で必須の action は \"MoveSelectionAfterNotebook\" (内部実装 SelectionMove[nb, After, Notebook])。許可条件: action 名が accessSpec[\"AllowedNotebookActions\"] に含まれ、MayUseFrontEnd/MayWriteNotebook が True、ExecutionKernel が \"MainOnly\"、Notebook が target と一致すること。";
+
+NBSubkernelExecutableQ::usage =
+  "NBSubkernelExecutableQ[held, accessSpec] は held が subkernel で安全に実行できるかを返す。iShouldExecuteAsync の正式な判定本体。False 条件: ExecutionRole が \"ProposalEval\" でない / ExecutionKernel が \"SubkernelAllowed\" でない / MayUseFrontEnd・MayWriteNotebook・MayUseExternalProcess・MayUseNetwork のいずれかが True / ResultMayCrossKernel が True でない / PolicySnapshot が無効 / confidential 参照 / snapshot の DenyHeads・ApprovalHeads 該当 head を含む / 副作用候補 head (NotebookWrite, SelectionMove, Import, Export, RunProcess, StartProcess, Evaluate 等) を含む。$ClaudeRuntimeAsyncForce が True でも安全判定は上書きしない。";
+
+NBExecuteHeldExprSubkernelRaw::usage =
+  "NBExecuteHeldExprSubkernelRaw[held, accessSpec, opts] は subkernel 専用の実行 wrapper。戻り値は生の評価結果 / $TimedOut / $Failed (Association は返さない。future shape 維持のため)。snapshot 検証・NBSubkernelExecutableQ・snapshot 基準の再検証をすべて通過し Decision が Permit のときのみ内部で ReleaseHold する。Screen/NeedsApproval/Deny/RepairNeeded はすべて $Failed (subkernel では WarnOnly 実行をしない)。TimeConstraint が Infinity のときは TimeConstrained を使わない。";
+
+NBMakeRuntimeAccessSpec::usage =
+  "NBMakeRuntimeAccessSpec[contextPacket, role] は Runtime/Orchestrator から NBAccess へ渡す accessSpec を作る。role は \"ProposalEval\" (既定、SubkernelAllowed)、\"Committer\" (MainOnly, FE/書込可, MoveSelectionAfterNotebook 許可)、\"VisionFallback\"、\"ManualDispatch\"。PolicySnapshot は生成時点の policy を NBPolicySnapshot[] で凍結して埋める。contextPacket から ConfidentialSymbols/Secrets/Caller/WorkflowID/StepID/PermissionMode を取り込む。";
+
+$ClaudePermissionMode::usage =
+  "$ClaudePermissionMode は ClaudeEval/NBAccess 共通の権限モード (spec 5B)。値: \"ReviewOnly\"(提案のみ)/\"StrictSafe\"(AutoPermit のみ実行)/\"InteractiveSafe\"(標準、AskUserAllowed は承認 UI)/\"WorkflowSafe\"(Orchestrator、final node 分離)/\"LegacyInteractive\"/\"DangerFullAccess\"。標準値 InteractiveSafe。実行中の判定では accessSpec/snapshot に焼き込んだ値を正とし global を読み直さない (I12)。";
+
+$ClaudeAllowHardDenyOverride::usage =
+  "$ClaudeAllowHardDenyOverride は DangerFullAccess モードでのみ意味を持つ。True のとき HardDeny 相当 (Run/ExternalEvaluate/破壊的 IO 等) を承認可能 (NeedsApproval) へ昇格する。既定 False (HardDeny は承認しても実行しない)。";
+
+$ClaudeOutputMode::usage =
+  "$ClaudeOutputMode は ClaudeEval/NBAccess 共通の出力モード。値: \"Streaming\"(逐次、既定。結果が出るたびに notebook へ出力。計算状況が見える)/\"Batch\"(集約。notebook へ即時出力せずバッファに溜め、最後にまとめて出力。非同期並列の多数処理向け)。最優先事項は FrontEnd/カーネルのブロック回避であり、BlockingRisk が MayBlockFrontEnd の出力は Streaming でも自動的に集約側へ回す。単発 ClaudeEval (出力1個) では Streaming/Batch で結果は同じ (実質無影響)。マルチターン/RepeatInterval/Orchestrator 並列で差が出る。実行中は accessSpec/runtime メタデータに焼き込んだ値を正とする。";
+
+NBResolveOutputMode::usage =
+  "NBResolveOutputMode[mode, blockingRisk] は実際に即出力 (\"Immediate\") するか集約 (\"Deferred\") するかを返す。最優先はブロック回避: blockingRisk が \"MayBlockFrontEnd\" なら mode に関わらず \"Deferred\"。mode が \"Batch\" なら \"Deferred\"。それ以外は \"Immediate\"。";
+
+$NBEffectClassOverrides::usage =
+  "$NBEffectClassOverrides は head 名 -> <|EffectClass, BlockingRisk, ExecutionPlacement, RequiresFinalNode|> の任意上書きテーブル (spec 5B.5A)。allowlist ではなく分類精度向上用。未登録 head はフォールバック分類 (System` 純粋 -> PureComputation 等) に進む。";
+
+NBRegisterAction::usage =
+  "NBRegisterAction[name, spec] は承認対象操作 (desktop/notebook/filesystem) を action registry に登録する (spec 5B.8)。spec キー: EffectClass, DefaultApprovalEligibility, AllowedTargetTypes, RequiresFinalNode, Validator, Executor。raw head を乱立させず汎用 action に寄せるための仕組み。";
+
+NBValidateAction::usage =
+  "NBValidateAction[action, accessSpec] は action association を registry の Validator + PermissionMode 変換で検証し Decision を返す。返り値は NBValidateHeldExpr と同形 (Decision/ApprovalEligibility/EffectClass/AllowApprovalUI/MayExecute 等)。";
+
+NBExecuteApprovedAction::usage =
+  "NBExecuteApprovedAction[action, accessSpec, opts] は承認済み action を実行する。実行直前に再 validate し (TOCTOU 対策)、承認後に path/target が変化していれば PostApprovalValidationFailed で拒否。registry の Executor は NBAccess 内部にあり、raw SystemOpen 等はこの executor だけが呼ぶ (I1/I2)。";
+
+NBOpenFolderWithApproval::usage =
+  "NBOpenFolderWithApproval[path] は OpenDesktopItem action (TargetType Folder) の薄い互換 wrapper。正本は action registry + permission mode。";
+
+NBEnqueueFinalAction::usage =
+  "NBEnqueueFinalAction[action, accessSpec, opts] は承認済み final action (FrontEnd ブロックリスクのある desktop/notebook 操作) を PendingFinalActionQueue に積む (spec 案3-lite)。直接同期実行せず、共有 polling tick が安全条件を満たしたとき 1 件ずつ実行する。ActionID を返す。";
+
+NBFinalActionTick::usage =
+  "NBFinalActionTick[] は共有 polling tick から呼ばれ、PendingFinalActionQueue の安全条件を確認して最大 1 件だけ実行する。新規 ScheduledTask は作らない。安全条件: AsyncActive でない / final action 実行中でない / 承認済み / 再 validate 成功 / 期限内。";
+
+NBFinalActionStatus::usage =
+  "NBFinalActionStatus[actionID] は queue item の状態を返す。actionID 省略時は全 item。状態: Pending/Running/Completed/Failed/Expired/Cancelled/NeedsRetryAfterAsync。";
+
+NBCancelFinalAction::usage =
+  "NBCancelFinalAction[actionID] は queue item を Cancelled にする。";
+
+NBFinalActionQueueSnapshot::usage =
+  "NBFinalActionQueueSnapshot[] は queue 全体の snapshot を返す (debug/Doctor 用)。";
+
+NBFinalActionRunningQ::usage =
+  "NBFinalActionRunningQ[] は Running 状態の final action があるか返す。";
+
+$NBFinalActionAsyncActiveFunction::usage =
+  "$NBFinalActionAsyncActiveFunction は AsyncActive 判定の callback。Automatic のとき ClaudeRuntime がロード済みなら ClaudeRuntimeAsyncActiveQ を使い、未ロードなら False。NBAccess 単体テストでは関数を差し替えて queue 基盤を独立検証できる。";
+
+(* === External job cooperative I/O guards (Phase 4.B, v7 §13/§16) === *)
+
+NBCheckFileRead::usage =
+  "NBCheckFileRead[path, accessSpec] は path の読み取りが accessSpec の MayAccessFileSystem / AllowedDirectories scope 内か検査し <|\"Allowed\"->_, \"Reason\"->_|> を返す。";
+NBCheckFileWrite::usage =
+  "NBCheckFileWrite[path, accessSpec] は path への書き込みが scope 内か検査する。";
+NBCheckNetworkAccess::usage =
+  "NBCheckNetworkAccess[target, accessSpec] は target (URL 文字列または <|Scheme,Host,Port|>) が AllowedNetworkTargets scope 内か検査する。";
+NBCheckExternalProcess::usage =
+  "NBCheckExternalProcess[cmd, accessSpec] は外部コマンドが AllowedExternalCommands 内か検査する。";
+NBCheckedImport::usage = "NBCheckedImport[path, fmt, accessSpec] は NBCheckFileRead 通過後に Import する。違反時は AccessSpecViolation を返す。";
+NBCheckedExport::usage = "NBCheckedExport[path, expr, fmt, accessSpec] は NBCheckFileWrite 通過後に Export する。";
+NBCheckedURLRead::usage = "NBCheckedURLRead[url, accessSpec] は NBCheckNetworkAccess 通過後に URLRead する。";
+NBCheckedFileWrite::usage = "NBCheckedFileWrite[path, content, accessSpec] は NBCheckFileWrite 通過後に書き込む。";
+NBCheckedFileRead::usage = "NBCheckedFileRead[path, accessSpec] は NBCheckFileRead 通過後に読み取る。";
+NBApplyPolicySnapshot::usage =
+  "NBApplyPolicySnapshot[snapshot] は snapshot の digest を検証し、正規化した snapshot を返す (P0 §8.3: global 復元はせず accessSpec 注入の補助に限定)。<|\"Valid\"->_, \"Snapshot\"->_, \"Reason\"->_|>。";
+NBConfidentialHandlingAllowedQ::usage =
+  "NBConfidentialHandlingAllowedQ[mode, permissionMode] は ConfidentialHandling mode (EncryptedBundle/ReferenceOnly/Redacted/PlaintextDebug) が当該 permissionMode で許容されるか (PlaintextDebug gate, v7 §13D.1) を返す。";
+NBResolveCredentialRef::usage =
+  "NBResolveCredentialRef[ref, accessSpec] は credential-ref を解決し、secret 本体ではなく取得用 descriptor (<|\"Provider\"->_, ...|>) を返す。handler はこの descriptor で NBGetAPIKey を呼ぶ (rules/20: 鍵を返す補助関数を作らない)。";
 
 Begin["`Private`"];
 
@@ -1595,6 +1738,34 @@ iNBNotebookDeclaredPrivateQ[nb_NotebookObject] :=
     cp === False
   ];
 iNBNotebookDeclaredPrivateQ[___] := False;
+
+(* 開いている NotebookObject 全体を Private (CloudPublishable -> False) 宣言する
+   ワンショットヘルパー (2026-06-06)。iNBNotebookDeclaredPrivateQ はライブ NB の
+   TaggingRules を読むため、保存なしでも即座に全セル PrivacyLevel 1.0 になり
+    クラウド LLM へ投入されなくなる (NBCellPrivacyLevel がセルを読む前に短絡)。
+   保存済みなら NBSetCloudPublishable でファイルヘッダにも永続化する。
+   makePrivate=False で宣言を「クラウド公開可」に切り替える。
+   公開 ::usage 宣言は BeginPackage 直後の公開部 (NBClearCloudPublishable::usage の直後)
+   にある。ここは Private 部なので本体定義のみ置く。 *)
+NBAccess`NBSetNotebookPrivate[nb_NotebookObject, makePrivate:(True | False):True] :=
+  Module[{path, cpVal},
+    (* CloudPublishable -> False が Private。makePrivate=True なら False を書く。 *)
+    cpVal = !makePrivate;
+    (* 1. ライブ NB の TaggingRules を即時設定 (iNBNotebookDeclaredPrivateQ の読む経路) *)
+    Quiet[CurrentValue[nb,
+      {TaggingRules, "SourceVault", "CloudPublishable"}] = cpVal];
+    (* 2. 保存済みならファイルヘッダにも永続化 (best-effort) *)
+    path = Quiet[NotebookFileName[nb]];
+    If[StringQ[path],
+      Quiet @ Check[NBAccess`NBSetCloudPublishable[path, cpVal], Null]];
+    <|"Notebook" -> nb,
+      "Path" -> If[StringQ[path], path, None],
+      "CloudPublishable" -> cpVal,
+      "DeclaredPrivate" -> makePrivate,
+      "Persisted" -> StringQ[path]|>
+  ];
+NBAccess`NBSetNotebookPrivate[makePrivate:(True | False):True] :=
+  NBAccess`NBSetNotebookPrivate[EvaluationNotebook[], makePrivate];
 
 NBAccess`NBCellPrivacyLevel[nb_NotebookObject, cellIdx_Integer] :=
   Module[{cell, tag, depTag, numTag},
@@ -2381,7 +2552,14 @@ NBAccess`NBCellUsesConfidentialSymbol[nb_NotebookObject, cellIdx_Integer] :=
 
 (* \:30bb\:30eb\:5185\:5bb9\:304b\:3089 Set/SetDelayed \:306e LHS \:5909\:6570\:540d\:3092\:62bd\:51fa *)
 NBAccess`NBCellExtractVarNames[nb_NotebookObject, cellIdx_Integer] :=
-  Module[{cell, text, matches},
+  Module[{cell, text, matches, style},
+    (* 出力/テキスト/見出し等のセルは var = ... の定義を持たない。
+       特に巨大な Output (Dataset 等) に対し下の NotebookRead フォールバックが
+       走るとセル全体をカーネルへ読み込み、FrontEnd が「ノートブックコンテンツを
+       フォーマットしています」のまま長時間ブロックする (2026-06-06)。
+       変数定義があり得る Input/Code/ExternalLanguage 以外は即 {} を返す。 *)
+    style = Quiet[NBAccess`NBCellStyle[nb, cellIdx]];
+    If[!MemberQ[{"Input", "Code", "ExternalLanguage"}, style], Return[{}]];
     cell = iResolveCell[nb, cellIdx];
     If[cell === $Failed, Return[{}]];
     text = Quiet[iCellToInputText[cell]];
@@ -4400,8 +4578,58 @@ NBAccess`NBParentNotebookOfCurrentCell[] :=
    ============================================================ *)
 
 (* \:6c4e\:7528\:30bb\:30eb\:66f8\:304d\:8fbc\:307f *)
+(* ============================================================
+   出力遅延バッファ (対策2 段階2, 2026-06-03)
+   ============================================================
+   $iNBDeferActive が True のとき、NBWriteCell は notebook へ即書き込みせず
+   $iNBDeferredCells に溜める。最後に NBFlushDeferredOutput[nb] で一括出力。
+   既定 $iNBDeferActive=False では NBWriteCell は完全に従来通り (後方互換)。
+
+   有効化/無効化は呼び出し側 (Orchestrator 並列ワーカー集約や、マルチターンの
+   バッチ区間) が NBBeginDeferredOutput / NBEndDeferredOutput で明示制御する。
+   $ClaudeOutputMode は「既定の希望モード」で、実際にバッファするかは
+   NBResolveOutputMode の判定 + 呼び出し側の制御による。
+
+   罠 #30: バッファへの追加は変数操作なので評価コンテキスト不問 (scheduled
+   task でも安全)。ただし NBFlushDeferredOutput (NotebookWrite) は FrontEnd
+   操作なのでメインカーネル評価で呼ぶこと。 *)
+If[!BooleanQ[$iNBDeferActive], $iNBDeferActive = False];
+If[!ListQ[$iNBDeferredCells], $iNBDeferredCells = {}];
+
+NBAccess`NBBeginDeferredOutput[] := ($iNBDeferActive = True;);
+NBAccess`NBEndDeferredOutput[] := ($iNBDeferActive = False;);
+NBAccess`NBDeferredOutputActiveQ[] := TrueQ[$iNBDeferActive];
+NBAccess`NBDeferredOutputCount[] := Length[$iNBDeferredCells];
+
+(* 溜めた Cell を一括書き込みしてバッファをクリアする。メイン評価で呼ぶこと。 *)
+NBAccess`NBFlushDeferredOutput[nb_NotebookObject] :=
+  Module[{cells},
+    cells = $iNBDeferredCells;
+    $iNBDeferredCells = {};
+    If[Length[cells] > 0,
+      Quiet[NotebookWrite[nb, cells, After]]];
+    Length[cells]];
+NBAccess`NBFlushDeferredOutput[] :=
+  Module[{cells},
+    cells = $iNBDeferredCells;
+    $iNBDeferredCells = {};
+    If[Length[cells] > 0,
+      Quiet[CellPrint[cells]]];
+    Length[cells]];
+
+(* バッファを破棄 (フラッシュせず捨てる)。 *)
+NBAccess`NBDiscardDeferredOutput[] := ($iNBDeferredCells = {};);
+
 NBAccess`NBWriteCell[nb_NotebookObject, cellExpr_Cell, where_:After] :=
-  Quiet[NotebookWrite[nb, cellExpr, where]];
+  If[TrueQ[$iNBDeferActive],
+    (* Batch/Deferred: バッファに溜める (NotebookWrite しない)。
+       where が After 以外 (位置指定) の場合は遅延に乗せず即書き込みする
+       (位置依存の挿入はバッファ順序と整合しないため)。 *)
+    If[where === After,
+      AppendTo[$iNBDeferredCells, cellExpr]; Null,
+      Quiet[NotebookWrite[nb, cellExpr, where]]],
+    (* Streaming/Immediate: 従来通り即書き込み *)
+    Quiet[NotebookWrite[nb, cellExpr, where]]];
 
 (* \:901a\:77e5\:7528 Print \:30bb\:30eb\:66f8\:304d\:8fbc\:307f
    CellTags "claudecode-notice" \:3092\:4ed8\:4e0e\:3057\:3066 NBScanDependentCells \:306e\:30de\:30fc\:30ad\:30f3\:30b0\:5bfe\:8c61\:5916\:306b\:3059\:308b *)
@@ -5696,7 +5924,22 @@ If[!AssociationQ[$NBAllowedHeadsByCategory],
       "Equal", "Unequal", "Less", "Greater",
       "LessEqual", "GreaterEqual", "And", "Or", "Not",
       "True", "False", "Null",
-      "IntegerPart", "Round", "Floor", "Ceiling"
+      "IntegerPart", "Round", "Floor", "Ceiling",
+      (* Phase D-3 fix (2026-06-03): \:6700\:983b\:51fa\:306e\:96c6\:8a08\:30fb\:521d\:7b49\:6570\:5b66\:95a2\:6570\:3002
+         \:3044\:305a\:308c\:3082\:526f\:4f5c\:7528\:306e\:306a\:3044\:7d14\:6570\:5b66\:95a2\:6570\:3002"1\:304b\:3089100\:307e\:3067\:306e\:548c" \:306e\:3088\:3046\:306a
+         \:57fa\:672c\:7684\:306a ClaudeEval \:7528\:9014\:3067 Sum \:304c\:672a\:77e5 head \:6271\:3044\:306b\:306a\:308a
+         RepairNeeded \:3067\:6b62\:307e\:3063\:3066\:3044\:305f\:3002 *)
+      "Sum", "Product", "GCD", "LCM", "Factorial", "Binomial",
+      "Quotient", "Rational", "Re", "Im", "Conjugate", "Sign",
+      "Exp", "Log", "Log2", "Log10",
+      "Sin", "Cos", "Tan", "ArcSin", "ArcCos", "ArcTan",
+      "Sinh", "Cosh", "Tanh",
+      "Pi", "E", "Degree", "GoldenRatio", "Infinity",
+      "N", "Rationalize", "Chop", "Clip",
+      "Prime", "PrimeQ", "EvenQ", "OddQ", "Divisible",
+      "FactorInteger", "Fibonacci", "PowerMod",
+      "Numerator", "Denominator", "Mean", "Median", "Variance",
+      "StandardDeviation", "Total", "Accumulate", "Differences"
     },
     "DataOps" -> {
       "Map", "Select", "Cases", "Association", "Lookup",
@@ -5749,6 +5992,21 @@ If[!AssociationQ[$NBAllowedHeadsByCategory],
       "Framed", "Panel", "Labeled", "Tooltip",
       "InputForm", "OutputForm", "TraditionalForm",
       "MatrixForm"
+    },
+    (* Phase D-3 (2026-06-03): Notebook \:30c7\:30fc\:30bf\:69cb\:9020\:30b3\:30f3\:30b9\:30c8\:30e9\:30af\:30bf\:3002
+       NotebookWrite (approval head) \:306e\:5f15\:6570\:3068\:3057\:3066\:73fe\:308c\:308b Cell / TextData /
+       BoxData / StyleBox / CellGroupData \:7b49\:306f\:526f\:4f5c\:7528\:3092\:6301\:305f\:306a\:3044 inert \:306a
+       \:8868\:73fe\:69cb\:9020\:3067\:3042\:308a\:3001\:5358\:4f53\:3067\:306f\:4f55\:3082\:5b9f\:884c\:3057\:306a\:3044\:3002\:3053\:308c\:3089\:304c allowed \:306b
+       \:306a\:3044\:3068\:3001NotebookWrite[nb, Cell[...]] \:5168\:4f53\:304c\:672a\:77e5 head (Cell) \:3092\:542b\:3080\:3068
+       \:5224\:5b9a\:3055\:308c RepairNeeded \:306b\:306a\:308a\:3001Committer \:627f\:8a8d\:7d4c\:8def\:3067\:5b9f\:884c\:3067\:304d\:306a\:304f\:306a\:308b\:3002
+       \:5b9f\:969b\:306e\:66f8\:304d\:8fbc\:307f\:306f NotebookWrite (approval) \:3092\:901a\:3063\:305f\:3068\:304d\:306b\:306e\:307f\:8d77\:304d\:308b\:3002 *)
+    "NotebookData" -> {
+      "Cell", "CellGroupData", "TextData", "BoxData", "StyleBox",
+      "RowBox", "FractionBox", "SuperscriptBox", "SubscriptBox",
+      "GridBox", "TagBox", "InterpretationBox", "FormBox",
+      "ButtonBox", "TemplateBox", "ExpressionUUID",
+      "TextCell", "ExpressionCell", "BoxData",
+      "CellTags", "CellLabel", "GeneratedCell"
     }
   |>];
 
@@ -5787,11 +6045,21 @@ If[!ListQ[$NBApprovalHeads],
     "NBMarkCellConfidential", "NBMarkCellDependent", "NBUnmarkCell",
     "NBSetConfidentialTag", "NBSetTaggingRule", "NBDeleteTaggingRule",
     "NBSetSnapshotPrivacyLevel",
+    (* desktop action wrapper (spec 5B.7/5B.8): 承認付きでフォルダ等を開く。
+       内部で action registry -> iNBExecuteOpenDesktopItem (path 検査) を通す。
+       raw SystemOpen は依然 Deny。これが正本の経路。 *)
+    "NBOpenFolderWithApproval", "NBExecuteApprovedAction",
     "NBFileWriteCell", "NBFileWriteAllCells",
     "NBMergeNotebookCells",
     (* \:30d5\:30a1\:30a4\:30eb\:64cd\:4f5c *)
     "NBFileOpen", "NBFileClose", "NBFileSave",
-    "NBSplitNotebookCells"
+    "NBSplitNotebookCells",
+    (* Phase A1 (ClaudeEval async-compat spec 5.1):
+       \:7d20\:306e NotebookWrite \:306f\:65e2\:5b58\:306e\:3069\:306e head \:96c6\:5408\:306b\:3082\:5165\:3063\:3066\:304a\:3089\:305a
+       (\:672a\:77e5 head \:6271\:3044 = RepairNeeded \:306b\:306a\:308b)\:3001
+       \:30a8\:30fc\:30b8\:30a7\:30f3\:30c8\:7531\:6765\:5f0f\:304c notebook \:3092\:76f4\:63a5\:66f8\:304d\:63db\:3048\:308b\:306e\:3092
+       \:627f\:8a8d\:30b2\:30fc\:30c8\:306b\:4e57\:305b\:308b\:305f\:3081 approval head \:306b\:6607\:683c\:3059\:308b\:3002 *)
+    "NotebookWrite"
   }];
 
 If[!ListQ[$NBDenyHeads],
@@ -5806,32 +6074,113 @@ If[!ListQ[$NBDenyHeads],
     "SendMail", "CloudDeploy", "CloudPut",
     "Quit", "Exit", "Abort",
     "Unset", "Clear", "Remove",
-    "Evaluate" (* ReleaseHold\:7d4c\:7531\:306e\:660e\:793a\:7684eval\:963b\:6b62 *)
+    (* Phase C-lite (2026-06-03、spec 5A.5.1): 外部実行・ネットワーク・
+       破壊的 IO の明示 Deny を補強。C-lite の語幹分類でも拾えるが、
+       明示列挙しておくことで承認 UI を出さず確実に Deny する。 *)
+    "ExternalEvaluate", "ExternalFunction", "LibraryFunctionLoad",
+    "LinkLaunch", "LinkConnect", "Install",
+    "SocketConnect", "SocketOpen", "URLSubmit", "URLDownload",
+    "URLDownloadSubmit", "CreateFile", "CreateDirectory",
+    "OpenWrite", "OpenAppend", "BinaryWrite", "WriteString", "Write",
+    "DumpSave", "CloudEvaluate", "CloudSubmit", "CloudDeploy",
+    "ServiceExecute", "SendMessage", "MailReceiverFunction",
+    "Splice", "FilePrint", "CopyDirectory", "SetDirectory",
+    "ResetDirectory", "CreateArchive", "ExtractArchive"
+    (* 2026-06-03: "Evaluate" を Deny から除去。ParametricPlot[Evaluate[..]] 等
+       描画の定石を巻き込んで全 Deny していた。Evaluate の中身の危険 head は
+       iExtractAllHeads が {1,Infinity} で別途捕捉し Deny するため、Evaluate
+       自体を Deny する必要はない。Evaluate は allowlist (HoldComplete 等と
+       同じ行) にあり許可扱い。 *)
   }];
 
-(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+(* Phase permission-modes (2026-06-03, spec 5B.3): グローバル permission mode。
+   標準値 InteractiveSafe。自動ワークフローでは WorkflowSafe を使う。
+   推奨値: ReviewOnly / StrictSafe / InteractiveSafe / WorkflowSafe /
+           LegacyInteractive / DangerFullAccess。
+   I12: 実行中の判定では global を直接読まず、accessSpec/snapshot に
+   焼き込んだ値を正とする。 *)
+If[!StringQ[$ClaudePermissionMode],
+  $ClaudePermissionMode = "InteractiveSafe"];
+
+(* spec 5B.4: DangerFullAccess でも HardDeny を無条件 Permit にしない。
+   別フラグでのみ HardDeny を承認可能に昇格する (既定 False)。 *)
+If[!BooleanQ[$ClaudeAllowHardDenyOverride],
+  $ClaudeAllowHardDenyOverride = False];
+
+(* 出力モード (対策2, 2026-06-03)。Streaming=逐次 (既定) / Batch=集約。
+   最優先は FrontEnd/カーネルブロック回避。BlockingRisk が MayBlockFrontEnd の
+   出力は Streaming でも自動集約。実行中は accessSpec/runtime メタデータの
+   焼き込み値を正とする。 *)
+If[!StringQ[$ClaudeOutputMode],
+  $ClaudeOutputMode = "Streaming"];
+
+(* NBResolveOutputMode[mode, blockingRisk]: 実際に「逐次出力」するか
+   「集約 (遅延出力)」するかを返す純粋関数。最優先はブロック回避:
+   - blockingRisk が "MayBlockFrontEnd" なら、mode が Streaming でも
+     "Deferred" を返す (ブロックするくらいなら最後にまとめる)。
+   - mode が "Batch" なら常に "Deferred"。
+   - それ以外 (Streaming かつブロックなし) は "Immediate"。
+   返り値: "Immediate" (即出力) | "Deferred" (集約)。 *)
+NBResolveOutputMode[mode_String, blockingRisk_String] :=
+  Which[
+    blockingRisk === "MayBlockFrontEnd", "Deferred",
+    mode === "Batch", "Deferred",
+    True, "Immediate"];
+NBResolveOutputMode[mode_String] := NBResolveOutputMode[mode, "None"];
+NBResolveOutputMode[] := NBResolveOutputMode[$ClaudeOutputMode, "None"];
+(* 不正な mode は安全側 (即出力) に倒す。Batch でブロックなしの誤入力でも
+   出力が消えるより出る方が安全。 *)
+NBResolveOutputMode[___] := "Immediate";
+
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: NBValidateHeldExpr
-   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 Options[NBValidateHeldExpr] = {"AllowedHeads" -> Automatic,
   "ApprovalHeads" -> Automatic, "DenyHeads" -> Automatic,
-  "LabelCheck" -> Automatic};
+  "LabelCheck" -> Automatic, "PolicySnapshot" -> None};
+Options[iNBValidateHeldExprBase] = Options[NBValidateHeldExpr];
 
-NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
+(* Phase permission-modes (2026-06-03, spec 5B.2A): 既存の判定本体を
+   iNBValidateHeldExprBase に分離。これが従来の Decision を返す
+   「BaseDecision 生成器」。NBValidateHeldExpr はこれを呼び、
+   末尾で EffectClass/ApprovalEligibility/PermissionMode 変換を
+   一度だけ適用する薄いラッパー (下部で定義)。 *)
+iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
   Module[{allowed, approval, deny, heads, denied, needsApproval, unknown,
-          labelCheck},
+          scopedSyms,
+          labelCheck, snapshot, effectiveAccessSpec},
     If[!MatchQ[heldExpr, HoldComplete[_]],
       Return[<|"Decision" -> "Deny",
         "ReasonClass" -> "ModelFormatError",
         "VisibleExplanation" -> "Expected HoldComplete[expr], got " <> ToString[Head[heldExpr]],
         "SanitizedExpr" -> None|>]];
-    
-    (* Phase 16: \:30ab\:30c6\:30b4\:30ea\:52d5\:7684\:518d\:8a08\:7b97 *)
-    iRecomputeAllowedHeads[];
-    allowed  = Replace[OptionValue["AllowedHeads"],  Automatic -> $NBAllowedHeads];
-    approval = Replace[OptionValue["ApprovalHeads"], Automatic -> $NBApprovalHeads];
-    deny     = Replace[OptionValue["DenyHeads"],     Automatic -> $NBDenyHeads];
-    
+
+    (* Phase B: snapshot mode \:5224\:5b9a\:3002
+       PolicySnapshot \:304c\:6e21\:3055\:308c\:305f\:5834\:5408\:306f snapshot \:3092\:5224\:5b9a\:5165\:529b\:306e\:6b63\:672c\:3068\:3057\:3001
+       iRecomputeAllowedHeads[] \:3084\:30ab\:30c6\:30b4\:30ea global \:3092\:53c2\:7167\:3057\:306a\:3044\:3002
+       snapshot \:306a\:3057 (None) \:306e\:5834\:5408\:306f\:5f93\:6765\:901a\:308a\:3002 *)
+    snapshot = OptionValue["PolicySnapshot"];
+    If[AssociationQ[snapshot],
+      (* snapshot mode: \:5404 head \:96c6\:5408\:306f snapshot \:7531\:6765\:3002
+         opts \:660e\:793a\:6307\:5b9a\:304c\:3042\:308c\:3070\:305d\:308c\:3092\:512a\:5148\:3057\:3001\:306a\:3051\:308c\:3070 snapshot\:3002
+         iRecomputeAllowedHeads[] \:306f\:547c\:3070\:306a\:3044\:3002 *)
+      allowed  = Replace[OptionValue["AllowedHeads"],  Automatic -> Lookup[snapshot, "AllowedHeads", {}]];
+      approval = Replace[OptionValue["ApprovalHeads"], Automatic -> Lookup[snapshot, "ApprovalHeads", {}]];
+      deny     = Replace[OptionValue["DenyHeads"],     Automatic -> Lookup[snapshot, "DenyHeads", {}]];
+      (* confidential \:691c\:67fb\:7528: snapshot \:7531\:6765 ConfidentialSymbols \:3092 accessSpec \:306b\:6ce8\:5165\:3002
+         accessSpec \:5074\:306b\:65e2\:306b\:660e\:793a\:6307\:5b9a\:304c\:3042\:308c\:3070\:305d\:3061\:3089\:3092\:5c0a\:91cd\:3059\:308b\:3002 *)
+      effectiveAccessSpec = If[KeyExistsQ[accessSpec, "ConfidentialSymbols"],
+        accessSpec,
+        Append[accessSpec, "ConfidentialSymbols" -> Lookup[snapshot, "ConfidentialSymbols", {}]]],
+      (* non-snapshot mode: \:5f93\:6765\:901a\:308a global \:3092\:518d\:8a08\:7b97\:3057\:3066\:53c2\:7167 *)
+      iRecomputeAllowedHeads[];
+      allowed  = Replace[OptionValue["AllowedHeads"],  Automatic -> $NBAllowedHeads];
+      approval = Replace[OptionValue["ApprovalHeads"], Automatic -> $NBApprovalHeads];
+      deny     = Replace[OptionValue["DenyHeads"],     Automatic -> $NBDenyHeads];
+      effectiveAccessSpec = accessSpec
+    ];
+
     (* \:5f0f\:4e2d\:306e\:5168 head \:3092\:62bd\:51fa *)
     heads = iExtractAllHeads[heldExpr];
     
@@ -5849,6 +6198,10 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
       Return[<|"Decision" -> "NeedsApproval",
         "ReasonClass" -> "AccessEscalationRequired",
         "VisibleExplanation" -> "Heads requiring approval: " <> StringRiffle[needsApproval, ", "],
+        (* P0 \:6697\:5b9a\:627f\:8a8d\:30e2\:30fc\:30c9 (Committer) \:7528\:306b\:3001\:627f\:8a8d\:3092\:8981\:3057\:305f
+           head \:30ea\:30b9\:30c8\:3092\:69cb\:9020\:5316\:3057\:3066\:8fd4\:3059\:3002iNBExecPermitCheck \:304c
+           \:300c\:5168 head \:304c\:627f\:8a8d\:53ef\:80fd head \:304b\:300d\:3092\:6587\:5b57\:5217\:30d1\:30fc\:30b9\:305b\:305a\:5224\:5b9a\:3067\:304d\:308b\:3002 *)
+        "ApprovalHeads" -> needsApproval,
         "SanitizedExpr" -> heldExpr|>]];
     
     (* \:672a\:77e5 head \:30c1\:30a7\:30c3\:30af \[LongDash] \:305f\:3060\:3057 Set/SetDelayed \:306f\:6587\:8108\:4f9d\:5b58\:3067\:5224\:5b9a *)
@@ -5865,17 +6218,59 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
               " detected. Only Set/SetDelayed inside Module/With/Block is auto-permitted.",
             "SanitizedExpr" -> heldExpr|>]]]];
     
+    (* unknown head の扱い (Phase C-lite, spec I8/I9/5A)。
+       従来は一律 RepairNeeded だったが、Mathematica の純粋関数を
+       allow list 化するのは非現実的なため、文脈 + 副作用語幹で再分類する。
+       ここに来る head は Deny でも Approval でも Allowed でも
+       Set/SetDelayed でもないもの。 *)
+    (* held 中の Module/Block/With/Function 等の局所変数・パターン変数・
+       定義関数名を承認対象から除外する (これらはユーザー定義の安全なローカル)。
+       2026-06-03: Module[{traj},traj[x_]:=..] の traj が NeedsApproval に
+       なる過剰判定への対処。 *)
+    scopedSyms = iNBExtractScopedSymbols[heldExpr];
     unknown = Select[heads,
-      !MemberQ[allowed, #] && !MemberQ[approval, #] &&
-      !MemberQ[{"Set", "SetDelayed"}, #] &];
+      !MemberQ[allowed, #] && !MemberQ[approval, #] && !MemberQ[deny, #] &&
+      !MemberQ[{"Set", "SetDelayed"}, #] &&
+      !MemberQ[scopedSyms, #] &];
     If[Length[unknown] > 0,
-      Return[<|"Decision" -> "RepairNeeded",
-        "ReasonClass" -> "ValidationRepairable",
-        "VisibleExplanation" -> "Unknown heads: " <> StringRiffle[unknown, ", "],
-        "SanitizedExpr" -> heldExpr|>]];
+      (* confidential leak は分類より先に確認 (leak は承認しても不可)。
+         snapshot mode では effectiveAccessSpec に snapshot 由来 conf 注入済み。 *)
+      If[iContainsConfidentialLeak[heldExpr, effectiveAccessSpec],
+        Return[<|"Decision" -> "Deny",
+          "ReasonClass" -> "ConfidentialLeakRisk",
+          "VisibleExplanation" -> "Expression may leak confidential data",
+          "SanitizedExpr" -> iSanitizeExpr[heldExpr]|>]];
+      (* C-lite 構造分類。unknown head の名前-文脈ペアを取り、
+         System` 純粋 -> Permit、System` 副作用語幹 / user 文脈 -> NeedsApproval。 *)
+      Module[{pairs, unknownPairs, cls},
+        pairs = iNBHeadNameContextPairs[heldExpr];
+        unknownPairs = Select[pairs, MemberQ[unknown, First[#]] &];
+        cls = iNBClassifyUnknownHeads[unknownPairs];
+        Which[
+          cls["Decision"] === "Permit",
+            (* System` 純粋っぽい組み込みのみ。allowed 外だが安全とみなし Permit。
+               以降の confidential / label チェックへ進むため Return せず通過。 *)
+            Null,
+          cls["Decision"] === "NeedsApproval",
+            Return[<|"Decision" -> "NeedsApproval",
+              "ReasonClass" -> "UnknownHeadRequiresApproval",
+              "VisibleExplanation" ->
+                "Unlisted heads requiring approval: " <>
+                StringRiffle[Lookup[cls, "ApprovalHeads", unknown], ", "],
+              "ApprovalHeads" -> Lookup[cls, "ApprovalHeads", unknown],
+              "SanitizedExpr" -> heldExpr|>],
+          True,
+            Return[<|"Decision" -> "NeedsApproval",
+              "ReasonClass" -> "UnknownHeadRequiresApproval",
+              "VisibleExplanation" ->
+                "Unlisted heads: " <> StringRiffle[unknown, ", "],
+              "ApprovalHeads" -> unknown,
+              "SanitizedExpr" -> heldExpr|>]
+        ]]];
     
-    (* confidential leak \:30c1\:30a7\:30c3\:30af *)
-    If[iContainsConfidentialLeak[heldExpr, accessSpec],
+    (* confidential leak \:30c1\:30a7\:30c3\:30af (allowed head のみの式に対しても実施) *)
+    (* snapshot mode \:3067\:306f effectiveAccessSpec \:306b snapshot \:7531\:6765 conf \:304c\:6ce8\:5165\:6e08\:307f\:3002 *)
+    If[iContainsConfidentialLeak[heldExpr, effectiveAccessSpec],
       Return[<|"Decision" -> "Deny",
         "ReasonClass" -> "ConfidentialLeakRisk",
         "VisibleExplanation" -> "Expression may leak confidential data",
@@ -5931,8 +6326,119 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
       "RouteAdvice" -> NBRouteDecision[accessSpec]|>
   ];
 
-(* head \:62bd\:51fa\:30d8\:30eb\:30d1\:30fc: \:5f0f\:4e2d\:306e\:5168\:30b7\:30f3\:30dc\:30eb head \:3092\:6587\:5b57\:5217\:30ea\:30b9\:30c8\:3067\:8fd4\:3059\:3002
-   HoldComplete \:5185\:3092 Cases \:3067\:8d70\:67fb\:3059\:308b\:305f\:3081\:8a55\:4fa1\:306f\:767a\:751f\:3057\:306a\:3044\:3002 *)
+(* ============================================================
+   Phase permission-modes (2026-06-03, spec 5B.2A): NBValidateHeldExpr
+   ラッパー = base 判定 + EffectClass/ApprovalEligibility + mode 変換
+   ============================================================
+   1. iNBValidateHeldExprBase で従来の Decision (= BaseDecision) を得る
+   2. 式中の head から EffectClass を集約し ApprovalEligibility を決める
+   3. base Decision と EffectClass eligibility を合成 (厳しい方)
+   4. accessSpec["PermissionMode"] (I12: global を読み直さない) で変換
+   5. Decision (変換後) と BaseDecision を併存させ、追加 metadata を返す
+   既存の Switch[r["Decision"], ...] は Decision キーでそのまま動く。 *)
+NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
+  Module[{base, baseDecision, mode, pairs, ecInfos, aggEC, aggPlacement,
+          aggBlocking, requiresFinal, baseElig, ecElig, finalElig,
+          transformed, result},
+    base = iNBValidateHeldExprBase[heldExpr, accessSpec, opts];
+    baseDecision = Lookup[base, "Decision", "Deny"];
+
+    (* permission mode は accessSpec から読む (I12)。無ければ global を
+       初期値として使うが、実行経路では accessSpec に焼き込まれている前提。 *)
+    mode = Lookup[accessSpec, "PermissionMode", $ClaudePermissionMode];
+    If[!StringQ[mode], mode = "InteractiveSafe"];
+
+    (* base Decision を ApprovalEligibility にマップ *)
+    baseElig = Switch[baseDecision,
+      "Deny", "HardDeny",
+      "RepairNeeded", "RepairRequired",
+      "NeedsApproval", "AskUserAllowed",
+      "Permit", "AutoPermit",
+      _, "AskUserAllowed"];
+
+    (* 式中の head から EffectClass を集約 (heldExpr が HoldComplete のとき) *)
+    (* 式中の head から EffectClass を集約 (heldExpr が HoldComplete のとき)。
+       2026-06-03: base 判定と同様、Module/Block/With 等のスコープ局所変数
+       (traj 等のユーザー定義ローカル関数) を除外する。これを除外しないと
+       traj が Global` 文脈の UnknownUserCode と判定され、base が Permit でも
+       mode 変換層で eligibility が AskUserAllowed に昇格し NeedsApproval に
+       なる (Reason=None の NeedsApproval の原因)。 *)
+    pairs = If[MatchQ[heldExpr, HoldComplete[_]],
+      Module[{allPairs, scoped},
+        allPairs = iNBHeadNameContextPairs[heldExpr];
+        scoped = iNBExtractScopedSymbols[heldExpr];
+        Select[allPairs, !MemberQ[scoped, First[#]] &]],
+      {}];
+    ecInfos = iNBHeadEffectClass[#[[1]], #[[2]]] & /@ pairs;
+    (* 最も厳しい EffectClass eligibility を採る *)
+    ecElig = If[Length[ecInfos] === 0, "AutoPermit",
+      Module[{eligs},
+        eligs = iNBEffectClassToEligibility[Lookup[#, "EffectClass", "PureComputation"]] & /@ ecInfos;
+        First @ MaximalBy[eligs, iNBEligibilityRank, 1]]];
+    (* ExecutionPlacement / BlockingRisk / RequiresFinalNode を集約 *)
+    aggPlacement = If[Length[ecInfos] === 0, "SubkernelSafe",
+      Module[{places},
+        places = Lookup[#, "ExecutionPlacement", "SubkernelSafe"] & /@ ecInfos;
+        (* 厳しさ順: DesktopAction/FrontEndRequired > MainKernelOnly > Subkernel *)
+        Which[
+          MemberQ[places, "DesktopAction"], "DesktopAction",
+          MemberQ[places, "FrontEndRequired"], "FrontEndRequired",
+          MemberQ[places, "FileSystemWrite"], "FileSystemWrite",
+          MemberQ[places, "MainKernelOnly"], "MainKernelOnly",
+          MemberQ[places, "FileSystemReadOnly"], "FileSystemReadOnly",
+          True, "SubkernelSafe"]]];
+    aggBlocking = If[Length[ecInfos] === 0, "None",
+      Module[{risks},
+        risks = Lookup[#, "BlockingRisk", "None"] & /@ ecInfos;
+        Which[
+          MemberQ[risks, "MayBlockFrontEnd"], "MayBlockFrontEnd",
+          MemberQ[risks, "PossiblyLongOrLargeResult"], "PossiblyLongOrLargeResult",
+          MemberQ[risks, "PossiblyLong"], "PossiblyLong",
+          True, "None"]]];
+    requiresFinal = AnyTrue[ecInfos, TrueQ[Lookup[#, "RequiresFinalNode", False]] &];
+    aggEC = If[Length[ecInfos] === 0, "PureComputation",
+      Module[{ecs},
+        ecs = Lookup[#, "EffectClass", "PureComputation"] & /@ ecInfos;
+        (* 代表 EffectClass は specificity 順で採る。eligibility 同率
+           (例: Plot=GraphicsComputation も Sin=PureComputation も AutoPermit)
+           のとき eligibility rank だけでは head 走査順に依存してしまうため、
+           より具体的な (= PureComputation でない、override 由来の) EffectClass
+           を優先する。第1キー: eligibility rank、第2キー: specificity rank。 *)
+        First @ MaximalBy[ecs,
+          {iNBEligibilityRank[iNBEffectClassToEligibility[#]],
+           iNBEffectClassSpecificity[#]} &, 1]]];
+
+    (* base eligibility と EffectClass eligibility の厳しい方を採る。
+       例: base が Permit (AutoPermit) でも EffectClass が DesktopAction
+       (AskUserAllowed) なら AskUserAllowed に上げる。
+       逆に base が Deny (HardDeny) なら EffectClass がどうあれ HardDeny。 *)
+    finalElig = If[iNBEligibilityRank[baseElig] >= iNBEligibilityRank[ecElig],
+      baseElig, ecElig];
+
+    (* PermissionMode 変換 *)
+    transformed = iNBApplyPermissionMode[finalElig, mode];
+
+    (* 結果合成: base を保ちつつ Decision を変換後に差し替え、
+       BaseDecision と metadata を追加。VisibleExplanation/ReasonClass/
+       ApprovalHeads/SanitizedExpr 等の base 由来キーは保持。 *)
+    result = base;
+    result["BaseDecision"] = baseDecision;
+    result["Decision"] = transformed["Decision"];
+    result["EffectClass"] = aggEC;
+    result["ApprovalEligibility"] = finalElig;
+    result["ExecutionPlacement"] = aggPlacement;
+    result["BlockingRisk"] = aggBlocking;
+    result["RequiresFinalNode"] = requiresFinal;
+    result["ExecutionDisposition"] = transformed["ExecutionDisposition"];
+    result["AllowApprovalUI"] = transformed["AllowApprovalUI"];
+    result["MayExecute"] = transformed["MayExecute"];
+    result["PermissionMode"] = mode;
+    result["ModeTransformApplied"] = True;
+    result
+  ];
+
+
+(* head \:62bd\:51fa\:30d8\:30eb\:30d1\:30fc: \:5f0f\:4e2d\:306e\:5168\:30b7\:30f3\:30dc\:30eb head \:3092\:6587\:5b57\:5217\:30ea\:30b9\:30c8\:3067\:8fd4\:3059\:3002 *)
 iExtractAllHeads[held_HoldComplete] :=
   DeleteDuplicates @ Cases[
     held,
@@ -5941,6 +6447,457 @@ iExtractAllHeads[held_HoldComplete] :=
 
 iExtractAllHeads[_] := {};
 
+(* iNBExtractScopedSymbols: held 式中の Module/Block/With/Function/
+   DynamicModule/Manipulate 等のスコープ局所変数と、SetDelayed/Function の
+   パターン変数 (f[x_]:=.. の x 等、定義された関数名 f も含む) のシンボル名を
+   抽出する。これらはユーザーが新規に束縛する安全なローカルであり、unknown
+   head の承認対象から除外する (L388 の方針: スコーピング局所変数は除外)。
+   2026-06-03: C-lite の held 式ベース unknown 判定にローカル除外が無く、
+   Module[{traj},traj[x_]:=..] の traj が Global` 文脈 head として
+   NeedsApproval になっていた問題への対処。 *)
+iNBExtractScopedSymbols[held_HoldComplete] :=
+  Module[{codeStr, scopeVars, patVars, definedFns},
+    (* held を InputForm 文字列化し、実績ある文字列ベース抽出を再利用する。
+       held 式パターンマッチは Set 等の評価副作用リスクがあるため避ける。
+       2026-06-03: 当初 Cases ベースで実装したが EDT-7/8 が Fail。文字列方式に変更。 *)
+    codeStr = Quiet @ Check[
+      ToString[held /. HoldComplete[e_] :> HoldForm[e], InputForm],
+      ""];
+    If[!StringQ[codeStr] || codeStr === "", Return[{}, Module]];
+    (* Module/Block/With/Function の局所変数 {a, b=1, c} の名前 *)
+    scopeVars = iExtractScopeVars[codeStr];
+    (* パターン変数 x_ / x__ の名前 *)
+    patVars = iExtractPatternVars[codeStr];
+    (* 定義関数名: f[..]:=.. や f[..]=.. や g=.. の左辺シンボル。
+       := (SetDelayed) と = (Set) の両方を許す。== (Equal) は除外。 *)
+    definedFns = DeleteDuplicates @ StringCases[codeStr,
+      RegularExpression[
+        "(?<![\\p{L}\\p{N}$`])([\\p{L}$][\\p{L}\\p{N}$]*)\\s*(?:\\[[^\\]]*\\])?\\s*(?::=|(?<![=<>!])=(?!=))"] :>
+        "$1"];
+    DeleteDuplicates @ Flatten[{scopeVars, patVars, definedFns}]
+  ];
+
+iNBExtractScopedSymbols[_] := {};
+
+(* ============================================================
+   Phase C-lite (2026-06-03, spec 5A): unknown head の構造的安全分類
+   ============================================================
+   従来は allowed に無い head を一律 RepairNeeded にしていたが、
+   Mathematica の数万の純粋関数を allow list 化するのは非現実的。
+   I8/I9 に従い、unknown head を「文脈 + 副作用語幹」で再分類する:
+     - System` 文脈 かつ 副作用語幹に当たらない -> Permit (高速だが allowed 外)
+     - System` 文脈 かつ 副作用語幹に当たる     -> NeedsApproval
+     - Global`/user/package 文脈              -> NeedsApproval
+   Deny head は本関数に来る前に既に弾かれている (優先順位 1)。 *)
+
+(* head の {名前, 文脈} ペアを未評価で取得する。
+   Context[Unevaluated[s]] はシンボルを評価せず文脈だけ返すので安全。
+   名前が allowed/approval/deny の文字列照合と一致するよう SymbolName を使う。 *)
+iNBHeadNameContextPairs[held_HoldComplete] :=
+  DeleteDuplicates @ Cases[
+    held,
+    s_Symbol[___] :> {SymbolName[Unevaluated[s]], Context[Unevaluated[s]]},
+    {1, Infinity}];
+iNBHeadNameContextPairs[_] := {};
+
+(* 副作用語幹リスト (spec 5A.5.3)。System` unknown head 名がこれらの語を
+   含む場合は副作用の疑いがあるとして NeedsApproval 側に倒す。
+   破壊的・外部実行・ネットワーク系は明示 Deny に入っているので、
+   ここに来る時点で残るのは「語幹は副作用っぽいが Deny 明示はされていない」もの。
+   安全側に倒すため NeedsApproval とする。 *)
+$iNBSideEffectStems = {
+  "Open", "Write", "Save", "Export", "Import", "Delete", "Remove",
+  "Run", "Start", "Create", "Put", "Read", "URL", "Socket",
+  "Send", "Submit", "Connect", "Launch", "Install", "Load",
+  "Library", "External", "Notebook", "FrontEnd", "Dialog",
+  "Cloud", "HTTP", "Mail", "Process", "Kernel", "Link",
+  "Directory", "File", "Stream", "Channel", "Datbin", "Print",
+  "Speak", "Audio", "EmitSound", "SetOptions", "SetEnvironment"
+};
+
+(* 副作用語幹に部分一致するが、実際は純粋 (式・リスト・文字列・画像・
+   グラフ操作) で副作用を持たない System` 関数の除外リスト。
+   2026-06-05: $iNBSideEffectStems は部分文字列マッチなので、例えば
+   DeleteDuplicates が "Delete" 語幹に該当 -> DestructiveFileSystem ->
+   HardDeny となり、普通のコードが承認 UI も出ず Deny される事故が起きる
+   (ConnectedComponents の "Connect" -> NetworkAccess -> HardDeny も同様)。
+   override table と違いこれは語幹判定そのものを救うため base 分類層
+   (iNBClassifyUnknownHeads) と EffectClass 集約層 (iNBHeadEffectClass) の
+   両方に一度に効く。語幹ヒューリスティックは本質的に漏れるため、新たな
+   誤判定が見つかればここに追記する。 *)
+$iNBSideEffectStemExceptions = {
+  (* "Delete" 語幹だが純粋 *)
+  "DeleteDuplicates", "DeleteDuplicatesBy", "DeleteCases", "DeleteMissing",
+  "DeleteStopwords", "DeleteElements", "DeleteSmallComponents",
+  "DeleteBorderComponents", "DeleteAnomalies",
+  (* "Remove" 語幹だが純粋 *)
+  "RemoveDiacritics", "RemoveBackground", "RemoveAlphaChannel",
+  (* "Connect" 語幹だが純粋なグラフ/メッシュ/分子操作 *)
+  "ConnectedComponents", "WeaklyConnectedComponents", "ConnectedGraphQ",
+  "WeaklyConnectedGraphQ", "ConnectedMeshComponents", "ConnectedMoleculeQ",
+  "ConnectedMoleculeComponents", "KEdgeConnectedComponents",
+  "KVertexConnectedComponents", "VertexConnectivity", "EdgeConnectivity",
+  (* "Open" 語幹だが純粋な UI 構築子 *)
+  "OpenerView"
+};
+
+(* head 名が副作用語幹を含むか (除外リストにある純粋関数は False) *)
+iNBSideEffectishQ[name_String] :=
+  !MemberQ[$iNBSideEffectStemExceptions, name] &&
+  AnyTrue[$iNBSideEffectStems, StringContainsQ[name, #] &];
+iNBSideEffectishQ[_] := True;  (* 不明は安全側 *)
+
+(* System` 文脈か (組み込み関数か) を文脈文字列で判定。
+   System` のみを「組み込み」とみなす。それ以外 (Global`, ユーザー package`,
+   ClaudeCode`, SourceVault` 等) は user/package とみなす。 *)
+iNBIsSystemContextQ[ctx_String] := (ctx === "System`");
+iNBIsSystemContextQ[_] := False;
+
+(* unknown head 群 (名前-文脈ペア) を分類し、最も厳しい結果を返す。
+   返り値: <|"Decision" -> "Permit"|"NeedsApproval", "Reason" -> _,
+            "PlacementHint" -> _, "Unknowns" -> {名前...}|>
+   RepairNeeded はここでは返さない (構造破損は別途 malformed 判定で扱う)。 *)
+iNBClassifyUnknownHeads[pairs_List] :=
+  Module[{sysSideEffect = {}, sysPure = {}, userCtx = {}},
+    Do[
+      Module[{nm = pair[[1]], ctx = pair[[2]], ov, ovEC},
+        (* override テーブルを最優先参照 (spec 5B.5A)。純粋系 EffectClass に
+           明示登録された head は、副作用語幹に引っかかっても純粋扱いにする。
+           例: FileNameJoin/DirectoryName は "File"/"Directory" 語幹該当だが
+           override で PureComputation -> sysPure。 *)
+        ov = If[AssociationQ[$NBEffectClassOverrides],
+          Lookup[$NBEffectClassOverrides, nm, None], None];
+        ovEC = If[AssociationQ[ov], Lookup[ov, "EffectClass", None], None];
+        Which[
+          (* override が AutoPermit 相当の純粋系なら sysPure *)
+          MemberQ[{"PureComputation", "ReadOnlyFileSystem",
+                   "GraphicsComputation", "LongRunningComputation"}, ovEC],
+            AppendTo[sysPure, nm],
+          ! iNBIsSystemContextQ[ctx],
+            (* Global`/user/package 文脈: 内部で何をするか不明 -> NeedsApproval *)
+            AppendTo[userCtx, nm],
+          iNBSideEffectishQ[nm],
+            (* System` だが副作用語幹に該当 -> NeedsApproval *)
+            AppendTo[sysSideEffect, nm],
+          True,
+            (* System` 純粋っぽい組み込み -> Permit (高速パス外だが安全とみなす) *)
+            AppendTo[sysPure, nm]
+        ]],
+      {pair, pairs}];
+    Which[
+      Length[userCtx] > 0,
+        <|"Decision" -> "NeedsApproval",
+          "Reason" -> "UserOrPackageContextHead",
+          "Unknowns" -> Join[userCtx, sysSideEffect, sysPure],
+          "ApprovalHeads" -> Join[userCtx, sysSideEffect]|>,
+      Length[sysSideEffect] > 0,
+        <|"Decision" -> "NeedsApproval",
+          "Reason" -> "SideEffectishBuiltin",
+          "Unknowns" -> Join[sysSideEffect, sysPure],
+          "ApprovalHeads" -> sysSideEffect|>,
+      True,
+        (* 全て System` 純粋っぽい -> Permit *)
+        <|"Decision" -> "Permit",
+          "Reason" -> "PureSystemBuiltin",
+          "Unknowns" -> sysPure,
+          "ApprovalHeads" -> {}|>
+    ]
+  ];
+iNBClassifyUnknownHeads[_] :=
+  <|"Decision" -> "NeedsApproval", "Reason" -> "Unknown",
+    "Unknowns" -> {}, "ApprovalHeads" -> {}|>;
+
+
+(* ============================================================
+   Phase permission-modes (2026-06-03, spec 5B): EffectClass /
+   ApprovalEligibility / PermissionMode 変換層
+   ============================================================
+   spec 5B.2: heldExpr -> EffectClass -> ApprovalEligibility
+              -> ExecutionPlacement/BlockingRisk -> PermissionMode
+              -> final Decision
+   個別 action 関数 (NBOpenFolderWithApproval 等) を乱立させず、
+   操作の性質 (EffectClass) と環境ポリシー (PermissionMode) の
+   掛け合わせで最終判定を生成する。 *)
+
+(* ---- EffectClass override table (spec 5B.5A) ----
+   ★重要原則: これは allowlist ではない。未登録 head は必ず
+   フォールバック分類へ進む。table は分類精度を上げる任意上書き。
+   Integrate/NIntegrate/Plot 等を全て登録しないと実行できない状態に
+   戻してはならない。 *)
+If[!AssociationQ[$NBEffectClassOverrides],
+  $NBEffectClassOverrides = <|
+    "NIntegrate" -> <|"EffectClass" -> "LongRunningComputation",
+      "BlockingRisk" -> "PossiblyLong",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "NDSolve" -> <|"EffectClass" -> "LongRunningComputation",
+      "BlockingRisk" -> "PossiblyLong",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "NSolve" -> <|"EffectClass" -> "LongRunningComputation",
+      "BlockingRisk" -> "PossiblyLong",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "FindMinimum" -> <|"EffectClass" -> "LongRunningComputation",
+      "BlockingRisk" -> "PossiblyLong",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "FindRoot" -> <|"EffectClass" -> "LongRunningComputation",
+      "BlockingRisk" -> "PossiblyLong",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "Plot" -> <|"EffectClass" -> "GraphicsComputation",
+      "BlockingRisk" -> "PossiblyLongOrLargeResult",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "Plot3D" -> <|"EffectClass" -> "GraphicsComputation",
+      "BlockingRisk" -> "PossiblyLongOrLargeResult",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "ContourPlot" -> <|"EffectClass" -> "GraphicsComputation",
+      "BlockingRisk" -> "PossiblyLongOrLargeResult",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "GraphPlot" -> <|"EffectClass" -> "GraphicsComputation",
+      "BlockingRisk" -> "PossiblyLongOrLargeResult",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "NotebookWrite" -> <|"EffectClass" -> "NotebookMutation",
+      "ExecutionPlacement" -> "MainKernelOnly", "RequiresFinalNode" -> True|>,
+    "SelectionMove" -> <|"EffectClass" -> "NotebookMutation",
+      "ExecutionPlacement" -> "MainKernelOnly", "RequiresFinalNode" -> True|>,
+    "FrontEndExecute" -> <|"EffectClass" -> "FrontEndAction",
+      "ExecutionPlacement" -> "FrontEndRequired", "RequiresFinalNode" -> True|>,
+    "SystemOpen" -> <|"EffectClass" -> "DesktopAction",
+      "ExecutionPlacement" -> "DesktopAction", "RequiresFinalNode" -> True|>,
+    "FileExistsQ" -> <|"EffectClass" -> "ReadOnlyFileSystem",
+      "ExecutionPlacement" -> "FileSystemReadOnly"|>,
+    "FileNames" -> <|"EffectClass" -> "ReadOnlyFileSystem",
+      "ExecutionPlacement" -> "FileSystemReadOnly"|>,
+    "DirectoryQ" -> <|"EffectClass" -> "ReadOnlyFileSystem",
+      "ExecutionPlacement" -> "FileSystemReadOnly"|>,
+    (* 承認 wrapper head (spec 案3-lite): FrontEnd ブロックリスクのある
+       desktop action を表す式。queue 化分岐がこの metadata を見て、
+       承認後に直接実行せず PendingFinalActionQueue へ積む。 *)
+    "NBOpenFolderWithApproval" -> <|"EffectClass" -> "DesktopAction",
+      "BlockingRisk" -> "MayBlockFrontEnd",
+      "ExecutionPlacement" -> "DesktopAction", "RequiresFinalNode" -> True|>,
+    "NBExecuteApprovedAction" -> <|"EffectClass" -> "DesktopAction",
+      "BlockingRisk" -> "MayBlockFrontEnd",
+      "ExecutionPlacement" -> "DesktopAction", "RequiresFinalNode" -> True|>,
+    (* 純粋なパス文字列操作 (ファイルシステムに触れない) は PureComputation。
+       "File"/"Directory" 語幹に該当して副作用誤判定されるのを override で救う。 *)
+    "FileNameJoin" -> <|"EffectClass" -> "PureComputation",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "FileNameSplit" -> <|"EffectClass" -> "PureComputation",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "FileNameTake" -> <|"EffectClass" -> "PureComputation",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "FileNameDrop" -> <|"EffectClass" -> "PureComputation",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "DirectoryName" -> <|"EffectClass" -> "PureComputation",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "FileBaseName" -> <|"EffectClass" -> "PureComputation",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "FileExtension" -> <|"EffectClass" -> "PureComputation",
+      "ExecutionPlacement" -> "SubkernelSafe"|>,
+    "FileNameDepth" -> <|"EffectClass" -> "PureComputation",
+      "ExecutionPlacement" -> "SubkernelSafe"|>
+  |>];
+
+(* ---- EffectClass フォールバック分類 (spec 5B.5A) ----
+   優先順: explicit Deny/Approval/Allowed は呼び出し側で処理済みの想定。
+   ここは「分類層」として head 名+文脈から EffectClass を決める。
+   1. override table
+   2. side-effect stem -> 対応 EffectClass
+   3. System` pure-ish -> PureComputation
+   4. user/package -> UnknownUserCode
+   入力: name (head 名), ctx (文脈文字列)
+   出力: <|"EffectClass" -> _, "ExecutionPlacement" -> _,
+           "BlockingRisk" -> _, "RequiresFinalNode" -> _|> *)
+iNBHeadEffectClass[name_String, ctx_String] :=
+  Module[{ov},
+    (* 1. override table *)
+    ov = Lookup[$NBEffectClassOverrides, name, None];
+    If[AssociationQ[ov],
+      Return[<|
+        "EffectClass" -> Lookup[ov, "EffectClass", "PureComputation"],
+        "ExecutionPlacement" -> Lookup[ov, "ExecutionPlacement", "SubkernelSafe"],
+        "BlockingRisk" -> Lookup[ov, "BlockingRisk", "None"],
+        "RequiresFinalNode" -> TrueQ[Lookup[ov, "RequiresFinalNode", False]]|>]];
+    (* 2-4. フォールバック *)
+    Which[
+      ! iNBIsSystemContextQ[ctx],
+        (* user/package 文脈: 内部不明 *)
+        <|"EffectClass" -> "UnknownUserCode",
+          "ExecutionPlacement" -> "MainKernelOnly",
+          "BlockingRisk" -> "None", "RequiresFinalNode" -> False|>,
+      iNBSideEffectishQ[name],
+        (* System` だが副作用語幹該当: 語幹から EffectClass を推定 *)
+        <|"EffectClass" -> iNBSideEffectStemToClass[name],
+          "ExecutionPlacement" -> "MainKernelOnly",
+          "BlockingRisk" -> "None", "RequiresFinalNode" -> True|>,
+      True,
+        (* System` 純粋 *)
+        <|"EffectClass" -> "PureComputation",
+          "ExecutionPlacement" -> "SubkernelSafe",
+          "BlockingRisk" -> "None", "RequiresFinalNode" -> False|>
+    ]
+  ];
+iNBHeadEffectClass[name_String] := iNBHeadEffectClass[name, "System`"];
+
+(* 副作用語幹から EffectClass を推定 (spec 5B.5 のカテゴリへマップ)。
+   破壊的・外部・ネットワークは明示 Deny で既に弾かれている前提だが、
+   万一フォールバックに来た場合も安全側 EffectClass に倒す。 *)
+iNBSideEffectStemToClass[name_String] :=
+  Which[
+    StringContainsQ[name, "Notebook"] || StringContainsQ[name, "Cell"],
+      "NotebookMutation",
+    StringContainsQ[name, "FrontEnd"] || StringContainsQ[name, "Dialog"],
+      "FrontEndAction",
+    StringContainsQ[name, "URL"] || StringContainsQ[name, "Socket"] ||
+      StringContainsQ[name, "HTTP"] || StringContainsQ[name, "Connect"] ||
+      StringContainsQ[name, "Send"] || StringContainsQ[name, "Submit"],
+      "NetworkAccess",
+    StringContainsQ[name, "Library"] || StringContainsQ[name, "Link"] ||
+      StringContainsQ[name, "Install"] || StringContainsQ[name, "External"],
+      "LibraryOrLinkLoading",
+    StringContainsQ[name, "Delete"] || StringContainsQ[name, "Remove"],
+      "DestructiveFileSystem",
+    StringContainsQ[name, "Write"] || StringContainsQ[name, "Export"] ||
+      StringContainsQ[name, "Save"] || StringContainsQ[name, "Create"] ||
+      StringContainsQ[name, "Put"],
+      "FileSystemWrite",
+    StringContainsQ[name, "Open"] || StringContainsQ[name, "Run"] ||
+      StringContainsQ[name, "Start"] || StringContainsQ[name, "Launch"] ||
+      StringContainsQ[name, "Process"],
+      "DesktopAction",
+    True, "FrontEndAction"  (* 残りは要承認の副作用扱い *)
+  ];
+
+(* ---- EffectClass -> 既定 ApprovalEligibility (spec 5B.5 テーブル) ----
+   既定値。policy で上書きされ得るが P0.5 では固定マップ。 *)
+$iNBEffectClassEligibility = <|
+  "PureComputation" -> "AutoPermit",
+  "LongRunningComputation" -> "AutoPermit",
+  "GraphicsComputation" -> "AutoPermit",
+  "ReadOnlyFileSystem" -> "AutoPermit",
+  "NotebookMutation" -> "AskUserAllowed",
+  "FrontEndAction" -> "AskUserAllowed",
+  "DesktopAction" -> "AskUserAllowed",
+  "ExternalProcess" -> "HardDeny",
+  "NetworkAccess" -> "HardDeny",
+  "FileSystemWrite" -> "AskUserAllowed",
+  "DestructiveFileSystem" -> "HardDeny",
+  "LibraryOrLinkLoading" -> "HardDeny",
+  "KernelControl" -> "HardDeny",
+  "UnknownUserCode" -> "AskUserAllowed",
+  "MalformedExpression" -> "RepairRequired"
+|>;
+iNBEffectClassToEligibility[ec_String] :=
+  Lookup[$iNBEffectClassEligibility, ec, "AskUserAllowed"];
+
+(* ---- ApprovalEligibility の厳しさ順 (合成用) ----
+   複数 head の EffectClass を集約する際、最も厳しい eligibility を採る。
+   HardDeny > RepairRequired > AskUserAllowed > AutoPermit *)
+iNBEligibilityRank["HardDeny"] = 4;
+iNBEligibilityRank["RepairRequired"] = 3;
+iNBEligibilityRank["AskUserAllowed"] = 2;
+iNBEligibilityRank["AutoPermit"] = 1;
+iNBEligibilityRank[_] = 2;
+
+(* EffectClass の specificity (代表選択の第2キー)。
+   PureComputation が最も汎用 (どんな式にも現れる Sin/List/Plus 等) なので
+   最低位とし、より具体的・特徴的な EffectClass を代表に採る。
+   eligibility 同率時に「Plot を含む式の代表は GraphicsComputation」と
+   なるようにするためのもの。 *)
+iNBEffectClassSpecificity["PureComputation"] = 0;
+iNBEffectClassSpecificity["ReadOnlyFileSystem"] = 1;
+iNBEffectClassSpecificity["GraphicsComputation"] = 2;
+iNBEffectClassSpecificity["LongRunningComputation"] = 3;
+iNBEffectClassSpecificity[_] = 5;  (* 副作用系・unknown 等はより特徴的 *)
+
+(* ---- PermissionMode 変換 (spec 5B.4) ----
+   ApprovalEligibility × PermissionMode -> final Decision + metadata。
+   返り値: <|"Decision" -> _, "ExecutionDisposition" -> _,
+            "AllowApprovalUI" -> _, "MayExecute" -> _|>
+   mode は accessSpec["PermissionMode"] (I12: global を読み直さない)。 *)
+iNBApplyPermissionMode[eligibility_String, mode_String] :=
+  Module[{m = mode, e = eligibility},
+    Switch[m,
+      "ReviewOnly",
+        (* 提案だけ。AutoPermit も含め実行しない。承認 UI も出さない。 *)
+        Switch[e,
+          "HardDeny", <|"Decision" -> "Deny",
+            "ExecutionDisposition" -> "Blocked",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>,
+          "RepairRequired", <|"Decision" -> "RepairNeeded",
+            "ExecutionDisposition" -> "Repair",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>,
+          _, <|"Decision" -> "NeedsApproval",
+            "ExecutionDisposition" -> "ReviewOnly",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>],
+      "StrictSafe",
+        (* AutoPermit のみ実行。AskUserAllowed は承認ボタンを出さず拒否。 *)
+        Switch[e,
+          "AutoPermit", <|"Decision" -> "Permit",
+            "ExecutionDisposition" -> "Execute",
+            "AllowApprovalUI" -> False, "MayExecute" -> True|>,
+          "RepairRequired", <|"Decision" -> "RepairNeeded",
+            "ExecutionDisposition" -> "Repair",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>,
+          _, <|"Decision" -> "Deny",
+            "ExecutionDisposition" -> "Blocked",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>],
+      "WorkflowSafe",
+        (* safe node は自動、final node 相当 (AskUserAllowed) は承認 +
+           RequiresFinalNode。HardDeny は Deny。 *)
+        Switch[e,
+          "AutoPermit", <|"Decision" -> "Permit",
+            "ExecutionDisposition" -> "Execute",
+            "AllowApprovalUI" -> False, "MayExecute" -> True|>,
+          "AskUserAllowed", <|"Decision" -> "NeedsApproval",
+            "ExecutionDisposition" -> "FinalNode",
+            "AllowApprovalUI" -> True, "MayExecute" -> False|>,
+          "HardDeny", <|"Decision" -> "Deny",
+            "ExecutionDisposition" -> "Blocked",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>,
+          _, <|"Decision" -> "RepairNeeded",
+            "ExecutionDisposition" -> "Repair",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>],
+      "DangerFullAccess",
+        (* HardDeny は別フラグなしには Deny のまま (spec 5B.4)。 *)
+        Switch[e,
+          "AutoPermit", <|"Decision" -> "Permit",
+            "ExecutionDisposition" -> "Execute",
+            "AllowApprovalUI" -> False, "MayExecute" -> True|>,
+          "AskUserAllowed", <|"Decision" -> "Permit",
+            "ExecutionDisposition" -> "Execute",
+            "AllowApprovalUI" -> True, "MayExecute" -> True|>,
+          "HardDeny",
+            If[TrueQ[$ClaudeAllowHardDenyOverride],
+              <|"Decision" -> "NeedsApproval",
+                "ExecutionDisposition" -> "FinalNode",
+                "AllowApprovalUI" -> True, "MayExecute" -> False|>,
+              <|"Decision" -> "Deny",
+                "ExecutionDisposition" -> "Blocked",
+                "AllowApprovalUI" -> False, "MayExecute" -> False|>],
+          _, <|"Decision" -> "RepairNeeded",
+            "ExecutionDisposition" -> "Repair",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>],
+      (* InteractiveSafe / LegacyInteractive (標準) *)
+      _,
+        Switch[e,
+          "AutoPermit", <|"Decision" -> "Permit",
+            "ExecutionDisposition" -> "Execute",
+            "AllowApprovalUI" -> False, "MayExecute" -> True|>,
+          "AskUserAllowed", <|"Decision" -> "NeedsApproval",
+            "ExecutionDisposition" -> "Interactive",
+            "AllowApprovalUI" -> True, "MayExecute" -> False|>,
+          "HardDeny", <|"Decision" -> "Deny",
+            "ExecutionDisposition" -> "Blocked",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>,
+          _, <|"Decision" -> "RepairNeeded",
+            "ExecutionDisposition" -> "Repair",
+            "AllowApprovalUI" -> False, "MayExecute" -> False|>]
+    ]
+  ];
+iNBApplyPermissionMode[e_String] :=
+  iNBApplyPermissionMode[e, "InteractiveSafe"];
+
+
+
 (* sanitize: \:6587\:5b57\:5217\:30ea\:30c6\:30e9\:30eb\:3092\:4f0f\:305b\:308b *)
 iSanitizeExpr[heldExpr_] :=
   Replace[heldExpr,
@@ -5948,13 +6905,24 @@ iSanitizeExpr[heldExpr_] :=
     {2, Infinity}];
 
 (* confidential leak \:7c21\:6613\:30c1\:30a7\:30c3\:30af *)
+(* Phase A0-1 fix: $NBConfidentialSymbols \:306f Association \:306a\:306e\:3067
+   \:65e7\:5b9f\:88c5\:306e ListQ \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:3060\:3068\:5e38\:306b {} \:306b\:306a\:308a\:7121\:52b9\:3060\:3063\:305f\:3002
+   \:307e\:305f AnyTrue \:304c Association \:306e values \:3092\:8d70\:67fb\:3057\:3066\:3057\:307e\:3046\:305f\:3081\:3001
+   \:30b7\:30f3\:30dc\:30eb\:540d (keys) \:3067\:7167\:5408\:3059\:308b\:3088\:3046\:4fee\:6b63\:3059\:308b\:3002
+   snapshot mode \:3067\:306f accessSpec[\"ConfidentialSymbols\"] \:306b
+   snapshot \:7531\:6765\:5024\:304c\:6ce8\:5165\:3055\:308c\:3066\:6e21\:308b (\:30b7\:30b0\:30cd\:30c1\:30e3\:306f\:5909\:3048\:306a\:3044)\:3002 *)
 iContainsConfidentialLeak[heldExpr_, accessSpec_Association] :=
-  Module[{confSyms, exprStr},
-    confSyms = Lookup[accessSpec, "ConfidentialSymbols",
-      If[ListQ[$NBConfidentialSymbols], $NBConfidentialSymbols, {}]];
-    If[Length[confSyms] === 0, Return[False]];
+  Module[{raw, confNames, exprStr},
+    raw = Lookup[accessSpec, "ConfidentialSymbols", $NBConfidentialSymbols];
+    confNames = Which[
+      AssociationQ[raw], ToString /@ Keys[raw],
+      ListQ[raw],        ToString /@ raw,
+      True,              {}
+    ];
+    confNames = DeleteDuplicates @ Select[confNames, StringLength[#] > 0 &];
+    If[Length[confNames] === 0, Return[False]];
     exprStr = ToString[heldExpr, InputForm];
-    AnyTrue[confSyms, StringContainsQ[exprStr, ToString[#]] &]
+    AnyTrue[confNames, StringContainsQ[exprStr, #] &]
   ];
 
 (* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
@@ -6002,32 +6970,1325 @@ iExtractGlobalSets[_] := {};
    Phase 7: NBExecuteHeldExpr
    \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
-Options[NBExecuteHeldExpr] = {"TimeConstraint" -> 30};
+Options[NBExecuteHeldExpr] = {
+  "TimeConstraint" -> 30,
+  "ScreenMode" -> "Block",
+  "PolicySnapshot" -> Automatic,
+  "PreExecutionNotebookActions" -> {},
+  "Audit" -> True,
+  "ApprovalMode" -> "None"};
 
-NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
-  Module[{result, timeout},
-    If[!MatchQ[heldExpr, HoldComplete[_]],
-      Return[<|"Success" -> False, "RawResult" -> None,
-        "Error" -> "Invalid HoldComplete expression"|>]];
-    timeout = OptionValue["TimeConstraint"];
-    (* Phase 30 (2026-05-13) fix: Trap #16 \:5bfe\:5fdc\:3002
-       Quiet @ Check[expr, $Failed] \:306f\:7121\:5bb3\:306a\:30e1\:30c3\:30bb\:30fc\:30b8 (\:4f8b: General::stop)
-       \:3067\:3082 $Failed \:3092\:8fd4\:3057\:3066\:5b9f\:884c\:3092\:6253\:3061\:5207\:3063\:3066\:3057\:307e\:3046\:30d0\:30b0\:3002
-       Check \:3092\:524a\:9664\:3057\:3001Quiet \:306e\:307f\:3067\:30e1\:30c3\:30bb\:30fc\:30b8\:3092\:6291\:5236\:3059\:308b\:3002 *)
-    result = Quiet[
-      TimeConstrained[
-        ReleaseHold[heldExpr],
-        timeout,
-        $TimedOut]];
-    If[result === $TimedOut,
-      <|"Success" -> False, "RawResult" -> None,
-        "HeldExpr" -> heldExpr,
-        "Error" -> "Execution timed out after " <> ToString[timeout] <> "s"|>,
-      <|"Success" -> True, "RawResult" -> result,
-        "HeldExpr" -> heldExpr,
-        "Error" -> None|>
+(* ============================================================
+   Phase C-1: 実行前再検証 helper (main / subkernel \:5171\:7528)
+   ============================================================ *)
+
+(* snapshot \:30aa\:30d7\:30b7\:30e7\:30f3\:5024\:3092 NBValidateHeldExpr \:7528\:306b\:6b63\:898f\:5316\:3059\:308b\:3002
+   Automatic / None \:306f None \:6271\:3044 (non-snapshot mode)\:3001
+   Association \:306f\:305d\:306e\:307e\:307e snapshot mode\:3002 *)
+iNBResolveExecSnapshot[snapOpt_] :=
+  Which[
+    AssociationQ[snapOpt], snapOpt,
+    True, None
+  ];
+
+(* P0 \:6697\:5b9a\:627f\:8a8d\:30e2\:30fc\:30c9 (Committer) \:3067 NeedsApproval \:3092\:5b9f\:884c\:53ef\:306b\:6607\:683c\:3067\:304d\:308b\:304b\:5224\:5b9a\:3002
+   spec 4.8 \:633a\:52d5 6-7 / 17.6: \:81ea\:52d5 commit \:4e92\:63db\:7dad\:6301\:306e\:305f\:3081\:306e\:660e\:793a\:627f\:8a8d\:30e2\:30fc\:30c9\:3002
+   \:6b21\:3092\:3059\:3079\:3066\:6e80\:305f\:3059\:5834\:5408\:306e\:307f True:
+   - ApprovalMode === "CommitterAutoApprove"
+   - accessSpec[\"ExecutionRole\"] === "Committer"
+   - accessSpec[\"MayWriteNotebook\"] === True
+   - accessSpec[\"ExecutionKernel\"] === "MainOnly"
+   - accessSpec[\"TargetNotebook\"] \:304c NotebookObject (\:66f8\:304d\:8fbc\:307f\:5148\:306e\:660e\:793a)
+   - \:627f\:8a8d\:3092\:8981\:3057\:305f head \:304c\:3059\:3079\:3066\:81ea\:52d5\:627f\:8a8d\:53ef\:80fd head (= snapshot/global \:306e
+     ApprovalHeads \:306b\:5165\:308b\:66f8\:304d\:8fbc\:307f\:7cfb head) \:306b\:9650\:3089\:308c\:308b\:3002
+     Deny head \:306f NeedsApproval \:3088\:308a\:5148\:306b Deny \:5224\:5b9a\:3055\:308c\:308b\:306e\:3067\:3053\:3053\:306b\:306f\:5165\:3089\:306a\:3044\:3002 *)
+iNBCommitterAutoApproveQ[validation_Association, accessSpec_Association,
+    approvalMode_String] :=
+  Module[{approvalHeads},
+    If[approvalMode =!= "CommitterAutoApprove", Return[False]];
+    If[Lookup[accessSpec, "ExecutionRole", None] =!= "Committer", Return[False]];
+    If[! TrueQ[Lookup[accessSpec, "MayWriteNotebook", False]], Return[False]];
+    If[Lookup[accessSpec, "ExecutionKernel", None] =!= "MainOnly", Return[False]];
+    If[! MatchQ[Lookup[accessSpec, "TargetNotebook", None], _NotebookObject],
+      Return[False]];
+    (* \:627f\:8a8d\:3092\:8981\:3057\:305f head \:30ea\:30b9\:30c8\:3002\:7a7a\:306a\:3089 (NeedsApproval \:3060\:304c head \:4e0d\:660e) \:662f\:8a8d\:3057\:306a\:3044\:3002 *)
+    approvalHeads = Lookup[validation, "ApprovalHeads", {}];
+    If[! ListQ[approvalHeads] || Length[approvalHeads] === 0, Return[False]];
+    (* \:5168 head \:304c\:81ea\:52d5\:627f\:8a8d\:53ef\:80fd head \:304b\:3002\:81ea\:52d5\:627f\:8a8d\:53ef\:80fd head \:96c6\:5408\:306f
+       \:73fe\:884c\:306e ApprovalHeads (\:66f8\:304d\:8fbc\:307f\:7cfb + NotebookWrite) \:3068\:3059\:308b\:3002 *)
+    AllTrue[approvalHeads,
+      MemberQ[If[ListQ[$NBApprovalHeads], $NBApprovalHeads, {}], #] &]
+  ];
+
+(* \:5b9f\:884c\:53ef\:5426\:3092\:5224\:5b9a\:3059\:308b\:3002NBValidateHeldExpr \:3092\:547c\:3073\:3001
+   Decision \:3068 ScreenMode / ApprovalMode \:3092\:8003\:616e\:3057\:3066
+   <|\"Permit\" -> True|False, \"Decision\" -> _, \"ReasonClass\" -> _,
+     \"VisibleExplanation\" -> _, \"ScreenWarnOnly\" -> True|False,
+     \"CommitterAutoApproved\" -> True|False|> \:3092\:8fd4\:3059\:3002 *)
+iNBExecPermitCheck[heldExpr_, accessSpec_Association, snapshot_,
+    screenMode_String, approvalMode_String] :=
+  Module[{validation, decision},
+    validation = If[snapshot === None,
+      NBValidateHeldExpr[heldExpr, accessSpec],
+      NBValidateHeldExpr[heldExpr, accessSpec, "PolicySnapshot" -> snapshot]];
+    decision = Lookup[validation, "Decision", "Deny"];
+    Which[
+      decision === "Permit",
+        <|"Permit" -> True, "Decision" -> "Permit",
+          "ReasonClass" -> "None", "VisibleExplanation" -> "",
+          "ScreenWarnOnly" -> False, "CommitterAutoApproved" -> False|>,
+      decision === "Screen",
+        (* Screen: \:65e2\:5b9a Block\:3002WarnOnly \:306e\:3068\:304d\:306e\:307f\:5b9f\:884c\:8a31\:53ef *)
+        If[screenMode === "WarnOnly",
+          <|"Permit" -> True, "Decision" -> "Screen",
+            "ReasonClass" -> Lookup[validation, "ReasonClass", "Screen"],
+            "VisibleExplanation" -> Lookup[validation, "VisibleExplanation", ""],
+            "ScreenWarnOnly" -> True, "CommitterAutoApproved" -> False|>,
+          <|"Permit" -> False, "Decision" -> "Screen",
+            "ReasonClass" -> Lookup[validation, "ReasonClass", "Screen"],
+            "VisibleExplanation" -> Lookup[validation, "VisibleExplanation", ""],
+            "ScreenWarnOnly" -> False, "CommitterAutoApproved" -> False|>],
+      decision === "NeedsApproval",
+        (* NeedsApproval の Permit 昇格は次の 2 モードのみ:
+           1. UserApproved: ユーザーが承認 UI で明示承認した一般ケース。
+              Committer 制約なしで NeedsApproval を Permit に昇格する。
+              Deny は decision が "Deny" でここに来ないため、昇格対象は
+              Approval head / unknown head に限られ安全 (spec 5A.9)。
+           2. CommitterAutoApprove: directLLM rescue 等の自動 commit 互換 (D-3)。
+              Committer ロール + TargetNotebook 一致 + 承認 head 全書込系のみ。 *)
+        Which[
+          approvalMode === "UserApproved",
+            <|"Permit" -> True, "Decision" -> "NeedsApproval",
+              "ReasonClass" -> Lookup[validation, "ReasonClass", "AccessEscalationRequired"],
+              "VisibleExplanation" -> Lookup[validation, "VisibleExplanation", ""],
+              "ScreenWarnOnly" -> False, "CommitterAutoApproved" -> False,
+              "UserApproved" -> True|>,
+          iNBCommitterAutoApproveQ[validation, accessSpec, approvalMode],
+            <|"Permit" -> True, "Decision" -> "NeedsApproval",
+              "ReasonClass" -> Lookup[validation, "ReasonClass", "AccessEscalationRequired"],
+              "VisibleExplanation" -> Lookup[validation, "VisibleExplanation", ""],
+              "ScreenWarnOnly" -> False, "CommitterAutoApproved" -> True,
+              "UserApproved" -> False|>,
+          True,
+            <|"Permit" -> False, "Decision" -> "NeedsApproval",
+              "ReasonClass" -> Lookup[validation, "ReasonClass", "AccessEscalationRequired"],
+              "VisibleExplanation" -> Lookup[validation, "VisibleExplanation", ""],
+              "ScreenWarnOnly" -> False, "CommitterAutoApproved" -> False,
+              "UserApproved" -> False|>],
+      True, (* Deny / RepairNeeded *)
+        <|"Permit" -> False, "Decision" -> decision,
+          "ReasonClass" -> Lookup[validation, "ReasonClass", "Denied"],
+          "VisibleExplanation" -> Lookup[validation, "VisibleExplanation", ""],
+          "ScreenWarnOnly" -> False, "CommitterAutoApproved" -> False|>
     ]
   ];
+
+(* ============================================================
+   Phase C-2: PreExecutionNotebookActions \:691c\:8a3c\:30fb\:5b9f\:884c
+   ============================================================ *)
+
+(* \:5358\:4e00 action \:304c\:5b9f\:884c\:8a31\:53ef\:304b\:3092\:5224\:5b9a\:3059\:308b\:3002
+   P0 \:3067\:5fc5\:9808\:306e action \:306f "MoveSelectionAfterNotebook" \:306e\:307f\:3002 *)
+iNBNotebookPreActionAllowedQ[action_Association, accessSpec_Association] :=
+  Module[{name, allowed, mayFE, mayWrite, kernel, nb, targetNb},
+    name = Lookup[action, "Action", None];
+    allowed = Lookup[accessSpec, "AllowedNotebookActions", {}];
+    mayFE = Lookup[accessSpec, "MayUseFrontEnd", False];
+    mayWrite = Lookup[accessSpec, "MayWriteNotebook", False];
+    kernel = Lookup[accessSpec, "ExecutionKernel", "MainOnly"];
+    (* action \:540d\:304c allowlist \:306b\:3042\:308b\:304b *)
+    If[! MemberQ[allowed, name], Return[False]];
+    (* \:6a29\:9650\:30d5\:30e9\:30b0 *)
+    If[! TrueQ[mayFE], Return[False]];
+    If[! TrueQ[mayWrite], Return[False]];
+    If[kernel =!= "MainOnly", Return[False]];
+    (* action \:56fa\:6709\:306e\:691c\:8a3c *)
+    Which[
+      name === "MoveSelectionAfterNotebook",
+        nb = Lookup[action, "Notebook", None];
+        targetNb = Lookup[accessSpec, "TargetNotebook", None];
+        (* NotebookObject \:304c target \:3068\:4e00\:81f4\:3059\:308b\:3053\:3068\:3002
+           target \:672a\:6307\:5b9a\:306e\:5834\:5408\:306f NotebookObject \:3067\:3042\:308b\:3053\:3068\:3060\:3051\:78ba\:8a8d\:3002 *)
+        If[targetNb =!= None,
+          MatchQ[nb, _NotebookObject] && nb === targetNb,
+          MatchQ[nb, _NotebookObject]],
+      True, False
+    ]
+  ];
+
+iNBNotebookPreActionAllowedQ[_, _] := False;
+
+(* actions \:30ea\:30b9\:30c8\:3092\:691c\:8a3c\:3057\:3001\:8a31\:53ef\:3055\:308c\:305f\:3082\:306e\:3060\:3051\:8fd4\:3059\:3002 *)
+NBValidateNotebookPreActions[actions_List, accessSpec_Association] :=
+  Select[actions, iNBNotebookPreActionAllowedQ[#, accessSpec] &];
+NBValidateNotebookPreActions[_, _] := {};
+
+(* \:691c\:8a3c\:6e08\:307f action \:3092\:5b9f\:884c\:3059\:308b (ReleaseHold \:76f4\:524d\:306b\:547c\:3076)\:3002
+   \:5b9f\:884c\:3057\:305f action \:540d\:306e\:30ea\:30b9\:30c8\:3092\:8fd4\:3059\:3002 *)
+iNBRunNotebookPreActions[validatedActions_List] :=
+  Module[{executed = {}},
+    Do[
+      Module[{name = Lookup[action, "Action", None], nb},
+        Which[
+          name === "MoveSelectionAfterNotebook",
+            nb = Lookup[action, "Notebook", None];
+            If[MatchQ[nb, _NotebookObject],
+              Quiet[SelectionMove[nb, After, Notebook]];
+              executed = Append[executed, name]],
+          True, Null
+        ]],
+      {action, validatedActions}];
+    executed
+  ];
+
+NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
+  Module[{result, timeout, screenMode, snapshot, approvalMode, audit,
+          permitCheck, preActions, validatedPreActions, executedPreActions = {}},
+    If[!MatchQ[heldExpr, HoldComplete[_]],
+      Return[<|"Success" -> False, "Decision" -> "Deny",
+        "RawResult" -> None, "HeldExpr" -> heldExpr,
+        "Error" -> "Invalid HoldComplete expression", "AuditID" -> None|>]];
+
+    timeout      = OptionValue["TimeConstraint"];
+    screenMode   = OptionValue["ScreenMode"];
+    approvalMode = OptionValue["ApprovalMode"];
+    audit        = OptionValue["Audit"];
+    snapshot     = iNBResolveExecSnapshot[OptionValue["PolicySnapshot"]];
+    preActions   = OptionValue["PreExecutionNotebookActions"];
+
+    (* I2: \:5b9f\:884c\:524d\:306b\:5fc5\:305a\:518d\:691c\:8a3c\:3002Permit \:4ee5\:5916\:306f\:5b9f\:884c\:3057\:306a\:3044\:3002 *)
+    permitCheck = iNBExecPermitCheck[heldExpr, accessSpec, snapshot,
+      screenMode, approvalMode];
+    If[! TrueQ[permitCheck["Permit"]],
+      Return[<|"Success" -> False,
+        "Decision" -> permitCheck["Decision"],
+        "RawResult" -> None,
+        "HeldExpr" -> heldExpr,
+        "Error" -> "Execution refused: " <> permitCheck["Decision"] <>
+          " (" <> ToString[permitCheck["ReasonClass"]] <> ")",
+        "AuditID" -> None|>]];
+
+    (* C-2: pre-actions \:691c\:8a3c\:2192\:5b9f\:884c (ReleaseHold \:76f4\:524d)\:3002
+       \:5b9f\:884c\:9806\:5e8f: NBValidateHeldExpr \:2192 \:691c\:8a3c\:2192 pre-actions \:2192 ReleaseHold *)
+    validatedPreActions = If[ListQ[preActions] && Length[preActions] > 0,
+      NBValidateNotebookPreActions[preActions, accessSpec], {}];
+    If[Length[validatedPreActions] > 0,
+      executedPreActions = iNBRunNotebookPreActions[validatedPreActions]];
+
+    (* Phase 30 fix Trap #16: Check \:3092\:4f7f\:308f\:305a Quiet \:306e\:307f\:3002
+       Trap (Infinity): TimeConstraint === Infinity \:306f TimeConstrained \:3092
+       \:4f7f\:308f\:305a\:76f4\:63a5 ReleaseHold (timc \:30e1\:30c3\:30bb\:30fc\:30b8\:56de\:907f)\:3002 *)
+    result = If[timeout === Infinity,
+      Quiet[ReleaseHold[heldExpr]],
+      Quiet[TimeConstrained[ReleaseHold[heldExpr], timeout, $TimedOut]]
+    ];
+
+    If[result === $TimedOut,
+      <|"Success" -> False,
+        "Decision" -> permitCheck["Decision"],
+        "RawResult" -> None,
+        "HeldExpr" -> heldExpr,
+        "Error" -> "Execution timed out after " <> ToString[timeout] <> "s",
+        "AuditID" -> None|>,
+      (* 承認 wrapper context 修正 (2026-06-03): ReleaseHold の結果が
+         未解決の承認 wrapper (Global` 等の NBOpenFolderWithApproval[...])
+         なら、実行できていないので Success 扱いにしない。 *)
+      If[iNBUnresolvedApprovalWrapperQ[HoldComplete[result]],
+        <|"Success" -> False, "Decision" -> "Deny",
+          "RawResult" -> result, "HeldExpr" -> heldExpr,
+          "ReasonClass" -> "UnresolvedApprovalWrapperSymbol",
+          "Error" -> "Approval wrapper did not resolve to NBAccess` symbol",
+          "AuditID" -> None|>,
+      <|"Success" -> True,
+        "Decision" -> permitCheck["Decision"],
+        "RawResult" -> result,
+        "HeldExpr" -> heldExpr,
+        "Error" -> None,
+        "AuditID" -> None,
+        "ScreenWarnOnlyExecuted" -> TrueQ[permitCheck["ScreenWarnOnly"]],
+        "CommitterAutoApproveExecuted" ->
+          TrueQ[permitCheck["CommitterAutoApproved"]],
+        "ExecutedPreActions" -> executedPreActions|>
+    ]]
+  ];
+
+(* ============================================================
+   Phase frontend-blocking-queue (2026-06-03, 承認 wrapper context 修正):
+   NBTryExecuteFinalActionHeld / iNBUnresolvedApprovalWrapperQ
+   ============================================================
+   問題: LLM が生成した NBOpenFolderWithApproval[...] が Global` など
+   NBAccess` 以外の context のシンボルとして保存され、ReleaseHold しても
+   未定義 → 未評価式のまま返り SystemOpen に到達しない。
+   NBValidateHeldExpr は head 名を文字列照合するので承認 UI は出るが、
+   実行時に context が違うと定義に届かない。
+   対策: head の context に依存せず SymbolName で承認 wrapper を検出し、
+   引数パスを安全評価して OpenDesktopItem action へ正規化、
+   NBExecuteApprovedAction 経由 (NBAccess 内部 executor) で実行する。 *)
+
+(* head が NBAccess` 以外の context の未解決承認 wrapper か判定。
+   評価を挟まないよう Extract で head を取り出す。 *)
+iNBUnresolvedApprovalWrapperQ[heldResult_HoldComplete] :=
+  Module[{nm, ctx},
+    (* heldResult = HoldComplete[expr]。expr が f[___] 形か *)
+    If[!MatchQ[heldResult, HoldComplete[_[___]]], Return[False]];
+    nm = Quiet @ Check[Extract[heldResult, {1, 0}, SymbolName], ""];
+    ctx = Quiet @ Check[Extract[heldResult, {1, 0}, Context], ""];
+    MemberQ[{"NBOpenFolderWithApproval", "NBExecuteApprovedAction"}, nm] &&
+      ctx =!= "NBAccess`"
+  ];
+iNBUnresolvedApprovalWrapperQ[_] := False;
+
+(* held = HoldComplete[ <anyContext>`NBOpenFolderWithApproval[pathExpr] ] を
+   context 非依存に検出し OpenDesktopItem action へ正規化して実行。
+   対象外なら <|"Handled" -> False|>。 *)
+Options[NBTryExecuteFinalActionHeld] = {"ApprovalMode" -> "UserApproved"};
+NBTryExecuteFinalActionHeld[held_HoldComplete, accessSpec_Association,
+    opts:OptionsPattern[]] :=
+  Module[{nm, pathHeld, pathResult, path, action, execResult, approvalMode},
+    approvalMode = OptionValue["ApprovalMode"];
+    (* head が f[___] 形でなければ対象外 *)
+    If[!MatchQ[held, HoldComplete[_[___]]],
+      Return[<|"Handled" -> False|>]];
+    (* head 名を評価せず取得 (context 非依存) *)
+    nm = Quiet @ Check[Extract[held, {1, 0}, SymbolName], ""];
+    If[nm =!= "NBOpenFolderWithApproval",
+      Return[<|"Handled" -> False|>]];
+    (* 第 1 引数を評価せず取り出す: HoldComplete[pathExpr] *)
+    pathHeld = Quiet @ Check[Extract[held, {1, 1}, HoldComplete], $Failed];
+    If[pathHeld === $Failed || !MatchQ[pathHeld, HoldComplete[_]],
+      Return[<|"Handled" -> True, "Success" -> False,
+        "Decision" -> "Deny",
+        "ReasonClass" -> "InvalidFinalActionArguments"|>]];
+    (* path 式を安全評価 (FrontEnd なし・書込なし・短 timeout) *)
+    pathResult = NBExecuteHeldExpr[pathHeld,
+      Join[accessSpec, <|"ExecutionRole" -> "ProposalEval",
+        "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False|>],
+      "ApprovalMode" -> "UserApproved", "TimeConstraint" -> 10];
+    If[!TrueQ[Lookup[pathResult, "Success", False]],
+      Return[Append[pathResult, "Handled" -> True]]];
+    path = Lookup[pathResult, "RawResult", None];
+    (* OpenDesktopItem action へ正規化 *)
+    action = <|"Action" -> "OpenDesktopItem", "TargetType" -> "Folder",
+      "Path" -> path|>;
+    execResult = NBExecuteApprovedAction[action, accessSpec,
+      "ApprovalMode" -> approvalMode];
+    Append[execResult, "Handled" -> True]
+  ];
+NBTryExecuteFinalActionHeld[_, _, ___] := <|"Handled" -> False|>;
+
+(* held = HoldComplete[<anyContext>`NBOpenFolderWithApproval[pathExpr]] から、
+   SystemOpen を呼ばずにパスを安全解決し検証だけ行う。
+   承認ボタン本体 (メインカーネル評価コンテキスト) が、この検証済みパスに対して
+   raw SystemOpen を直接呼ぶために使う。
+   SystemOpen は SessionSubmit/ScheduledTask 系では効かず、メインカーネルの
+   トップレベル評価でのみ効くため、実行はここでは行わず呼び出し側に委ねる。
+   返り値: <|"IsDesktopAction"->True/False, "Validated"->.., "Path"->.., ...|> *)
+NBResolveDesktopActionPath[held_HoldComplete, accessSpec_Association] :=
+  Module[{nm, pathHeld, pathResult, path, action, validation},
+    If[!MatchQ[held, HoldComplete[_[___]]],
+      Return[<|"IsDesktopAction" -> False|>]];
+    nm = Quiet @ Check[Extract[held, {1, 0}, SymbolName], ""];
+    If[nm =!= "NBOpenFolderWithApproval",
+      Return[<|"IsDesktopAction" -> False|>]];
+    pathHeld = Quiet @ Check[Extract[held, {1, 1}, HoldComplete], $Failed];
+    If[pathHeld === $Failed || !MatchQ[pathHeld, HoldComplete[_]],
+      Return[<|"IsDesktopAction" -> True, "Validated" -> False,
+        "ReasonClass" -> "InvalidFinalActionArguments"|>]];
+    (* path 式を安全評価 (FrontEnd なし・書込なし・短 timeout) *)
+    pathResult = NBExecuteHeldExpr[pathHeld,
+      Join[accessSpec, <|"ExecutionRole" -> "ProposalEval",
+        "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False|>],
+      "ApprovalMode" -> "UserApproved", "TimeConstraint" -> 10];
+    If[!TrueQ[Lookup[pathResult, "Success", False]],
+      Return[<|"IsDesktopAction" -> True, "Validated" -> False,
+        "ReasonClass" -> "PathEvaluationFailed",
+        "PathResult" -> pathResult|>]];
+    path = Lookup[pathResult, "RawResult", None];
+    (* OpenDesktopItem として検証 (実行はしない)。違反は HardDeny を返す。 *)
+    action = <|"Action" -> "OpenDesktopItem", "TargetType" -> "Folder",
+      "Path" -> path|>;
+    validation = NBValidateAction[action, accessSpec];
+    If[Lookup[validation, "Decision", "Deny"] === "Deny" ||
+       Lookup[validation, "ApprovalEligibility", "HardDeny"] === "HardDeny",
+      Return[<|"IsDesktopAction" -> True, "Validated" -> False,
+        "ReasonClass" -> Lookup[validation, "ReasonClass", "ValidationDenied"],
+        "VisibleExplanation" -> Lookup[validation, "VisibleExplanation", ""],
+        "Path" -> path|>]];
+    (* 承認済み (UserApproved) なら NeedsApproval は許容。検証 OK。 *)
+    <|"IsDesktopAction" -> True, "Validated" -> True, "Path" -> path,
+      "Action" -> action|>
+  ];
+NBResolveDesktopActionPath[_, _] := <|"IsDesktopAction" -> False|>;
+
+
+(* ============================================================
+   Phase C-3: NBSubkernelExecutableQ / NBExecuteHeldExprSubkernelRaw
+   ============================================================ *)
+
+(* subkernel \:3078\:9001\:308c\:308b\:526f\:4f5c\:7528\:5019\:88dc head\:3002
+   \:3053\:308c\:3089\:3092\:542b\:3080\:5f0f\:306f subkernel \:5b9f\:884c\:4e0d\:53ef (RawResult \:304c kernel \:9593\:3092\:8de8\:3050\:30ea\:30b9\:30af)\:3002 *)
+$iNBSubkernelForbiddenHeads = {
+  "NotebookWrite", "SelectionMove", "CellPrint", "FrontEndExecute",
+  "RunProcess", "StartProcess", "ExternalEvaluate",
+  "Import", "Export", "URLRead", "URLExecute", "URLFetch",
+  "Evaluate"
+};
+
+NBSubkernelExecutableQ[held_HoldComplete, accessSpec_Association] :=
+  Module[{snapshot, accept, heads, denyH, approvalH},
+    (* accessSpec \:30ed\:30fc\:30eb / \:30ab\:30fc\:30cd\:30eb / \:6a29\:9650\:30d5\:30e9\:30b0 *)
+    If[Lookup[accessSpec, "ExecutionRole", None] =!= "ProposalEval",
+      Return[False]];
+    If[Lookup[accessSpec, "ExecutionKernel", None] =!= "SubkernelAllowed",
+      Return[False]];
+    If[Lookup[accessSpec, "MayUseFrontEnd", False] === True, Return[False]];
+    If[Lookup[accessSpec, "MayWriteNotebook", False] === True, Return[False]];
+    If[Lookup[accessSpec, "MayUseExternalProcess", False] === True, Return[False]];
+    If[Lookup[accessSpec, "MayUseNetwork", False] === True, Return[False]];
+    If[Lookup[accessSpec, "ResultMayCrossKernel", False] =!= True, Return[False]];
+
+    (* PolicySnapshot \:304c\:6709\:52b9\:304b *)
+    snapshot = Lookup[accessSpec, "PolicySnapshot", None];
+    If[! AssociationQ[snapshot], Return[False]];
+    accept = NBAcceptPolicySnapshot[snapshot];
+    If[! TrueQ[Lookup[accept, "Valid", False]], Return[False]];
+
+    (* confidential / secrets \:53c2\:7167 *)
+    If[iContainsConfidentialLeak[held, accessSpec], Return[False]];
+
+    (* \:5f0f\:4e2d\:306e head \:3092\:62bd\:51fa (held \:306e\:307f\:3002pre-action \:5185\:90e8\:306b\:306f\:53cd\:5fdc\:3057\:306a\:3044) *)
+    heads = iExtractAllHeads[held];
+
+    (* snapshot \:306e DenyHeads / ApprovalHeads \:8a72\:5f53 head \:3092\:542b\:3080\:304b *)
+    denyH     = Lookup[snapshot, "DenyHeads", {}];
+    approvalH = Lookup[snapshot, "ApprovalHeads", {}];
+    If[AnyTrue[heads, MemberQ[denyH, #] || MemberQ[approvalH, #] &],
+      Return[False]];
+
+    (* \:526f\:4f5c\:7528\:5019\:88dc head \:3092\:542b\:3080\:304b *)
+    If[AnyTrue[heads, MemberQ[$iNBSubkernelForbiddenHeads, #] &],
+      Return[False]];
+
+    True
+  ];
+
+NBSubkernelExecutableQ[___] := False;
+
+(* subkernel \:5c02\:7528\:5b9f\:884c wrapper\:3002
+   \:623b\:308a: \:751f\:306e\:8a55\:4fa1\:7d50\:679c / $TimedOut / $Failed (Association \:306f\:8fd4\:3055\:306a\:3044)\:3002
+   future shape \:7dad\:6301\:306e\:305f\:3081\:3002 *)
+Options[NBExecuteHeldExprSubkernelRaw] = {"TimeConstraint" -> 30};
+
+NBExecuteHeldExprSubkernelRaw[held_HoldComplete, accessSpec_Association,
+    opts:OptionsPattern[]] :=
+  Module[{snapshot, accept, validation, decision, timeout, result},
+    timeout = OptionValue["TimeConstraint"];
+
+    (* 1. snapshot \:53d6\:5f97 *)
+    snapshot = Lookup[accessSpec, "PolicySnapshot", None];
+
+    (* 2. snapshot \:691c\:8a3c *)
+    If[! AssociationQ[snapshot], Return[$Failed]];
+    accept = NBAcceptPolicySnapshot[snapshot];
+    If[! TrueQ[Lookup[accept, "Valid", False]], Return[$Failed]];
+
+    (* 3. subkernel \:5b9f\:884c\:53ef\:5426 *)
+    If[! TrueQ[NBSubkernelExecutableQ[held, accessSpec]], Return[$Failed]];
+
+    (* 4. snapshot \:57fa\:6e96\:3067\:518d\:691c\:8a3c (recompute \:3057\:306a\:3044) *)
+    validation = NBValidateHeldExpr[held, accessSpec,
+      "PolicySnapshot" -> snapshot];
+    decision = Lookup[validation, "Decision", "Deny"];
+
+    (* 5/6/7. Permit \:4ee5\:5916\:306f\:3059\:3079\:3066 $Failed (WarnOnly \:3082\:8a31\:53ef\:3057\:306a\:3044) *)
+    If[decision =!= "Permit", Return[$Failed]];
+
+    (* 8. Infinity \:306f TimeConstrained \:3092\:4f7f\:308f\:306a\:3044 *)
+    result = If[timeout === Infinity,
+      Quiet[ReleaseHold[held]],
+      Quiet[TimeConstrained[ReleaseHold[held], timeout, $TimedOut]]
+    ];
+
+    (* 9. \:751f\:5024 / $TimedOut / ($Failed \:306f\:4e0a\:8a18\:7d4c\:8def) \:3092\:305d\:306e\:307e\:307e\:8fd4\:3059 *)
+    result
+  ];
+
+NBExecuteHeldExprSubkernelRaw[___] := $Failed;
+
+(* ============================================================
+   Phase D-1: NBMakeRuntimeAccessSpec
+   Runtime/Orchestrator \:304b\:3089 NBAccess \:3078\:6e21\:3059 accessSpec \:3092\:4f5c\:308b\:3002
+   role \:5225\:65e2\:5b9a\:5024 (spec 4.6 \:30c6\:30fc\:30d6\:30eb)\:3002
+   ============================================================ *)
+
+(* MayAccessFileSystem enum 正規化 (v7 §13B, Phase 2a)。
+   Boolean / legacy 値 / 不明値を None/ReadOnly/ScopedRead/ScopedWrite/ScopedReadWrite
+   のいずれかへ正規化する。不明値は安全側 "None"。既存 role の "ReadOnly" 等は不変。 *)
+iNBFSEnumNormalize[v_] := Switch[v,
+  True,  "ScopedReadWrite",
+  False, "None",
+  "None" | "ReadOnly" | "ScopedRead" | "ScopedWrite" | "ScopedReadWrite", v,
+  "Scoped", "ScopedReadWrite",
+  _, "None"
+];
+iNBNormalizeFSAccessSpec[spec_Association] :=
+  If[KeyExistsQ[spec, "MayAccessFileSystem"],
+    Append[spec, "MayAccessFileSystem" -> iNBFSEnumNormalize[spec["MayAccessFileSystem"]]],
+    spec];
+
+(* v7 §13A: 既知 role 集合。未知 role は silent に最小権限化せず、警告 +
+   RoleValid->False で明示する (catch-all は最も制限的のまま fail-closed)。 *)
+iNBKnownRoleQ[r_String] := MemberQ[
+  {"ProposalEval", "Committer", "VisionFallback", "ManualDispatch",
+   "SubkernelTask", "WolframScriptTask", "MainKernelTask", "FinalAction"}, r];
+iNBKnownRoleQ[_] := False;
+
+NBMakeRuntimeAccessSpec::unkrole =
+  "未知の ExecutionRole `1` です。最も制限的な AccessSpec (RoleValid->False) を返します。既知 role は ProposalEval / Committer / VisionFallback / ManualDispatch / SubkernelTask / WolframScriptTask / MainKernelTask / FinalAction。";
+
+NBMakeRuntimeAccessSpec[contextPacket_Association, role_String:"ProposalEval"] :=
+  Module[{roleDefaults, conf, secrets, snapshot},
+    If[! iNBKnownRoleQ[role], Message[NBMakeRuntimeAccessSpec::unkrole, role]];
+    (* role \:5225\:306e\:65e2\:5b9a\:5024 *)
+    roleDefaults = Switch[role,
+      "ProposalEval",
+        <|"ExecutionKernel" -> "SubkernelAllowed",
+          "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
+          "MayUseExternalProcess" -> False, "MayAccessFileSystem" -> "ReadOnly",
+          "MayUseNetwork" -> False, "ResultMayCrossKernel" -> True,
+          "AllowedNotebookActions" -> {}|>,
+      "Committer",
+        <|"ExecutionKernel" -> "MainOnly",
+          "MayUseFrontEnd" -> True, "MayWriteNotebook" -> True,
+          "MayUseExternalProcess" -> False, "MayAccessFileSystem" -> "ReadOnly",
+          "MayUseNetwork" -> False, "ResultMayCrossKernel" -> False,
+          "AllowedNotebookActions" -> {"MoveSelectionAfterNotebook"}|>,
+      "VisionFallback",
+        <|"ExecutionKernel" -> "MainOnly",
+          "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
+          "MayUseExternalProcess" -> False, "MayAccessFileSystem" -> "ReadOnly",
+          "MayUseNetwork" -> False, "ResultMayCrossKernel" -> False,
+          "AllowedNotebookActions" -> {}|>,
+      "ManualDispatch",
+        <|"ExecutionKernel" -> "MainOnly",
+          "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
+          "MayUseExternalProcess" -> False, "MayAccessFileSystem" -> "ReadOnly",
+          "MayUseNetwork" -> False, "ResultMayCrossKernel" -> False,
+          "AllowedNotebookActions" -> {}|>,
+      (* === External executor task placement v7 §13A の role 既定 (Phase 2a, 純加法) === *)
+      "SubkernelTask",
+        (* v7 §13A.1: serializable・transfer-safe な純粋計算用 *)
+        <|"ExecutionKernel" -> "SubkernelAllowed",
+          "ExecutionBackend" -> "SubkernelAsync",
+          "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
+          "MayUseExternalProcess" -> False, "MayAccessFileSystem" -> "None",
+          "MayUseNetwork" -> False, "ResultMayCrossKernel" -> True,
+          "AllowedNotebookActions" -> {}|>,
+      "WolframScriptTask",
+        (* v7 §13A.2: 外部 process executor。
+           MayUseExternalProcess -> True は resolved wolframscript runner 起動専用の
+           限定許可であり、任意外部 process 許可ではない (実効的な command 一致検査は
+           Phase 2b scoped-permit / runner I/O guard で行う)。
+           MayUseNetwork は既定 False。AllowedNetworkTargets を伴う scope 指定時に
+           Phase 2b の scoped-permit で NetworkAccess の HardDeny を昇格する。 *)
+        <|"ExecutionKernel" -> "ExternalProcess",
+          "ExecutionBackend" -> "WolframScriptProcess",
+          "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
+          "MayUseExternalProcess" -> True, "MayAccessFileSystem" -> "ScopedReadWrite",
+          "MayUseNetwork" -> False, "ResultMayCrossKernel" -> True,
+          "AllowedNotebookActions" -> {},
+          "AllowedDirectories" -> {}, "AllowedNetworkTargets" -> {},
+          "AllowedExternalCommands" -> {"wolframscript-runner"},
+          "CredentialRefs" -> {}, "SecretRefs" -> {},
+          "ConfidentialHandling" -> "ReferenceOnly"|>,
+      "MainKernelTask",
+        (* v7 §13A.3: 短時間の main session state 依存処理 *)
+        <|"ExecutionKernel" -> "MainOnly",
+          "ExecutionBackend" -> "MainKernelAsync",
+          "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
+          "MayUseExternalProcess" -> False, "MayAccessFileSystem" -> "None",
+          "MayUseNetwork" -> False, "ResultMayCrossKernel" -> False,
+          "AllowedNotebookActions" -> {}|>,
+      "FinalAction",
+        (* v7 §13A.4: FE/Notebook 反映。承認必須 (single committer)。 *)
+        <|"ExecutionKernel" -> "MainOnly",
+          "ExecutionBackend" -> "FinalActionQueue",
+          "MayUseFrontEnd" -> True, "MayWriteNotebook" -> True,
+          "MayUseExternalProcess" -> False, "MayAccessFileSystem" -> "None",
+          "MayUseNetwork" -> False, "ResultMayCrossKernel" -> False,
+          "RequiresApproval" -> True,
+          "AllowedNotebookActions" -> {"MoveSelectionAfterNotebook"}|>,
+      _,  (* \:4e0d\:660e\:306a role \:306f\:6700\:3082\:5236\:9650\:7684 (ProposalEval \:76f8\:5f53\:3060\:304c subkernel \:4e0d\:53ef) *)
+        <|"ExecutionKernel" -> "MainOnly",
+          "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
+          "MayUseExternalProcess" -> False, "MayAccessFileSystem" -> "ReadOnly",
+          "MayUseNetwork" -> False, "ResultMayCrossKernel" -> False,
+          "AllowedNotebookActions" -> {}|>
+    ];
+
+    (* contextPacket \:304b\:3089 conf / secrets \:3092\:53d6\:5f97 (\:7121\:3051\:308c\:3070\:7a7a) *)
+    conf = Lookup[contextPacket, "ConfidentialSymbols",
+      If[AssociationQ[$NBConfidentialSymbols] || ListQ[$NBConfidentialSymbols],
+        $NBConfidentialSymbols, {}]];
+    secrets = Lookup[contextPacket, "Secrets", {}];
+
+    (* snapshot \:306f\:751f\:6210\:6642\:70b9\:306e policy \:3092\:51cd\:7d50 *)
+    snapshot = NBPolicySnapshot[];
+
+    Join[
+      iNBNormalizeFSAccessSpec[roleDefaults],
+      <|
+        "ExecutionRole" -> role,
+        "RoleValid" -> iNBKnownRoleQ[role],   (* v7 §13A: 未知 role は False *)
+        (* I12 (spec 5B): contextPacket に明示がなければ accessSpec 作成時点の
+           global $ClaudePermissionMode を焼き込む。以降の実行 (subkernel 含む)
+           はこの焼き込んだ値を正とし、global を読み直さない。 *)
+        "PermissionMode" -> Lookup[contextPacket, "PermissionMode",
+          If[StringQ[$ClaudePermissionMode], $ClaudePermissionMode,
+            "InteractiveSafe"]],
+        "ConfidentialSymbols" -> conf,
+        "Secrets" -> secrets,
+        "PolicySnapshot" -> snapshot,
+        "Caller" -> Lookup[contextPacket, "Caller", "Unknown"],
+        "WorkflowID" -> Lookup[contextPacket, "WorkflowID", None],
+        "StepID" -> Lookup[contextPacket, "StepID", None]
+      |>
+    ]
+  ];
+
+NBMakeRuntimeAccessSpec[role_String:"ProposalEval"] :=
+  NBMakeRuntimeAccessSpec[<||>, role];
+
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Phase permission-modes (2026-06-03, spec 5B.8): Action registry
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   NBOpenFolderWithApproval のような個別関数を乱立させず、承認対象操作を
+   汎用 action registry に寄せる。EffectClass + PermissionMode で判定し、
+   raw SystemOpen 等は NBAccess 内部 executor だけが呼ぶ (I1/I2)。 *)
+
+If[!AssociationQ[$NBActionRegistry], $NBActionRegistry = <||>];
+
+NBRegisterAction[name_String, spec_Association] :=
+  ($NBActionRegistry[name] = spec; name);
+
+(* ---- OpenDesktopItem: フォルダ等を開く ---- *)
+
+(* path が安全な folder target か検査 (spec 5B.7)。
+   返り値: <|"Valid" -> _, "Reason" -> _, "NormalizedPath" -> _,
+            "ApprovalEligibility" -> _|>
+   URL / 実行ファイル / folder でないもの は HardDeny。 *)
+iNBValidateOpenDesktopItem[action_Association] :=
+  Module[{path, targetType, normPath, ext},
+    path = Lookup[action, "Path", None];
+    targetType = Lookup[action, "TargetType", "Folder"];
+    (* path は文字列のみ許可 (File[...] は ToString で正規化を試みる) *)
+    Which[
+      StringQ[path], normPath = path,
+      MatchQ[path, _File], normPath = First[path],
+      True, Return[<|"Valid" -> False, "Reason" -> "PathNotString",
+        "ApprovalEligibility" -> "HardDeny"|>]];
+    If[!StringQ[normPath] || StringLength[normPath] === 0,
+      Return[<|"Valid" -> False, "Reason" -> "EmptyPath",
+        "ApprovalEligibility" -> "HardDeny"|>]];
+    (* URL は不可 *)
+    If[StringMatchQ[normPath,
+        (("http" ~~ ("s" | "") ~~ "://") | "ftp://" | "file://" | "mailto:") ~~ ___,
+        IgnoreCase -> True],
+      Return[<|"Valid" -> False, "Reason" -> "URLNotAllowed",
+        "ApprovalEligibility" -> "HardDeny"|>]];
+    (* 実行ファイル拡張子は不可 *)
+    ext = ToLowerCase[FileExtension[normPath]];
+    If[MemberQ[{"exe", "bat", "cmd", "com", "scr", "ps1", "vbs", "js",
+                "msi", "app", "command", "sh", "jar"}, ext],
+      Return[<|"Valid" -> False, "Reason" -> "ExecutableNotAllowed",
+        "ApprovalEligibility" -> "HardDeny"|>]];
+    (* Folder target は実際にディレクトリであることを要求 *)
+    If[targetType === "Folder",
+      If[!TrueQ[Quiet[DirectoryQ[normPath]]],
+        Return[<|"Valid" -> False, "Reason" -> "NotADirectory",
+          "ApprovalEligibility" -> "HardDeny"|>]]];
+    (* 検査通過: folder を開くのは要承認 (AskUserAllowed) *)
+    <|"Valid" -> True, "Reason" -> "OK", "NormalizedPath" -> normPath,
+      "ApprovalEligibility" -> "AskUserAllowed"|>
+  ];
+
+(* OpenDesktopItem の Executor。NBAccess 内部で raw SystemOpen を呼ぶ
+   唯一の場所。承認済み + 再 validate 通過後にのみ到達する。 *)
+iNBExecuteOpenDesktopItem[action_Association] :=
+  Module[{check, normPath},
+    check = iNBValidateOpenDesktopItem[action];
+    If[!TrueQ[check["Valid"]],
+      Return[<|"Success" -> False, "Decision" -> "Deny",
+        "ReasonClass" -> "PostApprovalValidationFailed",
+        "VisibleExplanation" -> "Action target failed re-validation: " <>
+          Lookup[check, "Reason", "unknown"]|>]];
+    normPath = check["NormalizedPath"];
+    Quiet[SystemOpen[normPath]];
+    <|"Success" -> True, "Decision" -> "Permit",
+      "RawResult" -> Null, "ActionExecuted" -> "OpenDesktopItem",
+      "Path" -> normPath|>
+  ];
+
+(* ---- WriteNotebookCell action (非 desktop final action 実行経路) ----
+   LLM が生成した notebook cell を承認後に書き込む final action。
+   action 構造: <|"Action"->"WriteNotebookCell", "Cell"-><Cell式>,
+                 "TargetNotebook"-><nb> (省略可、Executor で補完)|>
+   notebook write は FrontEnd 操作 (罠 #30) なので Executor はメイン評価で
+   呼ばれる前提 (NBExecuteApprovedAction が承認後メイン評価で呼ぶ)。 *)
+iNBValidateWriteNotebookCell[action_Association] :=
+  Module[{cell, opts, hasAutoEval},
+    cell = Lookup[action, "Cell", None];
+    (* Cell 式であること *)
+    If[!MatchQ[cell, _Cell],
+      Return[<|"Valid" -> False, "Reason" -> "NotACell",
+        "ApprovalEligibility" -> "HardDeny"|>]];
+    (* Cell オプションに自動評価系の危険設定がないか軽くチェック。
+       Evaluatable->True 単体は許すが、Initialization や自動実行を仕込んだ
+       Cell は拒否する (書き込み時に勝手に評価されるのを防ぐ)。 *)
+    opts = Cases[cell, (Rule | RuleDelayed)[k_, v_] :> {SymbolName[k], v},
+      {0, Infinity}];
+    hasAutoEval = AnyTrue[opts,
+      MemberQ[{"InitializationCell", "CellAutoOverwrite"}, First[#]] &&
+        TrueQ[Last[#]] &];
+    If[hasAutoEval,
+      Return[<|"Valid" -> False, "Reason" -> "AutoEvalCellNotAllowed",
+        "ApprovalEligibility" -> "HardDeny"|>]];
+    (* notebook write は FrontEnd 操作。承認を要する (final node)。 *)
+    <|"Valid" -> True, "ApprovalEligibility" -> "AskUserAllowed"|>
+  ];
+
+iNBExecuteWriteNotebookCell[action_Association] :=
+  Module[{check, cell, nb},
+    check = iNBValidateWriteNotebookCell[action];
+    If[!TrueQ[check["Valid"]],
+      Return[<|"Success" -> False, "Decision" -> "Deny",
+        "ReasonClass" -> "PostApprovalValidationFailed",
+        "VisibleExplanation" -> "Action target failed re-validation: " <>
+          Lookup[check, "Reason", "unknown"]|>]];
+    cell = Lookup[action, "Cell", None];
+    nb = Lookup[action, "TargetNotebook", Automatic];
+    (* TargetNotebook が NotebookObject ならそこへ、なければ CellPrint で
+       評価セル直後に出す (どちらもメイン評価前提、罠 #30)。 *)
+    If[MatchQ[nb, _NotebookObject],
+      Quiet[NBAccess`NBWriteCell[nb, cell, After]],
+      Quiet[CellPrint[cell]]];
+    <|"Success" -> True, "Decision" -> "Permit",
+      "RawResult" -> Null, "ActionExecuted" -> "WriteNotebookCell"|>
+  ];
+
+NBRegisterAction["OpenDesktopItem",
+  <|"EffectClass" -> "DesktopAction",
+    "DefaultApprovalEligibility" -> "AskUserAllowed",
+    "AllowedTargetTypes" -> {"Folder"},
+    "RequiresFinalNode" -> True,
+    "BlockingRisk" -> "MayBlockFrontEnd",
+    "ExecutionPlacement" -> "DesktopAction",
+    "Validator" -> iNBValidateOpenDesktopItem,
+    "Executor" -> iNBExecuteOpenDesktopItem|>];
+
+(* notebook cell 書き込み action (非 desktop final action)。
+   FrontEnd 操作なので final node (メイン評価で実行)。 *)
+NBRegisterAction["WriteNotebookCell",
+  <|"EffectClass" -> "FrontEndWrite",
+    "DefaultApprovalEligibility" -> "AskUserAllowed",
+    "AllowedTargetTypes" -> {"Cell"},
+    "RequiresFinalNode" -> True,
+    "BlockingRisk" -> "MayBlockFrontEnd",
+    "ExecutionPlacement" -> "FrontEndRequired",
+    "Validator" -> iNBValidateWriteNotebookCell,
+    "Executor" -> iNBExecuteWriteNotebookCell|>];
+
+(* ════════════════════════════════════════════════════════
+   ExternalTask action + scoped-permit (v7 §14 / Phase 2b)
+
+   設計: NetworkAccess / ExternalProcess の categorical HardDeny
+   (グローバル $iNBEffectClassEligibility) は一切変更しない。
+   scoped-permit は本 action の Validator 内だけに閉じ込める。
+   よって既存の held-expr 検証 (NBValidateHeldExpr) は無傷であり、
+   宣言的 ExternalTask (WolframScriptTask role + scope) のみが昇格する。
+
+   P0: scope 内は AskUserAllowed 止まり (AutoPermit / workflow pre-approval は
+   Phase 3 以降)。scope 外・role 不一致は HardDeny。StrictSafe 等での最終的な
+   拒否は後段の iNBApplyPermissionMode が担う。
+   ════════════════════════════════════════════════════════ *)
+
+(* network target (host+port) が scope 内か。P0 は host+port 完全一致。
+   allow 側が "Scheme" を指定していれば scheme も一致を要求。
+   wildcard (HostPattern) は P0 未実装のため scope 付与しない (v7 §7.2)。 *)
+iNBNetTargetMatch[req_Association, allow_Association] :=
+  And[
+    ! KeyExistsQ[allow, "HostPattern"],
+    StringQ[Lookup[req, "Host", None]],
+    Lookup[req, "Host", None] === Lookup[allow, "Host", Null],
+    Lookup[req, "Port", None] === Lookup[allow, "Port", Null],
+    (Lookup[allow, "Scheme", Automatic] === Automatic ||
+       Lookup[allow, "Scheme", Null] === Lookup[req, "Scheme", None])
+  ];
+iNBNetTargetMatch[_, _] := False;
+iNBNetTargetInScope[req_, allowedList_List] :=
+  ListQ[allowedList] && AnyTrue[allowedList, iNBNetTargetMatch[req, #] &];
+
+(* directory が scope 内か。P0 は exact または prefix 一致。 *)
+iNBDirInScope[d_, allowedDirs_List] :=
+  StringQ[d] && AnyTrue[allowedDirs,
+    (StringQ[#] && (d === # || StringStartsQ[d, # ])) &];
+
+(* v7 §6.3: workflow pre-approval。accessSpec["ApprovedNetworkTargets"] に
+   host+port 一致 かつ 未失効 (ExpiresAt は UnixTime 秒、欠落/非数値は未失効扱い)
+   のエントリがあれば、その target は pre-approved。 *)
+iNBNotExpiredQ[entry_Association, now_] :=
+  With[{e = Lookup[entry, "ExpiresAt", None]},
+    e === None || ! NumericQ[e] || e > now];
+iNBNotExpiredQ[_, _] := True;
+
+iNBPreApprovedNetQ[req_, accessSpec_Association, now_] :=
+  Module[{approved},
+    approved = Lookup[accessSpec, "ApprovedNetworkTargets", {}];
+    ListQ[approved] &&
+      AnyTrue[approved, iNBNetTargetMatch[req, #] && iNBNotExpiredQ[#, now] &]
+  ];
+
+(* ExternalTask Validator (2 引数; ValidatorWantsAccessSpec)。
+   action の DeclaredEffectClasses と Target を、accessSpec の role + scope
+   に突合し、effect ごとの eligibility を最も厳しい側に集約して返す。
+   v7 §6.3: WorkflowSafe かつ全 NetworkTarget が pre-approved なら AutoPermit。 *)
+iNBValidateExternalTask[action_Association, accessSpec_Association] :=
+  Module[{role, effects, reqNets, reqDirs, allowNets, allowDirs, allowCmds,
+          fsMode, isWS, eligs, agg, reasons = {}},
+    role     = Lookup[accessSpec, "ExecutionRole", None];
+    isWS     = (role === "WolframScriptTask");
+    effects  = Lookup[action, "DeclaredEffectClasses",
+                 Lookup[action, "EffectClasses", {}]];
+    reqNets  = Lookup[Lookup[action, "Target", <||>], "NetworkTargets", {}];
+    reqDirs  = Lookup[Lookup[action, "Target", <||>], "Directories", {}];
+    allowNets = Lookup[accessSpec, "AllowedNetworkTargets", {}];
+    allowDirs = Lookup[accessSpec, "AllowedDirectories", {}];
+    allowCmds = Lookup[accessSpec, "AllowedExternalCommands", {}];
+    fsMode   = Lookup[accessSpec, "MayAccessFileSystem", "None"];
+
+    (* role が WolframScriptTask 以外なら外部 task の scope 昇格は一切しない *)
+    If[! isWS,
+      Return[<|"Valid" -> False, "Reason" -> "RoleNotWolframScriptTask",
+        "ApprovalEligibility" -> "HardDeny"|>]];
+
+    eligs = Map[
+      Function[ec,
+        Switch[ec,
+          "NetworkAccess",
+            If[ListQ[reqNets] && reqNets =!= {} &&
+               AllTrue[reqNets, iNBNetTargetInScope[#, allowNets] &],
+              (* scope 内。WorkflowSafe かつ全 target が未失効 pre-approved なら AutoPermit *)
+              If[Lookup[accessSpec, "PermissionMode", "InteractiveSafe"] === "WorkflowSafe" &&
+                 AllTrue[reqNets, iNBPreApprovedNetQ[#, accessSpec, UnixTime[]] &],
+                "AutoPermit", "AskUserAllowed"],
+              (AppendTo[reasons, "NetworkTargetOutOfScope"]; "HardDeny")],
+          "ExternalProcess",
+            (* 任意外部 process は不可。runner 起動専用 command のみ。 *)
+            If[MemberQ[allowCmds, "wolframscript-runner"],
+              "AskUserAllowed",
+              (AppendTo[reasons, "ExternalCommandNotAllowed"]; "HardDeny")],
+          "FileSystemWrite",
+            If[MemberQ[{"ScopedWrite", "ScopedReadWrite"}, fsMode] &&
+               (reqDirs === {} || AllTrue[reqDirs, iNBDirInScope[#, allowDirs] &]),
+              "AskUserAllowed",
+              (AppendTo[reasons, "FileWriteOutOfScope"]; "HardDeny")],
+          "FileSystemRead" | "ReadOnlyFileSystem",
+            If[MemberQ[{"ReadOnly", "ScopedRead", "ScopedReadWrite"}, fsMode] &&
+               (reqDirs === {} || AllTrue[reqDirs, iNBDirInScope[#, allowDirs] &]),
+              "AskUserAllowed",
+              (AppendTo[reasons, "FileReadOutOfScope"]; "HardDeny")],
+          "PureComputation" | "LongRunningComputation",
+            "AutoPermit",
+          _,
+            (* 未知 effect は安全側 *)
+            (AppendTo[reasons, "UnknownEffectClass:" <> ToString[ec]]; "HardDeny")
+        ]
+      ],
+      If[ListQ[effects], effects, {}]
+    ];
+    (* effect 未宣言は安全側で承認要求 (実効境界は runner 側の NBCheck 系 guard) *)
+    If[eligs === {}, eligs = {"AskUserAllowed"}];
+
+    agg = First @ MaximalBy[eligs, iNBEligibilityRank, 1];
+    <|"Valid" -> (agg =!= "HardDeny"),
+      "ApprovalEligibility" -> agg,
+      "Reason" -> If[reasons === {}, "OK", StringRiffle[DeleteDuplicates[reasons], ","]]|>
+  ];
+iNBValidateExternalTask[action_Association] :=
+  (* accessSpec 無し呼び出しは scope 不明 -> 安全側 HardDeny *)
+  <|"Valid" -> False, "Reason" -> "NoAccessSpec",
+    "ApprovalEligibility" -> "HardDeny"|>;
+
+NBRegisterAction["ExternalTask",
+  <|"EffectClass" -> "ExternalProcess",
+    "DefaultApprovalEligibility" -> "HardDeny",
+    "AllowedTargetTypes" -> {"NetworkTarget", "Directory"},
+    "RequiresFinalNode" -> False,
+    "BlockingRisk" -> "LowMainKernel",
+    "ExecutionPlacement" -> "WolframScriptProcess",
+    "ValidatorWantsAccessSpec" -> True,
+    "Validator" -> iNBValidateExternalTask|>];
+
+(* ════════════════════════════════════════════════════════
+   Cooperative I/O guards (Phase 4.B): runner handler が I/O 直前に呼ぶ。
+   scope-match は ExternalTask の iNBDirInScope / iNBNetTargetInScope を再利用。
+   真の OS sandbox ではない (handler が自発的に通す前提; lint で raw I/O を検出)。
+   ════════════════════════════════════════════════════════ *)
+
+iNBAllow[]            := <|"Allowed" -> True,  "Reason" -> "OK"|>;
+iNBDeny[reason_String] := <|"Allowed" -> False, "Reason" -> reason|>;
+
+NBCheckFileWrite[path_String, accessSpec_Association] :=
+  Module[{fs, dirs},
+    fs   = iNBFSEnumNormalize[Lookup[accessSpec, "MayAccessFileSystem", "None"]];
+    dirs = Lookup[accessSpec, "AllowedDirectories", {}];
+    Which[
+      ! MemberQ[{"ScopedWrite", "ScopedReadWrite"}, fs], iNBDeny["FileWriteNotPermitted:" <> fs],
+      iNBDirInScope[path, dirs], iNBAllow[],
+      True, iNBDeny["PathOutOfScope"]
+    ]
+  ];
+NBCheckFileWrite[_, _] := iNBDeny["BadArguments"];
+
+NBCheckFileRead[path_String, accessSpec_Association] :=
+  Module[{fs, dirs},
+    fs   = iNBFSEnumNormalize[Lookup[accessSpec, "MayAccessFileSystem", "None"]];
+    dirs = Lookup[accessSpec, "AllowedDirectories", {}];
+    Which[
+      fs === "ReadOnly", iNBAllow[],   (* legacy broad read *)
+      MemberQ[{"ScopedRead", "ScopedReadWrite"}, fs] && iNBDirInScope[path, dirs], iNBAllow[],
+      MemberQ[{"ScopedRead", "ScopedReadWrite"}, fs], iNBDeny["PathOutOfScope"],
+      True, iNBDeny["FileReadNotPermitted:" <> fs]
+    ]
+  ];
+NBCheckFileRead[_, _] := iNBDeny["BadArguments"];
+
+(* target は <|Scheme,Host,Port|> または URL 文字列 *)
+iNBNormalizeNetTarget[t_Association] := t;
+iNBNormalizeNetTarget[url_String] :=
+  Module[{p},
+    p = Quiet @ Check[URLParse[url], <||>];
+    <|"Scheme" -> Lookup[p, "Scheme", None],
+      "Host"   -> Lookup[p, "Domain", None],
+      "Port"   -> Replace[Lookup[p, "Port", None],
+                    None :> Switch[Lookup[p, "Scheme", ""],
+                      "https", 443, "http", 80, "imap", 993, _, None]]|>
+  ];
+iNBNormalizeNetTarget[_] := <||>;
+
+NBCheckNetworkAccess[target_, accessSpec_Association] :=
+  Module[{allow, tgt},
+    allow = Lookup[accessSpec, "AllowedNetworkTargets", {}];
+    tgt   = iNBNormalizeNetTarget[target];
+    Which[
+      ! ListQ[allow] || allow === {}, iNBDeny["NoNetworkScope"],
+      iNBNetTargetInScope[tgt, allow], iNBAllow[],
+      True, iNBDeny["NetworkTargetOutOfScope"]
+    ]
+  ];
+
+NBCheckExternalProcess[cmd_, accessSpec_Association] :=
+  Module[{allow, name},
+    allow = Lookup[accessSpec, "AllowedExternalCommands", {}];
+    name  = Which[
+      StringQ[cmd], cmd,
+      ListQ[cmd] && Length[cmd] > 0 && StringQ[First[cmd]], First[cmd],
+      True, ""];
+    If[ListQ[allow] && (MemberQ[allow, name] ||
+        MemberQ[allow, "wolframscript-runner"] &&
+          StringContainsQ[ToLowerCase[name], "wolframscript"]),
+      iNBAllow[], iNBDeny["ExternalCommandNotAllowed"]]
+  ];
+
+(* ---- NBChecked* wrappers: check してから I/O。違反は AccessSpecViolation ---- *)
+iNBViolation[chk_] := <|"Status" -> "Failed",
+  "ReasonClass" -> "AccessSpecViolation", "Reason" -> Lookup[chk, "Reason", "denied"]|>;
+
+NBCheckedExport[path_String, expr_, fmt_String, accessSpec_Association] :=
+  Module[{chk}, chk = NBCheckFileWrite[path, accessSpec];
+    If[TrueQ[chk["Allowed"]],
+      <|"Status" -> "OK", "Result" -> Quiet @ Export[path, expr, fmt], "Path" -> path|>,
+      iNBViolation[chk]]];
+
+NBCheckedFileWrite[path_String, content_, accessSpec_Association] :=
+  Module[{chk}, chk = NBCheckFileWrite[path, accessSpec];
+    If[TrueQ[chk["Allowed"]],
+      <|"Status" -> "OK",
+        "Result" -> Quiet @ Module[{s = OpenWrite[path]}, WriteString[s, content]; Close[s]],
+        "Path" -> path|>,
+      iNBViolation[chk]]];
+
+NBCheckedImport[path_String, fmt_String, accessSpec_Association] :=
+  Module[{chk}, chk = NBCheckFileRead[path, accessSpec];
+    If[TrueQ[chk["Allowed"]],
+      <|"Status" -> "OK", "Result" -> Quiet @ Import[path, fmt]|>, iNBViolation[chk]]];
+
+NBCheckedFileRead[path_String, accessSpec_Association] :=
+  Module[{chk}, chk = NBCheckFileRead[path, accessSpec];
+    If[TrueQ[chk["Allowed"]],
+      <|"Status" -> "OK", "Result" -> Quiet @ ReadString[path]|>, iNBViolation[chk]]];
+
+NBCheckedURLRead[url_String, accessSpec_Association] :=
+  Module[{chk}, chk = NBCheckNetworkAccess[url, accessSpec];
+    If[TrueQ[chk["Allowed"]],
+      <|"Status" -> "OK", "Result" -> Quiet @ URLRead[url]|>, iNBViolation[chk]]];
+
+(* ---- PolicySnapshot per-call 適用 (P0 §8.3: digest 検証 + 正規化のみ) ---- *)
+NBApplyPolicySnapshot[snapshot_Association] :=
+  Module[{acc},
+    acc = NBAcceptPolicySnapshot[snapshot];
+    If[TrueQ[Lookup[acc, "Valid", False]],
+      <|"Valid" -> True, "Snapshot" -> snapshot, "Reason" -> None|>,
+      <|"Valid" -> False, "Snapshot" -> None,
+        "Reason" -> Lookup[acc, "Reason", "Invalid"]|>]
+  ];
+NBApplyPolicySnapshot[_] := <|"Valid" -> False, "Snapshot" -> None, "Reason" -> "NotAssociation"|>;
+
+(* ---- ConfidentialHandling gate (v7 §13D.1) ---- *)
+NBConfidentialHandlingAllowedQ[mode_String, permissionMode_String] :=
+  Switch[mode,
+    "EncryptedBundle" | "ReferenceOnly" | "Redacted", True,
+    "PlaintextDebug",
+      TrueQ[Quiet @ Check[$ClaudeAllowPlaintextExternalJobDebug === True, False]] &&
+        MemberQ[{"DangerFullAccess"}, permissionMode],
+    _, False
+  ];
+NBConfidentialHandlingAllowedQ[___] := False;
+
+(* ---- credential-ref 解決 (secret は返さない; descriptor のみ) ---- *)
+NBResolveCredentialRef[ref_String, accessSpec_Association:<||>] :=
+  Module[{refs, provider},
+    refs = Lookup[accessSpec, "CredentialRefs", {}];
+    (* accessSpec が CredentialRefs を宣言しているなら、その ref のみ許可 *)
+    If[ListQ[refs] && refs =!= {} && ! MemberQ[refs, ref],
+      Return[<|"Resolved" -> False, "Reason" -> "CredentialRefNotInScope"|>]];
+    provider = Which[
+      StringContainsQ[ref, "anthropic"], "anthropic",
+      StringContainsQ[ref, "openai"],    "openai",
+      StringContainsQ[ref, "github"],    "github",
+      True, None];
+    If[provider === None,
+      <|"Resolved" -> False, "Reason" -> "UnknownCredentialRef",
+        "Note" -> "IMAP/OAuth は SystemCredential ベースの拡張が必要 (Phase 5)"|>,
+      (* secret は返さない: handler が NBGetAPIKey[provider] を呼ぶための descriptor *)
+      <|"Resolved" -> True, "Provider" -> provider,
+        "Accessor" -> "NBGetAPIKey"|>]
+  ];
+
+(* ---- NBValidateAction: action を検証し Decision を返す ---- *)
+NBValidateAction[action_Association, accessSpec_Association] :=
+  Module[{name, reg, vfn, vres, baseElig, ec, mode, transformed,
+          requiresFinal},
+    name = Lookup[action, "Action", None];
+    reg = Lookup[$NBActionRegistry, name, None];
+    If[!AssociationQ[reg],
+      Return[<|"Decision" -> "Deny", "BaseDecision" -> "Deny",
+        "ReasonClass" -> "UnknownAction",
+        "VisibleExplanation" -> "Unknown action: " <> ToString[name],
+        "ApprovalEligibility" -> "HardDeny", "AllowApprovalUI" -> False,
+        "MayExecute" -> False|>]];
+    ec = Lookup[reg, "EffectClass", "DesktopAction"];
+    requiresFinal = TrueQ[Lookup[reg, "RequiresFinalNode", True]];
+    (* registry の Validator で path 等を検査し eligibility を確定 *)
+    vfn = Lookup[reg, "Validator", None];
+    (* Validator は既定で vfn[action] (1 引数, 後方互換)。
+       registry が "ValidatorWantsAccessSpec" -> True を宣言する action のみ
+       vfn[action, accessSpec] (2 引数) を呼ぶ。scoped-permit (Phase 2b) で
+       role/scope を見るために ExternalTask validator が使う。 *)
+    vres = Which[
+      vfn === None,
+        <|"Valid" -> True,
+          "ApprovalEligibility" -> Lookup[reg, "DefaultApprovalEligibility", "AskUserAllowed"]|>,
+      TrueQ[Lookup[reg, "ValidatorWantsAccessSpec", False]],
+        vfn[action, accessSpec],
+      True,
+        vfn[action]];
+    baseElig = If[TrueQ[Lookup[vres, "Valid", False]],
+      Lookup[vres, "ApprovalEligibility",
+        Lookup[reg, "DefaultApprovalEligibility", "AskUserAllowed"]],
+      "HardDeny"];
+    (* PermissionMode 変換 (I12: accessSpec の値を正とする) *)
+    mode = Lookup[accessSpec, "PermissionMode",
+      If[StringQ[$ClaudePermissionMode], $ClaudePermissionMode, "InteractiveSafe"]];
+    If[!StringQ[mode], mode = "InteractiveSafe"];
+    transformed = iNBApplyPermissionMode[baseElig, mode];
+    <|"Decision" -> transformed["Decision"],
+      "BaseDecision" -> If[baseElig === "HardDeny", "Deny", "NeedsApproval"],
+      "EffectClass" -> ec,
+      "ApprovalEligibility" -> baseElig,
+      "ExecutionPlacement" -> Lookup[reg, "ExecutionPlacement", "DesktopAction"],
+      "RequiresFinalNode" -> requiresFinal,
+      "ExecutionDisposition" -> transformed["ExecutionDisposition"],
+      "AllowApprovalUI" -> transformed["AllowApprovalUI"],
+      "MayExecute" -> transformed["MayExecute"],
+      "PermissionMode" -> mode,
+      "ReasonClass" -> If[baseElig === "HardDeny",
+        Lookup[vres, "Reason", "ActionDenied"], "AccessEscalationRequired"],
+      "VisibleExplanation" -> If[baseElig === "HardDeny",
+        "Action refused: " <> Lookup[vres, "Reason", "denied"],
+        "Action requires approval: " <> ToString[name]]|>
+  ];
+
+(* ---- NBExecuteApprovedAction: 承認済み action を実行 ----
+   TOCTOU 対策: 実行直前に再 validate (NBValidateAction)。
+   承認済みでも HardDeny / path 変化なら拒否。 *)
+Options[NBExecuteApprovedAction] = {"ApprovalMode" -> "UserApproved"};
+NBExecuteApprovedAction[action_Association, accessSpec_Association,
+    opts:OptionsPattern[]] :=
+  Module[{name, reg, recheck, decision, approvalMode, efn},
+    approvalMode = OptionValue["ApprovalMode"];
+    name = Lookup[action, "Action", None];
+    reg = Lookup[$NBActionRegistry, name, None];
+    If[!AssociationQ[reg],
+      Return[<|"Success" -> False, "Decision" -> "Deny",
+        "ReasonClass" -> "UnknownAction",
+        "VisibleExplanation" -> "Unknown action: " <> ToString[name]|>]];
+    (* 再 validate (TOCTOU) *)
+    recheck = NBValidateAction[action, accessSpec];
+    decision = Lookup[recheck, "Decision", "Deny"];
+    (* 承認済み (UserApproved) のとき NeedsApproval を許可。Deny は不可。 *)
+    Which[
+      decision === "Deny",
+        <|"Success" -> False, "Decision" -> "Deny",
+          "ReasonClass" -> Lookup[recheck, "ReasonClass", "ActionDenied"],
+          "VisibleExplanation" -> Lookup[recheck, "VisibleExplanation", ""]|>,
+      decision === "Permit" ||
+        (decision === "NeedsApproval" && approvalMode === "UserApproved"),
+        (* Executor を呼ぶ (NBAccess 内部、raw SystemOpen はここだけ) *)
+        efn = Lookup[reg, "Executor", None];
+        If[efn === None,
+          <|"Success" -> False, "Decision" -> "Deny",
+            "ReasonClass" -> "NoExecutor",
+            "VisibleExplanation" -> "No executor for action: " <> ToString[name]|>,
+          efn[action]],
+      True,
+        <|"Success" -> False, "Decision" -> decision,
+          "ReasonClass" -> "ApprovalRequired",
+          "VisibleExplanation" -> "Action not approved: " <> ToString[name]|>
+    ]
+  ];
+
+(* ---- NBOpenFolderWithApproval: 薄い互換 wrapper (spec 5B.7) ---- *)
+NBOpenFolderWithApproval[path_] :=
+  NBExecuteApprovedAction[
+    <|"Action" -> "OpenDesktopItem", "TargetType" -> "Folder",
+      "Path" -> path|>,
+    NBMakeRuntimeAccessSpec[<||>, "Committer"]];
+NBOpenFolderWithApproval[path_, accessSpec_Association] :=
+  NBExecuteApprovedAction[
+    <|"Action" -> "OpenDesktopItem", "TargetType" -> "Folder",
+      "Path" -> path|>, accessSpec];
+
+
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Phase frontend-blocking-queue (2026-06-03, spec 案3-lite):
+   PendingFinalActionQueue
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   FrontEnd ブロックリスクのある承認済み action を直接同期実行せず、
+   queue に積んで共有 polling tick が安全な隙に 1 件ずつ実行する。
+   新規 ScheduledTask は作らない (claudecode の共有 tick に相乗り)。
+   AsyncActive 中は WaitAll せず Pending のまま待つ。 *)
+
+If[!AssociationQ[$NBFinalActionQueue], $NBFinalActionQueue = <||>];
+If[!IntegerQ[$NBFinalActionCounter], $NBFinalActionCounter = 0];
+(* AsyncActive 判定 callback。Automatic のとき ClaudeRuntime に弱依存。 *)
+If[!ValueQ[$NBFinalActionAsyncActiveFunction],
+  $NBFinalActionAsyncActiveFunction = Automatic];
+(* queue item のデフォルト寿命 (秒)。 *)
+If[!NumericQ[$NBFinalActionDefaultTTL], $NBFinalActionDefaultTTL = 60];
+
+(* ---- AsyncActive 判定 (spec 5A.1) ---- *)
+iNBFinalActionAsyncActiveQ[] :=
+  Module[{fn = $NBFinalActionAsyncActiveFunction},
+    Which[
+      fn === Automatic,
+        (* ClaudeRuntime がロード済みなら診断を使う。未ロードなら False。 *)
+        If[Length[Names["ClaudeRuntime`ClaudeRuntimeAsyncActiveQ"]] > 0,
+          TrueQ @ Quiet @ Check[
+            Symbol["ClaudeRuntime`ClaudeRuntimeAsyncActiveQ"][], False],
+          False],
+      fn === None || fn === False, False,
+      True, TrueQ @ Quiet @ Check[fn[], False]
+    ]
+  ];
+
+(* ---- FinalActionRunningQ (spec 5A.2): queue 状態だけで判定 ---- *)
+NBFinalActionRunningQ[] :=
+  AnyTrue[Values[$NBFinalActionQueue],
+    AssociationQ[#] && Lookup[#, "Status", ""] === "Running" &];
+
+(* ---- enqueue (spec 12: Approve = queue 投入許可) ---- *)
+Options[NBEnqueueFinalAction] = {"TTL" -> Automatic,
+  "ApprovalStatus" -> "UserApproved", "MaxRetries" -> 100};
+NBEnqueueFinalAction[action_Association, accessSpec_Association,
+    opts:OptionsPattern[]] :=
+  Module[{name, reg, validation, actionID, ttl, now, item},
+    name = Lookup[action, "Action", None];
+    reg = Lookup[$NBActionRegistry, name, None];
+    If[!AssociationQ[reg],
+      Return[<|"Enqueued" -> False, "ReasonClass" -> "UnknownAction",
+        "VisibleExplanation" -> "Unknown action: " <> ToString[name]|>]];
+    (* enqueue 前検証: HardDeny は queue に積まない (spec 14)。 *)
+    validation = NBValidateAction[action, accessSpec];
+    If[Lookup[validation, "ApprovalEligibility", "HardDeny"] === "HardDeny" ||
+       Lookup[validation, "Decision", "Deny"] === "Deny",
+      Return[<|"Enqueued" -> False, "ReasonClass" -> "HardDenyNotQueued",
+        "VisibleExplanation" -> Lookup[validation, "VisibleExplanation",
+          "Action is hard-denied"]|>]];
+    now = AbsoluteTime[];
+    ttl = OptionValue["TTL"];
+    If[ttl === Automatic, ttl = $NBFinalActionDefaultTTL];
+    $NBFinalActionCounter++;
+    actionID = "finalaction-" <> ToString[$NBFinalActionCounter] <> "-" <>
+      ToString[Round[now]];
+    item = <|
+      "ActionID" -> actionID,
+      "Action" -> name,
+      "ActionAssoc" -> action,
+      "AccessSpec" -> accessSpec,
+      "EffectClass" -> Lookup[validation, "EffectClass", "DesktopAction"],
+      "ExecutionPlacement" -> Lookup[validation, "ExecutionPlacement", "DesktopAction"],
+      "BlockingRisk" -> Lookup[reg, "BlockingRisk", "MayBlockFrontEnd"],
+      "ApprovalStatus" -> OptionValue["ApprovalStatus"],
+      "RequiresFinalNode" -> TrueQ[Lookup[reg, "RequiresFinalNode", True]],
+      "Status" -> "Pending",
+      "CreatedAt" -> now,
+      "ExpiresAt" -> now + ttl,
+      "RetryCount" -> 0,
+      "MaxRetries" -> OptionValue["MaxRetries"],
+      "Result" -> None|>;
+    $NBFinalActionQueue[actionID] = item;
+    <|"Enqueued" -> True, "ActionID" -> actionID, "Status" -> "Pending"|>
+  ];
+
+(* held expr 版 (spec 案3-lite): action association ではなく held expression
+   (NBOpenFolderWithApproval[path] 等の wrapper を含む式) を queue 化する。
+   LLM が生成した FrontEnd ブロックリスクのある式を、承認後に直接同期実行せず
+   queue 経由で安全な隙に実行するための経路。executor は NBExecuteHeldExpr。 *)
+NBEnqueueFinalAction[heldExpr_HoldComplete, accessSpec_Association,
+    opts:OptionsPattern[]] :=
+  Module[{validation, actionID, ttl, now, item},
+    (* enqueue 前検証: HardDeny / Deny は積まない (spec 14)。 *)
+    validation = NBValidateHeldExpr[heldExpr, accessSpec];
+    If[Lookup[validation, "ApprovalEligibility", "HardDeny"] === "HardDeny" ||
+       Lookup[validation, "Decision", "Deny"] === "Deny",
+      Return[<|"Enqueued" -> False, "ReasonClass" -> "HardDenyNotQueued",
+        "VisibleExplanation" -> Lookup[validation, "VisibleExplanation",
+          "Expression is hard-denied"]|>]];
+    now = AbsoluteTime[];
+    ttl = OptionValue["TTL"];
+    If[ttl === Automatic, ttl = $NBFinalActionDefaultTTL];
+    $NBFinalActionCounter++;
+    actionID = "finalaction-" <> ToString[$NBFinalActionCounter] <> "-" <>
+      ToString[Round[now]];
+    item = <|
+      "ActionID" -> actionID,
+      "Action" -> "HeldExpr",
+      "HeldExpr" -> heldExpr,
+      "AccessSpec" -> accessSpec,
+      "EffectClass" -> Lookup[validation, "EffectClass", "DesktopAction"],
+      "ExecutionPlacement" -> Lookup[validation, "ExecutionPlacement", "DesktopAction"],
+      "BlockingRisk" -> Lookup[validation, "BlockingRisk", "MayBlockFrontEnd"],
+      "ApprovalStatus" -> OptionValue["ApprovalStatus"],
+      "RequiresFinalNode" -> TrueQ[Lookup[validation, "RequiresFinalNode", True]],
+      "Status" -> "Pending",
+      "CreatedAt" -> now,
+      "ExpiresAt" -> now + ttl,
+      "RetryCount" -> 0,
+      "MaxRetries" -> OptionValue["MaxRetries"],
+      "Result" -> None|>;
+    $NBFinalActionQueue[actionID] = item;
+    <|"Enqueued" -> True, "ActionID" -> actionID, "Status" -> "Pending"|>
+  ];
+
+(* ---- tick (spec 6 の 12 ステップ): 安全条件確認 + 最大 1 件実行 ---- *)
+NBFinalActionTick[opts___] :=
+  Module[{pendingIDs, id, item, now, recheck, approvalMode, efn, reg, result},
+    (* 1. final action 実行中なら何もしない *)
+    If[NBFinalActionRunningQ[], Return[<|"Ticked" -> False, "Reason" -> "FinalActionRunning"|>]];
+    (* 2. AsyncActive なら何もしない (WaitAll しない、Pending のまま) *)
+    If[iNBFinalActionAsyncActiveQ[],
+      Return[<|"Ticked" -> False, "Reason" -> "AsyncActive"|>]];
+    (* 3. 先頭の Pending item (CreatedAt 昇順) *)
+    now = AbsoluteTime[];
+    pendingIDs = Select[Keys[$NBFinalActionQueue],
+      AssociationQ[$NBFinalActionQueue[#]] &&
+      Lookup[$NBFinalActionQueue[#], "Status", ""] === "Pending" &];
+    pendingIDs = SortBy[pendingIDs, Lookup[$NBFinalActionQueue[#], "CreatedAt", 0] &];
+    (* 4. Pending が無ければ return *)
+    If[Length[pendingIDs] === 0, Return[<|"Ticked" -> False, "Reason" -> "NoPending"|>]];
+    id = First[pendingIDs];
+    item = $NBFinalActionQueue[id];
+    (* 5. 期限切れ *)
+    If[now > Lookup[item, "ExpiresAt", now + 1],
+      item["Status"] = "Expired";
+      item["ReasonClass"] = "FinalActionQueueTimeout";
+      item["CompletedAt"] = now;
+      $NBFinalActionQueue[id] = item;
+      Return[<|"Ticked" -> True, "ActionID" -> id, "Status" -> "Expired"|>]];
+    (* 6. 未承認 *)
+    If[Lookup[item, "ApprovalStatus", ""] =!= "UserApproved",
+      item["Status"] = "Failed";
+      item["ReasonClass"] = "NotApproved";
+      item["CompletedAt"] = now;
+      $NBFinalActionQueue[id] = item;
+      Return[<|"Ticked" -> True, "ActionID" -> id, "Status" -> "Failed"|>]];
+    (* 9. Running に遷移 (7,8 は executor 内 TOCTOU 再validate に委譲) *)
+    item["Status"] = "Running";
+    $NBFinalActionQueue[id] = item;
+    (* 10. NBAccess 内部 executor 経由で実行 (UserApproved で NeedsApproval 許可) *)
+    (* 10. NBAccess 内部 executor 経由で実行 (UserApproved で NeedsApproval 許可)。
+       item が held expr なら NBExecuteHeldExpr、action なら NBExecuteApprovedAction。 *)
+    result = Quiet @ Check[
+      If[Lookup[item, "Action", ""] === "HeldExpr",
+        NBExecuteHeldExpr[item["HeldExpr"], item["AccessSpec"],
+          "ApprovalMode" -> "UserApproved"],
+        NBExecuteApprovedAction[item["ActionAssoc"], item["AccessSpec"],
+          "ApprovalMode" -> "UserApproved"]],
+      <|"Success" -> False, "Decision" -> "Deny",
+        "ReasonClass" -> "ExecutorError"|>];
+    (* 11,12. 結果格納 + Completed/Failed *)
+    item = $NBFinalActionQueue[id];
+    item["Result"] = result;
+    item["CompletedAt"] = AbsoluteTime[];
+    If[TrueQ[Lookup[result, "Success", False]],
+      item["Status"] = "Completed",
+      item["Status"] = "Failed";
+      item["ReasonClass"] = Lookup[result, "ReasonClass", "ExecutorFailed"]];
+    $NBFinalActionQueue[id] = item;
+    <|"Ticked" -> True, "ActionID" -> id, "Status" -> item["Status"],
+      "Result" -> result|>
+  ];
+
+(* ---- status / cancel / snapshot ---- *)
+NBFinalActionStatus[actionID_String] :=
+  Lookup[$NBFinalActionQueue, actionID, <|"Status" -> "Unknown"|>];
+NBFinalActionStatus[All] := $NBFinalActionQueue;
+NBFinalActionStatus[] := $NBFinalActionQueue;
+
+NBCancelFinalAction[actionID_String] :=
+  Module[{item},
+    item = Lookup[$NBFinalActionQueue, actionID, None];
+    If[!AssociationQ[item], Return[<|"Cancelled" -> False, "ReasonClass" -> "Unknown"|>]];
+    If[MemberQ[{"Pending", "NeedsRetryAfterAsync"}, Lookup[item, "Status", ""]],
+      item["Status"] = "Cancelled";
+      item["ReasonClass"] = "UserCancelled";
+      item["CompletedAt"] = AbsoluteTime[];
+      $NBFinalActionQueue[actionID] = item;
+      <|"Cancelled" -> True, "ActionID" -> actionID|>,
+      <|"Cancelled" -> False, "ReasonClass" -> "NotCancellable",
+        "CurrentStatus" -> Lookup[item, "Status", ""]|>]
+  ];
+
+NBFinalActionQueueSnapshot[] :=
+  <|"QueueSize" -> Length[$NBFinalActionQueue],
+    "Pending" -> Count[Values[$NBFinalActionQueue],
+      a_?AssociationQ /; Lookup[a, "Status", ""] === "Pending"],
+    "Running" -> Count[Values[$NBFinalActionQueue],
+      a_?AssociationQ /; Lookup[a, "Status", ""] === "Running"],
+    "AsyncActive" -> iNBFinalActionAsyncActiveQ[],
+    "Items" -> $NBFinalActionQueue|>;
+
 
 (* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: NBRedactExecutionResult
@@ -6038,7 +8299,7 @@ Options[NBRedactExecutionResult] = {"MaxSummaryLength" -> 500};
 NBRedactExecutionResult[result_Association, accessSpec_Association,
     opts:OptionsPattern[]] :=
   Module[{raw, redacted, maxLen, confSyms, confVarNames, secrets, heldExpr,
-          refsConfidential = False, schemaInfo},
+          refsConfidential = False, schemaInfo, confOutLines},
     raw = Lookup[result, "RawResult", None];
     maxLen = OptionValue["MaxSummaryLength"];
     
@@ -6075,7 +8336,42 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
           StringContainsQ[rawStr,
             RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
               "(?![\\p{L}\\p{N}$])"]] &]]];
-    
+
+    (* \[HorizontalLine]\[HorizontalLine] Out[n] / In[n] / InString[n] / % \:53c2\:7167\:30c1\:30a7\:30c3\:30af (2026-06-06 \:6f0f\:6d29\:4fee\:6b63) \[HorizontalLine]\[HorizontalLine]
+       \:5909\:6570\:540d\:30d9\:30fc\:30b9\:306e\:691c\:51fa\:3060\:3051\:3067\:306f\:3001LLM \:304c Out[13] / In[13] / InString[13] / %13 / %
+       \:306e\:3088\:3046\:306b\:6a5f\:5bc6\:30bb\:30eb\:306e\:5165\:529b\:30fb\:51fa\:529b\:3092\:884c\:756a\:53f7\:3067\:76f4\:63a5\:53c2\:7167\:3057\:3066\:5024\:3092\:8aad\:3093\:3060
+       \:5834\:5408\:3092\:6355\:6349\:3067\:304d\:306a\:3044 (Out[13] \:306b\:3082\:751f\:7d50\:679c 1 \:306b\:3082\:5909\:6570\:540d\:306f\:73fe\:308c\:305a\:3001
+       InString[13] \:306f\:5165\:529b\:6587\:5b57\:5217 \"\:79d8\:533f\:5909\:6570 = Confidential[1]\" \:3092\:305d\:306e\:307e\:307e\:8fd4\:3059)\:3002
+       In[n] \:3068 Out[n] \:306f\:540c\:4e00\:306e\:8a55\:4fa1\:884c\:756a\:53f7 n \:3092\:5171\:6709\:3059\:308b\:3002
+       accessSpec[\"ConfidentialLineNumbers\"] \:306b\:6a5f\:5bc6\:884c\:756a\:53f7\:304c\:3042\:308c\:3070\:305d\:308c\:3068\:7167\:5408\:3057\:3001
+       \:7121\:3051\:308c\:3070\:6a5f\:5bc6\:30b3\:30f3\:30c6\:30ad\:30b9\:30c8\:5b58\:5728\:6642\:306f\:4fdd\:5b88\:7684\:306b redact \:3059\:308b\:3002 *)
+    confOutLines = Lookup[accessSpec, "ConfidentialLineNumbers",
+      Lookup[accessSpec, "ConfidentialOutputLines", Automatic]];
+    If[!refsConfidential && MatchQ[heldExpr, HoldComplete[_]],
+      Module[{refArgs, literalLines = {}, hasRelativeRef = False},
+        (* Out[..] \:306f\:6b63\:6574\:6570/\:7a7a/\:8ca0\:3001In[..]/InString[..] \:306f\:5404\:884c\:53c2\:7167 *)
+        refArgs = Cases[heldExpr,
+          HoldPattern[(Out | In | InString)[a___]] :> HoldComplete[a],
+          {0, Infinity}];
+        Scan[
+          Function[h,
+            Replace[h, {
+              HoldComplete[n_Integer] /; n > 0 :> AppendTo[literalLines, n],
+              _ :> (hasRelativeRef = True)}]],
+          refArgs];
+        Which[
+          (* \:884c\:756a\:53f7\:30de\:30c3\:30d7\:304c\:660e\:793a\:6e21\:3055\:308c\:305f\:5834\:5408: \:7cbe\:5bc6\:7167\:5408 *)
+          ListQ[confOutLines],
+            If[(hasRelativeRef && Length[confOutLines] > 0) ||
+               Length[Intersection[literalLines, confOutLines]] > 0,
+              refsConfidential = True],
+          (* \:884c\:756a\:53f7\:30de\:30c3\:30d7\:672a\:6307\:5b9a (\:65e7\:547c\:3073\:51fa\:3057): \:6a5f\:5bc6\:30b3\:30f3\:30c6\:30ad\:30b9\:30c8\:304c\:3042\:308b\:306a\:3089
+             Out/In/InString/% \:53c2\:7167\:306f\:5b89\:5168\:5224\:5b9a\:3067\:304d\:306a\:3044\:305f\:3081\:4fdd\:5b88\:7684\:306b redact *)
+          (Length[literalLines] > 0 || hasRelativeRef) && Length[confSyms] > 0,
+            refsConfidential = True
+        ]
+      ]];
+
     If[refsConfidential,
       (* \[HorizontalLine]\[HorizontalLine] \:6a5f\:5bc6\:4f9d\:5b58: \:578b\:30fb\:30b5\:30a4\:30ba\:30fbHead \:306e\:30b9\:30ad\:30fc\:30de\:60c5\:5831\:306e\:307f\:8fd4\:3059 \[HorizontalLine]\[HorizontalLine] *)
       schemaInfo = iMakeResultSchema[raw];
@@ -6094,6 +8390,42 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
         "ConfidentialDependent" -> False|>
     ]
   ];
+
+(* \:6a5f\:5bc6\:30fb\:6a5f\:5bc6\:4f9d\:5b58 In/Out \:30bb\:30eb\:306e\:8a55\:4fa1\:884c\:756a\:53f7 n \:3092 CellLabel \"In[n]:=\" /
+   \"Out[n]=\" \:304b\:3089\:62bd\:51fa\:3059\:308b\:3002In[n] \:3068 Out[n] \:306f\:540c\:4e00 n \:3092\:5171\:6709\:3059\:308b\:305f\:3081\:3001
+   In/Out \:3069\:3061\:3089\:306e\:30e9\:30d9\:30eb\:304b\:3089\:3067\:3082\:540c\:3058\:884c\:756a\:53f7\:304c\:5f97\:3089\:308c\:308b\:3002 *)
+iExtractLineNumber[lbl_String] :=
+  Module[{m},
+    m = StringCases[lbl,
+      RegularExpression["(?:In|Out)\\[(\\d+)\\]"] :> "$1"];
+    If[Length[m] > 0,
+      Quiet @ Check[ToExpression[First[m]], Missing[]],
+      Missing[]]];
+iExtractLineNumber[_] := Missing[];
+
+NBConfidentialLineNumbers[nb_NotebookObject, accessSpec_:<||>] :=
+  Module[{threshold, indices, lines = {}},
+    threshold = If[AssociationQ[accessSpec],
+      Lookup[accessSpec, "AccessLevel", 0.5], 0.5];
+    (* \:6a5f\:5bc6\:5165\:529b (Input/Code) \:3068\:6a5f\:5bc6\:51fa\:529b (Output) \:306e\:4e21\:65b9\:3092\:5bfe\:8c61\:306b\:3059\:308b\:3002
+       In[13] \:3082 Out[13] \:3082\:884c\:756a\:53f7 13 \:3092\:5171\:6709\:3059\:308b\:306e\:3067\:3001\:3069\:3061\:3089\:304b\:3089\:3067\:3082\:53d6\:5f97\:53ef\:3002 *)
+    indices = Quiet @ Check[
+      Sort @ DeleteDuplicates @ Join[
+        NBAccess`NBCellIndicesByStyle[nb, "Input"],
+        NBAccess`NBCellIndicesByStyle[nb, "Code"],
+        NBAccess`NBCellIndicesByStyle[nb, "Output"]], {}];
+    If[!ListQ[indices], Return[{}]];
+    Do[Module[{priv, lbl, n},
+        priv = Quiet @ Check[
+          NBAccess`NBCellPrivacyLevel[nb, ci], 0];
+        If[NumericQ[priv] && priv > threshold,
+          lbl = Quiet @ Check[NBAccess`NBCellLabel[nb, ci], ""];
+          n = iExtractLineNumber[lbl];
+          If[IntegerQ[n], AppendTo[lines, n]]]],
+      {ci, indices}];
+    DeleteDuplicates[lines]
+  ];
+NBConfidentialLineNumbers[_, ___] := {};
 
 (* \:5b9f\:884c\:7d50\:679c\:306e\:30b9\:30ad\:30fc\:30de\:60c5\:5831\:751f\:6210\:ff08\:6a5f\:5bc6\:4f9d\:5b58\:6642\:306b\:5024\:306e\:4ee3\:308f\:308a\:306b\:8fd4\:3059\:ff09 *)
 iMakeResultSchema[raw_] :=
@@ -6166,13 +8498,25 @@ NBMakeContextPacket[nb_, accessSpec_Association, opts:OptionsPattern[]] :=
             NBAccess`NBCellStyle[nb, idx], "Unknown"];
           
           If[privLevel > threshold,
-            (* \[HorizontalLine]\[HorizontalLine] \:6a5f\:5bc6\:30bb\:30eb: \:30c6\:30ad\:30b9\:30c8\:975e\:8868\:793a \[HorizontalLine]\[HorizontalLine] *)
-            AppendTo[cellAssocs, <|
-              "CellIndex" -> idx,
-              "CellStyle" -> style,
-              "InputText" -> "(* [\:6a5f\:5bc6\:30bb\:30eb: \:975e\:8868\:793a] *)",
-              "PrivacyLevel" -> privLevel,
-              "Confidential" -> True|>],
+            (* Confidential cell. (2026-06-06) Output cells send SCHEMA only
+               (data type / size / keys via iOutputSchemaText — no values) when
+               $NBSendDataSchema is True, so a cloud LLM can still understand the
+               structure and propose code without the actual data (e.g. mail rows)
+               leaking. Non-Output confidential cells (Input/Text/...) stay fully
+               masked. $NBSendDataSchema = False で従来通り全マスク。 *)
+            If[style === "Output" && NBAccess`$NBSendDataSchema =!= False,
+              AppendTo[cellAssocs, <|
+                "CellIndex" -> idx,
+                "CellStyle" -> style,
+                "InputText" -> iOutputSchemaText[nb, idx],
+                "PrivacyLevel" -> privLevel,
+                "ConfidentialDependent" -> True|>],
+              AppendTo[cellAssocs, <|
+                "CellIndex" -> idx,
+                "CellStyle" -> style,
+                "InputText" -> "(* [\:6a5f\:5bc6\:30bb\:30eb: \:975e\:8868\:793a] *)",
+                "PrivacyLevel" -> privLevel,
+                "Confidential" -> True|>]],
             (* \[HorizontalLine]\[HorizontalLine] \:975e\:6a5f\:5bc6\:30bb\:30eb: \:6a5f\:5bc6\:5909\:6570\:306e\:58a8\:6d88\:3057\:51e6\:7406 \[HorizontalLine]\[HorizontalLine] *)
             text = Quiet @ Check[
               NBAccess`NBCellGetText[nb, idx], ""];
@@ -8260,6 +10604,161 @@ NBAuditCodexAccessibleDirs[___] :=
     "MessageTemplate" ->
       "NBAuditCodexAccessibleDirs expects a list of directories.",
     "MessageParameters" -> <||>|>];
+
+
+
+(* ============================================================
+   Phase A1: Policy Snapshot 実装本体
+   ============================================================ *)
+
+(* ---- digest 正規化 helper ----
+   生成側 (NBPolicySnapshot) と検証側 (NBAcceptPolicySnapshot) で
+   必ず同一の helper を通すことで、Association key 順序や
+   head list 順序、Wolfram version 差に依存しない digest を得る。 *)
+
+iNBNormalizeHeadList[list_List] :=
+  Sort @ DeleteDuplicates[ToString /@ list];
+iNBNormalizeHeadList[_] := {};
+
+iNBNormalizeConfidentialSymbols[conf_Association] :=
+  SortBy[
+    Map[
+      Function[kv, {ToString[First[kv]], ToString[Last[kv], InputForm]}],
+      Normal[conf]
+    ],
+    First
+  ];
+iNBNormalizeConfidentialSymbols[conf_List] :=
+  Sort @ DeleteDuplicates[ToString /@ conf];
+iNBNormalizeConfidentialSymbols[_] := {};
+
+iNBNormalizePolicySnapshotPayload[snapshotOrPayload_Association] :=
+  KeySort @ <|
+    "NBAccessPolicyVersion" ->
+      ToString[
+        Lookup[snapshotOrPayload, "NBAccessPolicyVersion", "unversioned"]],
+    "AllowedHeads" ->
+      iNBNormalizeHeadList[Lookup[snapshotOrPayload, "AllowedHeads", {}]],
+    "ApprovalHeads" ->
+      iNBNormalizeHeadList[Lookup[snapshotOrPayload, "ApprovalHeads", {}]],
+    "DenyHeads" ->
+      iNBNormalizeHeadList[Lookup[snapshotOrPayload, "DenyHeads", {}]],
+    "ConfidentialSymbols" ->
+      iNBNormalizeConfidentialSymbols[
+        Lookup[snapshotOrPayload, "ConfidentialSymbols", {}]]
+  |>;
+
+iNBComputePolicyDigest[snapshotOrPayload_Association] :=
+  IntegerString[
+    Hash[
+      ToString[
+        InputForm[iNBNormalizePolicySnapshotPayload[snapshotOrPayload]]
+      ],
+      "SHA256"
+    ],
+    16
+  ];
+
+(* snapshot mode 専用 accessor。
+   snapshot から判定入力を取り出す。カテゴリ global へは
+   フォールバックしない (snapshot が正本)。 *)
+iNBSnapshotAllowedHeads[snapshot_Association] :=
+  Lookup[snapshot, "AllowedHeads", {}];
+iNBSnapshotApprovalHeads[snapshot_Association] :=
+  Lookup[snapshot, "ApprovalHeads", {}];
+iNBSnapshotDenyHeads[snapshot_Association] :=
+  Lookup[snapshot, "DenyHeads", {}];
+iNBSnapshotConfidentialSymbols[snapshot_Association] :=
+  Lookup[snapshot, "ConfidentialSymbols", {}];
+
+(* ---- NBPolicySnapshot[] ----
+   main kernel で現在の動的 policy を凍結する。
+   注意: $NBAccessPolicyVersion は現行コードに存在しないため、
+   ValueQ で存在確認し、無ければ "unversioned" を入れる。 *)
+
+$NBActivePolicySnapshot = None;
+
+NBPolicySnapshot[] :=
+  Module[{ver, allowed, approval, deny, conf, payload, digest},
+    (* 1. 導出済み AllowedHeads を最新化 *)
+    iRecomputeAllowedHeads[];
+
+    (* 2. 各集合を取得 *)
+    ver = If[ValueQ[$NBAccessPolicyVersion],
+      $NBAccessPolicyVersion, "unversioned"];
+    allowed  = If[ListQ[$NBAllowedHeads],  $NBAllowedHeads,  {}];
+    approval = If[ListQ[$NBApprovalHeads], $NBApprovalHeads, {}];
+    deny     = If[ListQ[$NBDenyHeads],     $NBDenyHeads,     {}];
+    conf     = If[AssociationQ[$NBConfidentialSymbols] ||
+                  ListQ[$NBConfidentialSymbols],
+                  $NBConfidentialSymbols, {}];
+
+    (* 3. digest payload (digest 対象キーのみ) *)
+    payload = <|
+      "NBAccessPolicyVersion" -> ver,
+      "AllowedHeads"          -> allowed,
+      "ApprovalHeads"         -> approval,
+      "DenyHeads"             -> deny,
+      "ConfidentialSymbols"   -> conf
+    |>;
+
+    (* 4. digest *)
+    digest = iNBComputePolicyDigest[payload];
+
+    (* 5. snapshot Association *)
+    <|
+      "SnapshotID"            -> CreateUUID[],
+      "CreatedAt"             -> AbsoluteTime[],
+      "NBAccessPolicyVersion" -> ver,
+      "AllowedHeads"          -> allowed,
+      "ApprovalHeads"         -> approval,
+      "DenyHeads"             -> deny,
+      "ConfidentialSymbols"   -> conf,
+      "Digest"                -> digest,
+      "Source"                -> "CurrentGlobals"
+    |>
+  ];
+
+(* ---- NBAcceptPolicySnapshot[snapshot] ----
+   subkernel 側で snapshot を検証する。 *)
+
+NBAcceptPolicySnapshot[snapshot_Association] :=
+  Module[{requiredKeys, recomputed, stored},
+    requiredKeys = {
+      "SnapshotID", "CreatedAt", "NBAccessPolicyVersion",
+      "AllowedHeads", "ApprovalHeads", "DenyHeads",
+      "ConfidentialSymbols", "Digest", "Source"
+    };
+
+    (* 1. 必須キー確認 *)
+    If[! AllTrue[requiredKeys, KeyExistsQ[snapshot, #] &],
+      Return[<|
+        "Valid"  -> False,
+        "Digest" -> None,
+        "Reason" -> "MissingRequiredKeys"
+      |>]];
+
+    (* 2. digest 再計算・照合 *)
+    recomputed = iNBComputePolicyDigest[snapshot];
+    If[recomputed =!= Lookup[snapshot, "Digest", None],
+      Return[<|
+        "Valid"  -> False,
+        "Digest" -> recomputed,
+        "Reason" -> "DigestMismatch"
+      |>]];
+
+    (* 3. Valid: 参考用に保存 (正本ではない) *)
+    $NBActivePolicySnapshot = snapshot;
+
+    <|
+      "Valid"  -> True,
+      "Digest" -> recomputed,
+      "Reason" -> None
+    |>
+  ];
+
+NBAcceptPolicySnapshot[_] :=
+  <|"Valid" -> False, "Digest" -> None, "Reason" -> "NotAnAssociation"|>;
 
 
 

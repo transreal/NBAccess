@@ -1,7 +1,8 @@
 {
 	"packageName":"NBAccess",
 	"files":[
-		"NBAccess.wl"
+		"NBAccess.wl",
+		"NBAccess_crypto.wl"
 	],
 	"directories":[
 		"NBAccess_info"
@@ -9,6 +10,5 @@
 	"excludePatterns":[
 		"NBAccess_info\/history\/",
 		"NBAccess_info\/references\/"
-
 	]
 }

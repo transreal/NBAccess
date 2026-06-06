@@ -1,7 +1,3 @@
-# NBAccess セットアップガイド
-
-NBAccess は Wolfram Language 用のノートブックアクセスユーティリティパッケージです。セルインデックスベースでノートブックの読み書きを行い、プライバシーフィルタリング機能を提供します。
-
 ## 動作環境
 
 - **Wolfram Mathematica** 12.0 以降
@@ -56,6 +52,32 @@ Block[{$CharacterEncoding = "UTF-8"}, Get["ClaudeRuntime.wl"]]
 (* または claudecode.wl 経由で自動ロードされます *)
 ```
 
+#### 式検証・実行エンジンの判定モデル
+
+`NBValidateHeldExpr` の検証ロジックは、従来の AllowedHeads / ApprovalHeads / DenyHeads の照合に加えて、式に含まれる head の副作用クラス（EffectClass）から承認適格性（ApprovalEligibility）を集約し、ベース判定と合成して最終判定を行うように拡張されました。最終判定は、ベース判定（`iNBValidateHeldExprBase`）で得た Decision と、式中の head から集約した EffectClass の eligibility を「厳しい方」を採用して合成します。
+
+- 純粋な数学関数（`Total`、`IntegerPart`、`Round`、`Floor`、`Ceiling` など副作用のないもの）は `PureComputation` として扱われ、ブロックされにくくなります。`System`` 系の副作用のない関数も同様に純粋計算として扱われます。
+- `Module`／`Block`／`With` などのスコープ局所変数や、`Set`／`SetDelayed` で定義したローカル関数名は承認対象から除外され、過剰な承認要求を抑制します（これらはユーザー定義の安全なローカルとみなされます）。
+- head の eligibility が同点の場合は、specificity rank（より具体的な分類）を優先して最終アクションを決定します。
+- ユーザーが承認 UI で明示承認した場合（**UserApproved**）や、directLLM rescue などの自動 commit 互換経路（**CommitterAutoApprove**）では、検証済みパスに対して実行が許可されます。
+- 式中の head が `System` 系の純粋関数か否かを文字列パースに頼らずに判定できるよう改善され、`NotebookWrite[nb, Cell[...]]` のように未知 head（`Cell` 等）を含む式が誤って NeedsApproval 扱いされる過剰判定が抑制されています。
+
+これに伴い、旧来の `NBExecuteHeldExpr` の `"TimeConstraint"` オプションおよび `NBValidateHeldExpr` の `"AllowedHeads"`／`"ApprovalHeads"`／`"DenyHeads"`／`"LabelCheck"` をオプション引数で逐一指定する方式は廃止され、グローバル変数（`$NBAllowedHeads` 等）と上記の EffectClass ベース判定に統合されています。式中の head から「全 head が承認可能 head か」を文字列パースせずに判定できるようになっています。
+
+#### 出力モードと遅延バッファ
+
+ClaudeRuntime 経由の式実行では、出力の扱い方を 2 つのモードから選べます（2026-06-03 追加）：
+
+- **Streaming（逐次・既定）**: 評価の進行に合わせて出力を逐次表示します。
+- **Batch（集約）**: 出力を遅延バッファに溜め込み、`NBFlushDeferredOutput` を呼び出した時点で一括表示します。
+
+```mathematica
+(* バッファに溜まった出力をまとめて出力する *)
+NBAccess`NBFlushDeferredOutput[]
+```
+
+Batch モードは、scheduled タスクなどから多数の出力を生成する処理で、表示順序を整えたい場合に有用です。バッファへの追加は変数操作のため評価コンテキストを問わず安全に行えますが、最終的な一括出力（フラッシュ）はメインカーネル評価で行う必要があります。位置依存の挿入はバッファ順序と整合しないため行いません。
+
 ### ClaudeTestKit との連携
 
 [ClaudeTestKit](https://github.com/transreal/ClaudeTestKit) は NBAccess および ClaudeRuntime のテストを自動化するためのユーティリティパッケージです。パッケージ開発者や NBAccess を組み込むプロジェクト向けに、以下の用途で使用します：
@@ -92,6 +114,18 @@ $NBSendDataSchema = True
 $NBSendDataSchema = False
 ```
 
+### 詳細ログ設定
+
+NBAccess 内部の詳細ログ出力を制御できます：
+
+```mathematica
+(* 詳細ログを Messages に出力する *)
+$NBVerbose = True
+
+(* 重大エラー以外のログを抑制する（デフォルト） *)
+$NBVerbose = False
+```
+
 ### 分離原則の除外設定
 
 NBAccess 分離原則チェックから除外するパッケージの設定：
@@ -125,6 +159,8 @@ ClaudeRuntime を導入すると、`$NBAllowedHeads`・`$NBApprovalHeads`・`$NB
 ### バージョン間の移行
 
 ClaudeRuntime 導入前に作成したノートブックをそのまま使い続けることができます。ClaudeRuntime の新機能を使用したい場合は、個別の関数呼び出し時に `NBAuthorize` や `NBValidateHeldExpr` を任意で追加するだけで構いません。強制的な移行作業は不要です。
+
+なお、`NBValidateHeldExpr`／`NBExecuteHeldExpr` の検証・実行ロジックは EffectClass ベースの判定モデルに刷新されましたが、これらの API のシグネチャ（`HoldComplete[...]` と PrivacySpec を渡す呼び出し方）は変わっていません。旧来オプション（`"TimeConstraint"`、`"AllowedHeads"`、`"ApprovalHeads"`、`"DenyHeads"`、`"LabelCheck"` 等）を明示指定していたコードがある場合のみ、グローバル変数による設定へ置き換えてください。これらのオプションはすでに削除されており、明示指定しても効果はありません。
 
 ## 動作確認
 
@@ -203,6 +239,9 @@ NBAccess`NBRouteDecision[0.5]
 
 (* 式の事前検証 *)
 NBAccess`NBValidateHeldExpr[HoldComplete[1 + 1], <|"AccessLevel" -> 0.5|>]
+
+(* Batch 出力モードで溜めた出力の一括フラッシュ *)
+NBAccess`NBFlushDeferredOutput[]
 ```
 
 ## API キー設定（オプション）
@@ -241,6 +280,14 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>
 NBAccess`NBGetCells[nb, PrivacySpec -> <|"AccessLevel" -> 1.0|>]
 ```
 
+### 式の実行が不必要に承認待ちになる場合
+
+`NBValidateHeldExpr`／`NBExecuteHeldExpr` が、本来は安全なローカル定義や純粋な数学関数を承認対象としてしまう場合は、検証エンジンの EffectClass ベース判定が想定どおり機能しているかを確認してください。`Module`／`Block`／`With` のスコープ局所変数や `Set`／`SetDelayed` で定義したローカル関数名は承認対象から除外されます。`Total` や `IntegerPart`、`Round`、`Floor`、`Ceiling` などの純粋な数学関数も `PureComputation` として扱われ、ブロックされにくくなっています。意図せず承認が要求される場合は、式が副作用のある head（ノートブック書き込みやファイル操作など）を含んでいないかを確認してください。
+
+### 承認 UI が「フォーマットしています」のまま長時間ブロックする場合
+
+承認ボタン本体はメインカーネル評価コンテキストで動作します。検証済みパスに対する実行はトップレベル評価でのみ効くため、承認 UI が「フォーマットしています」の表示のまま長時間応答しないように見えることがあります（2026-06-06 の修正で改善済み）。最新のパッケージに更新してもこの状態が続く場合は、評価が AsyncActive（非同期処理の進行中）のまま Pending になっていないかを確認してください。
+
 ### ClaudeRuntime の API が見つからない場合
 
 `NBValidateHeldExpr` 等の ClaudeRuntime 連携 API が未定義の場合は、ClaudeRuntime が読み込まれていることを確認してください：
@@ -253,16 +300,26 @@ Names["NBAccess`NBAuthorize"]
 Block[{$CharacterEncoding = "UTF-8"}, Get["ClaudeRuntime.wl"]]
 ```
 
+### Batch モードで出力が表示されない場合
+
+出力モードを Batch（集約）にしている場合、評価が終わっても出力が表示されないことがあります。これは出力が遅延バッファに溜まっているためです。`NBFlushDeferredOutput` を呼び出してバッファ内容を一括出力してください：
+
+```mathematica
+NBAccess`NBFlushDeferredOutput[]
+```
+
+フラッシュはメインカーネル評価で行う必要があります。scheduled タスクなどから直接呼ぶと正しく表示されない場合があるため、メイン評価のタイミングで呼び出してください。
+
 ### 依存関係問題
 
 分離原則違反が報告される場合：
 
 ```mathematica
-(* 分離原則チェック実行 *)
-NBAccess`ClaudeCheckSeparation["YourPackageName"]
+(* 分離原則チェック実行 (claudecode が提供する関数) *)
+ClaudeCheckSeparation["YourPackageName"]
 
 (* 自動修正 *)
-NBAccess`ClaudeFixSeparation["YourPackageName"]
+ClaudeFixSeparation["YourPackageName"]
 ```
 
 ### パフォーマンス問題
@@ -271,10 +328,10 @@ NBAccess`ClaudeFixSeparation["YourPackageName"]
 
 ## 次のステップ
 
-- **基本的な使用方法**: `usage.md` を参照してください
-- **API リファレンス**: `api-reference.md` で詳細な関数仕様を確認してください  
-- **プライバシー管理**: `privacy.md` でセキュリティ機能の詳細を学習してください
-- **高度な機能**: `advanced-features.md` で履歴管理や依存グラフ機能を確認してください
+- **基本的な使用方法**: `user_manual.md` を参照してください
+- **API リファレンス**: `api.md` で詳細な関数仕様を確認してください
+- **暗号化・鍵管理**: `api_crypto.md` で暗号化 API の詳細を確認してください
+- **概要・設計思想**: `README.md` を参照してください
 
 ## サポート
 

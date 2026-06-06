@@ -341,6 +341,160 @@ $NBSendDataSchema = False;
 (* → "1234 chars" *)
 ```
 
+## 例13: コード実行と承認エンジン（held 式ベース判定）
+
+NBAccess は LLM が生成したコードを実行する前に、保持された式（`HoldComplete[...]`）を評価せずに走査し、副作用の有無に応じて実行可否を判定します。判定は **base 判定**（従来の head 許可/拒否リスト）に加えて、式中の head の **副作用クラス（EffectClass）** から導出した **承認適格性（ApprovalEligibility）** を合成し、より厳しい側を採用します。
+
+```mathematica
+(* held 式を評価せずに検証し、実行可否の Decision を得る *)
+held = HoldComplete[Total[Range[1, 100]]];
+decision = NBValidateHeldExpr[held];
+(* → 純数学関数のみなので実行可能 (PureComputation) *)
+```
+
+判定ロジックの要点は以下のとおりです。
+
+- **副作用クラスの集約**: 式中の各 head を `PureComputation`（純粋計算）/ 副作用ありのカテゴリへ分類し、最も強い影響を持つものから承認適格性を決定します。
+- **base 判定との合成**: head 許可/拒否リストによる base Decision と、EffectClass 由来の eligibility を合成し、より制限的な結果を最終判定とします。
+- **ローカル変数の除外**: `Module` / `Block` / `With` 等でスコープ局所化された変数や、`Set` / `SetDelayed` でその式内に定義された関数名は、未知 head（`NeedsApproval`）の対象から除外されます。これにより、ユーザー定義の安全なローカル関数が過剰に承認要求されることを防ぎます（例: `Module[{traj}, traj[x_] := ...]` の `traj`）。
+- **明示的 eval の許容**: `Evaluate` は拒否リストから除外され、`ParametricPlot[Evaluate[..]]` のような正当な用途を妨げません。
+
+```
+(* Decision の例:
+   <|"Decision" -> "Allowed", "ReasonClass" -> "PureComputation", ...|>
+   <|"Decision" -> "NeedsApproval",
+     "VisibleExplanation" -> "Unknown heads: ...", ...|> *)
+```
+
+承認 UI でユーザーが明示承認した場合は `UserApproved`、`directLLM rescue` 等の自動 commit 経路では `CommitterAutoApprove` として、検証済みパスに対する実行が許可されます。
+
+**注意**: `NotebookWrite[nb, Cell[...]]` のように、エージェント由来式が notebook を直接書き換える head（`Cell` 等）を含む場合は、シンボル名（keys）で照合して適切に判定されます。これらを含む式は subkernel 実行ができません（`RawResult` がカーネル間を跨ぐため）。
+
+## 例14: 出力モードと遅延出力バッファ
+
+長時間実行や大量出力を伴うコードでは、出力を逐次表示するか一括表示するかを **出力モード** で切り替えられます。
+
+- **Streaming（既定）**: 出力を逐次表示します。
+- **Batch**: 出力を遅延バッファに溜め、`NBFlushDeferredOutput` で一括出力します。スケジュール評価などブロックを避けたい状況に向きます。
+
+```mathematica
+(* バッファに溜めた出力を一括でフラッシュする *)
+NBFlushDeferredOutput[nb];
+```
+
+```
+(* バッファ内の遅延出力がまとめてノートブックに書き出されます *)
+```
+
+**メモ**: バッファへの追加は変数操作のため評価コンテキストを問いませんが、実際の `NotebookWrite` を伴うフラッシュはメインカーネル評価で行う必要があります。出力は「消えるより出る方が安全」という方針で、フラッシュ忘れがあっても評価セル直後に出力されるよう設計されています。
+
+## 例15: 暗号鍵ストアのバックエンド設定と鍵生成
+
+`NBAccess_crypto.wl`（本体とは別ファイルだが同じ `NBAccess`` コンテキスト）の鍵隔離層を使います。鍵材料は公開 API から一切返らず、KeyRef 文字列を介して暗号操作を行います。
+
+**重要**: `$NBCredentialBackend` は **鍵を生成・使用する前に**設定してください。永続的に保存・後日復号するデータには必ず `"SystemCredential"` を選びます（`"Memory"` 鍵はカーネルごとにランダムで、終了時に失われます）。
+
+```mathematica
+(* バックエンドを選択（鍵生成より前） *)
+$NBCredentialBackend = "SystemCredential";  (* 本番想定。OS 資格情報ストアに永続化 *)
+(* $NBCredentialBackend = "Memory"; *)       (* 既定。揮発性。開発/テスト用 *)
+
+(* 対称鍵・MAC 鍵・RSA 鍵対を生成（KeyRef だけが返り、鍵材料は返らない） *)
+NBGenerateSymmetricKeyRef["MyApp:master:atrest:v1"];
+NBGenerateMacKeyRef["MyApp:master:mac:v1"];
+NBGenerateAsymmetricKeyRefPair["MyApp:master:sign:v1"];
+
+(* 鍵の metadata（鍵材料を含まない）を確認 *)
+NBKeyStatus["MyApp:master:atrest:v1"]
+
+(* 登録済み keyRef の一覧 *)
+NBListCredentialKeyRefs["MyApp:*"]
+```
+
+```
+(* 例: NBGenerateSymmetricKeyRef の戻り値:
+   <|"Status" -> "Stored", "KeyRef" -> "MyApp:master:atrest:v1",
+     "KeyMaterialReturned" -> False|> *)
+(* NBKeyStatus は <|"KeyRef" -> ..., "Kind" -> "SymmetricKey",
+     "Backend" -> "SystemCredential", "Fingerprint" -> "...",
+     "Status" -> "Active", "Purpose" -> "SymmetricAtRest",
+     "Algorithm" -> "AES256", ...|> を返す（鍵材料は含まれない） *)
+(* NBListCredentialKeyRefs:
+   {"MyApp:master:atrest:v1", "MyApp:master:mac:v1", "MyApp:master:sign:v1"} *)
+```
+
+## 例16: 暗号化・復号の roundtrip
+
+KeyRef を介して `ByteArray` の平文を暗号化し、復号します。暗号文は Base64 化された直列 `EncryptedObject` で、鍵材料は戻り値に一切含まれません。
+
+```mathematica
+pt  = StringToByteArray["保護したい本文 payload", "UTF-8"];
+
+(* 暗号化（CiphertextB64 と IV を持つ Association が返る） *)
+enc = NBEncryptWithKeyRef["MyApp:master:atrest:v1", pt];
+ct  = enc["CiphertextB64"];
+
+(* 復号（ByteArray が返る。失敗時は $Failed） *)
+dec = NBDecryptWithKeyRef["MyApp:master:atrest:v1", ct];
+ByteArrayToString[dec, "UTF-8"]
+```
+
+```
+(* 例: enc = <|"Status" -> "Ok", "KeyRef" -> "MyApp:master:atrest:v1",
+              "CiphertextB64" -> "QmluYXJ5...", "IV" -> "..."|> *)
+(* ByteArrayToString[dec, "UTF-8"] → "保護したい本文 payload" *)
+```
+
+## 例17: encrypt-then-MAC による完全性確保
+
+WL 14.3 には AEAD/GCM がなく、`Encrypt` は完全性フィールドを持たない AES256/CBC です。そのため at-rest の完全性は **暗号文を別の MAC 鍵で MAC する**（encrypt-then-MAC）方式で確保します。受信側は復号する前に MAC を constant-time 検証します。
+
+```mathematica
+(* 暗号文に MAC を付与 *)
+ctBytes = StringToByteArray[ct, "UTF-8"];
+mac = NBMacWithKeyRef["MyApp:master:mac:v1", ctBytes];
+
+(* 受信側: MAC を検証してから復号する *)
+If[NBVerifyMacWithKeyRef["MyApp:master:mac:v1", ctBytes, mac],
+  ByteArrayToString[NBDecryptWithKeyRef["MyApp:master:atrest:v1", ct], "UTF-8"],
+  $Failed  (* MAC 不一致 → 改ざんの可能性。復号しない *)
+]
+
+(* 改ざん検出の確認: 異なるバイト列では検証が False になる *)
+tampered = StringToByteArray["改ざんされた payload", "UTF-8"];
+NBVerifyMacWithKeyRef["MyApp:master:mac:v1", tampered, mac]
+(* 戻り値: False *)
+```
+
+```
+(* mac は HMAC-SHA256 の hex 文字列（例: "9f3c...a21b"） *)
+(* NBVerifyMacWithKeyRef は constant-time 比較で True / False を返す *)
+```
+
+## 例18: セルフテストと鍵の削除
+
+`NBCryptoSelfTest[]` は、ユーザーの実鍵を汚さない隔離した一時 Memory バックエンドで、鍵隔離・暗号/MAC roundtrip・誤鍵検出を一括検査します。
+
+```mathematica
+(* 鍵隔離・roundtrip・誤鍵検出のセルフテスト *)
+NBCryptoSelfTest[]
+
+(* 不要になった鍵の削除 *)
+NBDeleteCredentialKey["MyApp:master:sign:v1"];
+NBKeyStatus["MyApp:master:sign:v1"]
+(* 戻り値: Missing["NotFound"] *)
+```
+
+```
+(* NBCryptoSelfTest の戻り値:
+   <|"EncryptRoundtrip" -> True, "MacRoundtrip" -> True,
+     "MacRejectsTamper" -> True, "WrongMacKeyFails" -> True,
+     "DecryptWrongTypeFails" -> True, "KeyIsolation" -> True,
+     "ListWorks" -> True, "DeleteWorks" -> True, "AllPassed" -> True|> *)
+```
+
+**メモ**: `NBAccess_crypto.wl` は下位レイヤーであり、`SourceVault_crypto` がこの上に構築されます。鍵材料はどの公開 API でも露出しないため、鍵そのものを読み出そうとしないでください。可搬鍵バンドル用の `NBExportWrappedKeys` / `NBImportWrappedKeys` も、出力は `wrapKey` で暗号化された暗号文のみです。
+
 ---
 
 ## 補足: グローバル設定
