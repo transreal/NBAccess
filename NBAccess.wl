@@ -4736,13 +4736,28 @@ NBAccess`NBInsertTextCells[nbFile_String, name_String, prompt_String] :=
 (* \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
    NBFileOpen: .nb \:30d5\:30a1\:30a4\:30eb\:3092\:975e\:8868\:793a\:3067\:958b\:304f
    \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine] *)
+(* NBFileOpen が「自分で開いた」notebook の登録簿。NBFileClose はこれに
+   入っているものだけを閉じる。既に利用者が開いていたウインドウを
+   NotebookClose で消してしまう事故を防ぐ。 *)
+If[! ListQ[$iNBFileOpenedByUs], $iNBFileOpenedByUs = {}];
+
 NBAccess`NBFileOpen[path_String] :=
-  Module[{nb},
+  Module[{nb, abs, already},
     If[!FileExistsQ[path],
       Message[NBAccess`NBFileOpen::notfound, path]; Return[$Failed]];
+    abs = ExpandFileName[path];
+    (* 既に開いているウインドウ (利用者の作業中ウインドウ等) があれば、それを返すが
+       「自分で開いた」登録はしない。NotebookOpen[..., Visible->False] は既開きの
+       ウインドウには無効で、そのまま閉じると利用者のウインドウが消えるため。 *)
+    already = SelectFirst[Quiet@Check[Notebooks[], {}],
+      Function[w,
+        Module[{fn = Quiet@Check[NotebookFileName[w], $Failed]},
+          StringQ[fn] && ExpandFileName[fn] === abs]], None];
+    If[Head[already] === NotebookObject, Return[already]];
     nb = Quiet @ NotebookOpen[path, Visible -> False];
     If[Head[nb] =!= NotebookObject,
       Message[NBAccess`NBFileOpen::openfail, path]; Return[$Failed]];
+    $iNBFileOpenedByUs = Append[$iNBFileOpenedByUs, nb];
     nb
   ];
 NBAccess`NBFileOpen::notfound = "\:30d5\:30a1\:30a4\:30eb\:304c\:898b\:3064\:304b\:308a\:307e\:305b\:3093: `1`";
@@ -4752,7 +4767,13 @@ NBAccess`NBFileOpen::openfail  = "\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:3092\:95
    NBFileClose: \:958b\:3044\:305f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:3092\:9589\:3058\:308b
    \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine] *)
 NBAccess`NBFileClose[nb_NotebookObject] :=
-  Quiet @ NotebookClose[nb];
+  (* 自分で開いた notebook のみ閉じる。既に開いていた利用者ウインドウは閉じない
+     (NBFileOpen が登録していない = 既開き) ことで、評価中ウインドウが突然閉じる
+     事故を防ぐ。 *)
+  If[MemberQ[$iNBFileOpenedByUs, nb],
+    $iNBFileOpenedByUs = DeleteCases[$iNBFileOpenedByUs, nb];
+    Quiet @ NotebookClose[nb],
+    Null];
 
 (* \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
    NBFileSave: \:6307\:5b9a\:30d1\:30b9\:306b\:4fdd\:5b58 (path=None \:306a\:3089\:4e0a\:66f8\:304d)
