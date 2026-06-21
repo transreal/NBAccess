@@ -694,6 +694,18 @@ NBRegisterConfidentialVar::usage =
 NBUnregisterConfidentialVar::usage =
   "NBUnregisterConfidentialVar[name] \:306f\:6a5f\:5bc6\:5909\:6570\:30921\:3064\:89e3\:9664\:3059\:308b\:3002";
 
+NBRegisterConfidentialHead::usage =
+  "NBRegisterConfidentialHead[name, level] は「返り値が機密たり得る関数ヘッド」を登録する (level 既定 1.0)。SourceVault 等のデータ層がロード時に登録し、claudecode が LLM 生成コードの書き込みセル自動機密マークと CellEpilog の依存秘密判定に使う。";
+
+NBUnregisterConfidentialHead::usage =
+  "NBUnregisterConfidentialHead[name] は機密生成ヘッドの登録を1つ解除する。";
+
+NBGetConfidentialHeads::usage =
+  "NBGetConfidentialHeads[] は登録済みの機密生成ヘッド表 (<|name -> level|>) を返す。";
+
+NBTextUsesConfidentialHead::usage =
+  "NBTextUsesConfidentialHead[text] は text が登録済みの機密生成ヘッドを参照していれば True を返す。識別子境界 (Unicode) で判定し、Map 等へ関数値として渡される形 (ブラケットなし) も検出する。";
+
 NBGetPrivacySpec::usage =
   "NBGetPrivacySpec[] \:306f\:73fe\:5728\:306e $NBPrivacySpec \:3092\:8fd4\:3059\:3002";
 
@@ -4517,6 +4529,34 @@ NBAccess`NBRegisterConfidentialVar[name_String, level_:1.0] :=
 
 NBAccess`NBUnregisterConfidentialVar[name_String] :=
   (NBAccess`$NBConfidentialSymbols = KeyDrop[NBAccess`$NBConfidentialSymbols, name]);
+
+(* 機密生成ヘッド表: 「この関数の返り値は機密たり得る」という宣言レジストリ。
+   SourceVault 等のデータ層がロード時に登録し、claudecode が
+   (a) LLM 生成コード/応答を書き込んだ新規セルの自動機密マーク判定、
+   (b) CellEpilog の依存秘密判定 (snaps = SourceVaultSearch...[..] 等)
+   に使う。秘密「変数」レジストリ ($NBConfidentialSymbols) のヘッド版。 *)
+NBAccess`NBRegisterConfidentialHead[name_String, level_:1.0] :=
+  (If[!AssociationQ[NBAccess`$NBConfidentialHeads],
+     NBAccess`$NBConfidentialHeads = <||>];
+   NBAccess`$NBConfidentialHeads[name] = level);
+
+NBAccess`NBUnregisterConfidentialHead[name_String] :=
+  (NBAccess`$NBConfidentialHeads =
+     KeyDrop[NBAccess`NBGetConfidentialHeads[], name]);
+
+NBAccess`NBGetConfidentialHeads[] :=
+  If[AssociationQ[NBAccess`$NBConfidentialHeads],
+    NBAccess`$NBConfidentialHeads, <||>];
+
+(* text が登録ヘッドを参照しているか。識別子境界 (Unicode) で誤マッチを防ぐ。
+   Map[head, ...] のような関数値渡しも検出するため "[" は要求しない。 *)
+NBAccess`NBTextUsesConfidentialHead[text_String] :=
+  Module[{heads = Keys[NBAccess`NBGetConfidentialHeads[]]},
+    heads =!= {} && AnyTrue[heads,
+      StringContainsQ[text,
+        RegularExpression[
+          "(?<![\\p{L}\\p{N}$])" <> # <> "(?![\\p{L}\\p{N}$])"]] &]];
+NBAccess`NBTextUsesConfidentialHead[_] := False;
 
 NBAccess`NBGetPrivacySpec[] :=
   If[AssociationQ[NBAccess`$NBPrivacySpec],

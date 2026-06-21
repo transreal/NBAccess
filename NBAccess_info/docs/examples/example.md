@@ -495,6 +495,54 @@ NBKeyStatus["MyApp:master:sign:v1"]
 
 **メモ**: `NBAccess_crypto.wl` は下位レイヤーであり、`SourceVault_crypto` がこの上に構築されます。鍵材料はどの公開 API でも露出しないため、鍵そのものを読み出そうとしないでください。可搬鍵バンドル用の `NBExportWrappedKeys` / `NBImportWrappedKeys` も、出力は `wrapKey` で暗号化された暗号文のみです。
 
+## 例19: 機密生成ヘッドの登録と判定
+
+`$NBConfidentialHeads` は「この関数の返り値は機密たり得る」という宣言レジストリです。秘密「変数」レジストリ（`$NBConfidentialSymbols`）の **ヘッド版** であり、`SourceVaultSearch[..]` のように特定の関数呼び出しが機密データを返す場合に、その関数ヘッドを事前に登録しておきます。
+
+この表は次の2つの用途で使われます。
+
+1. **書き込みセルの自動機密マーク判定**: claudecode が LLM 生成コード・応答を書き込んだ新規セルが、登録済み機密生成ヘッドを参照していれば自動的に機密マークします。
+2. **CellEpilog の依存秘密判定**: `snaps = SourceVaultSearch[..]` のように、登録ヘッドの返り値を変数に代入するセルを依存秘密として扱います。
+
+通常 `SourceVault` 等のデータ層がロード時に自動登録するため、利用側で明示的に呼ぶことは少ないですが、独自のデータ取得関数を機密扱いにしたい場合に登録できます。
+
+```mathematica
+(* 機密生成ヘッドを登録（level の既定は 1.0） *)
+NBRegisterConfidentialHead["SourceVaultSearch"];
+NBRegisterConfidentialHead["MyDataFetch", 1.0];
+
+(* 現在の登録表を確認 *)
+NBGetConfidentialHeads[]
+(* <|"SourceVaultSearch" -> 1.0, "MyDataFetch" -> 1.0|> *)
+```
+
+```mathematica
+(* テキストが登録済みヘッドを参照しているか判定 *)
+NBTextUsesConfidentialHead["snaps = SourceVaultSearch[\"query\"]"]
+(* 戻り値: True *)
+
+(* 関数値として渡される形（ブラケットなし）も検出される *)
+NBTextUsesConfidentialHead["Map[MyDataFetch, ids]"]
+(* 戻り値: True *)
+
+(* 識別子境界（Unicode）で判定するため、部分文字列の誤マッチはしない *)
+NBTextUsesConfidentialHead["mySourceVaultSearchHelper[x]"]
+(* 戻り値: False *)
+
+(* 登録されていないヘッド *)
+NBTextUsesConfidentialHead["Total[Range[10]]"]
+(* 戻り値: False *)
+```
+
+```mathematica
+(* 不要になった登録を1つ解除する *)
+NBUnregisterConfidentialHead["MyDataFetch"];
+NBGetConfidentialHeads[]
+(* <|"SourceVaultSearch" -> 1.0|> *)
+```
+
+**判定の特徴**: `NBTextUsesConfidentialHead` は識別子境界（`\p{L}`, `\p{N}`, `$`）で前後を区切って照合するため、登録名が別の識別子の一部に含まれているだけでは誤検出しません。また `Map[head, ...]` のように関数値として渡される形（ブラケットを伴わない参照）も検出するため、`"["` の存在は要求しません。
+
 ---
 
 ## 補足: グローバル設定
