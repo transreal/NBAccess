@@ -4447,15 +4447,24 @@ NBAccess`NBWriteSlot[jobId_String, slotIdx_Integer, cellExpr_Cell] :=
       ReplacePart[entry["written"], slotIdx -> True];
   ];
 
-(* \:30a2\:30f3\:30ab\:30fc\:306e\:76f4\:5f8c\:306b\:30ab\:30fc\:30bd\:30eb\:3092\:79fb\:52d5 *)
+(* \:30a2\:30f3\:30ab\:30fc\:306e\:76f4\:5f8c\:306b\:30ab\:30fc\:30bd\:30eb\:3092\:79fb\:52d5\:3002
+   2026-06-24 (B-fix): 戻り値を True/False にし、位置を確定できたら True を返す。
+   従来はアンカーセルが消えている (NBEndJob 済み / kernel restart で $NBJobTable
+   再構築) と無言で no-op になり、呼び出し側の選択位置が直前の出力セル内容に残る。
+   直前が編集可能 Grid (SourceVaultMailView 一覧) のとき後続 NBWriteCell が
+   その Grid セル内へ \!\(\*Cell[...]\) として埋め込まれる不具合の一因 (result2.nb)。
+   entry はあるがアンカー消失の場合はノートブック末尾 (セル境界) へ退避し True を返す。
+   jobId が $NBJobTable に無い (nb 不明) 場合のみ False を返し、呼び出し側で末尾退避させる。 *)
 NBAccess`NBJobMoveToAnchor[jobId_String] :=
   Module[{entry, nb, cells},
     entry = Lookup[$NBJobTable, jobId, $Failed];
-    If[entry === $Failed, Return[$Failed]];
+    If[entry === $Failed, Return[False]];
     nb = entry["nb"];
     cells = Quiet[Cells[nb, CellTags -> entry["anchorTag"]]];
     If[ListQ[cells] && Length[cells] > 0,
-      Quiet[SelectionMove[First[cells], After, Cell, AutoScroll -> False]]];
+      Quiet[SelectionMove[First[cells], After, Cell, AutoScroll -> False]],
+      Quiet[SelectionMove[nb, After, Notebook, AutoScroll -> False]]];
+    True
   ];
 
 (* \:30b8\:30e7\:30d6\:6b63\:5e38\:7d42\:4e86: \:672a\:66f8\:304d\:8fbc\:307f\:30b9\:30ed\:30c3\:30c8\:3068\:30a2\:30f3\:30ab\:30fc\:3092\:524a\:9664 *)
