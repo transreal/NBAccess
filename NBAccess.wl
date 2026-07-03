@@ -301,6 +301,16 @@ NBSetSnapshotPrivacyLevel::usage =
   "Options: PrivacySpec -> Automatic\:3002SourceVault \:304c\:30ed\:30fc\:30c9\:3055\:308c\:3066\:3044\:308b\:5fc5\:8981\:304c\:3042\:308b\:3002\n" <>
   "\:3053\:306e\:95a2\:6570\:306f $NBApprovalHeads \:306b\:767b\:9332\:3055\:308c\:3001\:5b9f\:884c\:6642\:306b\:627f\:8a8d\:30b2\:30fc\:30c8\:3092\:767a\:706b\:3055\:305b\:308b\:3002";
 
+NBInsertArtifactCell::usage =
+  "NBInsertArtifactCell[nb, uri, opts] は SourceVault artifact URI (sv://artifact/<id> / sv://hash/sha256/<hex>) の内容を\n" <>
+  "解決し、media 種別に応じたセルとしてノートブックへ挿入する: Image は画像セル、Video/Binary はファイルリンク、Text は本文。\n" <>
+  "セルには artifact の PrivacyLevel が必ず焼き込まれ (TaggingRules claudecode privacyLevel/confidential)、level > 0.5 なら\n" <>
+  "$NBConfidentialCellOpts の機密マーク (赤背景+警告 dingbat) 付きで出力される。生データを裸で返す API ではなく、\n" <>
+  "実体化は常に privacy marking と一体 (SourceVault のガードを剥がさない)。NBInsertArtifactCell[uri] は EvaluationNotebook[] へ。\n" <>
+  "内容解決は SourceVault`SourceVaultResolveArtifactContent (sanctioned reader) に委譲する。SourceVault 未ロードなら Error。\n" <>
+  "opts: \"VideoCell\" -> False (True で Video[file] セル、既定はファイルリンク)、\"MaxImageSize\" -> 480 (表示上の最大幅 px、None で原寸)、\n" <>
+  "\"Materialize\" -> Automatic。戻り値 <|Status, URI, MediaKind, PrivacyLevel, Marked|>。";
+
 NBMarkCellDependent::usage =
   "NBMarkCellDependent[nb, cellIdx] \:306f\:30bb\:30eb\:306b\:4f9d\:5b58\:6a5f\:5bc6\:30de\:30fc\:30af\:ff08\:6a59\:80cc\:666f + LockIcon\:ff09\:3092\:4ed8\:3051\:308b\:3002\n" <>
   "\:6a5f\:5bc6\:5909\:6570\:306b\:4f9d\:5b58\:3059\:308b\:8a08\:7b97\:7d50\:679c\:306a\:3069\:3001\:9593\:63a5\:7684\:306b\:6a5f\:5bc6\:306a\:30bb\:30eb\:306b\:4f7f\:7528\:3059\:308b\:3002";
@@ -1215,6 +1225,12 @@ NBResolveOutputMode::usage =
 
 $NBEffectClassOverrides::usage =
   "$NBEffectClassOverrides は head 名 -> <|EffectClass, BlockingRisk, ExecutionPlacement, RequiresFinalNode|> の任意上書きテーブル (spec 5B.5A)。allowlist ではなく分類精度向上用。未登録 head はフォールバック分類 (System` 純粋 -> PureComputation 等) に進む。";
+
+$NBTrustedPackageHeads::usage =
+  "$NBTrustedPackageHeads は「package 文脈だが承認不要とみなす head」の登録テーブル (<|context -> {名前パターン...}|>)。既定 <|\"SourceVault`\" -> {\"SourceVault*\"}|>。SourceVault* 公開関数は全経路で PrivacyLevel を考慮した安全設計 (release gate / fail-closed / 承認は関数内部の gate が担う) のため、unknown-head 承認を免除する。$NBDenyHeads / $NBApprovalHeads の明示登録はこの信頼より優先される (deny/approval チェックが先に走る)。過剰実行は $NBTrustedHeadIterationLimit の静的 guard と SourceVault 側 SourceVaultRateLimit の実行時 guard で保護する。";
+
+$NBTrustedHeadIterationLimit::usage =
+  "$NBTrustedHeadIterationLimit は trusted package head を含む反復構造 (Do/Table/For/Nest/Map over Range 等) の literal 反復数がこの値以上のとき NeedsApproval に昇格させる閾値 (既定 100)。SourceVaultIngest を 1 万回呼ぶような生成コードの過剰実行対策。";
 
 NBRegisterAction::usage =
   "NBRegisterAction[name, spec] は承認対象操作 (desktop/notebook/filesystem) を action registry に登録する (spec 5B.8)。spec キー: EffectClass, DefaultApprovalEligibility, AllowedTargetTypes, RequiresFinalNode, Validator, Executor。raw head を乱立させず汎用 action に寄せるための仕組み。";
@@ -2455,6 +2471,94 @@ NBAccess`NBMarkCellConfidential[nb_NotebookObject, cellIdx_Integer,
         Background -> Inherited, CellDingbat -> Inherited]];
     lv
   ];
+
+(* ============================================================
+   NBInsertArtifactCell: SourceVault artifact URI の privacy-marking 付き表示
+   ------------------------------------------------------------
+   - 内容解決は SourceVault`SourceVaultResolveArtifactContent (sanctioned reader)。
+     bytes が PrivacyLevel なしで裸のまま呼び出し側へ渡る経路を作らない。
+   - privacy marking はセル式に構築時に焼き込む:
+     TaggingRules "claudecode" {privacyLevel, confidential(>0.5)} は
+     NBMarkCellConfidential が書くものと同一データ。視覚マークは
+     $NBConfidentialCellOpts を参照 (重複定義しない)。
+     書き込み後の cell index 探索をしないため deferred output とも整合し、
+     レースが無い。
+   ============================================================ *)
+
+(* artifact 表示セル式を構築する純関数 (headless テスト可能)。 *)
+iNBArtifactCellExpr[content_Association, dispOpts_Association] := Module[
+  {kind, pl, mt, uri, fname, file, inner, tagRules, confOpts, img, maxSz, videoCell},
+  kind = Lookup[content, "MediaKind", "Binary"];
+  pl = With[{p = Lookup[content, "PrivacyLevel", Missing[]]},
+    If[NumericQ[p], N @ Clip[p, {0., 1.}], 1.0]];   (* 欠落は fail-closed 1.0 *)
+  mt = Lookup[content, "MediaType", "application/octet-stream"];
+  uri = Lookup[content, "URI", Missing[]];
+  fname = Lookup[content, "Filename", Missing[]];
+  file = Lookup[content, "File", Missing[]];
+  maxSz = Lookup[dispOpts, "MaxImageSize", 480];
+  videoCell = TrueQ @ Lookup[dispOpts, "VideoCell", False];
+  inner = Switch[kind,
+    "Image",
+      img = Quiet @ Check[ImportByteArray[Lookup[content, "Bytes", $Failed]], $Failed];
+      If[ImageQ[img],
+        Cell[BoxData[ToBoxes[
+          If[NumericQ[maxSz], Image[img, ImageSize -> UpTo[maxSz]], img]]], "Output"],
+        Cell["[画像を読み込めませんでした: " <> ToString[uri] <> "]", "Text"]],
+    "Text",
+      Cell[Lookup[content, "Text", ""], "Text"],
+    _,  (* Video / Binary: ファイルリンク (Video は option で Video セル) *)
+      Which[
+        ! StringQ[file],
+          Cell["[ファイル未 materialize: " <> ToString[uri] <> "]", "Text"],
+        kind === "Video" && videoCell && FileExistsQ[file],
+          (* Video 構築が失敗する環境 (codec 等) では Hyperlink にフォールバック *)
+          With[{vb = Quiet @ Check[BoxData[ToBoxes[Video[file]]], $Failed]},
+            If[vb === $Failed,
+              Cell[BoxData[ToBoxes[Hyperlink[
+                "▶ " <> If[StringQ[fname], fname, FileNameTake[file]],
+                File[file]]]], "Output"],
+              Cell[vb, "Output"]]],
+        True,
+          Cell[BoxData[ToBoxes[
+            Hyperlink[
+              "▶ " <> If[StringQ[fname], fname, FileNameTake[file]],
+              File[file]]]], "Output"]]];
+  tagRules = {
+    "claudecode" -> {"privacyLevel" -> pl, "confidential" -> (pl > 0.5)},
+    "SourceVault" -> {"ArtifactCell" -> {
+      "URI" -> If[StringQ[uri], uri, ToString[uri]],
+      "ArtifactId" -> Lookup[content, "ArtifactId", Missing[]],
+      "MediaKind" -> kind, "MediaType" -> mt}}};
+  confOpts = If[pl > 0.5, NBAccess`$NBConfidentialCellOpts, {}];
+  (* Cell[content, style] に options を合成 (Append の多引数化を避ける) *)
+  Cell @@ Join[List @@ inner, {TaggingRules -> tagRules}, confOpts]];
+
+Options[NBAccess`NBInsertArtifactCell] = {
+  "VideoCell" -> False, "MaxImageSize" -> 480, "Materialize" -> Automatic};
+
+NBAccess`NBInsertArtifactCell[nb_NotebookObject, uri_String,
+    opts:OptionsPattern[]] := Module[{resolveFn, content, cell, pl},
+  If[Length[Names["SourceVault`SourceVaultResolveArtifactContent"]] === 0,
+    Return[<|"Status" -> "Error", "Reason" -> "SourceVaultNotLoaded",
+      "Detail" -> "SourceVault (SourceVault_core) がロードされていません。"|>]];
+  resolveFn = Symbol["SourceVault`SourceVaultResolveArtifactContent"];
+  content = Quiet @ Check[
+    resolveFn[uri, "Materialize" -> OptionValue["Materialize"]], $Failed];
+  If[! AssociationQ[content],
+    Return[<|"Status" -> "Error", "Reason" -> "ResolveFailed", "URI" -> uri|>]];
+  If[Lookup[content, "Status", ""] =!= "OK", Return[content]];
+  cell = iNBArtifactCellExpr[Join[content, <|"URI" -> uri|>],
+    <|"VideoCell" -> OptionValue["VideoCell"],
+      "MaxImageSize" -> OptionValue["MaxImageSize"]|>];
+  NBAccess`NBWriteCell[nb, cell];
+  pl = With[{p = Lookup[content, "PrivacyLevel", Missing[]]},
+    If[NumericQ[p], N[p], 1.0]];
+  <|"Status" -> "OK", "URI" -> uri,
+    "MediaKind" -> Lookup[content, "MediaKind", Missing[]],
+    "PrivacyLevel" -> pl, "Marked" -> (pl > 0.5)|>];
+
+NBAccess`NBInsertArtifactCell[uri_String, opts:OptionsPattern[]] :=
+  NBAccess`NBInsertArtifactCell[EvaluationNotebook[], uri, opts];
 
 (* ============================================================
    Stage 9 P1 Step 7: NBSetSnapshotPrivacyLevel (API \:30b9\:30bf\:30d6)
@@ -6288,6 +6392,24 @@ iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]
               " detected. Only Set/SetDelayed inside Module/With/Block is auto-permitted.",
             "SanitizedExpr" -> heldExpr|>]]]];
     
+    (* 過剰反復ガード (2026-06-29): trusted package head (SourceVault* 等) を
+       大きな literal 反復で回す生成コード (例: Do[SourceVaultIngest[..], {10000}])
+       は、head 自体が承認不要でも NeedsApproval に昇格させる。
+       閾値 $NBTrustedHeadIterationLimit (既定 100)。実行時の防波堤は
+       SourceVault 側 SourceVaultRateLimit。 *)
+    Module[{iterHits = iNBExcessiveTrustedIterationHits[heldExpr]},
+      If[Length[iterHits] > 0,
+        Return[<|"Decision" -> "NeedsApproval",
+          "ReasonClass" -> "ExcessiveIterationRequiresApproval",
+          "VisibleExplanation" ->
+            "Trusted-package head inside large literal iteration (" <>
+            StringRiffle[
+              (Lookup[#, "Construct", "?"] <> " x " <>
+               ToString[Lookup[#, "Count", "?"]]) & /@ iterHits, ", "] <>
+            "); limit = " <> ToString[$NBTrustedHeadIterationLimit],
+          "IterationHits" -> iterHits,
+          "SanitizedExpr" -> heldExpr|>]]];
+
     (* unknown head の扱い (Phase C-lite, spec I8/I9/5A)。
        従来は一律 RepairNeeded だったが、Mathematica の純粋関数を
        allow list 化するのは非現実的なため、文脈 + 副作用語幹で再分類する。
@@ -6623,6 +6745,72 @@ iNBSideEffectishQ[_] := True;  (* 不明は安全側 *)
 iNBIsSystemContextQ[ctx_String] := (ctx === "System`");
 iNBIsSystemContextQ[_] := False;
 
+(* ── trusted package heads (2026-06-29) ──
+   SourceVault* 公開関数は PrivacyLevel を考慮した安全設計 (内部 gate /
+   fail-closed) のため、package 文脈由来の unknown-head 承認を免除する。
+   deny/approval 明示リストはこのチェックより先に評価されるので、個別に
+   厳格化したい head は $NBApprovalHeads / $NBDenyHeads へ登録すればよい。
+   過剰実行は iNBExcessiveTrustedIterationHits (静的) と SourceVault 側の
+   SourceVaultRateLimit (実行時) が受け持つ。 *)
+If[!AssociationQ[$NBTrustedPackageHeads],
+  $NBTrustedPackageHeads = <|"SourceVault`" -> {"SourceVault*"}|>];
+If[!IntegerQ[$NBTrustedHeadIterationLimit],
+  $NBTrustedHeadIterationLimit = 100];
+
+iNBTrustedPackageHeadQ[nm_String, ctx_String] :=
+  Module[{pats},
+    pats = If[AssociationQ[$NBTrustedPackageHeads],
+      Lookup[$NBTrustedPackageHeads, ctx, {}], {}];
+    ListQ[pats] && AnyTrue[pats, StringQ[#] && StringMatchQ[nm, #] &]];
+iNBTrustedPackageHeadQ[___] := False;
+
+(* HoldComplete 片が trusted package head を含むか (適用形とベア symbol の両方:
+   Map[SourceVaultIngest, ...] のようにベアで渡るケースを取りこぼさない)。 *)
+iNBContainsTrustedHeadQ[hc_HoldComplete] :=
+  Length[DeleteDuplicates @ Cases[hc,
+    s_Symbol :> {SymbolName[Unevaluated[s]], Context[Unevaluated[s]]},
+    {1, Infinity}, Heads -> True]] > 0 &&
+  AnyTrue[DeleteDuplicates @ Cases[hc,
+      s_Symbol :> {SymbolName[Unevaluated[s]], Context[Unevaluated[s]]},
+      {1, Infinity}, Heads -> True],
+    iNBTrustedPackageHeadQ[#[[1]], #[[2]]] &];
+iNBContainsTrustedHeadQ[_] := False;
+
+(* trusted head を含む反復構造の literal 反復数 >= limit を静的検出する。
+   検出対象:
+   - Do/Table[body, specs..]: specs 中の literal Integer の最大値
+   - Nest/NestList[f, x, n]: n
+   - Map/Scan/AssociationMap/ParallelMap/ParallelTable 等で第 2 引数が
+     Range[n] / ConstantArray[_, n]
+   Seed -> 999999 のような body 側の大きな整数では発火しない (反復数
+   position のみ数える)。返り値: {<|"Construct","Count"|>...} (超過分のみ)。 *)
+iNBExcessiveTrustedIterationHits[held_HoldComplete] :=
+  Module[{limit, hits = {}, doTab, nests, maps},
+    limit = If[IntegerQ[$NBTrustedHeadIterationLimit],
+      $NBTrustedHeadIterationLimit, 100];
+    (* パターン式の評価を防ぐため HoldPattern で包む (Range[n_Integer] 等は
+       裸だとパターン構築時に評価され Range::range ノイズを出す)。 *)
+    doTab = Cases[held,
+      HoldPattern[(h : (Do | Table | ParallelDo | ParallelTable))[body_, specs__]] :>
+        {ToString[h], HoldComplete[body],
+         Max[0, Cases[HoldComplete[{specs}], n_Integer, {2, Infinity}]]},
+      {1, Infinity}];
+    nests = Cases[held,
+      HoldPattern[(h : (Nest | NestList))[f_, _, n_Integer]] :>
+        {ToString[h], HoldComplete[f], n},
+      {1, Infinity}];
+    maps = Cases[held,
+      HoldPattern[(h : (Map | Scan | AssociationMap | ParallelMap | MapIndexed))[f_,
+          (Range[n_Integer] | ConstantArray[_, n_Integer]), ___]] :>
+        {ToString[h], HoldComplete[f], n},
+      {1, Infinity}];
+    Scan[Function[rec,
+      If[rec[[3]] >= limit && iNBContainsTrustedHeadQ[rec[[2]]],
+        AppendTo[hits, <|"Construct" -> rec[[1]], "Count" -> rec[[3]]|>]]],
+      Join[doTab, nests, maps]];
+    hits];
+iNBExcessiveTrustedIterationHits[_] := {};
+
 (* unknown head 群 (名前-文脈ペア) を分類し、最も厳しい結果を返す。
    返り値: <|"Decision" -> "Permit"|"NeedsApproval", "Reason" -> _,
             "PlacementHint" -> _, "Unknowns" -> {名前...}|>
@@ -6642,6 +6830,12 @@ iNBClassifyUnknownHeads[pairs_List] :=
           (* override が AutoPermit 相当の純粋系なら sysPure *)
           MemberQ[{"PureComputation", "ReadOnlyFileSystem",
                    "GraphicsComputation", "LongRunningComputation"}, ovEC],
+            AppendTo[sysPure, nm],
+          (* trusted package head (SourceVault* 等): PrivacyLevel 考慮の
+             安全設計を信頼し承認不要。deny/approval 明示リストはここより
+             先に評価済み。過剰実行は iteration guard (静的) と
+             SourceVaultRateLimit (実行時) が受け持つ。 *)
+          iNBTrustedPackageHeadQ[nm, ctx],
             AppendTo[sysPure, nm],
           ! iNBIsSystemContextQ[ctx],
             (* Global`/user/package 文脈: 内部で何をするか不明 -> NeedsApproval *)
@@ -6786,6 +6980,18 @@ iNBHeadEffectClass[name_String, ctx_String] :=
         "ExecutionPlacement" -> Lookup[ov, "ExecutionPlacement", "SubkernelSafe"],
         "BlockingRisk" -> Lookup[ov, "BlockingRisk", "None"],
         "RequiresFinalNode" -> TrueQ[Lookup[ov, "RequiresFinalNode", False]]|>]];
+    (* 1b. trusted package head (SourceVault* 等): 名前に "Notebook"/"Generate"
+       等の副作用語幹を含んでも、内部 gate が安全を担保する信頼済み関数として
+       PureComputation 扱い (承認不要)。unknown-head 分類と EffectClass 層の
+       両方で trusted を尊重しないと、片方が Permit でも他方が承認へ上げる
+       (例: GenerateToNotebook は "Notebook" 語幹で NotebookMutation になる)。
+       過剰実行は iNBExcessiveTrustedIterationHits + SourceVaultRateLimit で防ぐ。
+       BlockingRisk は控えめに PossiblyLong とし (生成は数十秒かかりうる)、
+       ブロック回避の出力集約が効くようにする。 *)
+    If[iNBTrustedPackageHeadQ[name, ctx],
+      Return[<|"EffectClass" -> "PureComputation",
+        "ExecutionPlacement" -> "MainKernelOnly",
+        "BlockingRisk" -> "PossiblyLong", "RequiresFinalNode" -> False|>]];
     (* 2-4. フォールバック *)
     Which[
       ! iNBIsSystemContextQ[ctx],

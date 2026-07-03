@@ -323,6 +323,11 @@ Options: PrivacySpec -> Automatic
 SourceVault snapshot の PrivacyLevel を設定する。人間が明示的に上書きしたい場合に使用。SourceVault がロード済み必須。$NBApprovalHeads に登録され承認ゲートを発火。
 Options: PrivacySpec -> Automatic
 
+### NBInsertArtifactCell[nb, uri, opts] / NBInsertArtifactCell[uri, opts]
+SourceVault artifact URI(`sv://artifact/<id>` または `sv://hash/sha256/<hex>`)の内容を解決しメディア種別に応じたセルとして挿入する。Image→画像セル、Video/Binary→ファイルリンク、Text→本文。artifact の PrivacyLevel が TaggingRules に焼き込まれ、level > 0.5 なら機密マーク(赤背景+警告 dingbat)付き。`NBInsertArtifactCell[uri]` は EvaluationNotebook[] へ。内容解決は SourceVault`SourceVaultResolveArtifactContent に委譲。SourceVault 未ロードなら Error。
+→ `<|"Status", "URI", "MediaKind", "PrivacyLevel", "Marked"|>`
+Options: "VideoCell" -> False (True で Video[file]セル、既定はファイルリンク), "MaxImageSize" -> 480 (表示幅 px、None で原寸), "Materialize" -> Automatic
+
 ### NBMarkCellDependent[nb, cellIdx]
 セルに依存機密マーク(橙背景 + LockIcon)を付ける。機密変数に依存する計算結果など間接的に機密なセルに使用。
 
