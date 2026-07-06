@@ -302,14 +302,14 @@ NBSetSnapshotPrivacyLevel::usage =
   "\:3053\:306e\:95a2\:6570\:306f $NBApprovalHeads \:306b\:767b\:9332\:3055\:308c\:3001\:5b9f\:884c\:6642\:306b\:627f\:8a8d\:30b2\:30fc\:30c8\:3092\:767a\:706b\:3055\:305b\:308b\:3002";
 
 NBInsertArtifactCell::usage =
-  "NBInsertArtifactCell[nb, uri, opts] は SourceVault artifact URI (sv://artifact/<id> / sv://hash/sha256/<hex>) の内容を\n" <>
-  "解決し、media 種別に応じたセルとしてノートブックへ挿入する: Image は画像セル、Video/Binary はファイルリンク、Text は本文。\n" <>
-  "セルには artifact の PrivacyLevel が必ず焼き込まれ (TaggingRules claudecode privacyLevel/confidential)、level > 0.5 なら\n" <>
-  "$NBConfidentialCellOpts の機密マーク (赤背景+警告 dingbat) 付きで出力される。生データを裸で返す API ではなく、\n" <>
-  "実体化は常に privacy marking と一体 (SourceVault のガードを剥がさない)。NBInsertArtifactCell[uri] は EvaluationNotebook[] へ。\n" <>
-  "内容解決は SourceVault`SourceVaultResolveArtifactContent (sanctioned reader) に委譲する。SourceVault 未ロードなら Error。\n" <>
-  "opts: \"VideoCell\" -> False (True で Video[file] セル、既定はファイルリンク)、\"MaxImageSize\" -> 480 (表示上の最大幅 px、None で原寸)、\n" <>
-  "\"Materialize\" -> Automatic。戻り値 <|Status, URI, MediaKind, PrivacyLevel, Marked|>。";
+  "NBInsertArtifactCell[nb, uri, opts] \:306f SourceVault artifact URI (sv://artifact/<id> / sv://hash/sha256/<hex>) \:306e\:5185\:5bb9\:3092\n" <>
+  "\:89e3\:6c7a\:3057\:3001media \:7a2e\:5225\:306b\:5fdc\:3058\:305f\:30bb\:30eb\:3068\:3057\:3066\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:3078\:633f\:5165\:3059\:308b: Image \:306f\:753b\:50cf\:30bb\:30eb\:3001Video/Binary \:306f\:30d5\:30a1\:30a4\:30eb\:30ea\:30f3\:30af\:3001Text \:306f\:672c\:6587\:3002\n" <>
+  "\:30bb\:30eb\:306b\:306f artifact \:306e PrivacyLevel \:304c\:5fc5\:305a\:713c\:304d\:8fbc\:307e\:308c (TaggingRules claudecode privacyLevel/confidential)\:3001level > 0.5 \:306a\:3089\n" <>
+  "$NBConfidentialCellOpts \:306e\:6a5f\:5bc6\:30de\:30fc\:30af (\:8d64\:80cc\:666f+\:8b66\:544a dingbat) \:4ed8\:304d\:3067\:51fa\:529b\:3055\:308c\:308b\:3002\:751f\:30c7\:30fc\:30bf\:3092\:88f8\:3067\:8fd4\:3059 API \:3067\:306f\:306a\:304f\:3001\n" <>
+  "\:5b9f\:4f53\:5316\:306f\:5e38\:306b privacy marking \:3068\:4e00\:4f53 (SourceVault \:306e\:30ac\:30fc\:30c9\:3092\:5265\:304c\:3055\:306a\:3044)\:3002NBInsertArtifactCell[uri] \:306f EvaluationNotebook[] \:3078\:3002\n" <>
+  "\:5185\:5bb9\:89e3\:6c7a\:306f SourceVault`SourceVaultResolveArtifactContent (sanctioned reader) \:306b\:59d4\:8b72\:3059\:308b\:3002SourceVault \:672a\:30ed\:30fc\:30c9\:306a\:3089 Error\:3002\n" <>
+  "opts: \"VideoCell\" -> False (True \:3067 Video[file] \:30bb\:30eb\:3001\:65e2\:5b9a\:306f\:30d5\:30a1\:30a4\:30eb\:30ea\:30f3\:30af)\:3001\"MaxImageSize\" -> 480 (\:8868\:793a\:4e0a\:306e\:6700\:5927\:5e45 px\:3001None \:3067\:539f\:5bf8)\:3001\n" <>
+  "\"Materialize\" -> Automatic\:3002\:623b\:308a\:5024 <|Status, URI, MediaKind, PrivacyLevel, Marked|>\:3002";
 
 NBMarkCellDependent::usage =
   "NBMarkCellDependent[nb, cellIdx] \:306f\:30bb\:30eb\:306b\:4f9d\:5b58\:6a5f\:5bc6\:30de\:30fc\:30af\:ff08\:6a59\:80cc\:666f + LockIcon\:ff09\:3092\:4ed8\:3051\:308b\:3002\n" <>
@@ -705,16 +705,16 @@ NBUnregisterConfidentialVar::usage =
   "NBUnregisterConfidentialVar[name] \:306f\:6a5f\:5bc6\:5909\:6570\:30921\:3064\:89e3\:9664\:3059\:308b\:3002";
 
 NBRegisterConfidentialHead::usage =
-  "NBRegisterConfidentialHead[name, level] は「返り値が機密たり得る関数ヘッド」を登録する (level 既定 1.0)。SourceVault 等のデータ層がロード時に登録し、claudecode が LLM 生成コードの書き込みセル自動機密マークと CellEpilog の依存秘密判定に使う。";
+  "NBRegisterConfidentialHead[name, level] \:306f\:300c\:8fd4\:308a\:5024\:304c\:6a5f\:5bc6\:305f\:308a\:5f97\:308b\:95a2\:6570\:30d8\:30c3\:30c9\:300d\:3092\:767b\:9332\:3059\:308b (level \:65e2\:5b9a 1.0)\:3002SourceVault \:7b49\:306e\:30c7\:30fc\:30bf\:5c64\:304c\:30ed\:30fc\:30c9\:6642\:306b\:767b\:9332\:3057\:3001claudecode \:304c LLM \:751f\:6210\:30b3\:30fc\:30c9\:306e\:66f8\:304d\:8fbc\:307f\:30bb\:30eb\:81ea\:52d5\:6a5f\:5bc6\:30de\:30fc\:30af\:3068 CellEpilog \:306e\:4f9d\:5b58\:79d8\:5bc6\:5224\:5b9a\:306b\:4f7f\:3046\:3002";
 
 NBUnregisterConfidentialHead::usage =
-  "NBUnregisterConfidentialHead[name] は機密生成ヘッドの登録を1つ解除する。";
+  "NBUnregisterConfidentialHead[name] \:306f\:6a5f\:5bc6\:751f\:6210\:30d8\:30c3\:30c9\:306e\:767b\:9332\:30921\:3064\:89e3\:9664\:3059\:308b\:3002";
 
 NBGetConfidentialHeads::usage =
-  "NBGetConfidentialHeads[] は登録済みの機密生成ヘッド表 (<|name -> level|>) を返す。";
+  "NBGetConfidentialHeads[] \:306f\:767b\:9332\:6e08\:307f\:306e\:6a5f\:5bc6\:751f\:6210\:30d8\:30c3\:30c9\:8868 (<|name -> level|>) \:3092\:8fd4\:3059\:3002";
 
 NBTextUsesConfidentialHead::usage =
-  "NBTextUsesConfidentialHead[text] は text が登録済みの機密生成ヘッドを参照していれば True を返す。識別子境界 (Unicode) で判定し、Map 等へ関数値として渡される形 (ブラケットなし) も検出する。";
+  "NBTextUsesConfidentialHead[text] \:306f text \:304c\:767b\:9332\:6e08\:307f\:306e\:6a5f\:5bc6\:751f\:6210\:30d8\:30c3\:30c9\:3092\:53c2\:7167\:3057\:3066\:3044\:308c\:3070 True \:3092\:8fd4\:3059\:3002\:8b58\:5225\:5b50\:5883\:754c (Unicode) \:3067\:5224\:5b9a\:3057\:3001Map \:7b49\:3078\:95a2\:6570\:5024\:3068\:3057\:3066\:6e21\:3055\:308c\:308b\:5f62 (\:30d6\:30e9\:30b1\:30c3\:30c8\:306a\:3057) \:3082\:691c\:51fa\:3059\:308b\:3002";
 
 NBGetPrivacySpec::usage =
   "NBGetPrivacySpec[] \:306f\:73fe\:5728\:306e $NBPrivacySpec \:3092\:8fd4\:3059\:3002";
@@ -1057,7 +1057,7 @@ NBFindCellByPredicate::usage =
   "                    \"Style\" -> _, \"ExpressionUUID\" -> _String|_Missing |> ... } |>";
 
 
-(* \:2500\:2500 \:66f8\:304d\:8fbc\:307f\:7cfb (Stage 9 P1 Step 6 \:7528) \:2500\:2500 *)
+(* \[HorizontalLine]\[HorizontalLine] \:66f8\:304d\:8fbc\:307f\:7cfb (Stage 9 P1 Step 6 \:7528) \[HorizontalLine]\[HorizontalLine] *)
 
 NBSetCellOptionsByPredicate::usage =
   "NBSetCellOptionsByPredicate[path, predicate, optionRules_List, opts:OptionsPattern[]] \:306f\n" <>
@@ -1075,7 +1075,7 @@ NBSetCellTaggingRuleByPredicate::usage =
   "NBSetCellTaggingRuleByPredicate[path, predicate, taggingKeyPath_List, value, opts:OptionsPattern[]] \:306f\n" <>
   "predicate \:304c True \:3092\:8fd4\:3059 cell \:306e TaggingRules \:5185\:90e8\:306e key \:30d1\:30b9\:3092 value \:3067\:8a2d\:5b9a\:3059\:308b\:3002\n" <>
   "\:4f8b: taggingKeyPath = {\"SourceVault\", \"TodoStatus\"}, value = \"Done\"\n" <>
-  "      \:2192 Cell \:306e TaggingRules \:306b <|\"SourceVault\" -> <|\"TodoStatus\" -> \"Done\"|>|> \:3092\:30de\:30fc\:30b8\n" <>
+  "      \[RightArrow] Cell \:306e TaggingRules \:306b <|\"SourceVault\" -> <|\"TodoStatus\" -> \"Done\"|>|> \:3092\:30de\:30fc\:30b8\n" <>
   "\:30aa\:30d7\:30b7\:30e7\:30f3: NBSetCellOptionsByPredicate \:3068\:540c\:69d8\:3002\n" <>
   "\:623b\:308a\:5024: NBSetCellOptionsByPredicate \:3068\:540c\:5f62\:3002";
 
@@ -1103,7 +1103,7 @@ NBWriteTodoStatus::usage =
   "  \"OldStatus\" -> _, \"NewStatus\" -> _, \"CellPath\" -> {_Integer...}|>";
 
 
-(* \:2500\:2500 \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5358\:4f4d\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00 (Stage 9 P1 \:62e1\:5f35) \:2500\:2500 *)
+(* \[HorizontalLine]\[HorizontalLine] \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5358\:4f4d\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00 (Stage 9 P1 \:62e1\:5f35) \[HorizontalLine]\[HorizontalLine] *)
 
 NBGetCloudPublishable::usage =
   "NBGetCloudPublishable[path] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:81ea\:8eab\:306e\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00\:3092\:8aad\:307f\:53d6\:308b\:3002\n" <>
@@ -1145,7 +1145,7 @@ NBSetNotebookPrivate::usage =
   "NBSetNotebookPrivate[] \:306f EvaluationNotebook[] \:3092\:5bfe\:8c61\:306b\:3059\:308b\:3002";
 
 
-(* \:2500\:2500 .nb \:30d5\:30a1\:30a4\:30eb\:306e outline cache \:4fee\:5fa9 (Stage 9 P1 Step 2 Hotfix 4) \:2500\:2500 *)
+(* \[HorizontalLine]\[HorizontalLine] .nb \:30d5\:30a1\:30a4\:30eb\:306e outline cache \:4fee\:5fa9 (Stage 9 P1 Step 2 Hotfix 4) \[HorizontalLine]\[HorizontalLine] *)
 
 NBRepairNotebookCache::usage =
   "NBRepairNotebookCache[path] \:306f .nb \:30d5\:30a1\:30a4\:30eb\:306e outline cache \:3092\:6b63\:898f\:5316\:3059\:308b\:3002\n" <>
@@ -1184,108 +1184,108 @@ NBAuditCodexAccessibleDirs::usage =
 
 (* ============================================================
    Phase A1 (ClaudeEval async-compat spec): Policy Snapshot API
-   - main kernel の動的 NBAccess policy を凍結し、subkernel へ
-     accessSpec 経由で渡すための snapshot 機構。
-   - 新規追加のみ。既存 head 集合・iRecomputeAllowedHeads 等の
-     定義には一切触れない。
+   - main kernel \:306e\:52d5\:7684 NBAccess policy \:3092\:51cd\:7d50\:3057\:3001subkernel \:3078
+     accessSpec \:7d4c\:7531\:3067\:6e21\:3059\:305f\:3081\:306e snapshot \:6a5f\:69cb\:3002
+   - \:65b0\:898f\:8ffd\:52a0\:306e\:307f\:3002\:65e2\:5b58 head \:96c6\:5408\:30fbiRecomputeAllowedHeads \:7b49\:306e
+     \:5b9a\:7fa9\:306b\:306f\:4e00\:5207\:89e6\:308c\:306a\:3044\:3002
    ============================================================ *)
 
 NBPolicySnapshot::usage =
-  "NBPolicySnapshot[] は現在の NBAccess 動的 policy (導出済み AllowedHeads, ApprovalHeads, DenyHeads, ConfidentialSymbols) を凍結した Association を返す。snapshot mode の NBValidateHeldExpr / subkernel 検証はこの snapshot を判定入力とし、カテゴリ定義系 global を参照しない。キー: \"SnapshotID\", \"CreatedAt\", \"NBAccessPolicyVersion\", \"AllowedHeads\", \"ApprovalHeads\", \"DenyHeads\", \"ConfidentialSymbols\", \"Digest\", \"Source\"。";
+  "NBPolicySnapshot[] \:306f\:73fe\:5728\:306e NBAccess \:52d5\:7684 policy (\:5c0e\:51fa\:6e08\:307f AllowedHeads, ApprovalHeads, DenyHeads, ConfidentialSymbols) \:3092\:51cd\:7d50\:3057\:305f Association \:3092\:8fd4\:3059\:3002snapshot mode \:306e NBValidateHeldExpr / subkernel \:691c\:8a3c\:306f\:3053\:306e snapshot \:3092\:5224\:5b9a\:5165\:529b\:3068\:3057\:3001\:30ab\:30c6\:30b4\:30ea\:5b9a\:7fa9\:7cfb global \:3092\:53c2\:7167\:3057\:306a\:3044\:3002\:30ad\:30fc: \"SnapshotID\", \"CreatedAt\", \"NBAccessPolicyVersion\", \"AllowedHeads\", \"ApprovalHeads\", \"DenyHeads\", \"ConfidentialSymbols\", \"Digest\", \"Source\"\:3002";
 
 NBAcceptPolicySnapshot::usage =
-  "NBAcceptPolicySnapshot[snapshot] は snapshot の必須キーと Digest を検証し、<|\"Valid\" -> True|False, \"Digest\" -> _, \"Reason\" -> _|> を返す。Digest は NBPolicySnapshot 生成時と同一の内部 helper で再計算して照合する。Valid のとき subkernel 内 $NBActivePolicySnapshot に保存してよいが、実行判定の正本は実行ごとの accessSpec[\"PolicySnapshot\"] とする。snapshot install は許可拡張に使ってはならない。";
+  "NBAcceptPolicySnapshot[snapshot] \:306f snapshot \:306e\:5fc5\:9808\:30ad\:30fc\:3068 Digest \:3092\:691c\:8a3c\:3057\:3001<|\"Valid\" -> True|False, \"Digest\" -> _, \"Reason\" -> _|> \:3092\:8fd4\:3059\:3002Digest \:306f NBPolicySnapshot \:751f\:6210\:6642\:3068\:540c\:4e00\:306e\:5185\:90e8 helper \:3067\:518d\:8a08\:7b97\:3057\:3066\:7167\:5408\:3059\:308b\:3002Valid \:306e\:3068\:304d subkernel \:5185 $NBActivePolicySnapshot \:306b\:4fdd\:5b58\:3057\:3066\:3088\:3044\:304c\:3001\:5b9f\:884c\:5224\:5b9a\:306e\:6b63\:672c\:306f\:5b9f\:884c\:3054\:3068\:306e accessSpec[\"PolicySnapshot\"] \:3068\:3059\:308b\:3002snapshot install \:306f\:8a31\:53ef\:62e1\:5f35\:306b\:4f7f\:3063\:3066\:306f\:306a\:3089\:306a\:3044\:3002";
 
 $NBActivePolicySnapshot::usage =
-  "$NBActivePolicySnapshot は NBAcceptPolicySnapshot が Valid と判定した最新 snapshot を保持する (主に subkernel 側)。参考情報であり、実行判定の正本ではない。";
+  "$NBActivePolicySnapshot \:306f NBAcceptPolicySnapshot \:304c Valid \:3068\:5224\:5b9a\:3057\:305f\:6700\:65b0 snapshot \:3092\:4fdd\:6301\:3059\:308b (\:4e3b\:306b subkernel \:5074)\:3002\:53c2\:8003\:60c5\:5831\:3067\:3042\:308a\:3001\:5b9f\:884c\:5224\:5b9a\:306e\:6b63\:672c\:3067\:306f\:306a\:3044\:3002";
 
 NBValidateNotebookPreActions::usage =
-  "NBValidateNotebookPreActions[actions, accessSpec] は PreExecutionNotebookActions のリストを検証し、許可された action だけを返す。P0 で必須の action は \"MoveSelectionAfterNotebook\" (内部実装 SelectionMove[nb, After, Notebook])。許可条件: action 名が accessSpec[\"AllowedNotebookActions\"] に含まれ、MayUseFrontEnd/MayWriteNotebook が True、ExecutionKernel が \"MainOnly\"、Notebook が target と一致すること。";
+  "NBValidateNotebookPreActions[actions, accessSpec] \:306f PreExecutionNotebookActions \:306e\:30ea\:30b9\:30c8\:3092\:691c\:8a3c\:3057\:3001\:8a31\:53ef\:3055\:308c\:305f action \:3060\:3051\:3092\:8fd4\:3059\:3002P0 \:3067\:5fc5\:9808\:306e action \:306f \"MoveSelectionAfterNotebook\" (\:5185\:90e8\:5b9f\:88c5 SelectionMove[nb, After, Notebook])\:3002\:8a31\:53ef\:6761\:4ef6: action \:540d\:304c accessSpec[\"AllowedNotebookActions\"] \:306b\:542b\:307e\:308c\:3001MayUseFrontEnd/MayWriteNotebook \:304c True\:3001ExecutionKernel \:304c \"MainOnly\"\:3001Notebook \:304c target \:3068\:4e00\:81f4\:3059\:308b\:3053\:3068\:3002";
 
 NBSubkernelExecutableQ::usage =
-  "NBSubkernelExecutableQ[held, accessSpec] は held が subkernel で安全に実行できるかを返す。iShouldExecuteAsync の正式な判定本体。False 条件: ExecutionRole が \"ProposalEval\" でない / ExecutionKernel が \"SubkernelAllowed\" でない / MayUseFrontEnd・MayWriteNotebook・MayUseExternalProcess・MayUseNetwork のいずれかが True / ResultMayCrossKernel が True でない / PolicySnapshot が無効 / confidential 参照 / snapshot の DenyHeads・ApprovalHeads 該当 head を含む / 副作用候補 head (NotebookWrite, SelectionMove, Import, Export, RunProcess, StartProcess, Evaluate 等) を含む。$ClaudeRuntimeAsyncForce が True でも安全判定は上書きしない。";
+  "NBSubkernelExecutableQ[held, accessSpec] \:306f held \:304c subkernel \:3067\:5b89\:5168\:306b\:5b9f\:884c\:3067\:304d\:308b\:304b\:3092\:8fd4\:3059\:3002iShouldExecuteAsync \:306e\:6b63\:5f0f\:306a\:5224\:5b9a\:672c\:4f53\:3002False \:6761\:4ef6: ExecutionRole \:304c \"ProposalEval\" \:3067\:306a\:3044 / ExecutionKernel \:304c \"SubkernelAllowed\" \:3067\:306a\:3044 / MayUseFrontEnd\:30fbMayWriteNotebook\:30fbMayUseExternalProcess\:30fbMayUseNetwork \:306e\:3044\:305a\:308c\:304b\:304c True / ResultMayCrossKernel \:304c True \:3067\:306a\:3044 / PolicySnapshot \:304c\:7121\:52b9 / confidential \:53c2\:7167 / snapshot \:306e DenyHeads\:30fbApprovalHeads \:8a72\:5f53 head \:3092\:542b\:3080 / \:526f\:4f5c\:7528\:5019\:88dc head (NotebookWrite, SelectionMove, Import, Export, RunProcess, StartProcess, Evaluate \:7b49) \:3092\:542b\:3080\:3002$ClaudeRuntimeAsyncForce \:304c True \:3067\:3082\:5b89\:5168\:5224\:5b9a\:306f\:4e0a\:66f8\:304d\:3057\:306a\:3044\:3002";
 
 NBExecuteHeldExprSubkernelRaw::usage =
-  "NBExecuteHeldExprSubkernelRaw[held, accessSpec, opts] は subkernel 専用の実行 wrapper。戻り値は生の評価結果 / $TimedOut / $Failed (Association は返さない。future shape 維持のため)。snapshot 検証・NBSubkernelExecutableQ・snapshot 基準の再検証をすべて通過し Decision が Permit のときのみ内部で ReleaseHold する。Screen/NeedsApproval/Deny/RepairNeeded はすべて $Failed (subkernel では WarnOnly 実行をしない)。TimeConstraint が Infinity のときは TimeConstrained を使わない。";
+  "NBExecuteHeldExprSubkernelRaw[held, accessSpec, opts] \:306f subkernel \:5c02\:7528\:306e\:5b9f\:884c wrapper\:3002\:623b\:308a\:5024\:306f\:751f\:306e\:8a55\:4fa1\:7d50\:679c / $TimedOut / $Failed (Association \:306f\:8fd4\:3055\:306a\:3044\:3002future shape \:7dad\:6301\:306e\:305f\:3081)\:3002snapshot \:691c\:8a3c\:30fbNBSubkernelExecutableQ\:30fbsnapshot \:57fa\:6e96\:306e\:518d\:691c\:8a3c\:3092\:3059\:3079\:3066\:901a\:904e\:3057 Decision \:304c Permit \:306e\:3068\:304d\:306e\:307f\:5185\:90e8\:3067 ReleaseHold \:3059\:308b\:3002Screen/NeedsApproval/Deny/RepairNeeded \:306f\:3059\:3079\:3066 $Failed (subkernel \:3067\:306f WarnOnly \:5b9f\:884c\:3092\:3057\:306a\:3044)\:3002TimeConstraint \:304c Infinity \:306e\:3068\:304d\:306f TimeConstrained \:3092\:4f7f\:308f\:306a\:3044\:3002";
 
 NBMakeRuntimeAccessSpec::usage =
-  "NBMakeRuntimeAccessSpec[contextPacket, role] は Runtime/Orchestrator から NBAccess へ渡す accessSpec を作る。role は \"ProposalEval\" (既定、SubkernelAllowed)、\"Committer\" (MainOnly, FE/書込可, MoveSelectionAfterNotebook 許可)、\"VisionFallback\"、\"ManualDispatch\"。PolicySnapshot は生成時点の policy を NBPolicySnapshot[] で凍結して埋める。contextPacket から ConfidentialSymbols/Secrets/Caller/WorkflowID/StepID/PermissionMode を取り込む。";
+  "NBMakeRuntimeAccessSpec[contextPacket, role] \:306f Runtime/Orchestrator \:304b\:3089 NBAccess \:3078\:6e21\:3059 accessSpec \:3092\:4f5c\:308b\:3002role \:306f \"ProposalEval\" (\:65e2\:5b9a\:3001SubkernelAllowed)\:3001\"Committer\" (MainOnly, FE/\:66f8\:8fbc\:53ef, MoveSelectionAfterNotebook \:8a31\:53ef)\:3001\"VisionFallback\"\:3001\"ManualDispatch\"\:3002PolicySnapshot \:306f\:751f\:6210\:6642\:70b9\:306e policy \:3092 NBPolicySnapshot[] \:3067\:51cd\:7d50\:3057\:3066\:57cb\:3081\:308b\:3002contextPacket \:304b\:3089 ConfidentialSymbols/Secrets/Caller/WorkflowID/StepID/PermissionMode \:3092\:53d6\:308a\:8fbc\:3080\:3002";
 
 $ClaudePermissionMode::usage =
-  "$ClaudePermissionMode は ClaudeEval/NBAccess 共通の権限モード (spec 5B)。値: \"ReviewOnly\"(提案のみ)/\"StrictSafe\"(AutoPermit のみ実行)/\"InteractiveSafe\"(標準、AskUserAllowed は承認 UI)/\"WorkflowSafe\"(Orchestrator、final node 分離)/\"LegacyInteractive\"/\"DangerFullAccess\"。標準値 InteractiveSafe。実行中の判定では accessSpec/snapshot に焼き込んだ値を正とし global を読み直さない (I12)。";
+  "$ClaudePermissionMode \:306f ClaudeEval/NBAccess \:5171\:901a\:306e\:6a29\:9650\:30e2\:30fc\:30c9 (spec 5B)\:3002\:5024: \"ReviewOnly\"(\:63d0\:6848\:306e\:307f)/\"StrictSafe\"(AutoPermit \:306e\:307f\:5b9f\:884c)/\"InteractiveSafe\"(\:6a19\:6e96\:3001AskUserAllowed \:306f\:627f\:8a8d UI)/\"WorkflowSafe\"(Orchestrator\:3001final node \:5206\:96e2)/\"LegacyInteractive\"/\"DangerFullAccess\"\:3002\:6a19\:6e96\:5024 InteractiveSafe\:3002\:5b9f\:884c\:4e2d\:306e\:5224\:5b9a\:3067\:306f accessSpec/snapshot \:306b\:713c\:304d\:8fbc\:3093\:3060\:5024\:3092\:6b63\:3068\:3057 global \:3092\:8aad\:307f\:76f4\:3055\:306a\:3044 (I12)\:3002";
 
 $ClaudeAllowHardDenyOverride::usage =
-  "$ClaudeAllowHardDenyOverride は DangerFullAccess モードでのみ意味を持つ。True のとき HardDeny 相当 (Run/ExternalEvaluate/破壊的 IO 等) を承認可能 (NeedsApproval) へ昇格する。既定 False (HardDeny は承認しても実行しない)。";
+  "$ClaudeAllowHardDenyOverride \:306f DangerFullAccess \:30e2\:30fc\:30c9\:3067\:306e\:307f\:610f\:5473\:3092\:6301\:3064\:3002True \:306e\:3068\:304d HardDeny \:76f8\:5f53 (Run/ExternalEvaluate/\:7834\:58ca\:7684 IO \:7b49) \:3092\:627f\:8a8d\:53ef\:80fd (NeedsApproval) \:3078\:6607\:683c\:3059\:308b\:3002\:65e2\:5b9a False (HardDeny \:306f\:627f\:8a8d\:3057\:3066\:3082\:5b9f\:884c\:3057\:306a\:3044)\:3002";
 
 $ClaudeOutputMode::usage =
-  "$ClaudeOutputMode は ClaudeEval/NBAccess 共通の出力モード。値: \"Streaming\"(逐次、既定。結果が出るたびに notebook へ出力。計算状況が見える)/\"Batch\"(集約。notebook へ即時出力せずバッファに溜め、最後にまとめて出力。非同期並列の多数処理向け)。最優先事項は FrontEnd/カーネルのブロック回避であり、BlockingRisk が MayBlockFrontEnd の出力は Streaming でも自動的に集約側へ回す。単発 ClaudeEval (出力1個) では Streaming/Batch で結果は同じ (実質無影響)。マルチターン/RepeatInterval/Orchestrator 並列で差が出る。実行中は accessSpec/runtime メタデータに焼き込んだ値を正とする。";
+  "$ClaudeOutputMode \:306f ClaudeEval/NBAccess \:5171\:901a\:306e\:51fa\:529b\:30e2\:30fc\:30c9\:3002\:5024: \"Streaming\"(\:9010\:6b21\:3001\:65e2\:5b9a\:3002\:7d50\:679c\:304c\:51fa\:308b\:305f\:3073\:306b notebook \:3078\:51fa\:529b\:3002\:8a08\:7b97\:72b6\:6cc1\:304c\:898b\:3048\:308b)/\"Batch\"(\:96c6\:7d04\:3002notebook \:3078\:5373\:6642\:51fa\:529b\:305b\:305a\:30d0\:30c3\:30d5\:30a1\:306b\:6e9c\:3081\:3001\:6700\:5f8c\:306b\:307e\:3068\:3081\:3066\:51fa\:529b\:3002\:975e\:540c\:671f\:4e26\:5217\:306e\:591a\:6570\:51e6\:7406\:5411\:3051)\:3002\:6700\:512a\:5148\:4e8b\:9805\:306f FrontEnd/\:30ab\:30fc\:30cd\:30eb\:306e\:30d6\:30ed\:30c3\:30af\:56de\:907f\:3067\:3042\:308a\:3001BlockingRisk \:304c MayBlockFrontEnd \:306e\:51fa\:529b\:306f Streaming \:3067\:3082\:81ea\:52d5\:7684\:306b\:96c6\:7d04\:5074\:3078\:56de\:3059\:3002\:5358\:767a ClaudeEval (\:51fa\:529b1\:500b) \:3067\:306f Streaming/Batch \:3067\:7d50\:679c\:306f\:540c\:3058 (\:5b9f\:8cea\:7121\:5f71\:97ff)\:3002\:30de\:30eb\:30c1\:30bf\:30fc\:30f3/RepeatInterval/Orchestrator \:4e26\:5217\:3067\:5dee\:304c\:51fa\:308b\:3002\:5b9f\:884c\:4e2d\:306f accessSpec/runtime \:30e1\:30bf\:30c7\:30fc\:30bf\:306b\:713c\:304d\:8fbc\:3093\:3060\:5024\:3092\:6b63\:3068\:3059\:308b\:3002";
 
 NBResolveOutputMode::usage =
-  "NBResolveOutputMode[mode, blockingRisk] は実際に即出力 (\"Immediate\") するか集約 (\"Deferred\") するかを返す。最優先はブロック回避: blockingRisk が \"MayBlockFrontEnd\" なら mode に関わらず \"Deferred\"。mode が \"Batch\" なら \"Deferred\"。それ以外は \"Immediate\"。";
+  "NBResolveOutputMode[mode, blockingRisk] \:306f\:5b9f\:969b\:306b\:5373\:51fa\:529b (\"Immediate\") \:3059\:308b\:304b\:96c6\:7d04 (\"Deferred\") \:3059\:308b\:304b\:3092\:8fd4\:3059\:3002\:6700\:512a\:5148\:306f\:30d6\:30ed\:30c3\:30af\:56de\:907f: blockingRisk \:304c \"MayBlockFrontEnd\" \:306a\:3089 mode \:306b\:95a2\:308f\:3089\:305a \"Deferred\"\:3002mode \:304c \"Batch\" \:306a\:3089 \"Deferred\"\:3002\:305d\:308c\:4ee5\:5916\:306f \"Immediate\"\:3002";
 
 $NBEffectClassOverrides::usage =
-  "$NBEffectClassOverrides は head 名 -> <|EffectClass, BlockingRisk, ExecutionPlacement, RequiresFinalNode|> の任意上書きテーブル (spec 5B.5A)。allowlist ではなく分類精度向上用。未登録 head はフォールバック分類 (System` 純粋 -> PureComputation 等) に進む。";
+  "$NBEffectClassOverrides \:306f head \:540d -> <|EffectClass, BlockingRisk, ExecutionPlacement, RequiresFinalNode|> \:306e\:4efb\:610f\:4e0a\:66f8\:304d\:30c6\:30fc\:30d6\:30eb (spec 5B.5A)\:3002allowlist \:3067\:306f\:306a\:304f\:5206\:985e\:7cbe\:5ea6\:5411\:4e0a\:7528\:3002\:672a\:767b\:9332 head \:306f\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:5206\:985e (System` \:7d14\:7c8b -> PureComputation \:7b49) \:306b\:9032\:3080\:3002";
 
 $NBTrustedPackageHeads::usage =
-  "$NBTrustedPackageHeads は「package 文脈だが承認不要とみなす head」の登録テーブル (<|context -> {名前パターン...}|>)。既定 <|\"SourceVault`\" -> {\"SourceVault*\"}|>。SourceVault* 公開関数は全経路で PrivacyLevel を考慮した安全設計 (release gate / fail-closed / 承認は関数内部の gate が担う) のため、unknown-head 承認を免除する。$NBDenyHeads / $NBApprovalHeads の明示登録はこの信頼より優先される (deny/approval チェックが先に走る)。過剰実行は $NBTrustedHeadIterationLimit の静的 guard と SourceVault 側 SourceVaultRateLimit の実行時 guard で保護する。";
+  "$NBTrustedPackageHeads \:306f\:300cpackage \:6587\:8108\:3060\:304c\:627f\:8a8d\:4e0d\:8981\:3068\:307f\:306a\:3059 head\:300d\:306e\:767b\:9332\:30c6\:30fc\:30d6\:30eb (<|context -> {\:540d\:524d\:30d1\:30bf\:30fc\:30f3...}|>)\:3002\:65e2\:5b9a <|\"SourceVault`\" -> {\"SourceVault*\"}|>\:3002SourceVault* \:516c\:958b\:95a2\:6570\:306f\:5168\:7d4c\:8def\:3067 PrivacyLevel \:3092\:8003\:616e\:3057\:305f\:5b89\:5168\:8a2d\:8a08 (release gate / fail-closed / \:627f\:8a8d\:306f\:95a2\:6570\:5185\:90e8\:306e gate \:304c\:62c5\:3046) \:306e\:305f\:3081\:3001unknown-head \:627f\:8a8d\:3092\:514d\:9664\:3059\:308b\:3002$NBDenyHeads / $NBApprovalHeads \:306e\:660e\:793a\:767b\:9332\:306f\:3053\:306e\:4fe1\:983c\:3088\:308a\:512a\:5148\:3055\:308c\:308b (deny/approval \:30c1\:30a7\:30c3\:30af\:304c\:5148\:306b\:8d70\:308b)\:3002\:904e\:5270\:5b9f\:884c\:306f $NBTrustedHeadIterationLimit \:306e\:9759\:7684 guard \:3068 SourceVault \:5074 SourceVaultRateLimit \:306e\:5b9f\:884c\:6642 guard \:3067\:4fdd\:8b77\:3059\:308b\:3002";
 
 $NBTrustedHeadIterationLimit::usage =
-  "$NBTrustedHeadIterationLimit は trusted package head を含む反復構造 (Do/Table/For/Nest/Map over Range 等) の literal 反復数がこの値以上のとき NeedsApproval に昇格させる閾値 (既定 100)。SourceVaultIngest を 1 万回呼ぶような生成コードの過剰実行対策。";
+  "$NBTrustedHeadIterationLimit \:306f trusted package head \:3092\:542b\:3080\:53cd\:5fa9\:69cb\:9020 (Do/Table/For/Nest/Map over Range \:7b49) \:306e literal \:53cd\:5fa9\:6570\:304c\:3053\:306e\:5024\:4ee5\:4e0a\:306e\:3068\:304d NeedsApproval \:306b\:6607\:683c\:3055\:305b\:308b\:95be\:5024 (\:65e2\:5b9a 100)\:3002SourceVaultIngest \:3092 1 \:4e07\:56de\:547c\:3076\:3088\:3046\:306a\:751f\:6210\:30b3\:30fc\:30c9\:306e\:904e\:5270\:5b9f\:884c\:5bfe\:7b56\:3002";
 
 NBRegisterAction::usage =
-  "NBRegisterAction[name, spec] は承認対象操作 (desktop/notebook/filesystem) を action registry に登録する (spec 5B.8)。spec キー: EffectClass, DefaultApprovalEligibility, AllowedTargetTypes, RequiresFinalNode, Validator, Executor。raw head を乱立させず汎用 action に寄せるための仕組み。";
+  "NBRegisterAction[name, spec] \:306f\:627f\:8a8d\:5bfe\:8c61\:64cd\:4f5c (desktop/notebook/filesystem) \:3092 action registry \:306b\:767b\:9332\:3059\:308b (spec 5B.8)\:3002spec \:30ad\:30fc: EffectClass, DefaultApprovalEligibility, AllowedTargetTypes, RequiresFinalNode, Validator, Executor\:3002raw head \:3092\:4e71\:7acb\:3055\:305b\:305a\:6c4e\:7528 action \:306b\:5bc4\:305b\:308b\:305f\:3081\:306e\:4ed5\:7d44\:307f\:3002";
 
 NBValidateAction::usage =
-  "NBValidateAction[action, accessSpec] は action association を registry の Validator + PermissionMode 変換で検証し Decision を返す。返り値は NBValidateHeldExpr と同形 (Decision/ApprovalEligibility/EffectClass/AllowApprovalUI/MayExecute 等)。";
+  "NBValidateAction[action, accessSpec] \:306f action association \:3092 registry \:306e Validator + PermissionMode \:5909\:63db\:3067\:691c\:8a3c\:3057 Decision \:3092\:8fd4\:3059\:3002\:8fd4\:308a\:5024\:306f NBValidateHeldExpr \:3068\:540c\:5f62 (Decision/ApprovalEligibility/EffectClass/AllowApprovalUI/MayExecute \:7b49)\:3002";
 
 NBExecuteApprovedAction::usage =
-  "NBExecuteApprovedAction[action, accessSpec, opts] は承認済み action を実行する。実行直前に再 validate し (TOCTOU 対策)、承認後に path/target が変化していれば PostApprovalValidationFailed で拒否。registry の Executor は NBAccess 内部にあり、raw SystemOpen 等はこの executor だけが呼ぶ (I1/I2)。";
+  "NBExecuteApprovedAction[action, accessSpec, opts] \:306f\:627f\:8a8d\:6e08\:307f action \:3092\:5b9f\:884c\:3059\:308b\:3002\:5b9f\:884c\:76f4\:524d\:306b\:518d validate \:3057 (TOCTOU \:5bfe\:7b56)\:3001\:627f\:8a8d\:5f8c\:306b path/target \:304c\:5909\:5316\:3057\:3066\:3044\:308c\:3070 PostApprovalValidationFailed \:3067\:62d2\:5426\:3002registry \:306e Executor \:306f NBAccess \:5185\:90e8\:306b\:3042\:308a\:3001raw SystemOpen \:7b49\:306f\:3053\:306e executor \:3060\:3051\:304c\:547c\:3076 (I1/I2)\:3002";
 
 NBOpenFolderWithApproval::usage =
-  "NBOpenFolderWithApproval[path] は OpenDesktopItem action (TargetType Folder) の薄い互換 wrapper。正本は action registry + permission mode。";
+  "NBOpenFolderWithApproval[path] \:306f OpenDesktopItem action (TargetType Folder) \:306e\:8584\:3044\:4e92\:63db wrapper\:3002\:6b63\:672c\:306f action registry + permission mode\:3002";
 
 NBEnqueueFinalAction::usage =
-  "NBEnqueueFinalAction[action, accessSpec, opts] は承認済み final action (FrontEnd ブロックリスクのある desktop/notebook 操作) を PendingFinalActionQueue に積む (spec 案3-lite)。直接同期実行せず、共有 polling tick が安全条件を満たしたとき 1 件ずつ実行する。ActionID を返す。";
+  "NBEnqueueFinalAction[action, accessSpec, opts] \:306f\:627f\:8a8d\:6e08\:307f final action (FrontEnd \:30d6\:30ed\:30c3\:30af\:30ea\:30b9\:30af\:306e\:3042\:308b desktop/notebook \:64cd\:4f5c) \:3092 PendingFinalActionQueue \:306b\:7a4d\:3080 (spec \:68483-lite)\:3002\:76f4\:63a5\:540c\:671f\:5b9f\:884c\:305b\:305a\:3001\:5171\:6709 polling tick \:304c\:5b89\:5168\:6761\:4ef6\:3092\:6e80\:305f\:3057\:305f\:3068\:304d 1 \:4ef6\:305a\:3064\:5b9f\:884c\:3059\:308b\:3002ActionID \:3092\:8fd4\:3059\:3002";
 
 NBFinalActionTick::usage =
-  "NBFinalActionTick[] は共有 polling tick から呼ばれ、PendingFinalActionQueue の安全条件を確認して最大 1 件だけ実行する。新規 ScheduledTask は作らない。安全条件: AsyncActive でない / final action 実行中でない / 承認済み / 再 validate 成功 / 期限内。";
+  "NBFinalActionTick[] \:306f\:5171\:6709 polling tick \:304b\:3089\:547c\:3070\:308c\:3001PendingFinalActionQueue \:306e\:5b89\:5168\:6761\:4ef6\:3092\:78ba\:8a8d\:3057\:3066\:6700\:5927 1 \:4ef6\:3060\:3051\:5b9f\:884c\:3059\:308b\:3002\:65b0\:898f ScheduledTask \:306f\:4f5c\:3089\:306a\:3044\:3002\:5b89\:5168\:6761\:4ef6: AsyncActive \:3067\:306a\:3044 / final action \:5b9f\:884c\:4e2d\:3067\:306a\:3044 / \:627f\:8a8d\:6e08\:307f / \:518d validate \:6210\:529f / \:671f\:9650\:5185\:3002";
 
 NBFinalActionStatus::usage =
-  "NBFinalActionStatus[actionID] は queue item の状態を返す。actionID 省略時は全 item。状態: Pending/Running/Completed/Failed/Expired/Cancelled/NeedsRetryAfterAsync。";
+  "NBFinalActionStatus[actionID] \:306f queue item \:306e\:72b6\:614b\:3092\:8fd4\:3059\:3002actionID \:7701\:7565\:6642\:306f\:5168 item\:3002\:72b6\:614b: Pending/Running/Completed/Failed/Expired/Cancelled/NeedsRetryAfterAsync\:3002";
 
 NBCancelFinalAction::usage =
-  "NBCancelFinalAction[actionID] は queue item を Cancelled にする。";
+  "NBCancelFinalAction[actionID] \:306f queue item \:3092 Cancelled \:306b\:3059\:308b\:3002";
 
 NBFinalActionQueueSnapshot::usage =
-  "NBFinalActionQueueSnapshot[] は queue 全体の snapshot を返す (debug/Doctor 用)。";
+  "NBFinalActionQueueSnapshot[] \:306f queue \:5168\:4f53\:306e snapshot \:3092\:8fd4\:3059 (debug/Doctor \:7528)\:3002";
 
 NBFinalActionRunningQ::usage =
-  "NBFinalActionRunningQ[] は Running 状態の final action があるか返す。";
+  "NBFinalActionRunningQ[] \:306f Running \:72b6\:614b\:306e final action \:304c\:3042\:308b\:304b\:8fd4\:3059\:3002";
 
 $NBFinalActionAsyncActiveFunction::usage =
-  "$NBFinalActionAsyncActiveFunction は AsyncActive 判定の callback。Automatic のとき ClaudeRuntime がロード済みなら ClaudeRuntimeAsyncActiveQ を使い、未ロードなら False。NBAccess 単体テストでは関数を差し替えて queue 基盤を独立検証できる。";
+  "$NBFinalActionAsyncActiveFunction \:306f AsyncActive \:5224\:5b9a\:306e callback\:3002Automatic \:306e\:3068\:304d ClaudeRuntime \:304c\:30ed\:30fc\:30c9\:6e08\:307f\:306a\:3089 ClaudeRuntimeAsyncActiveQ \:3092\:4f7f\:3044\:3001\:672a\:30ed\:30fc\:30c9\:306a\:3089 False\:3002NBAccess \:5358\:4f53\:30c6\:30b9\:30c8\:3067\:306f\:95a2\:6570\:3092\:5dee\:3057\:66ff\:3048\:3066 queue \:57fa\:76e4\:3092\:72ec\:7acb\:691c\:8a3c\:3067\:304d\:308b\:3002";
 
-(* === External job cooperative I/O guards (Phase 4.B, v7 §13/§16) === *)
+(* === External job cooperative I/O guards (Phase 4.B, v7 \[Section]13/\[Section]16) === *)
 
 NBCheckFileRead::usage =
-  "NBCheckFileRead[path, accessSpec] は path の読み取りが accessSpec の MayAccessFileSystem / AllowedDirectories scope 内か検査し <|\"Allowed\"->_, \"Reason\"->_|> を返す。";
+  "NBCheckFileRead[path, accessSpec] \:306f path \:306e\:8aad\:307f\:53d6\:308a\:304c accessSpec \:306e MayAccessFileSystem / AllowedDirectories scope \:5185\:304b\:691c\:67fb\:3057 <|\"Allowed\"->_, \"Reason\"->_|> \:3092\:8fd4\:3059\:3002";
 NBCheckFileWrite::usage =
-  "NBCheckFileWrite[path, accessSpec] は path への書き込みが scope 内か検査する。";
+  "NBCheckFileWrite[path, accessSpec] \:306f path \:3078\:306e\:66f8\:304d\:8fbc\:307f\:304c scope \:5185\:304b\:691c\:67fb\:3059\:308b\:3002";
 NBCheckNetworkAccess::usage =
-  "NBCheckNetworkAccess[target, accessSpec] は target (URL 文字列または <|Scheme,Host,Port|>) が AllowedNetworkTargets scope 内か検査する。";
+  "NBCheckNetworkAccess[target, accessSpec] \:306f target (URL \:6587\:5b57\:5217\:307e\:305f\:306f <|Scheme,Host,Port|>) \:304c AllowedNetworkTargets scope \:5185\:304b\:691c\:67fb\:3059\:308b\:3002";
 NBCheckExternalProcess::usage =
-  "NBCheckExternalProcess[cmd, accessSpec] は外部コマンドが AllowedExternalCommands 内か検査する。";
-NBCheckedImport::usage = "NBCheckedImport[path, fmt, accessSpec] は NBCheckFileRead 通過後に Import する。違反時は AccessSpecViolation を返す。";
-NBCheckedExport::usage = "NBCheckedExport[path, expr, fmt, accessSpec] は NBCheckFileWrite 通過後に Export する。";
-NBCheckedURLRead::usage = "NBCheckedURLRead[url, accessSpec] は NBCheckNetworkAccess 通過後に URLRead する。";
-NBCheckedFileWrite::usage = "NBCheckedFileWrite[path, content, accessSpec] は NBCheckFileWrite 通過後に書き込む。";
-NBCheckedFileRead::usage = "NBCheckedFileRead[path, accessSpec] は NBCheckFileRead 通過後に読み取る。";
+  "NBCheckExternalProcess[cmd, accessSpec] \:306f\:5916\:90e8\:30b3\:30de\:30f3\:30c9\:304c AllowedExternalCommands \:5185\:304b\:691c\:67fb\:3059\:308b\:3002";
+NBCheckedImport::usage = "NBCheckedImport[path, fmt, accessSpec] \:306f NBCheckFileRead \:901a\:904e\:5f8c\:306b Import \:3059\:308b\:3002\:9055\:53cd\:6642\:306f AccessSpecViolation \:3092\:8fd4\:3059\:3002";
+NBCheckedExport::usage = "NBCheckedExport[path, expr, fmt, accessSpec] \:306f NBCheckFileWrite \:901a\:904e\:5f8c\:306b Export \:3059\:308b\:3002";
+NBCheckedURLRead::usage = "NBCheckedURLRead[url, accessSpec] \:306f NBCheckNetworkAccess \:901a\:904e\:5f8c\:306b URLRead \:3059\:308b\:3002";
+NBCheckedFileWrite::usage = "NBCheckedFileWrite[path, content, accessSpec] \:306f NBCheckFileWrite \:901a\:904e\:5f8c\:306b\:66f8\:304d\:8fbc\:3080\:3002";
+NBCheckedFileRead::usage = "NBCheckedFileRead[path, accessSpec] \:306f NBCheckFileRead \:901a\:904e\:5f8c\:306b\:8aad\:307f\:53d6\:308b\:3002";
 NBApplyPolicySnapshot::usage =
-  "NBApplyPolicySnapshot[snapshot] は snapshot の digest を検証し、正規化した snapshot を返す (P0 §8.3: global 復元はせず accessSpec 注入の補助に限定)。<|\"Valid\"->_, \"Snapshot\"->_, \"Reason\"->_|>。";
+  "NBApplyPolicySnapshot[snapshot] \:306f snapshot \:306e digest \:3092\:691c\:8a3c\:3057\:3001\:6b63\:898f\:5316\:3057\:305f snapshot \:3092\:8fd4\:3059 (P0 \[Section]8.3: global \:5fa9\:5143\:306f\:305b\:305a accessSpec \:6ce8\:5165\:306e\:88dc\:52a9\:306b\:9650\:5b9a)\:3002<|\"Valid\"->_, \"Snapshot\"->_, \"Reason\"->_|>\:3002";
 NBConfidentialHandlingAllowedQ::usage =
-  "NBConfidentialHandlingAllowedQ[mode, permissionMode] は ConfidentialHandling mode (EncryptedBundle/ReferenceOnly/Redacted/PlaintextDebug) が当該 permissionMode で許容されるか (PlaintextDebug gate, v7 §13D.1) を返す。";
+  "NBConfidentialHandlingAllowedQ[mode, permissionMode] \:306f ConfidentialHandling mode (EncryptedBundle/ReferenceOnly/Redacted/PlaintextDebug) \:304c\:5f53\:8a72 permissionMode \:3067\:8a31\:5bb9\:3055\:308c\:308b\:304b (PlaintextDebug gate, v7 \[Section]13D.1) \:3092\:8fd4\:3059\:3002";
 NBResolveCredentialRef::usage =
-  "NBResolveCredentialRef[ref, accessSpec] は credential-ref を解決し、secret 本体ではなく取得用 descriptor (<|\"Provider\"->_, ...|>) を返す。handler はこの descriptor で NBGetAPIKey を呼ぶ (rules/20: 鍵を返す補助関数を作らない)。";
+  "NBResolveCredentialRef[ref, accessSpec] \:306f credential-ref \:3092\:89e3\:6c7a\:3057\:3001secret \:672c\:4f53\:3067\:306f\:306a\:304f\:53d6\:5f97\:7528 descriptor (<|\"Provider\"->_, ...|>) \:3092\:8fd4\:3059\:3002handler \:306f\:3053\:306e descriptor \:3067 NBGetAPIKey \:3092\:547c\:3076 (rules/20: \:9375\:3092\:8fd4\:3059\:88dc\:52a9\:95a2\:6570\:3092\:4f5c\:3089\:306a\:3044)\:3002";
 
 Begin["`Private`"];
 
@@ -1331,6 +1331,7 @@ If[!AssociationQ[$iProviderMaxAccessLevel],
     "claudecode" -> 0.5,
     "anthropic"  -> 0.5,
     "openai"     -> 0.5,
+    "zai"        -> 0.25,
     "lmstudio"   -> 1.0
   |>];
 
@@ -1767,22 +1768,22 @@ iNBNotebookDeclaredPrivateQ[nb_NotebookObject] :=
   ];
 iNBNotebookDeclaredPrivateQ[___] := False;
 
-(* 開いている NotebookObject 全体を Private (CloudPublishable -> False) 宣言する
-   ワンショットヘルパー (2026-06-06)。iNBNotebookDeclaredPrivateQ はライブ NB の
-   TaggingRules を読むため、保存なしでも即座に全セル PrivacyLevel 1.0 になり
-    クラウド LLM へ投入されなくなる (NBCellPrivacyLevel がセルを読む前に短絡)。
-   保存済みなら NBSetCloudPublishable でファイルヘッダにも永続化する。
-   makePrivate=False で宣言を「クラウド公開可」に切り替える。
-   公開 ::usage 宣言は BeginPackage 直後の公開部 (NBClearCloudPublishable::usage の直後)
-   にある。ここは Private 部なので本体定義のみ置く。 *)
+(* \:958b\:3044\:3066\:3044\:308b NotebookObject \:5168\:4f53\:3092 Private (CloudPublishable -> False) \:5ba3\:8a00\:3059\:308b
+   \:30ef\:30f3\:30b7\:30e7\:30c3\:30c8\:30d8\:30eb\:30d1\:30fc (2026-06-06)\:3002iNBNotebookDeclaredPrivateQ \:306f\:30e9\:30a4\:30d6 NB \:306e
+   TaggingRules \:3092\:8aad\:3080\:305f\:3081\:3001\:4fdd\:5b58\:306a\:3057\:3067\:3082\:5373\:5ea7\:306b\:5168\:30bb\:30eb PrivacyLevel 1.0 \:306b\:306a\:308a
+    \:30af\:30e9\:30a6\:30c9 LLM \:3078\:6295\:5165\:3055\:308c\:306a\:304f\:306a\:308b (NBCellPrivacyLevel \:304c\:30bb\:30eb\:3092\:8aad\:3080\:524d\:306b\:77ed\:7d61)\:3002
+   \:4fdd\:5b58\:6e08\:307f\:306a\:3089 NBSetCloudPublishable \:3067\:30d5\:30a1\:30a4\:30eb\:30d8\:30c3\:30c0\:306b\:3082\:6c38\:7d9a\:5316\:3059\:308b\:3002
+   makePrivate=False \:3067\:5ba3\:8a00\:3092\:300c\:30af\:30e9\:30a6\:30c9\:516c\:958b\:53ef\:300d\:306b\:5207\:308a\:66ff\:3048\:308b\:3002
+   \:516c\:958b ::usage \:5ba3\:8a00\:306f BeginPackage \:76f4\:5f8c\:306e\:516c\:958b\:90e8 (NBClearCloudPublishable::usage \:306e\:76f4\:5f8c)
+   \:306b\:3042\:308b\:3002\:3053\:3053\:306f Private \:90e8\:306a\:306e\:3067\:672c\:4f53\:5b9a\:7fa9\:306e\:307f\:7f6e\:304f\:3002 *)
 NBAccess`NBSetNotebookPrivate[nb_NotebookObject, makePrivate:(True | False):True] :=
   Module[{path, cpVal},
-    (* CloudPublishable -> False が Private。makePrivate=True なら False を書く。 *)
+    (* CloudPublishable -> False \:304c Private\:3002makePrivate=True \:306a\:3089 False \:3092\:66f8\:304f\:3002 *)
     cpVal = !makePrivate;
-    (* 1. ライブ NB の TaggingRules を即時設定 (iNBNotebookDeclaredPrivateQ の読む経路) *)
+    (* 1. \:30e9\:30a4\:30d6 NB \:306e TaggingRules \:3092\:5373\:6642\:8a2d\:5b9a (iNBNotebookDeclaredPrivateQ \:306e\:8aad\:3080\:7d4c\:8def) *)
     Quiet[CurrentValue[nb,
       {TaggingRules, "SourceVault", "CloudPublishable"}] = cpVal];
-    (* 2. 保存済みならファイルヘッダにも永続化 (best-effort) *)
+    (* 2. \:4fdd\:5b58\:6e08\:307f\:306a\:3089\:30d5\:30a1\:30a4\:30eb\:30d8\:30c3\:30c0\:306b\:3082\:6c38\:7d9a\:5316 (best-effort) *)
     path = Quiet[NotebookFileName[nb]];
     If[StringQ[path],
       Quiet @ Check[NBAccess`NBSetCloudPublishable[path, cpVal], Null]];
@@ -2473,24 +2474,24 @@ NBAccess`NBMarkCellConfidential[nb_NotebookObject, cellIdx_Integer,
   ];
 
 (* ============================================================
-   NBInsertArtifactCell: SourceVault artifact URI の privacy-marking 付き表示
+   NBInsertArtifactCell: SourceVault artifact URI \:306e privacy-marking \:4ed8\:304d\:8868\:793a
    ------------------------------------------------------------
-   - 内容解決は SourceVault`SourceVaultResolveArtifactContent (sanctioned reader)。
-     bytes が PrivacyLevel なしで裸のまま呼び出し側へ渡る経路を作らない。
-   - privacy marking はセル式に構築時に焼き込む:
-     TaggingRules "claudecode" {privacyLevel, confidential(>0.5)} は
-     NBMarkCellConfidential が書くものと同一データ。視覚マークは
-     $NBConfidentialCellOpts を参照 (重複定義しない)。
-     書き込み後の cell index 探索をしないため deferred output とも整合し、
-     レースが無い。
+   - \:5185\:5bb9\:89e3\:6c7a\:306f SourceVault`SourceVaultResolveArtifactContent (sanctioned reader)\:3002
+     bytes \:304c PrivacyLevel \:306a\:3057\:3067\:88f8\:306e\:307e\:307e\:547c\:3073\:51fa\:3057\:5074\:3078\:6e21\:308b\:7d4c\:8def\:3092\:4f5c\:3089\:306a\:3044\:3002
+   - privacy marking \:306f\:30bb\:30eb\:5f0f\:306b\:69cb\:7bc9\:6642\:306b\:713c\:304d\:8fbc\:3080:
+     TaggingRules "claudecode" {privacyLevel, confidential(>0.5)} \:306f
+     NBMarkCellConfidential \:304c\:66f8\:304f\:3082\:306e\:3068\:540c\:4e00\:30c7\:30fc\:30bf\:3002\:8996\:899a\:30de\:30fc\:30af\:306f
+     $NBConfidentialCellOpts \:3092\:53c2\:7167 (\:91cd\:8907\:5b9a\:7fa9\:3057\:306a\:3044)\:3002
+     \:66f8\:304d\:8fbc\:307f\:5f8c\:306e cell index \:63a2\:7d22\:3092\:3057\:306a\:3044\:305f\:3081 deferred output \:3068\:3082\:6574\:5408\:3057\:3001
+     \:30ec\:30fc\:30b9\:304c\:7121\:3044\:3002
    ============================================================ *)
 
-(* artifact 表示セル式を構築する純関数 (headless テスト可能)。 *)
+(* artifact \:8868\:793a\:30bb\:30eb\:5f0f\:3092\:69cb\:7bc9\:3059\:308b\:7d14\:95a2\:6570 (headless \:30c6\:30b9\:30c8\:53ef\:80fd)\:3002 *)
 iNBArtifactCellExpr[content_Association, dispOpts_Association] := Module[
   {kind, pl, mt, uri, fname, file, inner, tagRules, confOpts, img, maxSz, videoCell},
   kind = Lookup[content, "MediaKind", "Binary"];
   pl = With[{p = Lookup[content, "PrivacyLevel", Missing[]]},
-    If[NumericQ[p], N @ Clip[p, {0., 1.}], 1.0]];   (* 欠落は fail-closed 1.0 *)
+    If[NumericQ[p], N @ Clip[p, {0., 1.}], 1.0]];   (* \:6b20\:843d\:306f fail-closed 1.0 *)
   mt = Lookup[content, "MediaType", "application/octet-stream"];
   uri = Lookup[content, "URI", Missing[]];
   fname = Lookup[content, "Filename", Missing[]];
@@ -2503,25 +2504,25 @@ iNBArtifactCellExpr[content_Association, dispOpts_Association] := Module[
       If[ImageQ[img],
         Cell[BoxData[ToBoxes[
           If[NumericQ[maxSz], Image[img, ImageSize -> UpTo[maxSz]], img]]], "Output"],
-        Cell["[画像を読み込めませんでした: " <> ToString[uri] <> "]", "Text"]],
+        Cell["[\:753b\:50cf\:3092\:8aad\:307f\:8fbc\:3081\:307e\:305b\:3093\:3067\:3057\:305f: " <> ToString[uri] <> "]", "Text"]],
     "Text",
       Cell[Lookup[content, "Text", ""], "Text"],
-    _,  (* Video / Binary: ファイルリンク (Video は option で Video セル) *)
+    _,  (* Video / Binary: \:30d5\:30a1\:30a4\:30eb\:30ea\:30f3\:30af (Video \:306f option \:3067 Video \:30bb\:30eb) *)
       Which[
         ! StringQ[file],
-          Cell["[ファイル未 materialize: " <> ToString[uri] <> "]", "Text"],
+          Cell["[\:30d5\:30a1\:30a4\:30eb\:672a materialize: " <> ToString[uri] <> "]", "Text"],
         kind === "Video" && videoCell && FileExistsQ[file],
-          (* Video 構築が失敗する環境 (codec 等) では Hyperlink にフォールバック *)
+          (* Video \:69cb\:7bc9\:304c\:5931\:6557\:3059\:308b\:74b0\:5883 (codec \:7b49) \:3067\:306f Hyperlink \:306b\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af *)
           With[{vb = Quiet @ Check[BoxData[ToBoxes[Video[file]]], $Failed]},
             If[vb === $Failed,
               Cell[BoxData[ToBoxes[Hyperlink[
-                "▶ " <> If[StringQ[fname], fname, FileNameTake[file]],
+                "\[FilledRightTriangle] " <> If[StringQ[fname], fname, FileNameTake[file]],
                 File[file]]]], "Output"],
               Cell[vb, "Output"]]],
         True,
           Cell[BoxData[ToBoxes[
             Hyperlink[
-              "▶ " <> If[StringQ[fname], fname, FileNameTake[file]],
+              "\[FilledRightTriangle] " <> If[StringQ[fname], fname, FileNameTake[file]],
               File[file]]]], "Output"]]];
   tagRules = {
     "claudecode" -> {"privacyLevel" -> pl, "confidential" -> (pl > 0.5)},
@@ -2530,7 +2531,7 @@ iNBArtifactCellExpr[content_Association, dispOpts_Association] := Module[
       "ArtifactId" -> Lookup[content, "ArtifactId", Missing[]],
       "MediaKind" -> kind, "MediaType" -> mt}}};
   confOpts = If[pl > 0.5, NBAccess`$NBConfidentialCellOpts, {}];
-  (* Cell[content, style] に options を合成 (Append の多引数化を避ける) *)
+  (* Cell[content, style] \:306b options \:3092\:5408\:6210 (Append \:306e\:591a\:5f15\:6570\:5316\:3092\:907f\:3051\:308b) *)
   Cell @@ Join[List @@ inner, {TaggingRules -> tagRules}, confOpts]];
 
 Options[NBAccess`NBInsertArtifactCell] = {
@@ -2540,7 +2541,7 @@ NBAccess`NBInsertArtifactCell[nb_NotebookObject, uri_String,
     opts:OptionsPattern[]] := Module[{resolveFn, content, cell, pl},
   If[Length[Names["SourceVault`SourceVaultResolveArtifactContent"]] === 0,
     Return[<|"Status" -> "Error", "Reason" -> "SourceVaultNotLoaded",
-      "Detail" -> "SourceVault (SourceVault_core) がロードされていません。"|>]];
+      "Detail" -> "SourceVault (SourceVault_core) \:304c\:30ed\:30fc\:30c9\:3055\:308c\:3066\:3044\:307e\:305b\:3093\:3002"|>]];
   resolveFn = Symbol["SourceVault`SourceVaultResolveArtifactContent"];
   content = Quiet @ Check[
     resolveFn[uri, "Materialize" -> OptionValue["Materialize"]], $Failed];
@@ -2669,11 +2670,11 @@ NBAccess`NBCellUsesConfidentialSymbol[nb_NotebookObject, cellIdx_Integer] :=
 (* \:30bb\:30eb\:5185\:5bb9\:304b\:3089 Set/SetDelayed \:306e LHS \:5909\:6570\:540d\:3092\:62bd\:51fa *)
 NBAccess`NBCellExtractVarNames[nb_NotebookObject, cellIdx_Integer] :=
   Module[{cell, text, matches, style},
-    (* 出力/テキスト/見出し等のセルは var = ... の定義を持たない。
-       特に巨大な Output (Dataset 等) に対し下の NotebookRead フォールバックが
-       走るとセル全体をカーネルへ読み込み、FrontEnd が「ノートブックコンテンツを
-       フォーマットしています」のまま長時間ブロックする (2026-06-06)。
-       変数定義があり得る Input/Code/ExternalLanguage 以外は即 {} を返す。 *)
+    (* \:51fa\:529b/\:30c6\:30ad\:30b9\:30c8/\:898b\:51fa\:3057\:7b49\:306e\:30bb\:30eb\:306f var = ... \:306e\:5b9a\:7fa9\:3092\:6301\:305f\:306a\:3044\:3002
+       \:7279\:306b\:5de8\:5927\:306a Output (Dataset \:7b49) \:306b\:5bfe\:3057\:4e0b\:306e NotebookRead \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:304c
+       \:8d70\:308b\:3068\:30bb\:30eb\:5168\:4f53\:3092\:30ab\:30fc\:30cd\:30eb\:3078\:8aad\:307f\:8fbc\:307f\:3001FrontEnd \:304c\:300c\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:30b3\:30f3\:30c6\:30f3\:30c4\:3092
+       \:30d5\:30a9\:30fc\:30de\:30c3\:30c8\:3057\:3066\:3044\:307e\:3059\:300d\:306e\:307e\:307e\:9577\:6642\:9593\:30d6\:30ed\:30c3\:30af\:3059\:308b (2026-06-06)\:3002
+       \:5909\:6570\:5b9a\:7fa9\:304c\:3042\:308a\:5f97\:308b Input/Code/ExternalLanguage \:4ee5\:5916\:306f\:5373 {} \:3092\:8fd4\:3059\:3002 *)
     style = Quiet[NBAccess`NBCellStyle[nb, cellIdx]];
     If[!MemberQ[{"Input", "Code", "ExternalLanguage"}, style], Return[{}]];
     cell = iResolveCell[nb, cellIdx];
@@ -3713,6 +3714,7 @@ NBAccess`NBGetNotebookDefaultModel[___] := Missing["NotDeclared"];
 $iAPIKeyMap = <|
   "anthropic"  -> "ANTHROPIC_API_KEY",
   "openai"     -> "OPENAI_API_KEY",
+  "zai"        -> "ZAI_API_KEY",
   "github"     -> "GITHUB_TOKEN",
   "gh"         -> "GITHUB_TOKEN",
   "github_pat" -> "GITHUB_TOKEN"
@@ -3736,7 +3738,7 @@ NBAccess`NBGetAPIKey[provider_String, opts:OptionsPattern[]] :=
     key
   ];
 
-NBGetAPIKey::unkn = "\:672a\:77e5\:306e\:30d7\:30ed\:30d0\:30a4\:30c0: `1`\:3002\"anthropic\"\:3001\"openai\"\:3001\"github\" \:306e\:3044\:305a\:308c\:304b\:3092\:6307\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+NBGetAPIKey::unkn = "\:672a\:77e5\:306e\:30d7\:30ed\:30d0\:30a4\:30c0: `1`\:3002\"anthropic\"\:3001\"openai\"\:3001\"zai\"\:3001\"github\" \:306e\:3044\:305a\:308c\:304b\:3092\:6307\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
 NBGetAPIKey::nokey = "`1` \:306e API \:30ad\:30fc\:304c\:898b\:3064\:304b\:308a\:307e\:305b\:3093\:3002SystemCredential[\"`2`\"] \:3092\:8a2d\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
 
 
@@ -3752,7 +3754,9 @@ NBGetAPIKey::nokey = "`1` \:306e API \:30ad\:30fc\:304c\:898b\:3064\:304b\:308a\
 
 $iProviderModelsURL = <|
   "anthropic" -> "https://api.anthropic.com/v1/models",
-  "openai"    -> "https://api.openai.com/v1/models"
+  "openai"    -> "https://api.openai.com/v1/models",
+  (* z.ai (GLM) \:306f OpenAI \:4e92\:63db\:306e /models \:3092\:6301\:3064 *)
+  "zai"       -> "https://api.z.ai/api/paas/v4/models"
 |>;
 
 (* OpenAI \:4e92\:63db /v1/models JSON \:304b\:3089 model id \:3092\:62bd\:51fa\:3059\:308b\:3002
@@ -3791,7 +3795,7 @@ NBAccess`NBListProviderModels[provider_String] :=
     headers = Which[
       prov === "anthropic",
         {"x-api-key" -> key, "anthropic-version" -> "2023-06-01"},
-      prov === "openai",
+      prov === "openai" || prov === "zai",
         {"Authorization" -> "Bearer " <> key},
       True, {}];
     resp = Quiet @ Check[
@@ -3958,10 +3962,10 @@ NBAccess`NBLocalLLMAPIKeyMap[] :=
    \:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:30c7\:30a3\:30ec\:30af\:30c8\:30ea API
    ============================================================ *)
 
-(* \:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500
+(* \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
    Phase 2: AccessPathRef API + NBSetAccessibleDirs \:4e92\:63db\:30e9\:30c3\:30d1
-   \:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500
-   cross-PC path policy v3 \:00a75.3 / \:00a712.2 \:6e96\:62e0\:3002
+   \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
+   cross-PC path policy v3 \[Section]5.3 / \[Section]12.2 \:6e96\:62e0\:3002
    claudeAccessiblePathRefs \:3092\:6b63\:672c (canonical) \:3068\:3057\:3001\:65e7 claudeAccessibleDirs \:306f
    read fallback \:3068\:3057\:3066\:306e\:307f\:6b8b\:3059\:3002rule 104: PathRef \:306f identity \:3067\:3042\:3063\:3066\:6a29\:9650\:3067\:306f\:306a\:3044\:3002 *)
 
@@ -4053,7 +4057,7 @@ NBAccess`NBNormalizeAccessPathRef[other_] :=
   <|"PathRef" -> Missing["InvalidAccessPathRef"],
     "Mode" -> "None", "CloudSend" -> False|>;
 
-(* \:2500\:2500 AccessPathRef \:3092 notebook TaggingRules \:306b\:4fdd\:5b58\:30fb\:53d6\:5f97 \:2500\:2500 *)
+(* \[HorizontalLine]\[HorizontalLine] AccessPathRef \:3092 notebook TaggingRules \:306b\:4fdd\:5b58\:30fb\:53d6\:5f97 \[HorizontalLine]\[HorizontalLine] *)
 
 NBAccess`NBSetAccessiblePathRefs[nb_NotebookObject, refs_List] :=
   NBAccess`NBSetTaggingRule[nb, "claudeAccessiblePathRefs",
@@ -4078,8 +4082,8 @@ NBAccess`NBGetAccessiblePathRefs[nb_NotebookObject] :=
 NBAccess`NBGetAccessiblePathRefs[] :=
   NBAccess`NBGetAccessiblePathRefs[EvaluationNotebook[]];
 
-(* \:2500\:2500 \:5f8c\:65b9\:4e92\:63db API: NBSetAccessibleDirs / NBGetAccessibleDirs \:2500\:2500
-   policy v3 \:00a712.2: claudeAccessiblePathRefs \:3092\:6b63\:672c\:3068\:3057\:3001\:65e7 dir \:30ea\:30b9\:30c8\:306f
+(* \[HorizontalLine]\[HorizontalLine] \:5f8c\:65b9\:4e92\:63db API: NBSetAccessibleDirs / NBGetAccessibleDirs \[HorizontalLine]\[HorizontalLine]
+   policy v3 \[Section]12.2: claudeAccessiblePathRefs \:3092\:6b63\:672c\:3068\:3057\:3001\:65e7 dir \:30ea\:30b9\:30c8\:306f
    read fallback\:3002NBGetAccessibleDirs \:306f\:5f93\:6765\:901a\:308a\:300c\:73fe PC \:5b9f\:30d1\:30b9\:306e List\:300d\:3092\:8fd4\:3059
    \:5951\:7d04\:3092\:7dad\:6301\:3059\:308b (claudecode.wl \:5074\:3092\:5909\:66f4\:4e0d\:8981\:306b\:3059\:308b\:305f\:3081)\:3002 *)
 
@@ -4552,13 +4556,13 @@ NBAccess`NBWriteSlot[jobId_String, slotIdx_Integer, cellExpr_Cell] :=
   ];
 
 (* \:30a2\:30f3\:30ab\:30fc\:306e\:76f4\:5f8c\:306b\:30ab\:30fc\:30bd\:30eb\:3092\:79fb\:52d5\:3002
-   2026-06-24 (B-fix): 戻り値を True/False にし、位置を確定できたら True を返す。
-   従来はアンカーセルが消えている (NBEndJob 済み / kernel restart で $NBJobTable
-   再構築) と無言で no-op になり、呼び出し側の選択位置が直前の出力セル内容に残る。
-   直前が編集可能 Grid (SourceVaultMailView 一覧) のとき後続 NBWriteCell が
-   その Grid セル内へ \!\(\*Cell[...]\) として埋め込まれる不具合の一因 (result2.nb)。
-   entry はあるがアンカー消失の場合はノートブック末尾 (セル境界) へ退避し True を返す。
-   jobId が $NBJobTable に無い (nb 不明) 場合のみ False を返し、呼び出し側で末尾退避させる。 *)
+   2026-06-24 (B-fix): \:623b\:308a\:5024\:3092 True/False \:306b\:3057\:3001\:4f4d\:7f6e\:3092\:78ba\:5b9a\:3067\:304d\:305f\:3089 True \:3092\:8fd4\:3059\:3002
+   \:5f93\:6765\:306f\:30a2\:30f3\:30ab\:30fc\:30bb\:30eb\:304c\:6d88\:3048\:3066\:3044\:308b (NBEndJob \:6e08\:307f / kernel restart \:3067 $NBJobTable
+   \:518d\:69cb\:7bc9) \:3068\:7121\:8a00\:3067 no-op \:306b\:306a\:308a\:3001\:547c\:3073\:51fa\:3057\:5074\:306e\:9078\:629e\:4f4d\:7f6e\:304c\:76f4\:524d\:306e\:51fa\:529b\:30bb\:30eb\:5185\:5bb9\:306b\:6b8b\:308b\:3002
+   \:76f4\:524d\:304c\:7de8\:96c6\:53ef\:80fd Grid (SourceVaultMailView \:4e00\:89a7) \:306e\:3068\:304d\:5f8c\:7d9a NBWriteCell \:304c
+   \:305d\:306e Grid \:30bb\:30eb\:5185\:3078 \!\(\*Cell[...]\) \:3068\:3057\:3066\:57cb\:3081\:8fbc\:307e\:308c\:308b\:4e0d\:5177\:5408\:306e\:4e00\:56e0 (result2.nb)\:3002
+   entry \:306f\:3042\:308b\:304c\:30a2\:30f3\:30ab\:30fc\:6d88\:5931\:306e\:5834\:5408\:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:672b\:5c3e (\:30bb\:30eb\:5883\:754c) \:3078\:9000\:907f\:3057 True \:3092\:8fd4\:3059\:3002
+   jobId \:304c $NBJobTable \:306b\:7121\:3044 (nb \:4e0d\:660e) \:5834\:5408\:306e\:307f False \:3092\:8fd4\:3057\:3001\:547c\:3073\:51fa\:3057\:5074\:3067\:672b\:5c3e\:9000\:907f\:3055\:305b\:308b\:3002 *)
 NBAccess`NBJobMoveToAnchor[jobId_String] :=
   Module[{entry, nb, cells},
     entry = Lookup[$NBJobTable, jobId, $Failed];
@@ -4643,11 +4647,11 @@ NBAccess`NBRegisterConfidentialVar[name_String, level_:1.0] :=
 NBAccess`NBUnregisterConfidentialVar[name_String] :=
   (NBAccess`$NBConfidentialSymbols = KeyDrop[NBAccess`$NBConfidentialSymbols, name]);
 
-(* 機密生成ヘッド表: 「この関数の返り値は機密たり得る」という宣言レジストリ。
-   SourceVault 等のデータ層がロード時に登録し、claudecode が
-   (a) LLM 生成コード/応答を書き込んだ新規セルの自動機密マーク判定、
-   (b) CellEpilog の依存秘密判定 (snaps = SourceVaultSearch...[..] 等)
-   に使う。秘密「変数」レジストリ ($NBConfidentialSymbols) のヘッド版。 *)
+(* \:6a5f\:5bc6\:751f\:6210\:30d8\:30c3\:30c9\:8868: \:300c\:3053\:306e\:95a2\:6570\:306e\:8fd4\:308a\:5024\:306f\:6a5f\:5bc6\:305f\:308a\:5f97\:308b\:300d\:3068\:3044\:3046\:5ba3\:8a00\:30ec\:30b8\:30b9\:30c8\:30ea\:3002
+   SourceVault \:7b49\:306e\:30c7\:30fc\:30bf\:5c64\:304c\:30ed\:30fc\:30c9\:6642\:306b\:767b\:9332\:3057\:3001claudecode \:304c
+   (a) LLM \:751f\:6210\:30b3\:30fc\:30c9/\:5fdc\:7b54\:3092\:66f8\:304d\:8fbc\:3093\:3060\:65b0\:898f\:30bb\:30eb\:306e\:81ea\:52d5\:6a5f\:5bc6\:30de\:30fc\:30af\:5224\:5b9a\:3001
+   (b) CellEpilog \:306e\:4f9d\:5b58\:79d8\:5bc6\:5224\:5b9a (snaps = SourceVaultSearch...[..] \:7b49)
+   \:306b\:4f7f\:3046\:3002\:79d8\:5bc6\:300c\:5909\:6570\:300d\:30ec\:30b8\:30b9\:30c8\:30ea ($NBConfidentialSymbols) \:306e\:30d8\:30c3\:30c9\:7248\:3002 *)
 NBAccess`NBRegisterConfidentialHead[name_String, level_:1.0] :=
   (If[!AssociationQ[NBAccess`$NBConfidentialHeads],
      NBAccess`$NBConfidentialHeads = <||>];
@@ -4661,8 +4665,8 @@ NBAccess`NBGetConfidentialHeads[] :=
   If[AssociationQ[NBAccess`$NBConfidentialHeads],
     NBAccess`$NBConfidentialHeads, <||>];
 
-(* text が登録ヘッドを参照しているか。識別子境界 (Unicode) で誤マッチを防ぐ。
-   Map[head, ...] のような関数値渡しも検出するため "[" は要求しない。 *)
+(* text \:304c\:767b\:9332\:30d8\:30c3\:30c9\:3092\:53c2\:7167\:3057\:3066\:3044\:308b\:304b\:3002\:8b58\:5225\:5b50\:5883\:754c (Unicode) \:3067\:8aa4\:30de\:30c3\:30c1\:3092\:9632\:3050\:3002
+   Map[head, ...] \:306e\:3088\:3046\:306a\:95a2\:6570\:5024\:6e21\:3057\:3082\:691c\:51fa\:3059\:308b\:305f\:3081 "[" \:306f\:8981\:6c42\:3057\:306a\:3044\:3002 *)
 NBAccess`NBTextUsesConfidentialHead[text_String] :=
   Module[{heads = Keys[NBAccess`NBGetConfidentialHeads[]]},
     heads =!= {} && AnyTrue[heads,
@@ -4732,20 +4736,20 @@ NBAccess`NBParentNotebookOfCurrentCell[] :=
 
 (* \:6c4e\:7528\:30bb\:30eb\:66f8\:304d\:8fbc\:307f *)
 (* ============================================================
-   出力遅延バッファ (対策2 段階2, 2026-06-03)
+   \:51fa\:529b\:9045\:5ef6\:30d0\:30c3\:30d5\:30a1 (\:5bfe\:7b562 \:6bb5\:968e2, 2026-06-03)
    ============================================================
-   $iNBDeferActive が True のとき、NBWriteCell は notebook へ即書き込みせず
-   $iNBDeferredCells に溜める。最後に NBFlushDeferredOutput[nb] で一括出力。
-   既定 $iNBDeferActive=False では NBWriteCell は完全に従来通り (後方互換)。
+   $iNBDeferActive \:304c True \:306e\:3068\:304d\:3001NBWriteCell \:306f notebook \:3078\:5373\:66f8\:304d\:8fbc\:307f\:305b\:305a
+   $iNBDeferredCells \:306b\:6e9c\:3081\:308b\:3002\:6700\:5f8c\:306b NBFlushDeferredOutput[nb] \:3067\:4e00\:62ec\:51fa\:529b\:3002
+   \:65e2\:5b9a $iNBDeferActive=False \:3067\:306f NBWriteCell \:306f\:5b8c\:5168\:306b\:5f93\:6765\:901a\:308a (\:5f8c\:65b9\:4e92\:63db)\:3002
 
-   有効化/無効化は呼び出し側 (Orchestrator 並列ワーカー集約や、マルチターンの
-   バッチ区間) が NBBeginDeferredOutput / NBEndDeferredOutput で明示制御する。
-   $ClaudeOutputMode は「既定の希望モード」で、実際にバッファするかは
-   NBResolveOutputMode の判定 + 呼び出し側の制御による。
+   \:6709\:52b9\:5316/\:7121\:52b9\:5316\:306f\:547c\:3073\:51fa\:3057\:5074 (Orchestrator \:4e26\:5217\:30ef\:30fc\:30ab\:30fc\:96c6\:7d04\:3084\:3001\:30de\:30eb\:30c1\:30bf\:30fc\:30f3\:306e
+   \:30d0\:30c3\:30c1\:533a\:9593) \:304c NBBeginDeferredOutput / NBEndDeferredOutput \:3067\:660e\:793a\:5236\:5fa1\:3059\:308b\:3002
+   $ClaudeOutputMode \:306f\:300c\:65e2\:5b9a\:306e\:5e0c\:671b\:30e2\:30fc\:30c9\:300d\:3067\:3001\:5b9f\:969b\:306b\:30d0\:30c3\:30d5\:30a1\:3059\:308b\:304b\:306f
+   NBResolveOutputMode \:306e\:5224\:5b9a + \:547c\:3073\:51fa\:3057\:5074\:306e\:5236\:5fa1\:306b\:3088\:308b\:3002
 
-   罠 #30: バッファへの追加は変数操作なので評価コンテキスト不問 (scheduled
-   task でも安全)。ただし NBFlushDeferredOutput (NotebookWrite) は FrontEnd
-   操作なのでメインカーネル評価で呼ぶこと。 *)
+   \:7f60 #30: \:30d0\:30c3\:30d5\:30a1\:3078\:306e\:8ffd\:52a0\:306f\:5909\:6570\:64cd\:4f5c\:306a\:306e\:3067\:8a55\:4fa1\:30b3\:30f3\:30c6\:30ad\:30b9\:30c8\:4e0d\:554f (scheduled
+   task \:3067\:3082\:5b89\:5168)\:3002\:305f\:3060\:3057 NBFlushDeferredOutput (NotebookWrite) \:306f FrontEnd
+   \:64cd\:4f5c\:306a\:306e\:3067\:30e1\:30a4\:30f3\:30ab\:30fc\:30cd\:30eb\:8a55\:4fa1\:3067\:547c\:3076\:3053\:3068\:3002 *)
 If[!BooleanQ[$iNBDeferActive], $iNBDeferActive = False];
 If[!ListQ[$iNBDeferredCells], $iNBDeferredCells = {}];
 
@@ -4754,7 +4758,7 @@ NBAccess`NBEndDeferredOutput[] := ($iNBDeferActive = False;);
 NBAccess`NBDeferredOutputActiveQ[] := TrueQ[$iNBDeferActive];
 NBAccess`NBDeferredOutputCount[] := Length[$iNBDeferredCells];
 
-(* 溜めた Cell を一括書き込みしてバッファをクリアする。メイン評価で呼ぶこと。 *)
+(* \:6e9c\:3081\:305f Cell \:3092\:4e00\:62ec\:66f8\:304d\:8fbc\:307f\:3057\:3066\:30d0\:30c3\:30d5\:30a1\:3092\:30af\:30ea\:30a2\:3059\:308b\:3002\:30e1\:30a4\:30f3\:8a55\:4fa1\:3067\:547c\:3076\:3053\:3068\:3002 *)
 NBAccess`NBFlushDeferredOutput[nb_NotebookObject] :=
   Module[{cells},
     cells = $iNBDeferredCells;
@@ -4770,18 +4774,18 @@ NBAccess`NBFlushDeferredOutput[] :=
       Quiet[CellPrint[cells]]];
     Length[cells]];
 
-(* バッファを破棄 (フラッシュせず捨てる)。 *)
+(* \:30d0\:30c3\:30d5\:30a1\:3092\:7834\:68c4 (\:30d5\:30e9\:30c3\:30b7\:30e5\:305b\:305a\:6368\:3066\:308b)\:3002 *)
 NBAccess`NBDiscardDeferredOutput[] := ($iNBDeferredCells = {};);
 
 NBAccess`NBWriteCell[nb_NotebookObject, cellExpr_Cell, where_:After] :=
   If[TrueQ[$iNBDeferActive],
-    (* Batch/Deferred: バッファに溜める (NotebookWrite しない)。
-       where が After 以外 (位置指定) の場合は遅延に乗せず即書き込みする
-       (位置依存の挿入はバッファ順序と整合しないため)。 *)
+    (* Batch/Deferred: \:30d0\:30c3\:30d5\:30a1\:306b\:6e9c\:3081\:308b (NotebookWrite \:3057\:306a\:3044)\:3002
+       where \:304c After \:4ee5\:5916 (\:4f4d\:7f6e\:6307\:5b9a) \:306e\:5834\:5408\:306f\:9045\:5ef6\:306b\:4e57\:305b\:305a\:5373\:66f8\:304d\:8fbc\:307f\:3059\:308b
+       (\:4f4d\:7f6e\:4f9d\:5b58\:306e\:633f\:5165\:306f\:30d0\:30c3\:30d5\:30a1\:9806\:5e8f\:3068\:6574\:5408\:3057\:306a\:3044\:305f\:3081)\:3002 *)
     If[where === After,
       AppendTo[$iNBDeferredCells, cellExpr]; Null,
       Quiet[NotebookWrite[nb, cellExpr, where]]],
-    (* Streaming/Immediate: 従来通り即書き込み *)
+    (* Streaming/Immediate: \:5f93\:6765\:901a\:308a\:5373\:66f8\:304d\:8fbc\:307f *)
     Quiet[NotebookWrite[nb, cellExpr, where]]];
 
 (* \:901a\:77e5\:7528 Print \:30bb\:30eb\:66f8\:304d\:8fbc\:307f
@@ -4889,9 +4893,9 @@ NBAccess`NBInsertTextCells[nbFile_String, name_String, prompt_String] :=
 (* \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
    NBFileOpen: .nb \:30d5\:30a1\:30a4\:30eb\:3092\:975e\:8868\:793a\:3067\:958b\:304f
    \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine] *)
-(* NBFileOpen が「自分で開いた」notebook の登録簿。NBFileClose はこれに
-   入っているものだけを閉じる。既に利用者が開いていたウインドウを
-   NotebookClose で消してしまう事故を防ぐ。 *)
+(* NBFileOpen \:304c\:300c\:81ea\:5206\:3067\:958b\:3044\:305f\:300dnotebook \:306e\:767b\:9332\:7c3f\:3002NBFileClose \:306f\:3053\:308c\:306b
+   \:5165\:3063\:3066\:3044\:308b\:3082\:306e\:3060\:3051\:3092\:9589\:3058\:308b\:3002\:65e2\:306b\:5229\:7528\:8005\:304c\:958b\:3044\:3066\:3044\:305f\:30a6\:30a4\:30f3\:30c9\:30a6\:3092
+   NotebookClose \:3067\:6d88\:3057\:3066\:3057\:307e\:3046\:4e8b\:6545\:3092\:9632\:3050\:3002 *)
 If[! ListQ[$iNBFileOpenedByUs], $iNBFileOpenedByUs = {}];
 
 NBAccess`NBFileOpen[path_String] :=
@@ -4899,9 +4903,9 @@ NBAccess`NBFileOpen[path_String] :=
     If[!FileExistsQ[path],
       Message[NBAccess`NBFileOpen::notfound, path]; Return[$Failed]];
     abs = ExpandFileName[path];
-    (* 既に開いているウインドウ (利用者の作業中ウインドウ等) があれば、それを返すが
-       「自分で開いた」登録はしない。NotebookOpen[..., Visible->False] は既開きの
-       ウインドウには無効で、そのまま閉じると利用者のウインドウが消えるため。 *)
+    (* \:65e2\:306b\:958b\:3044\:3066\:3044\:308b\:30a6\:30a4\:30f3\:30c9\:30a6 (\:5229\:7528\:8005\:306e\:4f5c\:696d\:4e2d\:30a6\:30a4\:30f3\:30c9\:30a6\:7b49) \:304c\:3042\:308c\:3070\:3001\:305d\:308c\:3092\:8fd4\:3059\:304c
+       \:300c\:81ea\:5206\:3067\:958b\:3044\:305f\:300d\:767b\:9332\:306f\:3057\:306a\:3044\:3002NotebookOpen[..., Visible->False] \:306f\:65e2\:958b\:304d\:306e
+       \:30a6\:30a4\:30f3\:30c9\:30a6\:306b\:306f\:7121\:52b9\:3067\:3001\:305d\:306e\:307e\:307e\:9589\:3058\:308b\:3068\:5229\:7528\:8005\:306e\:30a6\:30a4\:30f3\:30c9\:30a6\:304c\:6d88\:3048\:308b\:305f\:3081\:3002 *)
     already = SelectFirst[Quiet@Check[Notebooks[], {}],
       Function[w,
         Module[{fn = Quiet@Check[NotebookFileName[w], $Failed]},
@@ -4920,9 +4924,9 @@ NBAccess`NBFileOpen::openfail  = "\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:3092\:95
    NBFileClose: \:958b\:3044\:305f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:3092\:9589\:3058\:308b
    \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine] *)
 NBAccess`NBFileClose[nb_NotebookObject] :=
-  (* 自分で開いた notebook のみ閉じる。既に開いていた利用者ウインドウは閉じない
-     (NBFileOpen が登録していない = 既開き) ことで、評価中ウインドウが突然閉じる
-     事故を防ぐ。 *)
+  (* \:81ea\:5206\:3067\:958b\:3044\:305f notebook \:306e\:307f\:9589\:3058\:308b\:3002\:65e2\:306b\:958b\:3044\:3066\:3044\:305f\:5229\:7528\:8005\:30a6\:30a4\:30f3\:30c9\:30a6\:306f\:9589\:3058\:306a\:3044
+     (NBFileOpen \:304c\:767b\:9332\:3057\:3066\:3044\:306a\:3044 = \:65e2\:958b\:304d) \:3053\:3068\:3067\:3001\:8a55\:4fa1\:4e2d\:30a6\:30a4\:30f3\:30c9\:30a6\:304c\:7a81\:7136\:9589\:3058\:308b
+     \:4e8b\:6545\:3092\:9632\:3050\:3002 *)
   If[MemberQ[$iNBFileOpenedByUs, nb],
     $iNBFileOpenedByUs = DeleteCases[$iNBFileOpenedByUs, nb];
     Quiet @ NotebookClose[nb],
@@ -5092,7 +5096,7 @@ NBAccess`NBGetFallbackModels[] :=
 
    IP / \:30b5\:30d6\:30cd\:30c3\:30c8\:306e\:5224\:5b9a\:306f\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:306b\:76f4\:7d50\:3059\:308b\:306e\:3067 NBAccess \:304c
    \:7ba1\:7406\:3059\:308b\:3002\:4fe1\:983c\:30ea\:30b9\:30c8\:306f {MachineName, Subnet, Provider, URL} \:306e
-   \:7d44\:3067\:3001IP \:00d7 \:30b5\:30d6\:30cd\:30c3\:30c8\:306f\:30cf\:30fc\:30c9\:30b3\:30fc\:30c9\:53ef (\:6ec5\:591a\:306b\:5909\:308f\:3089\:306a\:3044)\:3002
+   \:7d44\:3067\:3001IP \[Times] \:30b5\:30d6\:30cd\:30c3\:30c8\:306f\:30cf\:30fc\:30c9\:30b3\:30fc\:30c9\:53ef (\:6ec5\:591a\:306b\:5909\:308f\:3089\:306a\:3044)\:3002
    \:305d\:306e\:4e0a\:3067\:52d5\:304f\:30e2\:30c7\:30eb\:540d (Qwen \:306e\:679d\:756a\:7b49) \:306f\:542b\:3081\:306a\:3044\:3002\:30e2\:30c7\:30eb\:306f
    SourceVault \:304c intent \:89e3\:6c7a\:3067\:6271\:3046\:3002
 
@@ -5459,9 +5463,9 @@ iNBFileCellPrivacyRange[path_String] :=
 (* \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
    NBObjectSpec: \:30d5\:30a1\:30a4\:30eb\:307e\:305f\:306f\:5024\:306e\:30e1\:30bf\:60c5\:5831 + PrivacyLevel
    \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine] *)
-(* \:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500
-   NBNormalizePath: \:7d76\:5bfe\:30d1\:30b9 \:2192 \:30af\:30ed\:30b9 PC \:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:60c5\:5831
-   \:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500\:2500
+(* \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
+   NBNormalizePath: \:7d76\:5bfe\:30d1\:30b9 \[RightArrow] \:30af\:30ed\:30b9 PC \:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:60c5\:5831
+   \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
    Phase 1 (\:51fa\:529b\:62e1\:5f35\:306e\:307f)\:3002authorization \:30ed\:30b8\:30c3\:30af\:306f\:4e00\:5207\:5909\:66f4\:3057\:306a\:3044\:3002
    rule 104: \:623b\:308a\:5024\:306f identity \:3067\:3042\:3063\:3066\:6a29\:9650\:3067\:306f\:306a\:3044\:3002
 
@@ -5470,7 +5474,7 @@ iNBFileCellPrivacyRange[path_String] :=
      iSVSymbolicPath \:306f\:30af\:30ed\:30b9 PC \:30a8\:30a4\:30ea\:30a2\:30b9 ($SourceVaultCloudRootAliases) \:306b\:5bfe\:5fdc\:3059\:308b\:3002
    - \:672a\:30ed\:30fc\:30c9\:306a\:3089\:73fe PC \:5b9f\:4f53\:30eb\:30fc\:30c8\:306e\:307f\:3067\:7c21\:6613\:89e3\:6c7a\:3057\:3001\:30a8\:30a4\:30ea\:30a2\:30b9\:7167\:5408\:306f\:3057\:306a\:3044\:3002
    \:3044\:305a\:308c\:306e\:5834\:5408\:3082 $NBPathRootRegistry \:306e\:3088\:3046\:306a\:65b0\:3057\:3044\:72b6\:614b\:306f NBAccess \:306b\:6301\:305f\:305b\:306a\:3044
-   (\:4e8c\:91cd\:7ba1\:7406\:3092\:907f\:3051\:308b\:3002rule 104 / cross-PC path policy \:00a76.1.1)\:3002 *)
+   (\:4e8c\:91cd\:7ba1\:7406\:3092\:907f\:3051\:308b\:3002rule 104 / cross-PC path policy \[Section]6.1.1)\:3002 *)
 
 (* SourceVault`iSVSymbolicPath \:304c\:5229\:7528\:53ef\:80fd\:304b (\:5b9a\:7fa9\:6e08\:307f\:304b) \:3092\:5224\:5b9a\:3002 *)
 iNBSourceVaultPathAvailableQ[] :=
@@ -6219,9 +6223,9 @@ If[!ListQ[$NBApprovalHeads],
     "NBMarkCellConfidential", "NBMarkCellDependent", "NBUnmarkCell",
     "NBSetConfidentialTag", "NBSetTaggingRule", "NBDeleteTaggingRule",
     "NBSetSnapshotPrivacyLevel",
-    (* desktop action wrapper (spec 5B.7/5B.8): 承認付きでフォルダ等を開く。
-       内部で action registry -> iNBExecuteOpenDesktopItem (path 検査) を通す。
-       raw SystemOpen は依然 Deny。これが正本の経路。 *)
+    (* desktop action wrapper (spec 5B.7/5B.8): \:627f\:8a8d\:4ed8\:304d\:3067\:30d5\:30a9\:30eb\:30c0\:7b49\:3092\:958b\:304f\:3002
+       \:5185\:90e8\:3067 action registry -> iNBExecuteOpenDesktopItem (path \:691c\:67fb) \:3092\:901a\:3059\:3002
+       raw SystemOpen \:306f\:4f9d\:7136 Deny\:3002\:3053\:308c\:304c\:6b63\:672c\:306e\:7d4c\:8def\:3002 *)
     "NBOpenFolderWithApproval", "NBExecuteApprovedAction",
     "NBFileWriteCell", "NBFileWriteAllCells",
     "NBMergeNotebookCells",
@@ -6248,9 +6252,9 @@ If[!ListQ[$NBDenyHeads],
     "SendMail", "CloudDeploy", "CloudPut",
     "Quit", "Exit", "Abort",
     "Unset", "Clear", "Remove",
-    (* Phase C-lite (2026-06-03、spec 5A.5.1): 外部実行・ネットワーク・
-       破壊的 IO の明示 Deny を補強。C-lite の語幹分類でも拾えるが、
-       明示列挙しておくことで承認 UI を出さず確実に Deny する。 *)
+    (* Phase C-lite (2026-06-03\:3001spec 5A.5.1): \:5916\:90e8\:5b9f\:884c\:30fb\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:30fb
+       \:7834\:58ca\:7684 IO \:306e\:660e\:793a Deny \:3092\:88dc\:5f37\:3002C-lite \:306e\:8a9e\:5e79\:5206\:985e\:3067\:3082\:62fe\:3048\:308b\:304c\:3001
+       \:660e\:793a\:5217\:6319\:3057\:3066\:304a\:304f\:3053\:3068\:3067\:627f\:8a8d UI \:3092\:51fa\:3055\:305a\:78ba\:5b9f\:306b Deny \:3059\:308b\:3002 *)
     "ExternalEvaluate", "ExternalFunction", "LibraryFunctionLoad",
     "LinkLaunch", "LinkConnect", "Install",
     "SocketConnect", "SocketOpen", "URLSubmit", "URLDownload",
@@ -6260,41 +6264,41 @@ If[!ListQ[$NBDenyHeads],
     "ServiceExecute", "SendMessage", "MailReceiverFunction",
     "Splice", "FilePrint", "CopyDirectory", "SetDirectory",
     "ResetDirectory", "CreateArchive", "ExtractArchive"
-    (* 2026-06-03: "Evaluate" を Deny から除去。ParametricPlot[Evaluate[..]] 等
-       描画の定石を巻き込んで全 Deny していた。Evaluate の中身の危険 head は
-       iExtractAllHeads が {1,Infinity} で別途捕捉し Deny するため、Evaluate
-       自体を Deny する必要はない。Evaluate は allowlist (HoldComplete 等と
-       同じ行) にあり許可扱い。 *)
+    (* 2026-06-03: "Evaluate" \:3092 Deny \:304b\:3089\:9664\:53bb\:3002ParametricPlot[Evaluate[..]] \:7b49
+       \:63cf\:753b\:306e\:5b9a\:77f3\:3092\:5dfb\:304d\:8fbc\:3093\:3067\:5168 Deny \:3057\:3066\:3044\:305f\:3002Evaluate \:306e\:4e2d\:8eab\:306e\:5371\:967a head \:306f
+       iExtractAllHeads \:304c {1,Infinity} \:3067\:5225\:9014\:6355\:6349\:3057 Deny \:3059\:308b\:305f\:3081\:3001Evaluate
+       \:81ea\:4f53\:3092 Deny \:3059\:308b\:5fc5\:8981\:306f\:306a\:3044\:3002Evaluate \:306f allowlist (HoldComplete \:7b49\:3068
+       \:540c\:3058\:884c) \:306b\:3042\:308a\:8a31\:53ef\:6271\:3044\:3002 *)
   }];
 
-(* Phase permission-modes (2026-06-03, spec 5B.3): グローバル permission mode。
-   標準値 InteractiveSafe。自動ワークフローでは WorkflowSafe を使う。
-   推奨値: ReviewOnly / StrictSafe / InteractiveSafe / WorkflowSafe /
-           LegacyInteractive / DangerFullAccess。
-   I12: 実行中の判定では global を直接読まず、accessSpec/snapshot に
-   焼き込んだ値を正とする。 *)
+(* Phase permission-modes (2026-06-03, spec 5B.3): \:30b0\:30ed\:30fc\:30d0\:30eb permission mode\:3002
+   \:6a19\:6e96\:5024 InteractiveSafe\:3002\:81ea\:52d5\:30ef\:30fc\:30af\:30d5\:30ed\:30fc\:3067\:306f WorkflowSafe \:3092\:4f7f\:3046\:3002
+   \:63a8\:5968\:5024: ReviewOnly / StrictSafe / InteractiveSafe / WorkflowSafe /
+           LegacyInteractive / DangerFullAccess\:3002
+   I12: \:5b9f\:884c\:4e2d\:306e\:5224\:5b9a\:3067\:306f global \:3092\:76f4\:63a5\:8aad\:307e\:305a\:3001accessSpec/snapshot \:306b
+   \:713c\:304d\:8fbc\:3093\:3060\:5024\:3092\:6b63\:3068\:3059\:308b\:3002 *)
 If[!StringQ[$ClaudePermissionMode],
   $ClaudePermissionMode = "InteractiveSafe"];
 
-(* spec 5B.4: DangerFullAccess でも HardDeny を無条件 Permit にしない。
-   別フラグでのみ HardDeny を承認可能に昇格する (既定 False)。 *)
+(* spec 5B.4: DangerFullAccess \:3067\:3082 HardDeny \:3092\:7121\:6761\:4ef6 Permit \:306b\:3057\:306a\:3044\:3002
+   \:5225\:30d5\:30e9\:30b0\:3067\:306e\:307f HardDeny \:3092\:627f\:8a8d\:53ef\:80fd\:306b\:6607\:683c\:3059\:308b (\:65e2\:5b9a False)\:3002 *)
 If[!BooleanQ[$ClaudeAllowHardDenyOverride],
   $ClaudeAllowHardDenyOverride = False];
 
-(* 出力モード (対策2, 2026-06-03)。Streaming=逐次 (既定) / Batch=集約。
-   最優先は FrontEnd/カーネルブロック回避。BlockingRisk が MayBlockFrontEnd の
-   出力は Streaming でも自動集約。実行中は accessSpec/runtime メタデータの
-   焼き込み値を正とする。 *)
+(* \:51fa\:529b\:30e2\:30fc\:30c9 (\:5bfe\:7b562, 2026-06-03)\:3002Streaming=\:9010\:6b21 (\:65e2\:5b9a) / Batch=\:96c6\:7d04\:3002
+   \:6700\:512a\:5148\:306f FrontEnd/\:30ab\:30fc\:30cd\:30eb\:30d6\:30ed\:30c3\:30af\:56de\:907f\:3002BlockingRisk \:304c MayBlockFrontEnd \:306e
+   \:51fa\:529b\:306f Streaming \:3067\:3082\:81ea\:52d5\:96c6\:7d04\:3002\:5b9f\:884c\:4e2d\:306f accessSpec/runtime \:30e1\:30bf\:30c7\:30fc\:30bf\:306e
+   \:713c\:304d\:8fbc\:307f\:5024\:3092\:6b63\:3068\:3059\:308b\:3002 *)
 If[!StringQ[$ClaudeOutputMode],
   $ClaudeOutputMode = "Streaming"];
 
-(* NBResolveOutputMode[mode, blockingRisk]: 実際に「逐次出力」するか
-   「集約 (遅延出力)」するかを返す純粋関数。最優先はブロック回避:
-   - blockingRisk が "MayBlockFrontEnd" なら、mode が Streaming でも
-     "Deferred" を返す (ブロックするくらいなら最後にまとめる)。
-   - mode が "Batch" なら常に "Deferred"。
-   - それ以外 (Streaming かつブロックなし) は "Immediate"。
-   返り値: "Immediate" (即出力) | "Deferred" (集約)。 *)
+(* NBResolveOutputMode[mode, blockingRisk]: \:5b9f\:969b\:306b\:300c\:9010\:6b21\:51fa\:529b\:300d\:3059\:308b\:304b
+   \:300c\:96c6\:7d04 (\:9045\:5ef6\:51fa\:529b)\:300d\:3059\:308b\:304b\:3092\:8fd4\:3059\:7d14\:7c8b\:95a2\:6570\:3002\:6700\:512a\:5148\:306f\:30d6\:30ed\:30c3\:30af\:56de\:907f:
+   - blockingRisk \:304c "MayBlockFrontEnd" \:306a\:3089\:3001mode \:304c Streaming \:3067\:3082
+     "Deferred" \:3092\:8fd4\:3059 (\:30d6\:30ed\:30c3\:30af\:3059\:308b\:304f\:3089\:3044\:306a\:3089\:6700\:5f8c\:306b\:307e\:3068\:3081\:308b)\:3002
+   - mode \:304c "Batch" \:306a\:3089\:5e38\:306b "Deferred"\:3002
+   - \:305d\:308c\:4ee5\:5916 (Streaming \:304b\:3064\:30d6\:30ed\:30c3\:30af\:306a\:3057) \:306f "Immediate"\:3002
+   \:8fd4\:308a\:5024: "Immediate" (\:5373\:51fa\:529b) | "Deferred" (\:96c6\:7d04)\:3002 *)
 NBResolveOutputMode[mode_String, blockingRisk_String] :=
   Which[
     blockingRisk === "MayBlockFrontEnd", "Deferred",
@@ -6302,8 +6306,8 @@ NBResolveOutputMode[mode_String, blockingRisk_String] :=
     True, "Immediate"];
 NBResolveOutputMode[mode_String] := NBResolveOutputMode[mode, "None"];
 NBResolveOutputMode[] := NBResolveOutputMode[$ClaudeOutputMode, "None"];
-(* 不正な mode は安全側 (即出力) に倒す。Batch でブロックなしの誤入力でも
-   出力が消えるより出る方が安全。 *)
+(* \:4e0d\:6b63\:306a mode \:306f\:5b89\:5168\:5074 (\:5373\:51fa\:529b) \:306b\:5012\:3059\:3002Batch \:3067\:30d6\:30ed\:30c3\:30af\:306a\:3057\:306e\:8aa4\:5165\:529b\:3067\:3082
+   \:51fa\:529b\:304c\:6d88\:3048\:308b\:3088\:308a\:51fa\:308b\:65b9\:304c\:5b89\:5168\:3002 *)
 NBResolveOutputMode[___] := "Immediate";
 
 (* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
@@ -6315,11 +6319,11 @@ Options[NBValidateHeldExpr] = {"AllowedHeads" -> Automatic,
   "LabelCheck" -> Automatic, "PolicySnapshot" -> None};
 Options[iNBValidateHeldExprBase] = Options[NBValidateHeldExpr];
 
-(* Phase permission-modes (2026-06-03, spec 5B.2A): 既存の判定本体を
-   iNBValidateHeldExprBase に分離。これが従来の Decision を返す
-   「BaseDecision 生成器」。NBValidateHeldExpr はこれを呼び、
-   末尾で EffectClass/ApprovalEligibility/PermissionMode 変換を
-   一度だけ適用する薄いラッパー (下部で定義)。 *)
+(* Phase permission-modes (2026-06-03, spec 5B.2A): \:65e2\:5b58\:306e\:5224\:5b9a\:672c\:4f53\:3092
+   iNBValidateHeldExprBase \:306b\:5206\:96e2\:3002\:3053\:308c\:304c\:5f93\:6765\:306e Decision \:3092\:8fd4\:3059
+   \:300cBaseDecision \:751f\:6210\:5668\:300d\:3002NBValidateHeldExpr \:306f\:3053\:308c\:3092\:547c\:3073\:3001
+   \:672b\:5c3e\:3067 EffectClass/ApprovalEligibility/PermissionMode \:5909\:63db\:3092
+   \:4e00\:5ea6\:3060\:3051\:9069\:7528\:3059\:308b\:8584\:3044\:30e9\:30c3\:30d1\:30fc (\:4e0b\:90e8\:3067\:5b9a\:7fa9)\:3002 *)
 iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
   Module[{allowed, approval, deny, heads, denied, needsApproval, unknown,
           scopedSyms,
@@ -6392,11 +6396,11 @@ iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]
               " detected. Only Set/SetDelayed inside Module/With/Block is auto-permitted.",
             "SanitizedExpr" -> heldExpr|>]]]];
     
-    (* 過剰反復ガード (2026-06-29): trusted package head (SourceVault* 等) を
-       大きな literal 反復で回す生成コード (例: Do[SourceVaultIngest[..], {10000}])
-       は、head 自体が承認不要でも NeedsApproval に昇格させる。
-       閾値 $NBTrustedHeadIterationLimit (既定 100)。実行時の防波堤は
-       SourceVault 側 SourceVaultRateLimit。 *)
+    (* \:904e\:5270\:53cd\:5fa9\:30ac\:30fc\:30c9 (2026-06-29): trusted package head (SourceVault* \:7b49) \:3092
+       \:5927\:304d\:306a literal \:53cd\:5fa9\:3067\:56de\:3059\:751f\:6210\:30b3\:30fc\:30c9 (\:4f8b: Do[SourceVaultIngest[..], {10000}])
+       \:306f\:3001head \:81ea\:4f53\:304c\:627f\:8a8d\:4e0d\:8981\:3067\:3082 NeedsApproval \:306b\:6607\:683c\:3055\:305b\:308b\:3002
+       \:95be\:5024 $NBTrustedHeadIterationLimit (\:65e2\:5b9a 100)\:3002\:5b9f\:884c\:6642\:306e\:9632\:6ce2\:5824\:306f
+       SourceVault \:5074 SourceVaultRateLimit\:3002 *)
     Module[{iterHits = iNBExcessiveTrustedIterationHits[heldExpr]},
       If[Length[iterHits] > 0,
         Return[<|"Decision" -> "NeedsApproval",
@@ -6410,38 +6414,38 @@ iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]
           "IterationHits" -> iterHits,
           "SanitizedExpr" -> heldExpr|>]]];
 
-    (* unknown head の扱い (Phase C-lite, spec I8/I9/5A)。
-       従来は一律 RepairNeeded だったが、Mathematica の純粋関数を
-       allow list 化するのは非現実的なため、文脈 + 副作用語幹で再分類する。
-       ここに来る head は Deny でも Approval でも Allowed でも
-       Set/SetDelayed でもないもの。 *)
-    (* held 中の Module/Block/With/Function 等の局所変数・パターン変数・
-       定義関数名を承認対象から除外する (これらはユーザー定義の安全なローカル)。
-       2026-06-03: Module[{traj},traj[x_]:=..] の traj が NeedsApproval に
-       なる過剰判定への対処。 *)
+    (* unknown head \:306e\:6271\:3044 (Phase C-lite, spec I8/I9/5A)\:3002
+       \:5f93\:6765\:306f\:4e00\:5f8b RepairNeeded \:3060\:3063\:305f\:304c\:3001Mathematica \:306e\:7d14\:7c8b\:95a2\:6570\:3092
+       allow list \:5316\:3059\:308b\:306e\:306f\:975e\:73fe\:5b9f\:7684\:306a\:305f\:3081\:3001\:6587\:8108 + \:526f\:4f5c\:7528\:8a9e\:5e79\:3067\:518d\:5206\:985e\:3059\:308b\:3002
+       \:3053\:3053\:306b\:6765\:308b head \:306f Deny \:3067\:3082 Approval \:3067\:3082 Allowed \:3067\:3082
+       Set/SetDelayed \:3067\:3082\:306a\:3044\:3082\:306e\:3002 *)
+    (* held \:4e2d\:306e Module/Block/With/Function \:7b49\:306e\:5c40\:6240\:5909\:6570\:30fb\:30d1\:30bf\:30fc\:30f3\:5909\:6570\:30fb
+       \:5b9a\:7fa9\:95a2\:6570\:540d\:3092\:627f\:8a8d\:5bfe\:8c61\:304b\:3089\:9664\:5916\:3059\:308b (\:3053\:308c\:3089\:306f\:30e6\:30fc\:30b6\:30fc\:5b9a\:7fa9\:306e\:5b89\:5168\:306a\:30ed\:30fc\:30ab\:30eb)\:3002
+       2026-06-03: Module[{traj},traj[x_]:=..] \:306e traj \:304c NeedsApproval \:306b
+       \:306a\:308b\:904e\:5270\:5224\:5b9a\:3078\:306e\:5bfe\:51e6\:3002 *)
     scopedSyms = iNBExtractScopedSymbols[heldExpr];
     unknown = Select[heads,
       !MemberQ[allowed, #] && !MemberQ[approval, #] && !MemberQ[deny, #] &&
       !MemberQ[{"Set", "SetDelayed"}, #] &&
       !MemberQ[scopedSyms, #] &];
     If[Length[unknown] > 0,
-      (* confidential leak は分類より先に確認 (leak は承認しても不可)。
-         snapshot mode では effectiveAccessSpec に snapshot 由来 conf 注入済み。 *)
+      (* confidential leak \:306f\:5206\:985e\:3088\:308a\:5148\:306b\:78ba\:8a8d (leak \:306f\:627f\:8a8d\:3057\:3066\:3082\:4e0d\:53ef)\:3002
+         snapshot mode \:3067\:306f effectiveAccessSpec \:306b snapshot \:7531\:6765 conf \:6ce8\:5165\:6e08\:307f\:3002 *)
       If[iContainsConfidentialLeak[heldExpr, effectiveAccessSpec],
         Return[<|"Decision" -> "Deny",
           "ReasonClass" -> "ConfidentialLeakRisk",
           "VisibleExplanation" -> "Expression may leak confidential data",
           "SanitizedExpr" -> iSanitizeExpr[heldExpr]|>]];
-      (* C-lite 構造分類。unknown head の名前-文脈ペアを取り、
-         System` 純粋 -> Permit、System` 副作用語幹 / user 文脈 -> NeedsApproval。 *)
+      (* C-lite \:69cb\:9020\:5206\:985e\:3002unknown head \:306e\:540d\:524d-\:6587\:8108\:30da\:30a2\:3092\:53d6\:308a\:3001
+         System` \:7d14\:7c8b -> Permit\:3001System` \:526f\:4f5c\:7528\:8a9e\:5e79 / user \:6587\:8108 -> NeedsApproval\:3002 *)
       Module[{pairs, unknownPairs, cls},
         pairs = iNBHeadNameContextPairs[heldExpr];
         unknownPairs = Select[pairs, MemberQ[unknown, First[#]] &];
         cls = iNBClassifyUnknownHeads[unknownPairs];
         Which[
           cls["Decision"] === "Permit",
-            (* System` 純粋っぽい組み込みのみ。allowed 外だが安全とみなし Permit。
-               以降の confidential / label チェックへ進むため Return せず通過。 *)
+            (* System` \:7d14\:7c8b\:3063\:307d\:3044\:7d44\:307f\:8fbc\:307f\:306e\:307f\:3002allowed \:5916\:3060\:304c\:5b89\:5168\:3068\:307f\:306a\:3057 Permit\:3002
+               \:4ee5\:964d\:306e confidential / label \:30c1\:30a7\:30c3\:30af\:3078\:9032\:3080\:305f\:3081 Return \:305b\:305a\:901a\:904e\:3002 *)
             Null,
           cls["Decision"] === "NeedsApproval",
             Return[<|"Decision" -> "NeedsApproval",
@@ -6460,7 +6464,7 @@ iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]
               "SanitizedExpr" -> heldExpr|>]
         ]]];
     
-    (* confidential leak \:30c1\:30a7\:30c3\:30af (allowed head のみの式に対しても実施) *)
+    (* confidential leak \:30c1\:30a7\:30c3\:30af (allowed head \:306e\:307f\:306e\:5f0f\:306b\:5bfe\:3057\:3066\:3082\:5b9f\:65bd) *)
     (* snapshot mode \:3067\:306f effectiveAccessSpec \:306b snapshot \:7531\:6765 conf \:304c\:6ce8\:5165\:6e08\:307f\:3002 *)
     If[iContainsConfidentialLeak[heldExpr, effectiveAccessSpec],
       Return[<|"Decision" -> "Deny",
@@ -6520,14 +6524,14 @@ iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]
 
 (* ============================================================
    Phase permission-modes (2026-06-03, spec 5B.2A): NBValidateHeldExpr
-   ラッパー = base 判定 + EffectClass/ApprovalEligibility + mode 変換
+   \:30e9\:30c3\:30d1\:30fc = base \:5224\:5b9a + EffectClass/ApprovalEligibility + mode \:5909\:63db
    ============================================================
-   1. iNBValidateHeldExprBase で従来の Decision (= BaseDecision) を得る
-   2. 式中の head から EffectClass を集約し ApprovalEligibility を決める
-   3. base Decision と EffectClass eligibility を合成 (厳しい方)
-   4. accessSpec["PermissionMode"] (I12: global を読み直さない) で変換
-   5. Decision (変換後) と BaseDecision を併存させ、追加 metadata を返す
-   既存の Switch[r["Decision"], ...] は Decision キーでそのまま動く。 *)
+   1. iNBValidateHeldExprBase \:3067\:5f93\:6765\:306e Decision (= BaseDecision) \:3092\:5f97\:308b
+   2. \:5f0f\:4e2d\:306e head \:304b\:3089 EffectClass \:3092\:96c6\:7d04\:3057 ApprovalEligibility \:3092\:6c7a\:3081\:308b
+   3. base Decision \:3068 EffectClass eligibility \:3092\:5408\:6210 (\:53b3\:3057\:3044\:65b9)
+   4. accessSpec["PermissionMode"] (I12: global \:3092\:8aad\:307f\:76f4\:3055\:306a\:3044) \:3067\:5909\:63db
+   5. Decision (\:5909\:63db\:5f8c) \:3068 BaseDecision \:3092\:4f75\:5b58\:3055\:305b\:3001\:8ffd\:52a0 metadata \:3092\:8fd4\:3059
+   \:65e2\:5b58\:306e Switch[r["Decision"], ...] \:306f Decision \:30ad\:30fc\:3067\:305d\:306e\:307e\:307e\:52d5\:304f\:3002 *)
 NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
   Module[{base, baseDecision, mode, pairs, ecInfos, aggEC, aggPlacement,
           aggBlocking, requiresFinal, baseElig, ecElig, finalElig,
@@ -6535,12 +6539,12 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
     base = iNBValidateHeldExprBase[heldExpr, accessSpec, opts];
     baseDecision = Lookup[base, "Decision", "Deny"];
 
-    (* permission mode は accessSpec から読む (I12)。無ければ global を
-       初期値として使うが、実行経路では accessSpec に焼き込まれている前提。 *)
+    (* permission mode \:306f accessSpec \:304b\:3089\:8aad\:3080 (I12)\:3002\:7121\:3051\:308c\:3070 global \:3092
+       \:521d\:671f\:5024\:3068\:3057\:3066\:4f7f\:3046\:304c\:3001\:5b9f\:884c\:7d4c\:8def\:3067\:306f accessSpec \:306b\:713c\:304d\:8fbc\:307e\:308c\:3066\:3044\:308b\:524d\:63d0\:3002 *)
     mode = Lookup[accessSpec, "PermissionMode", $ClaudePermissionMode];
     If[!StringQ[mode], mode = "InteractiveSafe"];
 
-    (* base Decision を ApprovalEligibility にマップ *)
+    (* base Decision \:3092 ApprovalEligibility \:306b\:30de\:30c3\:30d7 *)
     baseElig = Switch[baseDecision,
       "Deny", "HardDeny",
       "RepairNeeded", "RepairRequired",
@@ -6548,13 +6552,13 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
       "Permit", "AutoPermit",
       _, "AskUserAllowed"];
 
-    (* 式中の head から EffectClass を集約 (heldExpr が HoldComplete のとき) *)
-    (* 式中の head から EffectClass を集約 (heldExpr が HoldComplete のとき)。
-       2026-06-03: base 判定と同様、Module/Block/With 等のスコープ局所変数
-       (traj 等のユーザー定義ローカル関数) を除外する。これを除外しないと
-       traj が Global` 文脈の UnknownUserCode と判定され、base が Permit でも
-       mode 変換層で eligibility が AskUserAllowed に昇格し NeedsApproval に
-       なる (Reason=None の NeedsApproval の原因)。 *)
+    (* \:5f0f\:4e2d\:306e head \:304b\:3089 EffectClass \:3092\:96c6\:7d04 (heldExpr \:304c HoldComplete \:306e\:3068\:304d) *)
+    (* \:5f0f\:4e2d\:306e head \:304b\:3089 EffectClass \:3092\:96c6\:7d04 (heldExpr \:304c HoldComplete \:306e\:3068\:304d)\:3002
+       2026-06-03: base \:5224\:5b9a\:3068\:540c\:69d8\:3001Module/Block/With \:7b49\:306e\:30b9\:30b3\:30fc\:30d7\:5c40\:6240\:5909\:6570
+       (traj \:7b49\:306e\:30e6\:30fc\:30b6\:30fc\:5b9a\:7fa9\:30ed\:30fc\:30ab\:30eb\:95a2\:6570) \:3092\:9664\:5916\:3059\:308b\:3002\:3053\:308c\:3092\:9664\:5916\:3057\:306a\:3044\:3068
+       traj \:304c Global` \:6587\:8108\:306e UnknownUserCode \:3068\:5224\:5b9a\:3055\:308c\:3001base \:304c Permit \:3067\:3082
+       mode \:5909\:63db\:5c64\:3067 eligibility \:304c AskUserAllowed \:306b\:6607\:683c\:3057 NeedsApproval \:306b
+       \:306a\:308b (Reason=None \:306e NeedsApproval \:306e\:539f\:56e0)\:3002 *)
     pairs = If[MatchQ[heldExpr, HoldComplete[_]],
       Module[{allPairs, scoped},
         allPairs = iNBHeadNameContextPairs[heldExpr];
@@ -6562,16 +6566,16 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
         Select[allPairs, !MemberQ[scoped, First[#]] &]],
       {}];
     ecInfos = iNBHeadEffectClass[#[[1]], #[[2]]] & /@ pairs;
-    (* 最も厳しい EffectClass eligibility を採る *)
+    (* \:6700\:3082\:53b3\:3057\:3044 EffectClass eligibility \:3092\:63a1\:308b *)
     ecElig = If[Length[ecInfos] === 0, "AutoPermit",
       Module[{eligs},
         eligs = iNBEffectClassToEligibility[Lookup[#, "EffectClass", "PureComputation"]] & /@ ecInfos;
         First @ MaximalBy[eligs, iNBEligibilityRank, 1]]];
-    (* ExecutionPlacement / BlockingRisk / RequiresFinalNode を集約 *)
+    (* ExecutionPlacement / BlockingRisk / RequiresFinalNode \:3092\:96c6\:7d04 *)
     aggPlacement = If[Length[ecInfos] === 0, "SubkernelSafe",
       Module[{places},
         places = Lookup[#, "ExecutionPlacement", "SubkernelSafe"] & /@ ecInfos;
-        (* 厳しさ順: DesktopAction/FrontEndRequired > MainKernelOnly > Subkernel *)
+        (* \:53b3\:3057\:3055\:9806: DesktopAction/FrontEndRequired > MainKernelOnly > Subkernel *)
         Which[
           MemberQ[places, "DesktopAction"], "DesktopAction",
           MemberQ[places, "FrontEndRequired"], "FrontEndRequired",
@@ -6591,28 +6595,28 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
     aggEC = If[Length[ecInfos] === 0, "PureComputation",
       Module[{ecs},
         ecs = Lookup[#, "EffectClass", "PureComputation"] & /@ ecInfos;
-        (* 代表 EffectClass は specificity 順で採る。eligibility 同率
-           (例: Plot=GraphicsComputation も Sin=PureComputation も AutoPermit)
-           のとき eligibility rank だけでは head 走査順に依存してしまうため、
-           より具体的な (= PureComputation でない、override 由来の) EffectClass
-           を優先する。第1キー: eligibility rank、第2キー: specificity rank。 *)
+        (* \:4ee3\:8868 EffectClass \:306f specificity \:9806\:3067\:63a1\:308b\:3002eligibility \:540c\:7387
+           (\:4f8b: Plot=GraphicsComputation \:3082 Sin=PureComputation \:3082 AutoPermit)
+           \:306e\:3068\:304d eligibility rank \:3060\:3051\:3067\:306f head \:8d70\:67fb\:9806\:306b\:4f9d\:5b58\:3057\:3066\:3057\:307e\:3046\:305f\:3081\:3001
+           \:3088\:308a\:5177\:4f53\:7684\:306a (= PureComputation \:3067\:306a\:3044\:3001override \:7531\:6765\:306e) EffectClass
+           \:3092\:512a\:5148\:3059\:308b\:3002\:7b2c1\:30ad\:30fc: eligibility rank\:3001\:7b2c2\:30ad\:30fc: specificity rank\:3002 *)
         First @ MaximalBy[ecs,
           {iNBEligibilityRank[iNBEffectClassToEligibility[#]],
            iNBEffectClassSpecificity[#]} &, 1]]];
 
-    (* base eligibility と EffectClass eligibility の厳しい方を採る。
-       例: base が Permit (AutoPermit) でも EffectClass が DesktopAction
-       (AskUserAllowed) なら AskUserAllowed に上げる。
-       逆に base が Deny (HardDeny) なら EffectClass がどうあれ HardDeny。 *)
+    (* base eligibility \:3068 EffectClass eligibility \:306e\:53b3\:3057\:3044\:65b9\:3092\:63a1\:308b\:3002
+       \:4f8b: base \:304c Permit (AutoPermit) \:3067\:3082 EffectClass \:304c DesktopAction
+       (AskUserAllowed) \:306a\:3089 AskUserAllowed \:306b\:4e0a\:3052\:308b\:3002
+       \:9006\:306b base \:304c Deny (HardDeny) \:306a\:3089 EffectClass \:304c\:3069\:3046\:3042\:308c HardDeny\:3002 *)
     finalElig = If[iNBEligibilityRank[baseElig] >= iNBEligibilityRank[ecElig],
       baseElig, ecElig];
 
-    (* PermissionMode 変換 *)
+    (* PermissionMode \:5909\:63db *)
     transformed = iNBApplyPermissionMode[finalElig, mode];
 
-    (* 結果合成: base を保ちつつ Decision を変換後に差し替え、
-       BaseDecision と metadata を追加。VisibleExplanation/ReasonClass/
-       ApprovalHeads/SanitizedExpr 等の base 由来キーは保持。 *)
+    (* \:7d50\:679c\:5408\:6210: base \:3092\:4fdd\:3061\:3064\:3064 Decision \:3092\:5909\:63db\:5f8c\:306b\:5dee\:3057\:66ff\:3048\:3001
+       BaseDecision \:3068 metadata \:3092\:8ffd\:52a0\:3002VisibleExplanation/ReasonClass/
+       ApprovalHeads/SanitizedExpr \:7b49\:306e base \:7531\:6765\:30ad\:30fc\:306f\:4fdd\:6301\:3002 *)
     result = base;
     result["BaseDecision"] = baseDecision;
     result["Decision"] = transformed["Decision"];
@@ -6639,29 +6643,29 @@ iExtractAllHeads[held_HoldComplete] :=
 
 iExtractAllHeads[_] := {};
 
-(* iNBExtractScopedSymbols: held 式中の Module/Block/With/Function/
-   DynamicModule/Manipulate 等のスコープ局所変数と、SetDelayed/Function の
-   パターン変数 (f[x_]:=.. の x 等、定義された関数名 f も含む) のシンボル名を
-   抽出する。これらはユーザーが新規に束縛する安全なローカルであり、unknown
-   head の承認対象から除外する (L388 の方針: スコーピング局所変数は除外)。
-   2026-06-03: C-lite の held 式ベース unknown 判定にローカル除外が無く、
-   Module[{traj},traj[x_]:=..] の traj が Global` 文脈 head として
-   NeedsApproval になっていた問題への対処。 *)
+(* iNBExtractScopedSymbols: held \:5f0f\:4e2d\:306e Module/Block/With/Function/
+   DynamicModule/Manipulate \:7b49\:306e\:30b9\:30b3\:30fc\:30d7\:5c40\:6240\:5909\:6570\:3068\:3001SetDelayed/Function \:306e
+   \:30d1\:30bf\:30fc\:30f3\:5909\:6570 (f[x_]:=.. \:306e x \:7b49\:3001\:5b9a\:7fa9\:3055\:308c\:305f\:95a2\:6570\:540d f \:3082\:542b\:3080) \:306e\:30b7\:30f3\:30dc\:30eb\:540d\:3092
+   \:62bd\:51fa\:3059\:308b\:3002\:3053\:308c\:3089\:306f\:30e6\:30fc\:30b6\:30fc\:304c\:65b0\:898f\:306b\:675f\:7e1b\:3059\:308b\:5b89\:5168\:306a\:30ed\:30fc\:30ab\:30eb\:3067\:3042\:308a\:3001unknown
+   head \:306e\:627f\:8a8d\:5bfe\:8c61\:304b\:3089\:9664\:5916\:3059\:308b (L388 \:306e\:65b9\:91dd: \:30b9\:30b3\:30fc\:30d4\:30f3\:30b0\:5c40\:6240\:5909\:6570\:306f\:9664\:5916)\:3002
+   2026-06-03: C-lite \:306e held \:5f0f\:30d9\:30fc\:30b9 unknown \:5224\:5b9a\:306b\:30ed\:30fc\:30ab\:30eb\:9664\:5916\:304c\:7121\:304f\:3001
+   Module[{traj},traj[x_]:=..] \:306e traj \:304c Global` \:6587\:8108 head \:3068\:3057\:3066
+   NeedsApproval \:306b\:306a\:3063\:3066\:3044\:305f\:554f\:984c\:3078\:306e\:5bfe\:51e6\:3002 *)
 iNBExtractScopedSymbols[held_HoldComplete] :=
   Module[{codeStr, scopeVars, patVars, definedFns},
-    (* held を InputForm 文字列化し、実績ある文字列ベース抽出を再利用する。
-       held 式パターンマッチは Set 等の評価副作用リスクがあるため避ける。
-       2026-06-03: 当初 Cases ベースで実装したが EDT-7/8 が Fail。文字列方式に変更。 *)
+    (* held \:3092 InputForm \:6587\:5b57\:5217\:5316\:3057\:3001\:5b9f\:7e3e\:3042\:308b\:6587\:5b57\:5217\:30d9\:30fc\:30b9\:62bd\:51fa\:3092\:518d\:5229\:7528\:3059\:308b\:3002
+       held \:5f0f\:30d1\:30bf\:30fc\:30f3\:30de\:30c3\:30c1\:306f Set \:7b49\:306e\:8a55\:4fa1\:526f\:4f5c\:7528\:30ea\:30b9\:30af\:304c\:3042\:308b\:305f\:3081\:907f\:3051\:308b\:3002
+       2026-06-03: \:5f53\:521d Cases \:30d9\:30fc\:30b9\:3067\:5b9f\:88c5\:3057\:305f\:304c EDT-7/8 \:304c Fail\:3002\:6587\:5b57\:5217\:65b9\:5f0f\:306b\:5909\:66f4\:3002 *)
     codeStr = Quiet @ Check[
       ToString[held /. HoldComplete[e_] :> HoldForm[e], InputForm],
       ""];
     If[!StringQ[codeStr] || codeStr === "", Return[{}, Module]];
-    (* Module/Block/With/Function の局所変数 {a, b=1, c} の名前 *)
+    (* Module/Block/With/Function \:306e\:5c40\:6240\:5909\:6570 {a, b=1, c} \:306e\:540d\:524d *)
     scopeVars = iExtractScopeVars[codeStr];
-    (* パターン変数 x_ / x__ の名前 *)
+    (* \:30d1\:30bf\:30fc\:30f3\:5909\:6570 x_ / x__ \:306e\:540d\:524d *)
     patVars = iExtractPatternVars[codeStr];
-    (* 定義関数名: f[..]:=.. や f[..]=.. や g=.. の左辺シンボル。
-       := (SetDelayed) と = (Set) の両方を許す。== (Equal) は除外。 *)
+    (* \:5b9a\:7fa9\:95a2\:6570\:540d: f[..]:=.. \:3084 f[..]=.. \:3084 g=.. \:306e\:5de6\:8fba\:30b7\:30f3\:30dc\:30eb\:3002
+       := (SetDelayed) \:3068 = (Set) \:306e\:4e21\:65b9\:3092\:8a31\:3059\:3002== (Equal) \:306f\:9664\:5916\:3002 *)
     definedFns = DeleteDuplicates @ StringCases[codeStr,
       RegularExpression[
         "(?<![\\p{L}\\p{N}$`])([\\p{L}$][\\p{L}\\p{N}$]*)\\s*(?:\\[[^\\]]*\\])?\\s*(?::=|(?<![=<>!])=(?!=))"] :>
@@ -6672,19 +6676,19 @@ iNBExtractScopedSymbols[held_HoldComplete] :=
 iNBExtractScopedSymbols[_] := {};
 
 (* ============================================================
-   Phase C-lite (2026-06-03, spec 5A): unknown head の構造的安全分類
+   Phase C-lite (2026-06-03, spec 5A): unknown head \:306e\:69cb\:9020\:7684\:5b89\:5168\:5206\:985e
    ============================================================
-   従来は allowed に無い head を一律 RepairNeeded にしていたが、
-   Mathematica の数万の純粋関数を allow list 化するのは非現実的。
-   I8/I9 に従い、unknown head を「文脈 + 副作用語幹」で再分類する:
-     - System` 文脈 かつ 副作用語幹に当たらない -> Permit (高速だが allowed 外)
-     - System` 文脈 かつ 副作用語幹に当たる     -> NeedsApproval
-     - Global`/user/package 文脈              -> NeedsApproval
-   Deny head は本関数に来る前に既に弾かれている (優先順位 1)。 *)
+   \:5f93\:6765\:306f allowed \:306b\:7121\:3044 head \:3092\:4e00\:5f8b RepairNeeded \:306b\:3057\:3066\:3044\:305f\:304c\:3001
+   Mathematica \:306e\:6570\:4e07\:306e\:7d14\:7c8b\:95a2\:6570\:3092 allow list \:5316\:3059\:308b\:306e\:306f\:975e\:73fe\:5b9f\:7684\:3002
+   I8/I9 \:306b\:5f93\:3044\:3001unknown head \:3092\:300c\:6587\:8108 + \:526f\:4f5c\:7528\:8a9e\:5e79\:300d\:3067\:518d\:5206\:985e\:3059\:308b:
+     - System` \:6587\:8108 \:304b\:3064 \:526f\:4f5c\:7528\:8a9e\:5e79\:306b\:5f53\:305f\:3089\:306a\:3044 -> Permit (\:9ad8\:901f\:3060\:304c allowed \:5916)
+     - System` \:6587\:8108 \:304b\:3064 \:526f\:4f5c\:7528\:8a9e\:5e79\:306b\:5f53\:305f\:308b     -> NeedsApproval
+     - Global`/user/package \:6587\:8108              -> NeedsApproval
+   Deny head \:306f\:672c\:95a2\:6570\:306b\:6765\:308b\:524d\:306b\:65e2\:306b\:5f3e\:304b\:308c\:3066\:3044\:308b (\:512a\:5148\:9806\:4f4d 1)\:3002 *)
 
-(* head の {名前, 文脈} ペアを未評価で取得する。
-   Context[Unevaluated[s]] はシンボルを評価せず文脈だけ返すので安全。
-   名前が allowed/approval/deny の文字列照合と一致するよう SymbolName を使う。 *)
+(* head \:306e {\:540d\:524d, \:6587\:8108} \:30da\:30a2\:3092\:672a\:8a55\:4fa1\:3067\:53d6\:5f97\:3059\:308b\:3002
+   Context[Unevaluated[s]] \:306f\:30b7\:30f3\:30dc\:30eb\:3092\:8a55\:4fa1\:305b\:305a\:6587\:8108\:3060\:3051\:8fd4\:3059\:306e\:3067\:5b89\:5168\:3002
+   \:540d\:524d\:304c allowed/approval/deny \:306e\:6587\:5b57\:5217\:7167\:5408\:3068\:4e00\:81f4\:3059\:308b\:3088\:3046 SymbolName \:3092\:4f7f\:3046\:3002 *)
 iNBHeadNameContextPairs[held_HoldComplete] :=
   DeleteDuplicates @ Cases[
     held,
@@ -6692,11 +6696,11 @@ iNBHeadNameContextPairs[held_HoldComplete] :=
     {1, Infinity}];
 iNBHeadNameContextPairs[_] := {};
 
-(* 副作用語幹リスト (spec 5A.5.3)。System` unknown head 名がこれらの語を
-   含む場合は副作用の疑いがあるとして NeedsApproval 側に倒す。
-   破壊的・外部実行・ネットワーク系は明示 Deny に入っているので、
-   ここに来る時点で残るのは「語幹は副作用っぽいが Deny 明示はされていない」もの。
-   安全側に倒すため NeedsApproval とする。 *)
+(* \:526f\:4f5c\:7528\:8a9e\:5e79\:30ea\:30b9\:30c8 (spec 5A.5.3)\:3002System` unknown head \:540d\:304c\:3053\:308c\:3089\:306e\:8a9e\:3092
+   \:542b\:3080\:5834\:5408\:306f\:526f\:4f5c\:7528\:306e\:7591\:3044\:304c\:3042\:308b\:3068\:3057\:3066 NeedsApproval \:5074\:306b\:5012\:3059\:3002
+   \:7834\:58ca\:7684\:30fb\:5916\:90e8\:5b9f\:884c\:30fb\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:7cfb\:306f\:660e\:793a Deny \:306b\:5165\:3063\:3066\:3044\:308b\:306e\:3067\:3001
+   \:3053\:3053\:306b\:6765\:308b\:6642\:70b9\:3067\:6b8b\:308b\:306e\:306f\:300c\:8a9e\:5e79\:306f\:526f\:4f5c\:7528\:3063\:307d\:3044\:304c Deny \:660e\:793a\:306f\:3055\:308c\:3066\:3044\:306a\:3044\:300d\:3082\:306e\:3002
+   \:5b89\:5168\:5074\:306b\:5012\:3059\:305f\:3081 NeedsApproval \:3068\:3059\:308b\:3002 *)
 $iNBSideEffectStems = {
   "Open", "Write", "Save", "Export", "Import", "Delete", "Remove",
   "Run", "Start", "Create", "Put", "Read", "URL", "Socket",
@@ -6707,51 +6711,51 @@ $iNBSideEffectStems = {
   "Speak", "Audio", "EmitSound", "SetOptions", "SetEnvironment"
 };
 
-(* 副作用語幹に部分一致するが、実際は純粋 (式・リスト・文字列・画像・
-   グラフ操作) で副作用を持たない System` 関数の除外リスト。
-   2026-06-05: $iNBSideEffectStems は部分文字列マッチなので、例えば
-   DeleteDuplicates が "Delete" 語幹に該当 -> DestructiveFileSystem ->
-   HardDeny となり、普通のコードが承認 UI も出ず Deny される事故が起きる
-   (ConnectedComponents の "Connect" -> NetworkAccess -> HardDeny も同様)。
-   override table と違いこれは語幹判定そのものを救うため base 分類層
-   (iNBClassifyUnknownHeads) と EffectClass 集約層 (iNBHeadEffectClass) の
-   両方に一度に効く。語幹ヒューリスティックは本質的に漏れるため、新たな
-   誤判定が見つかればここに追記する。 *)
+(* \:526f\:4f5c\:7528\:8a9e\:5e79\:306b\:90e8\:5206\:4e00\:81f4\:3059\:308b\:304c\:3001\:5b9f\:969b\:306f\:7d14\:7c8b (\:5f0f\:30fb\:30ea\:30b9\:30c8\:30fb\:6587\:5b57\:5217\:30fb\:753b\:50cf\:30fb
+   \:30b0\:30e9\:30d5\:64cd\:4f5c) \:3067\:526f\:4f5c\:7528\:3092\:6301\:305f\:306a\:3044 System` \:95a2\:6570\:306e\:9664\:5916\:30ea\:30b9\:30c8\:3002
+   2026-06-05: $iNBSideEffectStems \:306f\:90e8\:5206\:6587\:5b57\:5217\:30de\:30c3\:30c1\:306a\:306e\:3067\:3001\:4f8b\:3048\:3070
+   DeleteDuplicates \:304c "Delete" \:8a9e\:5e79\:306b\:8a72\:5f53 -> DestructiveFileSystem ->
+   HardDeny \:3068\:306a\:308a\:3001\:666e\:901a\:306e\:30b3\:30fc\:30c9\:304c\:627f\:8a8d UI \:3082\:51fa\:305a Deny \:3055\:308c\:308b\:4e8b\:6545\:304c\:8d77\:304d\:308b
+   (ConnectedComponents \:306e "Connect" -> NetworkAccess -> HardDeny \:3082\:540c\:69d8)\:3002
+   override table \:3068\:9055\:3044\:3053\:308c\:306f\:8a9e\:5e79\:5224\:5b9a\:305d\:306e\:3082\:306e\:3092\:6551\:3046\:305f\:3081 base \:5206\:985e\:5c64
+   (iNBClassifyUnknownHeads) \:3068 EffectClass \:96c6\:7d04\:5c64 (iNBHeadEffectClass) \:306e
+   \:4e21\:65b9\:306b\:4e00\:5ea6\:306b\:52b9\:304f\:3002\:8a9e\:5e79\:30d2\:30e5\:30fc\:30ea\:30b9\:30c6\:30a3\:30c3\:30af\:306f\:672c\:8cea\:7684\:306b\:6f0f\:308c\:308b\:305f\:3081\:3001\:65b0\:305f\:306a
+   \:8aa4\:5224\:5b9a\:304c\:898b\:3064\:304b\:308c\:3070\:3053\:3053\:306b\:8ffd\:8a18\:3059\:308b\:3002 *)
 $iNBSideEffectStemExceptions = {
-  (* "Delete" 語幹だが純粋 *)
+  (* "Delete" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b *)
   "DeleteDuplicates", "DeleteDuplicatesBy", "DeleteCases", "DeleteMissing",
   "DeleteStopwords", "DeleteElements", "DeleteSmallComponents",
   "DeleteBorderComponents", "DeleteAnomalies",
-  (* "Remove" 語幹だが純粋 *)
+  (* "Remove" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b *)
   "RemoveDiacritics", "RemoveBackground", "RemoveAlphaChannel",
-  (* "Connect" 語幹だが純粋なグラフ/メッシュ/分子操作 *)
+  (* "Connect" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:30b0\:30e9\:30d5/\:30e1\:30c3\:30b7\:30e5/\:5206\:5b50\:64cd\:4f5c *)
   "ConnectedComponents", "WeaklyConnectedComponents", "ConnectedGraphQ",
   "WeaklyConnectedGraphQ", "ConnectedMeshComponents", "ConnectedMoleculeQ",
   "ConnectedMoleculeComponents", "KEdgeConnectedComponents",
   "KVertexConnectedComponents", "VertexConnectivity", "EdgeConnectivity",
-  (* "Open" 語幹だが純粋な UI 構築子 *)
+  (* "Open" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a UI \:69cb\:7bc9\:5b50 *)
   "OpenerView"
 };
 
-(* head 名が副作用語幹を含むか (除外リストにある純粋関数は False) *)
+(* head \:540d\:304c\:526f\:4f5c\:7528\:8a9e\:5e79\:3092\:542b\:3080\:304b (\:9664\:5916\:30ea\:30b9\:30c8\:306b\:3042\:308b\:7d14\:7c8b\:95a2\:6570\:306f False) *)
 iNBSideEffectishQ[name_String] :=
   !MemberQ[$iNBSideEffectStemExceptions, name] &&
   AnyTrue[$iNBSideEffectStems, StringContainsQ[name, #] &];
-iNBSideEffectishQ[_] := True;  (* 不明は安全側 *)
+iNBSideEffectishQ[_] := True;  (* \:4e0d\:660e\:306f\:5b89\:5168\:5074 *)
 
-(* System` 文脈か (組み込み関数か) を文脈文字列で判定。
-   System` のみを「組み込み」とみなす。それ以外 (Global`, ユーザー package`,
-   ClaudeCode`, SourceVault` 等) は user/package とみなす。 *)
+(* System` \:6587\:8108\:304b (\:7d44\:307f\:8fbc\:307f\:95a2\:6570\:304b) \:3092\:6587\:8108\:6587\:5b57\:5217\:3067\:5224\:5b9a\:3002
+   System` \:306e\:307f\:3092\:300c\:7d44\:307f\:8fbc\:307f\:300d\:3068\:307f\:306a\:3059\:3002\:305d\:308c\:4ee5\:5916 (Global`, \:30e6\:30fc\:30b6\:30fc package`,
+   ClaudeCode`, SourceVault` \:7b49) \:306f user/package \:3068\:307f\:306a\:3059\:3002 *)
 iNBIsSystemContextQ[ctx_String] := (ctx === "System`");
 iNBIsSystemContextQ[_] := False;
 
-(* ── trusted package heads (2026-06-29) ──
-   SourceVault* 公開関数は PrivacyLevel を考慮した安全設計 (内部 gate /
-   fail-closed) のため、package 文脈由来の unknown-head 承認を免除する。
-   deny/approval 明示リストはこのチェックより先に評価されるので、個別に
-   厳格化したい head は $NBApprovalHeads / $NBDenyHeads へ登録すればよい。
-   過剰実行は iNBExcessiveTrustedIterationHits (静的) と SourceVault 側の
-   SourceVaultRateLimit (実行時) が受け持つ。 *)
+(* \[HorizontalLine]\[HorizontalLine] trusted package heads (2026-06-29) \[HorizontalLine]\[HorizontalLine]
+   SourceVault* \:516c\:958b\:95a2\:6570\:306f PrivacyLevel \:3092\:8003\:616e\:3057\:305f\:5b89\:5168\:8a2d\:8a08 (\:5185\:90e8 gate /
+   fail-closed) \:306e\:305f\:3081\:3001package \:6587\:8108\:7531\:6765\:306e unknown-head \:627f\:8a8d\:3092\:514d\:9664\:3059\:308b\:3002
+   deny/approval \:660e\:793a\:30ea\:30b9\:30c8\:306f\:3053\:306e\:30c1\:30a7\:30c3\:30af\:3088\:308a\:5148\:306b\:8a55\:4fa1\:3055\:308c\:308b\:306e\:3067\:3001\:500b\:5225\:306b
+   \:53b3\:683c\:5316\:3057\:305f\:3044 head \:306f $NBApprovalHeads / $NBDenyHeads \:3078\:767b\:9332\:3059\:308c\:3070\:3088\:3044\:3002
+   \:904e\:5270\:5b9f\:884c\:306f iNBExcessiveTrustedIterationHits (\:9759\:7684) \:3068 SourceVault \:5074\:306e
+   SourceVaultRateLimit (\:5b9f\:884c\:6642) \:304c\:53d7\:3051\:6301\:3064\:3002 *)
 If[!AssociationQ[$NBTrustedPackageHeads],
   $NBTrustedPackageHeads = <|"SourceVault`" -> {"SourceVault*"}|>];
 If[!IntegerQ[$NBTrustedHeadIterationLimit],
@@ -6764,8 +6768,8 @@ iNBTrustedPackageHeadQ[nm_String, ctx_String] :=
     ListQ[pats] && AnyTrue[pats, StringQ[#] && StringMatchQ[nm, #] &]];
 iNBTrustedPackageHeadQ[___] := False;
 
-(* HoldComplete 片が trusted package head を含むか (適用形とベア symbol の両方:
-   Map[SourceVaultIngest, ...] のようにベアで渡るケースを取りこぼさない)。 *)
+(* HoldComplete \:7247\:304c trusted package head \:3092\:542b\:3080\:304b (\:9069\:7528\:5f62\:3068\:30d9\:30a2 symbol \:306e\:4e21\:65b9:
+   Map[SourceVaultIngest, ...] \:306e\:3088\:3046\:306b\:30d9\:30a2\:3067\:6e21\:308b\:30b1\:30fc\:30b9\:3092\:53d6\:308a\:3053\:307c\:3055\:306a\:3044)\:3002 *)
 iNBContainsTrustedHeadQ[hc_HoldComplete] :=
   Length[DeleteDuplicates @ Cases[hc,
     s_Symbol :> {SymbolName[Unevaluated[s]], Context[Unevaluated[s]]},
@@ -6776,20 +6780,20 @@ iNBContainsTrustedHeadQ[hc_HoldComplete] :=
     iNBTrustedPackageHeadQ[#[[1]], #[[2]]] &];
 iNBContainsTrustedHeadQ[_] := False;
 
-(* trusted head を含む反復構造の literal 反復数 >= limit を静的検出する。
-   検出対象:
-   - Do/Table[body, specs..]: specs 中の literal Integer の最大値
+(* trusted head \:3092\:542b\:3080\:53cd\:5fa9\:69cb\:9020\:306e literal \:53cd\:5fa9\:6570 >= limit \:3092\:9759\:7684\:691c\:51fa\:3059\:308b\:3002
+   \:691c\:51fa\:5bfe\:8c61:
+   - Do/Table[body, specs..]: specs \:4e2d\:306e literal Integer \:306e\:6700\:5927\:5024
    - Nest/NestList[f, x, n]: n
-   - Map/Scan/AssociationMap/ParallelMap/ParallelTable 等で第 2 引数が
+   - Map/Scan/AssociationMap/ParallelMap/ParallelTable \:7b49\:3067\:7b2c 2 \:5f15\:6570\:304c
      Range[n] / ConstantArray[_, n]
-   Seed -> 999999 のような body 側の大きな整数では発火しない (反復数
-   position のみ数える)。返り値: {<|"Construct","Count"|>...} (超過分のみ)。 *)
+   Seed -> 999999 \:306e\:3088\:3046\:306a body \:5074\:306e\:5927\:304d\:306a\:6574\:6570\:3067\:306f\:767a\:706b\:3057\:306a\:3044 (\:53cd\:5fa9\:6570
+   position \:306e\:307f\:6570\:3048\:308b)\:3002\:8fd4\:308a\:5024: {<|"Construct","Count"|>...} (\:8d85\:904e\:5206\:306e\:307f)\:3002 *)
 iNBExcessiveTrustedIterationHits[held_HoldComplete] :=
   Module[{limit, hits = {}, doTab, nests, maps},
     limit = If[IntegerQ[$NBTrustedHeadIterationLimit],
       $NBTrustedHeadIterationLimit, 100];
-    (* パターン式の評価を防ぐため HoldPattern で包む (Range[n_Integer] 等は
-       裸だとパターン構築時に評価され Range::range ノイズを出す)。 *)
+    (* \:30d1\:30bf\:30fc\:30f3\:5f0f\:306e\:8a55\:4fa1\:3092\:9632\:3050\:305f\:3081 HoldPattern \:3067\:5305\:3080 (Range[n_Integer] \:7b49\:306f
+       \:88f8\:3060\:3068\:30d1\:30bf\:30fc\:30f3\:69cb\:7bc9\:6642\:306b\:8a55\:4fa1\:3055\:308c Range::range \:30ce\:30a4\:30ba\:3092\:51fa\:3059)\:3002 *)
     doTab = Cases[held,
       HoldPattern[(h : (Do | Table | ParallelDo | ParallelTable))[body_, specs__]] :>
         {ToString[h], HoldComplete[body],
@@ -6811,40 +6815,40 @@ iNBExcessiveTrustedIterationHits[held_HoldComplete] :=
     hits];
 iNBExcessiveTrustedIterationHits[_] := {};
 
-(* unknown head 群 (名前-文脈ペア) を分類し、最も厳しい結果を返す。
-   返り値: <|"Decision" -> "Permit"|"NeedsApproval", "Reason" -> _,
-            "PlacementHint" -> _, "Unknowns" -> {名前...}|>
-   RepairNeeded はここでは返さない (構造破損は別途 malformed 判定で扱う)。 *)
+(* unknown head \:7fa4 (\:540d\:524d-\:6587\:8108\:30da\:30a2) \:3092\:5206\:985e\:3057\:3001\:6700\:3082\:53b3\:3057\:3044\:7d50\:679c\:3092\:8fd4\:3059\:3002
+   \:8fd4\:308a\:5024: <|"Decision" -> "Permit"|"NeedsApproval", "Reason" -> _,
+            "PlacementHint" -> _, "Unknowns" -> {\:540d\:524d...}|>
+   RepairNeeded \:306f\:3053\:3053\:3067\:306f\:8fd4\:3055\:306a\:3044 (\:69cb\:9020\:7834\:640d\:306f\:5225\:9014 malformed \:5224\:5b9a\:3067\:6271\:3046)\:3002 *)
 iNBClassifyUnknownHeads[pairs_List] :=
   Module[{sysSideEffect = {}, sysPure = {}, userCtx = {}},
     Do[
       Module[{nm = pair[[1]], ctx = pair[[2]], ov, ovEC},
-        (* override テーブルを最優先参照 (spec 5B.5A)。純粋系 EffectClass に
-           明示登録された head は、副作用語幹に引っかかっても純粋扱いにする。
-           例: FileNameJoin/DirectoryName は "File"/"Directory" 語幹該当だが
-           override で PureComputation -> sysPure。 *)
+        (* override \:30c6\:30fc\:30d6\:30eb\:3092\:6700\:512a\:5148\:53c2\:7167 (spec 5B.5A)\:3002\:7d14\:7c8b\:7cfb EffectClass \:306b
+           \:660e\:793a\:767b\:9332\:3055\:308c\:305f head \:306f\:3001\:526f\:4f5c\:7528\:8a9e\:5e79\:306b\:5f15\:3063\:304b\:304b\:3063\:3066\:3082\:7d14\:7c8b\:6271\:3044\:306b\:3059\:308b\:3002
+           \:4f8b: FileNameJoin/DirectoryName \:306f "File"/"Directory" \:8a9e\:5e79\:8a72\:5f53\:3060\:304c
+           override \:3067 PureComputation -> sysPure\:3002 *)
         ov = If[AssociationQ[$NBEffectClassOverrides],
           Lookup[$NBEffectClassOverrides, nm, None], None];
         ovEC = If[AssociationQ[ov], Lookup[ov, "EffectClass", None], None];
         Which[
-          (* override が AutoPermit 相当の純粋系なら sysPure *)
+          (* override \:304c AutoPermit \:76f8\:5f53\:306e\:7d14\:7c8b\:7cfb\:306a\:3089 sysPure *)
           MemberQ[{"PureComputation", "ReadOnlyFileSystem",
                    "GraphicsComputation", "LongRunningComputation"}, ovEC],
             AppendTo[sysPure, nm],
-          (* trusted package head (SourceVault* 等): PrivacyLevel 考慮の
-             安全設計を信頼し承認不要。deny/approval 明示リストはここより
-             先に評価済み。過剰実行は iteration guard (静的) と
-             SourceVaultRateLimit (実行時) が受け持つ。 *)
+          (* trusted package head (SourceVault* \:7b49): PrivacyLevel \:8003\:616e\:306e
+             \:5b89\:5168\:8a2d\:8a08\:3092\:4fe1\:983c\:3057\:627f\:8a8d\:4e0d\:8981\:3002deny/approval \:660e\:793a\:30ea\:30b9\:30c8\:306f\:3053\:3053\:3088\:308a
+             \:5148\:306b\:8a55\:4fa1\:6e08\:307f\:3002\:904e\:5270\:5b9f\:884c\:306f iteration guard (\:9759\:7684) \:3068
+             SourceVaultRateLimit (\:5b9f\:884c\:6642) \:304c\:53d7\:3051\:6301\:3064\:3002 *)
           iNBTrustedPackageHeadQ[nm, ctx],
             AppendTo[sysPure, nm],
           ! iNBIsSystemContextQ[ctx],
-            (* Global`/user/package 文脈: 内部で何をするか不明 -> NeedsApproval *)
+            (* Global`/user/package \:6587\:8108: \:5185\:90e8\:3067\:4f55\:3092\:3059\:308b\:304b\:4e0d\:660e -> NeedsApproval *)
             AppendTo[userCtx, nm],
           iNBSideEffectishQ[nm],
-            (* System` だが副作用語幹に該当 -> NeedsApproval *)
+            (* System` \:3060\:304c\:526f\:4f5c\:7528\:8a9e\:5e79\:306b\:8a72\:5f53 -> NeedsApproval *)
             AppendTo[sysSideEffect, nm],
           True,
-            (* System` 純粋っぽい組み込み -> Permit (高速パス外だが安全とみなす) *)
+            (* System` \:7d14\:7c8b\:3063\:307d\:3044\:7d44\:307f\:8fbc\:307f -> Permit (\:9ad8\:901f\:30d1\:30b9\:5916\:3060\:304c\:5b89\:5168\:3068\:307f\:306a\:3059) *)
             AppendTo[sysPure, nm]
         ]],
       {pair, pairs}];
@@ -6860,7 +6864,7 @@ iNBClassifyUnknownHeads[pairs_List] :=
           "Unknowns" -> Join[sysSideEffect, sysPure],
           "ApprovalHeads" -> sysSideEffect|>,
       True,
-        (* 全て System` 純粋っぽい -> Permit *)
+        (* \:5168\:3066 System` \:7d14\:7c8b\:3063\:307d\:3044 -> Permit *)
         <|"Decision" -> "Permit",
           "Reason" -> "PureSystemBuiltin",
           "Unknowns" -> sysPure,
@@ -6874,20 +6878,20 @@ iNBClassifyUnknownHeads[_] :=
 
 (* ============================================================
    Phase permission-modes (2026-06-03, spec 5B): EffectClass /
-   ApprovalEligibility / PermissionMode 変換層
+   ApprovalEligibility / PermissionMode \:5909\:63db\:5c64
    ============================================================
    spec 5B.2: heldExpr -> EffectClass -> ApprovalEligibility
               -> ExecutionPlacement/BlockingRisk -> PermissionMode
               -> final Decision
-   個別 action 関数 (NBOpenFolderWithApproval 等) を乱立させず、
-   操作の性質 (EffectClass) と環境ポリシー (PermissionMode) の
-   掛け合わせで最終判定を生成する。 *)
+   \:500b\:5225 action \:95a2\:6570 (NBOpenFolderWithApproval \:7b49) \:3092\:4e71\:7acb\:3055\:305b\:305a\:3001
+   \:64cd\:4f5c\:306e\:6027\:8cea (EffectClass) \:3068\:74b0\:5883\:30dd\:30ea\:30b7\:30fc (PermissionMode) \:306e
+   \:639b\:3051\:5408\:308f\:305b\:3067\:6700\:7d42\:5224\:5b9a\:3092\:751f\:6210\:3059\:308b\:3002 *)
 
 (* ---- EffectClass override table (spec 5B.5A) ----
-   ★重要原則: これは allowlist ではない。未登録 head は必ず
-   フォールバック分類へ進む。table は分類精度を上げる任意上書き。
-   Integrate/NIntegrate/Plot 等を全て登録しないと実行できない状態に
-   戻してはならない。 *)
+   \[FivePointedStar]\:91cd\:8981\:539f\:5247: \:3053\:308c\:306f allowlist \:3067\:306f\:306a\:3044\:3002\:672a\:767b\:9332 head \:306f\:5fc5\:305a
+   \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:5206\:985e\:3078\:9032\:3080\:3002table \:306f\:5206\:985e\:7cbe\:5ea6\:3092\:4e0a\:3052\:308b\:4efb\:610f\:4e0a\:66f8\:304d\:3002
+   Integrate/NIntegrate/Plot \:7b49\:3092\:5168\:3066\:767b\:9332\:3057\:306a\:3044\:3068\:5b9f\:884c\:3067\:304d\:306a\:3044\:72b6\:614b\:306b
+   \:623b\:3057\:3066\:306f\:306a\:3089\:306a\:3044\:3002 *)
 If[!AssociationQ[$NBEffectClassOverrides],
   $NBEffectClassOverrides = <|
     "NIntegrate" -> <|"EffectClass" -> "LongRunningComputation",
@@ -6931,17 +6935,17 @@ If[!AssociationQ[$NBEffectClassOverrides],
       "ExecutionPlacement" -> "FileSystemReadOnly"|>,
     "DirectoryQ" -> <|"EffectClass" -> "ReadOnlyFileSystem",
       "ExecutionPlacement" -> "FileSystemReadOnly"|>,
-    (* 承認 wrapper head (spec 案3-lite): FrontEnd ブロックリスクのある
-       desktop action を表す式。queue 化分岐がこの metadata を見て、
-       承認後に直接実行せず PendingFinalActionQueue へ積む。 *)
+    (* \:627f\:8a8d wrapper head (spec \:68483-lite): FrontEnd \:30d6\:30ed\:30c3\:30af\:30ea\:30b9\:30af\:306e\:3042\:308b
+       desktop action \:3092\:8868\:3059\:5f0f\:3002queue \:5316\:5206\:5c90\:304c\:3053\:306e metadata \:3092\:898b\:3066\:3001
+       \:627f\:8a8d\:5f8c\:306b\:76f4\:63a5\:5b9f\:884c\:305b\:305a PendingFinalActionQueue \:3078\:7a4d\:3080\:3002 *)
     "NBOpenFolderWithApproval" -> <|"EffectClass" -> "DesktopAction",
       "BlockingRisk" -> "MayBlockFrontEnd",
       "ExecutionPlacement" -> "DesktopAction", "RequiresFinalNode" -> True|>,
     "NBExecuteApprovedAction" -> <|"EffectClass" -> "DesktopAction",
       "BlockingRisk" -> "MayBlockFrontEnd",
       "ExecutionPlacement" -> "DesktopAction", "RequiresFinalNode" -> True|>,
-    (* 純粋なパス文字列操作 (ファイルシステムに触れない) は PureComputation。
-       "File"/"Directory" 語幹に該当して副作用誤判定されるのを override で救う。 *)
+    (* \:7d14\:7c8b\:306a\:30d1\:30b9\:6587\:5b57\:5217\:64cd\:4f5c (\:30d5\:30a1\:30a4\:30eb\:30b7\:30b9\:30c6\:30e0\:306b\:89e6\:308c\:306a\:3044) \:306f PureComputation\:3002
+       "File"/"Directory" \:8a9e\:5e79\:306b\:8a72\:5f53\:3057\:3066\:526f\:4f5c\:7528\:8aa4\:5224\:5b9a\:3055\:308c\:308b\:306e\:3092 override \:3067\:6551\:3046\:3002 *)
     "FileNameJoin" -> <|"EffectClass" -> "PureComputation",
       "ExecutionPlacement" -> "SubkernelSafe"|>,
     "FileNameSplit" -> <|"EffectClass" -> "PureComputation",
@@ -6960,15 +6964,15 @@ If[!AssociationQ[$NBEffectClassOverrides],
       "ExecutionPlacement" -> "SubkernelSafe"|>
   |>];
 
-(* ---- EffectClass フォールバック分類 (spec 5B.5A) ----
-   優先順: explicit Deny/Approval/Allowed は呼び出し側で処理済みの想定。
-   ここは「分類層」として head 名+文脈から EffectClass を決める。
+(* ---- EffectClass \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:5206\:985e (spec 5B.5A) ----
+   \:512a\:5148\:9806: explicit Deny/Approval/Allowed \:306f\:547c\:3073\:51fa\:3057\:5074\:3067\:51e6\:7406\:6e08\:307f\:306e\:60f3\:5b9a\:3002
+   \:3053\:3053\:306f\:300c\:5206\:985e\:5c64\:300d\:3068\:3057\:3066 head \:540d+\:6587\:8108\:304b\:3089 EffectClass \:3092\:6c7a\:3081\:308b\:3002
    1. override table
-   2. side-effect stem -> 対応 EffectClass
+   2. side-effect stem -> \:5bfe\:5fdc EffectClass
    3. System` pure-ish -> PureComputation
    4. user/package -> UnknownUserCode
-   入力: name (head 名), ctx (文脈文字列)
-   出力: <|"EffectClass" -> _, "ExecutionPlacement" -> _,
+   \:5165\:529b: name (head \:540d), ctx (\:6587\:8108\:6587\:5b57\:5217)
+   \:51fa\:529b: <|"EffectClass" -> _, "ExecutionPlacement" -> _,
            "BlockingRisk" -> _, "RequiresFinalNode" -> _|> *)
 iNBHeadEffectClass[name_String, ctx_String] :=
   Module[{ov},
@@ -6980,32 +6984,32 @@ iNBHeadEffectClass[name_String, ctx_String] :=
         "ExecutionPlacement" -> Lookup[ov, "ExecutionPlacement", "SubkernelSafe"],
         "BlockingRisk" -> Lookup[ov, "BlockingRisk", "None"],
         "RequiresFinalNode" -> TrueQ[Lookup[ov, "RequiresFinalNode", False]]|>]];
-    (* 1b. trusted package head (SourceVault* 等): 名前に "Notebook"/"Generate"
-       等の副作用語幹を含んでも、内部 gate が安全を担保する信頼済み関数として
-       PureComputation 扱い (承認不要)。unknown-head 分類と EffectClass 層の
-       両方で trusted を尊重しないと、片方が Permit でも他方が承認へ上げる
-       (例: GenerateToNotebook は "Notebook" 語幹で NotebookMutation になる)。
-       過剰実行は iNBExcessiveTrustedIterationHits + SourceVaultRateLimit で防ぐ。
-       BlockingRisk は控えめに PossiblyLong とし (生成は数十秒かかりうる)、
-       ブロック回避の出力集約が効くようにする。 *)
+    (* 1b. trusted package head (SourceVault* \:7b49): \:540d\:524d\:306b "Notebook"/"Generate"
+       \:7b49\:306e\:526f\:4f5c\:7528\:8a9e\:5e79\:3092\:542b\:3093\:3067\:3082\:3001\:5185\:90e8 gate \:304c\:5b89\:5168\:3092\:62c5\:4fdd\:3059\:308b\:4fe1\:983c\:6e08\:307f\:95a2\:6570\:3068\:3057\:3066
+       PureComputation \:6271\:3044 (\:627f\:8a8d\:4e0d\:8981)\:3002unknown-head \:5206\:985e\:3068 EffectClass \:5c64\:306e
+       \:4e21\:65b9\:3067 trusted \:3092\:5c0a\:91cd\:3057\:306a\:3044\:3068\:3001\:7247\:65b9\:304c Permit \:3067\:3082\:4ed6\:65b9\:304c\:627f\:8a8d\:3078\:4e0a\:3052\:308b
+       (\:4f8b: GenerateToNotebook \:306f "Notebook" \:8a9e\:5e79\:3067 NotebookMutation \:306b\:306a\:308b)\:3002
+       \:904e\:5270\:5b9f\:884c\:306f iNBExcessiveTrustedIterationHits + SourceVaultRateLimit \:3067\:9632\:3050\:3002
+       BlockingRisk \:306f\:63a7\:3048\:3081\:306b PossiblyLong \:3068\:3057 (\:751f\:6210\:306f\:6570\:5341\:79d2\:304b\:304b\:308a\:3046\:308b)\:3001
+       \:30d6\:30ed\:30c3\:30af\:56de\:907f\:306e\:51fa\:529b\:96c6\:7d04\:304c\:52b9\:304f\:3088\:3046\:306b\:3059\:308b\:3002 *)
     If[iNBTrustedPackageHeadQ[name, ctx],
       Return[<|"EffectClass" -> "PureComputation",
         "ExecutionPlacement" -> "MainKernelOnly",
         "BlockingRisk" -> "PossiblyLong", "RequiresFinalNode" -> False|>]];
-    (* 2-4. フォールバック *)
+    (* 2-4. \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af *)
     Which[
       ! iNBIsSystemContextQ[ctx],
-        (* user/package 文脈: 内部不明 *)
+        (* user/package \:6587\:8108: \:5185\:90e8\:4e0d\:660e *)
         <|"EffectClass" -> "UnknownUserCode",
           "ExecutionPlacement" -> "MainKernelOnly",
           "BlockingRisk" -> "None", "RequiresFinalNode" -> False|>,
       iNBSideEffectishQ[name],
-        (* System` だが副作用語幹該当: 語幹から EffectClass を推定 *)
+        (* System` \:3060\:304c\:526f\:4f5c\:7528\:8a9e\:5e79\:8a72\:5f53: \:8a9e\:5e79\:304b\:3089 EffectClass \:3092\:63a8\:5b9a *)
         <|"EffectClass" -> iNBSideEffectStemToClass[name],
           "ExecutionPlacement" -> "MainKernelOnly",
           "BlockingRisk" -> "None", "RequiresFinalNode" -> True|>,
       True,
-        (* System` 純粋 *)
+        (* System` \:7d14\:7c8b *)
         <|"EffectClass" -> "PureComputation",
           "ExecutionPlacement" -> "SubkernelSafe",
           "BlockingRisk" -> "None", "RequiresFinalNode" -> False|>
@@ -7013,9 +7017,9 @@ iNBHeadEffectClass[name_String, ctx_String] :=
   ];
 iNBHeadEffectClass[name_String] := iNBHeadEffectClass[name, "System`"];
 
-(* 副作用語幹から EffectClass を推定 (spec 5B.5 のカテゴリへマップ)。
-   破壊的・外部・ネットワークは明示 Deny で既に弾かれている前提だが、
-   万一フォールバックに来た場合も安全側 EffectClass に倒す。 *)
+(* \:526f\:4f5c\:7528\:8a9e\:5e79\:304b\:3089 EffectClass \:3092\:63a8\:5b9a (spec 5B.5 \:306e\:30ab\:30c6\:30b4\:30ea\:3078\:30de\:30c3\:30d7)\:3002
+   \:7834\:58ca\:7684\:30fb\:5916\:90e8\:30fb\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:306f\:660e\:793a Deny \:3067\:65e2\:306b\:5f3e\:304b\:308c\:3066\:3044\:308b\:524d\:63d0\:3060\:304c\:3001
+   \:4e07\:4e00\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:306b\:6765\:305f\:5834\:5408\:3082\:5b89\:5168\:5074 EffectClass \:306b\:5012\:3059\:3002 *)
 iNBSideEffectStemToClass[name_String] :=
   Which[
     StringContainsQ[name, "Notebook"] || StringContainsQ[name, "Cell"],
@@ -7039,11 +7043,11 @@ iNBSideEffectStemToClass[name_String] :=
       StringContainsQ[name, "Start"] || StringContainsQ[name, "Launch"] ||
       StringContainsQ[name, "Process"],
       "DesktopAction",
-    True, "FrontEndAction"  (* 残りは要承認の副作用扱い *)
+    True, "FrontEndAction"  (* \:6b8b\:308a\:306f\:8981\:627f\:8a8d\:306e\:526f\:4f5c\:7528\:6271\:3044 *)
   ];
 
-(* ---- EffectClass -> 既定 ApprovalEligibility (spec 5B.5 テーブル) ----
-   既定値。policy で上書きされ得るが P0.5 では固定マップ。 *)
+(* ---- EffectClass -> \:65e2\:5b9a ApprovalEligibility (spec 5B.5 \:30c6\:30fc\:30d6\:30eb) ----
+   \:65e2\:5b9a\:5024\:3002policy \:3067\:4e0a\:66f8\:304d\:3055\:308c\:5f97\:308b\:304c P0.5 \:3067\:306f\:56fa\:5b9a\:30de\:30c3\:30d7\:3002 *)
 $iNBEffectClassEligibility = <|
   "PureComputation" -> "AutoPermit",
   "LongRunningComputation" -> "AutoPermit",
@@ -7064,8 +7068,8 @@ $iNBEffectClassEligibility = <|
 iNBEffectClassToEligibility[ec_String] :=
   Lookup[$iNBEffectClassEligibility, ec, "AskUserAllowed"];
 
-(* ---- ApprovalEligibility の厳しさ順 (合成用) ----
-   複数 head の EffectClass を集約する際、最も厳しい eligibility を採る。
+(* ---- ApprovalEligibility \:306e\:53b3\:3057\:3055\:9806 (\:5408\:6210\:7528) ----
+   \:8907\:6570 head \:306e EffectClass \:3092\:96c6\:7d04\:3059\:308b\:969b\:3001\:6700\:3082\:53b3\:3057\:3044 eligibility \:3092\:63a1\:308b\:3002
    HardDeny > RepairRequired > AskUserAllowed > AutoPermit *)
 iNBEligibilityRank["HardDeny"] = 4;
 iNBEligibilityRank["RepairRequired"] = 3;
@@ -7073,27 +7077,27 @@ iNBEligibilityRank["AskUserAllowed"] = 2;
 iNBEligibilityRank["AutoPermit"] = 1;
 iNBEligibilityRank[_] = 2;
 
-(* EffectClass の specificity (代表選択の第2キー)。
-   PureComputation が最も汎用 (どんな式にも現れる Sin/List/Plus 等) なので
-   最低位とし、より具体的・特徴的な EffectClass を代表に採る。
-   eligibility 同率時に「Plot を含む式の代表は GraphicsComputation」と
-   なるようにするためのもの。 *)
+(* EffectClass \:306e specificity (\:4ee3\:8868\:9078\:629e\:306e\:7b2c2\:30ad\:30fc)\:3002
+   PureComputation \:304c\:6700\:3082\:6c4e\:7528 (\:3069\:3093\:306a\:5f0f\:306b\:3082\:73fe\:308c\:308b Sin/List/Plus \:7b49) \:306a\:306e\:3067
+   \:6700\:4f4e\:4f4d\:3068\:3057\:3001\:3088\:308a\:5177\:4f53\:7684\:30fb\:7279\:5fb4\:7684\:306a EffectClass \:3092\:4ee3\:8868\:306b\:63a1\:308b\:3002
+   eligibility \:540c\:7387\:6642\:306b\:300cPlot \:3092\:542b\:3080\:5f0f\:306e\:4ee3\:8868\:306f GraphicsComputation\:300d\:3068
+   \:306a\:308b\:3088\:3046\:306b\:3059\:308b\:305f\:3081\:306e\:3082\:306e\:3002 *)
 iNBEffectClassSpecificity["PureComputation"] = 0;
 iNBEffectClassSpecificity["ReadOnlyFileSystem"] = 1;
 iNBEffectClassSpecificity["GraphicsComputation"] = 2;
 iNBEffectClassSpecificity["LongRunningComputation"] = 3;
-iNBEffectClassSpecificity[_] = 5;  (* 副作用系・unknown 等はより特徴的 *)
+iNBEffectClassSpecificity[_] = 5;  (* \:526f\:4f5c\:7528\:7cfb\:30fbunknown \:7b49\:306f\:3088\:308a\:7279\:5fb4\:7684 *)
 
-(* ---- PermissionMode 変換 (spec 5B.4) ----
-   ApprovalEligibility × PermissionMode -> final Decision + metadata。
-   返り値: <|"Decision" -> _, "ExecutionDisposition" -> _,
+(* ---- PermissionMode \:5909\:63db (spec 5B.4) ----
+   ApprovalEligibility \[Times] PermissionMode -> final Decision + metadata\:3002
+   \:8fd4\:308a\:5024: <|"Decision" -> _, "ExecutionDisposition" -> _,
             "AllowApprovalUI" -> _, "MayExecute" -> _|>
-   mode は accessSpec["PermissionMode"] (I12: global を読み直さない)。 *)
+   mode \:306f accessSpec["PermissionMode"] (I12: global \:3092\:8aad\:307f\:76f4\:3055\:306a\:3044)\:3002 *)
 iNBApplyPermissionMode[eligibility_String, mode_String] :=
   Module[{m = mode, e = eligibility},
     Switch[m,
       "ReviewOnly",
-        (* 提案だけ。AutoPermit も含め実行しない。承認 UI も出さない。 *)
+        (* \:63d0\:6848\:3060\:3051\:3002AutoPermit \:3082\:542b\:3081\:5b9f\:884c\:3057\:306a\:3044\:3002\:627f\:8a8d UI \:3082\:51fa\:3055\:306a\:3044\:3002 *)
         Switch[e,
           "HardDeny", <|"Decision" -> "Deny",
             "ExecutionDisposition" -> "Blocked",
@@ -7105,7 +7109,7 @@ iNBApplyPermissionMode[eligibility_String, mode_String] :=
             "ExecutionDisposition" -> "ReviewOnly",
             "AllowApprovalUI" -> False, "MayExecute" -> False|>],
       "StrictSafe",
-        (* AutoPermit のみ実行。AskUserAllowed は承認ボタンを出さず拒否。 *)
+        (* AutoPermit \:306e\:307f\:5b9f\:884c\:3002AskUserAllowed \:306f\:627f\:8a8d\:30dc\:30bf\:30f3\:3092\:51fa\:3055\:305a\:62d2\:5426\:3002 *)
         Switch[e,
           "AutoPermit", <|"Decision" -> "Permit",
             "ExecutionDisposition" -> "Execute",
@@ -7117,8 +7121,8 @@ iNBApplyPermissionMode[eligibility_String, mode_String] :=
             "ExecutionDisposition" -> "Blocked",
             "AllowApprovalUI" -> False, "MayExecute" -> False|>],
       "WorkflowSafe",
-        (* safe node は自動、final node 相当 (AskUserAllowed) は承認 +
-           RequiresFinalNode。HardDeny は Deny。 *)
+        (* safe node \:306f\:81ea\:52d5\:3001final node \:76f8\:5f53 (AskUserAllowed) \:306f\:627f\:8a8d +
+           RequiresFinalNode\:3002HardDeny \:306f Deny\:3002 *)
         Switch[e,
           "AutoPermit", <|"Decision" -> "Permit",
             "ExecutionDisposition" -> "Execute",
@@ -7133,7 +7137,7 @@ iNBApplyPermissionMode[eligibility_String, mode_String] :=
             "ExecutionDisposition" -> "Repair",
             "AllowApprovalUI" -> False, "MayExecute" -> False|>],
       "DangerFullAccess",
-        (* HardDeny は別フラグなしには Deny のまま (spec 5B.4)。 *)
+        (* HardDeny \:306f\:5225\:30d5\:30e9\:30b0\:306a\:3057\:306b\:306f Deny \:306e\:307e\:307e (spec 5B.4)\:3002 *)
         Switch[e,
           "AutoPermit", <|"Decision" -> "Permit",
             "ExecutionDisposition" -> "Execute",
@@ -7152,7 +7156,7 @@ iNBApplyPermissionMode[eligibility_String, mode_String] :=
           _, <|"Decision" -> "RepairNeeded",
             "ExecutionDisposition" -> "Repair",
             "AllowApprovalUI" -> False, "MayExecute" -> False|>],
-      (* InteractiveSafe / LegacyInteractive (標準) *)
+      (* InteractiveSafe / LegacyInteractive (\:6a19\:6e96) *)
       _,
         Switch[e,
           "AutoPermit", <|"Decision" -> "Permit",
@@ -7255,7 +7259,7 @@ Options[NBExecuteHeldExpr] = {
   "ApprovalMode" -> "None"};
 
 (* ============================================================
-   Phase C-1: 実行前再検証 helper (main / subkernel \:5171\:7528)
+   Phase C-1: \:5b9f\:884c\:524d\:518d\:691c\:8a3c helper (main / subkernel \:5171\:7528)
    ============================================================ *)
 
 (* snapshot \:30aa\:30d7\:30b7\:30e7\:30f3\:5024\:3092 NBValidateHeldExpr \:7528\:306b\:6b63\:898f\:5316\:3059\:308b\:3002
@@ -7325,13 +7329,13 @@ iNBExecPermitCheck[heldExpr_, accessSpec_Association, snapshot_,
             "VisibleExplanation" -> Lookup[validation, "VisibleExplanation", ""],
             "ScreenWarnOnly" -> False, "CommitterAutoApproved" -> False|>],
       decision === "NeedsApproval",
-        (* NeedsApproval の Permit 昇格は次の 2 モードのみ:
-           1. UserApproved: ユーザーが承認 UI で明示承認した一般ケース。
-              Committer 制約なしで NeedsApproval を Permit に昇格する。
-              Deny は decision が "Deny" でここに来ないため、昇格対象は
-              Approval head / unknown head に限られ安全 (spec 5A.9)。
-           2. CommitterAutoApprove: directLLM rescue 等の自動 commit 互換 (D-3)。
-              Committer ロール + TargetNotebook 一致 + 承認 head 全書込系のみ。 *)
+        (* NeedsApproval \:306e Permit \:6607\:683c\:306f\:6b21\:306e 2 \:30e2\:30fc\:30c9\:306e\:307f:
+           1. UserApproved: \:30e6\:30fc\:30b6\:30fc\:304c\:627f\:8a8d UI \:3067\:660e\:793a\:627f\:8a8d\:3057\:305f\:4e00\:822c\:30b1\:30fc\:30b9\:3002
+              Committer \:5236\:7d04\:306a\:3057\:3067 NeedsApproval \:3092 Permit \:306b\:6607\:683c\:3059\:308b\:3002
+              Deny \:306f decision \:304c "Deny" \:3067\:3053\:3053\:306b\:6765\:306a\:3044\:305f\:3081\:3001\:6607\:683c\:5bfe\:8c61\:306f
+              Approval head / unknown head \:306b\:9650\:3089\:308c\:5b89\:5168 (spec 5A.9)\:3002
+           2. CommitterAutoApprove: directLLM rescue \:7b49\:306e\:81ea\:52d5 commit \:4e92\:63db (D-3)\:3002
+              Committer \:30ed\:30fc\:30eb + TargetNotebook \:4e00\:81f4 + \:627f\:8a8d head \:5168\:66f8\:8fbc\:7cfb\:306e\:307f\:3002 *)
         Which[
           approvalMode === "UserApproved",
             <|"Permit" -> True, "Decision" -> "NeedsApproval",
@@ -7444,8 +7448,8 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
           " (" <> ToString[permitCheck["ReasonClass"]] <> ")",
         "AuditID" -> None|>]];
 
-    (* C-2: pre-actions \:691c\:8a3c\:2192\:5b9f\:884c (ReleaseHold \:76f4\:524d)\:3002
-       \:5b9f\:884c\:9806\:5e8f: NBValidateHeldExpr \:2192 \:691c\:8a3c\:2192 pre-actions \:2192 ReleaseHold *)
+    (* C-2: pre-actions \:691c\:8a3c\[RightArrow]\:5b9f\:884c (ReleaseHold \:76f4\:524d)\:3002
+       \:5b9f\:884c\:9806\:5e8f: NBValidateHeldExpr \[RightArrow] \:691c\:8a3c\[RightArrow] pre-actions \[RightArrow] ReleaseHold *)
     validatedPreActions = If[ListQ[preActions] && Length[preActions] > 0,
       NBValidateNotebookPreActions[preActions, accessSpec], {}];
     If[Length[validatedPreActions] > 0,
@@ -7466,9 +7470,9 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
         "HeldExpr" -> heldExpr,
         "Error" -> "Execution timed out after " <> ToString[timeout] <> "s",
         "AuditID" -> None|>,
-      (* 承認 wrapper context 修正 (2026-06-03): ReleaseHold の結果が
-         未解決の承認 wrapper (Global` 等の NBOpenFolderWithApproval[...])
-         なら、実行できていないので Success 扱いにしない。 *)
+      (* \:627f\:8a8d wrapper context \:4fee\:6b63 (2026-06-03): ReleaseHold \:306e\:7d50\:679c\:304c
+         \:672a\:89e3\:6c7a\:306e\:627f\:8a8d wrapper (Global` \:7b49\:306e NBOpenFolderWithApproval[...])
+         \:306a\:3089\:3001\:5b9f\:884c\:3067\:304d\:3066\:3044\:306a\:3044\:306e\:3067 Success \:6271\:3044\:306b\:3057\:306a\:3044\:3002 *)
       If[iNBUnresolvedApprovalWrapperQ[HoldComplete[result]],
         <|"Success" -> False, "Decision" -> "Deny",
           "RawResult" -> result, "HeldExpr" -> heldExpr,
@@ -7489,23 +7493,23 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
   ];
 
 (* ============================================================
-   Phase frontend-blocking-queue (2026-06-03, 承認 wrapper context 修正):
+   Phase frontend-blocking-queue (2026-06-03, \:627f\:8a8d wrapper context \:4fee\:6b63):
    NBTryExecuteFinalActionHeld / iNBUnresolvedApprovalWrapperQ
    ============================================================
-   問題: LLM が生成した NBOpenFolderWithApproval[...] が Global` など
-   NBAccess` 以外の context のシンボルとして保存され、ReleaseHold しても
-   未定義 → 未評価式のまま返り SystemOpen に到達しない。
-   NBValidateHeldExpr は head 名を文字列照合するので承認 UI は出るが、
-   実行時に context が違うと定義に届かない。
-   対策: head の context に依存せず SymbolName で承認 wrapper を検出し、
-   引数パスを安全評価して OpenDesktopItem action へ正規化、
-   NBExecuteApprovedAction 経由 (NBAccess 内部 executor) で実行する。 *)
+   \:554f\:984c: LLM \:304c\:751f\:6210\:3057\:305f NBOpenFolderWithApproval[...] \:304c Global` \:306a\:3069
+   NBAccess` \:4ee5\:5916\:306e context \:306e\:30b7\:30f3\:30dc\:30eb\:3068\:3057\:3066\:4fdd\:5b58\:3055\:308c\:3001ReleaseHold \:3057\:3066\:3082
+   \:672a\:5b9a\:7fa9 \[RightArrow] \:672a\:8a55\:4fa1\:5f0f\:306e\:307e\:307e\:8fd4\:308a SystemOpen \:306b\:5230\:9054\:3057\:306a\:3044\:3002
+   NBValidateHeldExpr \:306f head \:540d\:3092\:6587\:5b57\:5217\:7167\:5408\:3059\:308b\:306e\:3067\:627f\:8a8d UI \:306f\:51fa\:308b\:304c\:3001
+   \:5b9f\:884c\:6642\:306b context \:304c\:9055\:3046\:3068\:5b9a\:7fa9\:306b\:5c4a\:304b\:306a\:3044\:3002
+   \:5bfe\:7b56: head \:306e context \:306b\:4f9d\:5b58\:305b\:305a SymbolName \:3067\:627f\:8a8d wrapper \:3092\:691c\:51fa\:3057\:3001
+   \:5f15\:6570\:30d1\:30b9\:3092\:5b89\:5168\:8a55\:4fa1\:3057\:3066 OpenDesktopItem action \:3078\:6b63\:898f\:5316\:3001
+   NBExecuteApprovedAction \:7d4c\:7531 (NBAccess \:5185\:90e8 executor) \:3067\:5b9f\:884c\:3059\:308b\:3002 *)
 
-(* head が NBAccess` 以外の context の未解決承認 wrapper か判定。
-   評価を挟まないよう Extract で head を取り出す。 *)
+(* head \:304c NBAccess` \:4ee5\:5916\:306e context \:306e\:672a\:89e3\:6c7a\:627f\:8a8d wrapper \:304b\:5224\:5b9a\:3002
+   \:8a55\:4fa1\:3092\:631f\:307e\:306a\:3044\:3088\:3046 Extract \:3067 head \:3092\:53d6\:308a\:51fa\:3059\:3002 *)
 iNBUnresolvedApprovalWrapperQ[heldResult_HoldComplete] :=
   Module[{nm, ctx},
-    (* heldResult = HoldComplete[expr]。expr が f[___] 形か *)
+    (* heldResult = HoldComplete[expr]\:3002expr \:304c f[___] \:5f62\:304b *)
     If[!MatchQ[heldResult, HoldComplete[_[___]]], Return[False]];
     nm = Quiet @ Check[Extract[heldResult, {1, 0}, SymbolName], ""];
     ctx = Quiet @ Check[Extract[heldResult, {1, 0}, Context], ""];
@@ -7514,28 +7518,28 @@ iNBUnresolvedApprovalWrapperQ[heldResult_HoldComplete] :=
   ];
 iNBUnresolvedApprovalWrapperQ[_] := False;
 
-(* held = HoldComplete[ <anyContext>`NBOpenFolderWithApproval[pathExpr] ] を
-   context 非依存に検出し OpenDesktopItem action へ正規化して実行。
-   対象外なら <|"Handled" -> False|>。 *)
+(* held = HoldComplete[ <anyContext>`NBOpenFolderWithApproval[pathExpr] ] \:3092
+   context \:975e\:4f9d\:5b58\:306b\:691c\:51fa\:3057 OpenDesktopItem action \:3078\:6b63\:898f\:5316\:3057\:3066\:5b9f\:884c\:3002
+   \:5bfe\:8c61\:5916\:306a\:3089 <|"Handled" -> False|>\:3002 *)
 Options[NBTryExecuteFinalActionHeld] = {"ApprovalMode" -> "UserApproved"};
 NBTryExecuteFinalActionHeld[held_HoldComplete, accessSpec_Association,
     opts:OptionsPattern[]] :=
   Module[{nm, pathHeld, pathResult, path, action, execResult, approvalMode},
     approvalMode = OptionValue["ApprovalMode"];
-    (* head が f[___] 形でなければ対象外 *)
+    (* head \:304c f[___] \:5f62\:3067\:306a\:3051\:308c\:3070\:5bfe\:8c61\:5916 *)
     If[!MatchQ[held, HoldComplete[_[___]]],
       Return[<|"Handled" -> False|>]];
-    (* head 名を評価せず取得 (context 非依存) *)
+    (* head \:540d\:3092\:8a55\:4fa1\:305b\:305a\:53d6\:5f97 (context \:975e\:4f9d\:5b58) *)
     nm = Quiet @ Check[Extract[held, {1, 0}, SymbolName], ""];
     If[nm =!= "NBOpenFolderWithApproval",
       Return[<|"Handled" -> False|>]];
-    (* 第 1 引数を評価せず取り出す: HoldComplete[pathExpr] *)
+    (* \:7b2c 1 \:5f15\:6570\:3092\:8a55\:4fa1\:305b\:305a\:53d6\:308a\:51fa\:3059: HoldComplete[pathExpr] *)
     pathHeld = Quiet @ Check[Extract[held, {1, 1}, HoldComplete], $Failed];
     If[pathHeld === $Failed || !MatchQ[pathHeld, HoldComplete[_]],
       Return[<|"Handled" -> True, "Success" -> False,
         "Decision" -> "Deny",
         "ReasonClass" -> "InvalidFinalActionArguments"|>]];
-    (* path 式を安全評価 (FrontEnd なし・書込なし・短 timeout) *)
+    (* path \:5f0f\:3092\:5b89\:5168\:8a55\:4fa1 (FrontEnd \:306a\:3057\:30fb\:66f8\:8fbc\:306a\:3057\:30fb\:77ed timeout) *)
     pathResult = NBExecuteHeldExpr[pathHeld,
       Join[accessSpec, <|"ExecutionRole" -> "ProposalEval",
         "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False|>],
@@ -7543,7 +7547,7 @@ NBTryExecuteFinalActionHeld[held_HoldComplete, accessSpec_Association,
     If[!TrueQ[Lookup[pathResult, "Success", False]],
       Return[Append[pathResult, "Handled" -> True]]];
     path = Lookup[pathResult, "RawResult", None];
-    (* OpenDesktopItem action へ正規化 *)
+    (* OpenDesktopItem action \:3078\:6b63\:898f\:5316 *)
     action = <|"Action" -> "OpenDesktopItem", "TargetType" -> "Folder",
       "Path" -> path|>;
     execResult = NBExecuteApprovedAction[action, accessSpec,
@@ -7552,13 +7556,13 @@ NBTryExecuteFinalActionHeld[held_HoldComplete, accessSpec_Association,
   ];
 NBTryExecuteFinalActionHeld[_, _, ___] := <|"Handled" -> False|>;
 
-(* held = HoldComplete[<anyContext>`NBOpenFolderWithApproval[pathExpr]] から、
-   SystemOpen を呼ばずにパスを安全解決し検証だけ行う。
-   承認ボタン本体 (メインカーネル評価コンテキスト) が、この検証済みパスに対して
-   raw SystemOpen を直接呼ぶために使う。
-   SystemOpen は SessionSubmit/ScheduledTask 系では効かず、メインカーネルの
-   トップレベル評価でのみ効くため、実行はここでは行わず呼び出し側に委ねる。
-   返り値: <|"IsDesktopAction"->True/False, "Validated"->.., "Path"->.., ...|> *)
+(* held = HoldComplete[<anyContext>`NBOpenFolderWithApproval[pathExpr]] \:304b\:3089\:3001
+   SystemOpen \:3092\:547c\:3070\:305a\:306b\:30d1\:30b9\:3092\:5b89\:5168\:89e3\:6c7a\:3057\:691c\:8a3c\:3060\:3051\:884c\:3046\:3002
+   \:627f\:8a8d\:30dc\:30bf\:30f3\:672c\:4f53 (\:30e1\:30a4\:30f3\:30ab\:30fc\:30cd\:30eb\:8a55\:4fa1\:30b3\:30f3\:30c6\:30ad\:30b9\:30c8) \:304c\:3001\:3053\:306e\:691c\:8a3c\:6e08\:307f\:30d1\:30b9\:306b\:5bfe\:3057\:3066
+   raw SystemOpen \:3092\:76f4\:63a5\:547c\:3076\:305f\:3081\:306b\:4f7f\:3046\:3002
+   SystemOpen \:306f SessionSubmit/ScheduledTask \:7cfb\:3067\:306f\:52b9\:304b\:305a\:3001\:30e1\:30a4\:30f3\:30ab\:30fc\:30cd\:30eb\:306e
+   \:30c8\:30c3\:30d7\:30ec\:30d9\:30eb\:8a55\:4fa1\:3067\:306e\:307f\:52b9\:304f\:305f\:3081\:3001\:5b9f\:884c\:306f\:3053\:3053\:3067\:306f\:884c\:308f\:305a\:547c\:3073\:51fa\:3057\:5074\:306b\:59d4\:306d\:308b\:3002
+   \:8fd4\:308a\:5024: <|"IsDesktopAction"->True/False, "Validated"->.., "Path"->.., ...|> *)
 NBResolveDesktopActionPath[held_HoldComplete, accessSpec_Association] :=
   Module[{nm, pathHeld, pathResult, path, action, validation},
     If[!MatchQ[held, HoldComplete[_[___]]],
@@ -7570,7 +7574,7 @@ NBResolveDesktopActionPath[held_HoldComplete, accessSpec_Association] :=
     If[pathHeld === $Failed || !MatchQ[pathHeld, HoldComplete[_]],
       Return[<|"IsDesktopAction" -> True, "Validated" -> False,
         "ReasonClass" -> "InvalidFinalActionArguments"|>]];
-    (* path 式を安全評価 (FrontEnd なし・書込なし・短 timeout) *)
+    (* path \:5f0f\:3092\:5b89\:5168\:8a55\:4fa1 (FrontEnd \:306a\:3057\:30fb\:66f8\:8fbc\:306a\:3057\:30fb\:77ed timeout) *)
     pathResult = NBExecuteHeldExpr[pathHeld,
       Join[accessSpec, <|"ExecutionRole" -> "ProposalEval",
         "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False|>],
@@ -7580,7 +7584,7 @@ NBResolveDesktopActionPath[held_HoldComplete, accessSpec_Association] :=
         "ReasonClass" -> "PathEvaluationFailed",
         "PathResult" -> pathResult|>]];
     path = Lookup[pathResult, "RawResult", None];
-    (* OpenDesktopItem として検証 (実行はしない)。違反は HardDeny を返す。 *)
+    (* OpenDesktopItem \:3068\:3057\:3066\:691c\:8a3c (\:5b9f\:884c\:306f\:3057\:306a\:3044)\:3002\:9055\:53cd\:306f HardDeny \:3092\:8fd4\:3059\:3002 *)
     action = <|"Action" -> "OpenDesktopItem", "TargetType" -> "Folder",
       "Path" -> path|>;
     validation = NBValidateAction[action, accessSpec];
@@ -7590,7 +7594,7 @@ NBResolveDesktopActionPath[held_HoldComplete, accessSpec_Association] :=
         "ReasonClass" -> Lookup[validation, "ReasonClass", "ValidationDenied"],
         "VisibleExplanation" -> Lookup[validation, "VisibleExplanation", ""],
         "Path" -> path|>]];
-    (* 承認済み (UserApproved) なら NeedsApproval は許容。検証 OK。 *)
+    (* \:627f\:8a8d\:6e08\:307f (UserApproved) \:306a\:3089 NeedsApproval \:306f\:8a31\:5bb9\:3002\:691c\:8a3c OK\:3002 *)
     <|"IsDesktopAction" -> True, "Validated" -> True, "Path" -> path,
       "Action" -> action|>
   ];
@@ -7697,9 +7701,9 @@ NBExecuteHeldExprSubkernelRaw[___] := $Failed;
    role \:5225\:65e2\:5b9a\:5024 (spec 4.6 \:30c6\:30fc\:30d6\:30eb)\:3002
    ============================================================ *)
 
-(* MayAccessFileSystem enum 正規化 (v7 §13B, Phase 2a)。
-   Boolean / legacy 値 / 不明値を None/ReadOnly/ScopedRead/ScopedWrite/ScopedReadWrite
-   のいずれかへ正規化する。不明値は安全側 "None"。既存 role の "ReadOnly" 等は不変。 *)
+(* MayAccessFileSystem enum \:6b63\:898f\:5316 (v7 \[Section]13B, Phase 2a)\:3002
+   Boolean / legacy \:5024 / \:4e0d\:660e\:5024\:3092 None/ReadOnly/ScopedRead/ScopedWrite/ScopedReadWrite
+   \:306e\:3044\:305a\:308c\:304b\:3078\:6b63\:898f\:5316\:3059\:308b\:3002\:4e0d\:660e\:5024\:306f\:5b89\:5168\:5074 "None"\:3002\:65e2\:5b58 role \:306e "ReadOnly" \:7b49\:306f\:4e0d\:5909\:3002 *)
 iNBFSEnumNormalize[v_] := Switch[v,
   True,  "ScopedReadWrite",
   False, "None",
@@ -7712,15 +7716,15 @@ iNBNormalizeFSAccessSpec[spec_Association] :=
     Append[spec, "MayAccessFileSystem" -> iNBFSEnumNormalize[spec["MayAccessFileSystem"]]],
     spec];
 
-(* v7 §13A: 既知 role 集合。未知 role は silent に最小権限化せず、警告 +
-   RoleValid->False で明示する (catch-all は最も制限的のまま fail-closed)。 *)
+(* v7 \[Section]13A: \:65e2\:77e5 role \:96c6\:5408\:3002\:672a\:77e5 role \:306f silent \:306b\:6700\:5c0f\:6a29\:9650\:5316\:305b\:305a\:3001\:8b66\:544a +
+   RoleValid->False \:3067\:660e\:793a\:3059\:308b (catch-all \:306f\:6700\:3082\:5236\:9650\:7684\:306e\:307e\:307e fail-closed)\:3002 *)
 iNBKnownRoleQ[r_String] := MemberQ[
   {"ProposalEval", "Committer", "VisionFallback", "ManualDispatch",
    "SubkernelTask", "WolframScriptTask", "MainKernelTask", "FinalAction"}, r];
 iNBKnownRoleQ[_] := False;
 
 NBMakeRuntimeAccessSpec::unkrole =
-  "未知の ExecutionRole `1` です。最も制限的な AccessSpec (RoleValid->False) を返します。既知 role は ProposalEval / Committer / VisionFallback / ManualDispatch / SubkernelTask / WolframScriptTask / MainKernelTask / FinalAction。";
+  "\:672a\:77e5\:306e ExecutionRole `1` \:3067\:3059\:3002\:6700\:3082\:5236\:9650\:7684\:306a AccessSpec (RoleValid->False) \:3092\:8fd4\:3057\:307e\:3059\:3002\:65e2\:77e5 role \:306f ProposalEval / Committer / VisionFallback / ManualDispatch / SubkernelTask / WolframScriptTask / MainKernelTask / FinalAction\:3002";
 
 NBMakeRuntimeAccessSpec[contextPacket_Association, role_String:"ProposalEval"] :=
   Module[{roleDefaults, conf, secrets, snapshot},
@@ -7751,9 +7755,9 @@ NBMakeRuntimeAccessSpec[contextPacket_Association, role_String:"ProposalEval"] :
           "MayUseExternalProcess" -> False, "MayAccessFileSystem" -> "ReadOnly",
           "MayUseNetwork" -> False, "ResultMayCrossKernel" -> False,
           "AllowedNotebookActions" -> {}|>,
-      (* === External executor task placement v7 §13A の role 既定 (Phase 2a, 純加法) === *)
+      (* === External executor task placement v7 \[Section]13A \:306e role \:65e2\:5b9a (Phase 2a, \:7d14\:52a0\:6cd5) === *)
       "SubkernelTask",
-        (* v7 §13A.1: serializable・transfer-safe な純粋計算用 *)
+        (* v7 \[Section]13A.1: serializable\:30fbtransfer-safe \:306a\:7d14\:7c8b\:8a08\:7b97\:7528 *)
         <|"ExecutionKernel" -> "SubkernelAllowed",
           "ExecutionBackend" -> "SubkernelAsync",
           "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
@@ -7761,12 +7765,12 @@ NBMakeRuntimeAccessSpec[contextPacket_Association, role_String:"ProposalEval"] :
           "MayUseNetwork" -> False, "ResultMayCrossKernel" -> True,
           "AllowedNotebookActions" -> {}|>,
       "WolframScriptTask",
-        (* v7 §13A.2: 外部 process executor。
-           MayUseExternalProcess -> True は resolved wolframscript runner 起動専用の
-           限定許可であり、任意外部 process 許可ではない (実効的な command 一致検査は
-           Phase 2b scoped-permit / runner I/O guard で行う)。
-           MayUseNetwork は既定 False。AllowedNetworkTargets を伴う scope 指定時に
-           Phase 2b の scoped-permit で NetworkAccess の HardDeny を昇格する。 *)
+        (* v7 \[Section]13A.2: \:5916\:90e8 process executor\:3002
+           MayUseExternalProcess -> True \:306f resolved wolframscript runner \:8d77\:52d5\:5c02\:7528\:306e
+           \:9650\:5b9a\:8a31\:53ef\:3067\:3042\:308a\:3001\:4efb\:610f\:5916\:90e8 process \:8a31\:53ef\:3067\:306f\:306a\:3044 (\:5b9f\:52b9\:7684\:306a command \:4e00\:81f4\:691c\:67fb\:306f
+           Phase 2b scoped-permit / runner I/O guard \:3067\:884c\:3046)\:3002
+           MayUseNetwork \:306f\:65e2\:5b9a False\:3002AllowedNetworkTargets \:3092\:4f34\:3046 scope \:6307\:5b9a\:6642\:306b
+           Phase 2b \:306e scoped-permit \:3067 NetworkAccess \:306e HardDeny \:3092\:6607\:683c\:3059\:308b\:3002 *)
         <|"ExecutionKernel" -> "ExternalProcess",
           "ExecutionBackend" -> "WolframScriptProcess",
           "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
@@ -7778,7 +7782,7 @@ NBMakeRuntimeAccessSpec[contextPacket_Association, role_String:"ProposalEval"] :
           "CredentialRefs" -> {}, "SecretRefs" -> {},
           "ConfidentialHandling" -> "ReferenceOnly"|>,
       "MainKernelTask",
-        (* v7 §13A.3: 短時間の main session state 依存処理 *)
+        (* v7 \[Section]13A.3: \:77ed\:6642\:9593\:306e main session state \:4f9d\:5b58\:51e6\:7406 *)
         <|"ExecutionKernel" -> "MainOnly",
           "ExecutionBackend" -> "MainKernelAsync",
           "MayUseFrontEnd" -> False, "MayWriteNotebook" -> False,
@@ -7786,7 +7790,7 @@ NBMakeRuntimeAccessSpec[contextPacket_Association, role_String:"ProposalEval"] :
           "MayUseNetwork" -> False, "ResultMayCrossKernel" -> False,
           "AllowedNotebookActions" -> {}|>,
       "FinalAction",
-        (* v7 §13A.4: FE/Notebook 反映。承認必須 (single committer)。 *)
+        (* v7 \[Section]13A.4: FE/Notebook \:53cd\:6620\:3002\:627f\:8a8d\:5fc5\:9808 (single committer)\:3002 *)
         <|"ExecutionKernel" -> "MainOnly",
           "ExecutionBackend" -> "FinalActionQueue",
           "MayUseFrontEnd" -> True, "MayWriteNotebook" -> True,
@@ -7815,10 +7819,10 @@ NBMakeRuntimeAccessSpec[contextPacket_Association, role_String:"ProposalEval"] :
       iNBNormalizeFSAccessSpec[roleDefaults],
       <|
         "ExecutionRole" -> role,
-        "RoleValid" -> iNBKnownRoleQ[role],   (* v7 §13A: 未知 role は False *)
-        (* I12 (spec 5B): contextPacket に明示がなければ accessSpec 作成時点の
-           global $ClaudePermissionMode を焼き込む。以降の実行 (subkernel 含む)
-           はこの焼き込んだ値を正とし、global を読み直さない。 *)
+        "RoleValid" -> iNBKnownRoleQ[role],   (* v7 \[Section]13A: \:672a\:77e5 role \:306f False *)
+        (* I12 (spec 5B): contextPacket \:306b\:660e\:793a\:304c\:306a\:3051\:308c\:3070 accessSpec \:4f5c\:6210\:6642\:70b9\:306e
+           global $ClaudePermissionMode \:3092\:713c\:304d\:8fbc\:3080\:3002\:4ee5\:964d\:306e\:5b9f\:884c (subkernel \:542b\:3080)
+           \:306f\:3053\:306e\:713c\:304d\:8fbc\:3093\:3060\:5024\:3092\:6b63\:3068\:3057\:3001global \:3092\:8aad\:307f\:76f4\:3055\:306a\:3044\:3002 *)
         "PermissionMode" -> Lookup[contextPacket, "PermissionMode",
           If[StringQ[$ClaudePermissionMode], $ClaudePermissionMode,
             "InteractiveSafe"]],
@@ -7838,26 +7842,26 @@ NBMakeRuntimeAccessSpec[role_String:"ProposalEval"] :=
 (* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase permission-modes (2026-06-03, spec 5B.8): Action registry
    \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
-   NBOpenFolderWithApproval のような個別関数を乱立させず、承認対象操作を
-   汎用 action registry に寄せる。EffectClass + PermissionMode で判定し、
-   raw SystemOpen 等は NBAccess 内部 executor だけが呼ぶ (I1/I2)。 *)
+   NBOpenFolderWithApproval \:306e\:3088\:3046\:306a\:500b\:5225\:95a2\:6570\:3092\:4e71\:7acb\:3055\:305b\:305a\:3001\:627f\:8a8d\:5bfe\:8c61\:64cd\:4f5c\:3092
+   \:6c4e\:7528 action registry \:306b\:5bc4\:305b\:308b\:3002EffectClass + PermissionMode \:3067\:5224\:5b9a\:3057\:3001
+   raw SystemOpen \:7b49\:306f NBAccess \:5185\:90e8 executor \:3060\:3051\:304c\:547c\:3076 (I1/I2)\:3002 *)
 
 If[!AssociationQ[$NBActionRegistry], $NBActionRegistry = <||>];
 
 NBRegisterAction[name_String, spec_Association] :=
   ($NBActionRegistry[name] = spec; name);
 
-(* ---- OpenDesktopItem: フォルダ等を開く ---- *)
+(* ---- OpenDesktopItem: \:30d5\:30a9\:30eb\:30c0\:7b49\:3092\:958b\:304f ---- *)
 
-(* path が安全な folder target か検査 (spec 5B.7)。
-   返り値: <|"Valid" -> _, "Reason" -> _, "NormalizedPath" -> _,
+(* path \:304c\:5b89\:5168\:306a folder target \:304b\:691c\:67fb (spec 5B.7)\:3002
+   \:8fd4\:308a\:5024: <|"Valid" -> _, "Reason" -> _, "NormalizedPath" -> _,
             "ApprovalEligibility" -> _|>
-   URL / 実行ファイル / folder でないもの は HardDeny。 *)
+   URL / \:5b9f\:884c\:30d5\:30a1\:30a4\:30eb / folder \:3067\:306a\:3044\:3082\:306e \:306f HardDeny\:3002 *)
 iNBValidateOpenDesktopItem[action_Association] :=
   Module[{path, targetType, normPath, ext},
     path = Lookup[action, "Path", None];
     targetType = Lookup[action, "TargetType", "Folder"];
-    (* path は文字列のみ許可 (File[...] は ToString で正規化を試みる) *)
+    (* path \:306f\:6587\:5b57\:5217\:306e\:307f\:8a31\:53ef (File[...] \:306f ToString \:3067\:6b63\:898f\:5316\:3092\:8a66\:307f\:308b) *)
     Which[
       StringQ[path], normPath = path,
       MatchQ[path, _File], normPath = First[path],
@@ -7866,30 +7870,30 @@ iNBValidateOpenDesktopItem[action_Association] :=
     If[!StringQ[normPath] || StringLength[normPath] === 0,
       Return[<|"Valid" -> False, "Reason" -> "EmptyPath",
         "ApprovalEligibility" -> "HardDeny"|>]];
-    (* URL は不可 *)
+    (* URL \:306f\:4e0d\:53ef *)
     If[StringMatchQ[normPath,
         (("http" ~~ ("s" | "") ~~ "://") | "ftp://" | "file://" | "mailto:") ~~ ___,
         IgnoreCase -> True],
       Return[<|"Valid" -> False, "Reason" -> "URLNotAllowed",
         "ApprovalEligibility" -> "HardDeny"|>]];
-    (* 実行ファイル拡張子は不可 *)
+    (* \:5b9f\:884c\:30d5\:30a1\:30a4\:30eb\:62e1\:5f35\:5b50\:306f\:4e0d\:53ef *)
     ext = ToLowerCase[FileExtension[normPath]];
     If[MemberQ[{"exe", "bat", "cmd", "com", "scr", "ps1", "vbs", "js",
                 "msi", "app", "command", "sh", "jar"}, ext],
       Return[<|"Valid" -> False, "Reason" -> "ExecutableNotAllowed",
         "ApprovalEligibility" -> "HardDeny"|>]];
-    (* Folder target は実際にディレクトリであることを要求 *)
+    (* Folder target \:306f\:5b9f\:969b\:306b\:30c7\:30a3\:30ec\:30af\:30c8\:30ea\:3067\:3042\:308b\:3053\:3068\:3092\:8981\:6c42 *)
     If[targetType === "Folder",
       If[!TrueQ[Quiet[DirectoryQ[normPath]]],
         Return[<|"Valid" -> False, "Reason" -> "NotADirectory",
           "ApprovalEligibility" -> "HardDeny"|>]]];
-    (* 検査通過: folder を開くのは要承認 (AskUserAllowed) *)
+    (* \:691c\:67fb\:901a\:904e: folder \:3092\:958b\:304f\:306e\:306f\:8981\:627f\:8a8d (AskUserAllowed) *)
     <|"Valid" -> True, "Reason" -> "OK", "NormalizedPath" -> normPath,
       "ApprovalEligibility" -> "AskUserAllowed"|>
   ];
 
-(* OpenDesktopItem の Executor。NBAccess 内部で raw SystemOpen を呼ぶ
-   唯一の場所。承認済み + 再 validate 通過後にのみ到達する。 *)
+(* OpenDesktopItem \:306e Executor\:3002NBAccess \:5185\:90e8\:3067 raw SystemOpen \:3092\:547c\:3076
+   \:552f\:4e00\:306e\:5834\:6240\:3002\:627f\:8a8d\:6e08\:307f + \:518d validate \:901a\:904e\:5f8c\:306b\:306e\:307f\:5230\:9054\:3059\:308b\:3002 *)
 iNBExecuteOpenDesktopItem[action_Association] :=
   Module[{check, normPath},
     check = iNBValidateOpenDesktopItem[action];
@@ -7905,22 +7909,22 @@ iNBExecuteOpenDesktopItem[action_Association] :=
       "Path" -> normPath|>
   ];
 
-(* ---- WriteNotebookCell action (非 desktop final action 実行経路) ----
-   LLM が生成した notebook cell を承認後に書き込む final action。
-   action 構造: <|"Action"->"WriteNotebookCell", "Cell"-><Cell式>,
-                 "TargetNotebook"-><nb> (省略可、Executor で補完)|>
-   notebook write は FrontEnd 操作 (罠 #30) なので Executor はメイン評価で
-   呼ばれる前提 (NBExecuteApprovedAction が承認後メイン評価で呼ぶ)。 *)
+(* ---- WriteNotebookCell action (\:975e desktop final action \:5b9f\:884c\:7d4c\:8def) ----
+   LLM \:304c\:751f\:6210\:3057\:305f notebook cell \:3092\:627f\:8a8d\:5f8c\:306b\:66f8\:304d\:8fbc\:3080 final action\:3002
+   action \:69cb\:9020: <|"Action"->"WriteNotebookCell", "Cell"-><Cell\:5f0f>,
+                 "TargetNotebook"-><nb> (\:7701\:7565\:53ef\:3001Executor \:3067\:88dc\:5b8c)|>
+   notebook write \:306f FrontEnd \:64cd\:4f5c (\:7f60 #30) \:306a\:306e\:3067 Executor \:306f\:30e1\:30a4\:30f3\:8a55\:4fa1\:3067
+   \:547c\:3070\:308c\:308b\:524d\:63d0 (NBExecuteApprovedAction \:304c\:627f\:8a8d\:5f8c\:30e1\:30a4\:30f3\:8a55\:4fa1\:3067\:547c\:3076)\:3002 *)
 iNBValidateWriteNotebookCell[action_Association] :=
   Module[{cell, opts, hasAutoEval},
     cell = Lookup[action, "Cell", None];
-    (* Cell 式であること *)
+    (* Cell \:5f0f\:3067\:3042\:308b\:3053\:3068 *)
     If[!MatchQ[cell, _Cell],
       Return[<|"Valid" -> False, "Reason" -> "NotACell",
         "ApprovalEligibility" -> "HardDeny"|>]];
-    (* Cell オプションに自動評価系の危険設定がないか軽くチェック。
-       Evaluatable->True 単体は許すが、Initialization や自動実行を仕込んだ
-       Cell は拒否する (書き込み時に勝手に評価されるのを防ぐ)。 *)
+    (* Cell \:30aa\:30d7\:30b7\:30e7\:30f3\:306b\:81ea\:52d5\:8a55\:4fa1\:7cfb\:306e\:5371\:967a\:8a2d\:5b9a\:304c\:306a\:3044\:304b\:8efd\:304f\:30c1\:30a7\:30c3\:30af\:3002
+       Evaluatable->True \:5358\:4f53\:306f\:8a31\:3059\:304c\:3001Initialization \:3084\:81ea\:52d5\:5b9f\:884c\:3092\:4ed5\:8fbc\:3093\:3060
+       Cell \:306f\:62d2\:5426\:3059\:308b (\:66f8\:304d\:8fbc\:307f\:6642\:306b\:52dd\:624b\:306b\:8a55\:4fa1\:3055\:308c\:308b\:306e\:3092\:9632\:3050)\:3002 *)
     opts = Cases[cell, (Rule | RuleDelayed)[k_, v_] :> {SymbolName[k], v},
       {0, Infinity}];
     hasAutoEval = AnyTrue[opts,
@@ -7929,7 +7933,7 @@ iNBValidateWriteNotebookCell[action_Association] :=
     If[hasAutoEval,
       Return[<|"Valid" -> False, "Reason" -> "AutoEvalCellNotAllowed",
         "ApprovalEligibility" -> "HardDeny"|>]];
-    (* notebook write は FrontEnd 操作。承認を要する (final node)。 *)
+    (* notebook write \:306f FrontEnd \:64cd\:4f5c\:3002\:627f\:8a8d\:3092\:8981\:3059\:308b (final node)\:3002 *)
     <|"Valid" -> True, "ApprovalEligibility" -> "AskUserAllowed"|>
   ];
 
@@ -7943,8 +7947,8 @@ iNBExecuteWriteNotebookCell[action_Association] :=
           Lookup[check, "Reason", "unknown"]|>]];
     cell = Lookup[action, "Cell", None];
     nb = Lookup[action, "TargetNotebook", Automatic];
-    (* TargetNotebook が NotebookObject ならそこへ、なければ CellPrint で
-       評価セル直後に出す (どちらもメイン評価前提、罠 #30)。 *)
+    (* TargetNotebook \:304c NotebookObject \:306a\:3089\:305d\:3053\:3078\:3001\:306a\:3051\:308c\:3070 CellPrint \:3067
+       \:8a55\:4fa1\:30bb\:30eb\:76f4\:5f8c\:306b\:51fa\:3059 (\:3069\:3061\:3089\:3082\:30e1\:30a4\:30f3\:8a55\:4fa1\:524d\:63d0\:3001\:7f60 #30)\:3002 *)
     If[MatchQ[nb, _NotebookObject],
       Quiet[NBAccess`NBWriteCell[nb, cell, After]],
       Quiet[CellPrint[cell]]];
@@ -7962,8 +7966,8 @@ NBRegisterAction["OpenDesktopItem",
     "Validator" -> iNBValidateOpenDesktopItem,
     "Executor" -> iNBExecuteOpenDesktopItem|>];
 
-(* notebook cell 書き込み action (非 desktop final action)。
-   FrontEnd 操作なので final node (メイン評価で実行)。 *)
+(* notebook cell \:66f8\:304d\:8fbc\:307f action (\:975e desktop final action)\:3002
+   FrontEnd \:64cd\:4f5c\:306a\:306e\:3067 final node (\:30e1\:30a4\:30f3\:8a55\:4fa1\:3067\:5b9f\:884c)\:3002 *)
 NBRegisterAction["WriteNotebookCell",
   <|"EffectClass" -> "FrontEndWrite",
     "DefaultApprovalEligibility" -> "AskUserAllowed",
@@ -7974,23 +7978,23 @@ NBRegisterAction["WriteNotebookCell",
     "Validator" -> iNBValidateWriteNotebookCell,
     "Executor" -> iNBExecuteWriteNotebookCell|>];
 
-(* ════════════════════════════════════════════════════════
-   ExternalTask action + scoped-permit (v7 §14 / Phase 2b)
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   ExternalTask action + scoped-permit (v7 \[Section]14 / Phase 2b)
 
-   設計: NetworkAccess / ExternalProcess の categorical HardDeny
-   (グローバル $iNBEffectClassEligibility) は一切変更しない。
-   scoped-permit は本 action の Validator 内だけに閉じ込める。
-   よって既存の held-expr 検証 (NBValidateHeldExpr) は無傷であり、
-   宣言的 ExternalTask (WolframScriptTask role + scope) のみが昇格する。
+   \:8a2d\:8a08: NetworkAccess / ExternalProcess \:306e categorical HardDeny
+   (\:30b0\:30ed\:30fc\:30d0\:30eb $iNBEffectClassEligibility) \:306f\:4e00\:5207\:5909\:66f4\:3057\:306a\:3044\:3002
+   scoped-permit \:306f\:672c action \:306e Validator \:5185\:3060\:3051\:306b\:9589\:3058\:8fbc\:3081\:308b\:3002
+   \:3088\:3063\:3066\:65e2\:5b58\:306e held-expr \:691c\:8a3c (NBValidateHeldExpr) \:306f\:7121\:50b7\:3067\:3042\:308a\:3001
+   \:5ba3\:8a00\:7684 ExternalTask (WolframScriptTask role + scope) \:306e\:307f\:304c\:6607\:683c\:3059\:308b\:3002
 
-   P0: scope 内は AskUserAllowed 止まり (AutoPermit / workflow pre-approval は
-   Phase 3 以降)。scope 外・role 不一致は HardDeny。StrictSafe 等での最終的な
-   拒否は後段の iNBApplyPermissionMode が担う。
-   ════════════════════════════════════════════════════════ *)
+   P0: scope \:5185\:306f AskUserAllowed \:6b62\:307e\:308a (AutoPermit / workflow pre-approval \:306f
+   Phase 3 \:4ee5\:964d)\:3002scope \:5916\:30fbrole \:4e0d\:4e00\:81f4\:306f HardDeny\:3002StrictSafe \:7b49\:3067\:306e\:6700\:7d42\:7684\:306a
+   \:62d2\:5426\:306f\:5f8c\:6bb5\:306e iNBApplyPermissionMode \:304c\:62c5\:3046\:3002
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
-(* network target (host+port) が scope 内か。P0 は host+port 完全一致。
-   allow 側が "Scheme" を指定していれば scheme も一致を要求。
-   wildcard (HostPattern) は P0 未実装のため scope 付与しない (v7 §7.2)。 *)
+(* network target (host+port) \:304c scope \:5185\:304b\:3002P0 \:306f host+port \:5b8c\:5168\:4e00\:81f4\:3002
+   allow \:5074\:304c "Scheme" \:3092\:6307\:5b9a\:3057\:3066\:3044\:308c\:3070 scheme \:3082\:4e00\:81f4\:3092\:8981\:6c42\:3002
+   wildcard (HostPattern) \:306f P0 \:672a\:5b9f\:88c5\:306e\:305f\:3081 scope \:4ed8\:4e0e\:3057\:306a\:3044 (v7 \[Section]7.2)\:3002 *)
 iNBNetTargetMatch[req_Association, allow_Association] :=
   And[
     ! KeyExistsQ[allow, "HostPattern"],
@@ -8004,14 +8008,14 @@ iNBNetTargetMatch[_, _] := False;
 iNBNetTargetInScope[req_, allowedList_List] :=
   ListQ[allowedList] && AnyTrue[allowedList, iNBNetTargetMatch[req, #] &];
 
-(* directory が scope 内か。P0 は exact または prefix 一致。 *)
+(* directory \:304c scope \:5185\:304b\:3002P0 \:306f exact \:307e\:305f\:306f prefix \:4e00\:81f4\:3002 *)
 iNBDirInScope[d_, allowedDirs_List] :=
   StringQ[d] && AnyTrue[allowedDirs,
     (StringQ[#] && (d === # || StringStartsQ[d, # ])) &];
 
-(* v7 §6.3: workflow pre-approval。accessSpec["ApprovedNetworkTargets"] に
-   host+port 一致 かつ 未失効 (ExpiresAt は UnixTime 秒、欠落/非数値は未失効扱い)
-   のエントリがあれば、その target は pre-approved。 *)
+(* v7 \[Section]6.3: workflow pre-approval\:3002accessSpec["ApprovedNetworkTargets"] \:306b
+   host+port \:4e00\:81f4 \:304b\:3064 \:672a\:5931\:52b9 (ExpiresAt \:306f UnixTime \:79d2\:3001\:6b20\:843d/\:975e\:6570\:5024\:306f\:672a\:5931\:52b9\:6271\:3044)
+   \:306e\:30a8\:30f3\:30c8\:30ea\:304c\:3042\:308c\:3070\:3001\:305d\:306e target \:306f pre-approved\:3002 *)
 iNBNotExpiredQ[entry_Association, now_] :=
   With[{e = Lookup[entry, "ExpiresAt", None]},
     e === None || ! NumericQ[e] || e > now];
@@ -8024,10 +8028,10 @@ iNBPreApprovedNetQ[req_, accessSpec_Association, now_] :=
       AnyTrue[approved, iNBNetTargetMatch[req, #] && iNBNotExpiredQ[#, now] &]
   ];
 
-(* ExternalTask Validator (2 引数; ValidatorWantsAccessSpec)。
-   action の DeclaredEffectClasses と Target を、accessSpec の role + scope
-   に突合し、effect ごとの eligibility を最も厳しい側に集約して返す。
-   v7 §6.3: WorkflowSafe かつ全 NetworkTarget が pre-approved なら AutoPermit。 *)
+(* ExternalTask Validator (2 \:5f15\:6570; ValidatorWantsAccessSpec)\:3002
+   action \:306e DeclaredEffectClasses \:3068 Target \:3092\:3001accessSpec \:306e role + scope
+   \:306b\:7a81\:5408\:3057\:3001effect \:3054\:3068\:306e eligibility \:3092\:6700\:3082\:53b3\:3057\:3044\:5074\:306b\:96c6\:7d04\:3057\:3066\:8fd4\:3059\:3002
+   v7 \[Section]6.3: WorkflowSafe \:304b\:3064\:5168 NetworkTarget \:304c pre-approved \:306a\:3089 AutoPermit\:3002 *)
 iNBValidateExternalTask[action_Association, accessSpec_Association] :=
   Module[{role, effects, reqNets, reqDirs, allowNets, allowDirs, allowCmds,
           fsMode, isWS, eligs, agg, reasons = {}},
@@ -8042,7 +8046,7 @@ iNBValidateExternalTask[action_Association, accessSpec_Association] :=
     allowCmds = Lookup[accessSpec, "AllowedExternalCommands", {}];
     fsMode   = Lookup[accessSpec, "MayAccessFileSystem", "None"];
 
-    (* role が WolframScriptTask 以外なら外部 task の scope 昇格は一切しない *)
+    (* role \:304c WolframScriptTask \:4ee5\:5916\:306a\:3089\:5916\:90e8 task \:306e scope \:6607\:683c\:306f\:4e00\:5207\:3057\:306a\:3044 *)
     If[! isWS,
       Return[<|"Valid" -> False, "Reason" -> "RoleNotWolframScriptTask",
         "ApprovalEligibility" -> "HardDeny"|>]];
@@ -8053,13 +8057,13 @@ iNBValidateExternalTask[action_Association, accessSpec_Association] :=
           "NetworkAccess",
             If[ListQ[reqNets] && reqNets =!= {} &&
                AllTrue[reqNets, iNBNetTargetInScope[#, allowNets] &],
-              (* scope 内。WorkflowSafe かつ全 target が未失効 pre-approved なら AutoPermit *)
+              (* scope \:5185\:3002WorkflowSafe \:304b\:3064\:5168 target \:304c\:672a\:5931\:52b9 pre-approved \:306a\:3089 AutoPermit *)
               If[Lookup[accessSpec, "PermissionMode", "InteractiveSafe"] === "WorkflowSafe" &&
                  AllTrue[reqNets, iNBPreApprovedNetQ[#, accessSpec, UnixTime[]] &],
                 "AutoPermit", "AskUserAllowed"],
               (AppendTo[reasons, "NetworkTargetOutOfScope"]; "HardDeny")],
           "ExternalProcess",
-            (* 任意外部 process は不可。runner 起動専用 command のみ。 *)
+            (* \:4efb\:610f\:5916\:90e8 process \:306f\:4e0d\:53ef\:3002runner \:8d77\:52d5\:5c02\:7528 command \:306e\:307f\:3002 *)
             If[MemberQ[allowCmds, "wolframscript-runner"],
               "AskUserAllowed",
               (AppendTo[reasons, "ExternalCommandNotAllowed"]; "HardDeny")],
@@ -8076,13 +8080,13 @@ iNBValidateExternalTask[action_Association, accessSpec_Association] :=
           "PureComputation" | "LongRunningComputation",
             "AutoPermit",
           _,
-            (* 未知 effect は安全側 *)
+            (* \:672a\:77e5 effect \:306f\:5b89\:5168\:5074 *)
             (AppendTo[reasons, "UnknownEffectClass:" <> ToString[ec]]; "HardDeny")
         ]
       ],
       If[ListQ[effects], effects, {}]
     ];
-    (* effect 未宣言は安全側で承認要求 (実効境界は runner 側の NBCheck 系 guard) *)
+    (* effect \:672a\:5ba3\:8a00\:306f\:5b89\:5168\:5074\:3067\:627f\:8a8d\:8981\:6c42 (\:5b9f\:52b9\:5883\:754c\:306f runner \:5074\:306e NBCheck \:7cfb guard) *)
     If[eligs === {}, eligs = {"AskUserAllowed"}];
 
     agg = First @ MaximalBy[eligs, iNBEligibilityRank, 1];
@@ -8091,7 +8095,7 @@ iNBValidateExternalTask[action_Association, accessSpec_Association] :=
       "Reason" -> If[reasons === {}, "OK", StringRiffle[DeleteDuplicates[reasons], ","]]|>
   ];
 iNBValidateExternalTask[action_Association] :=
-  (* accessSpec 無し呼び出しは scope 不明 -> 安全側 HardDeny *)
+  (* accessSpec \:7121\:3057\:547c\:3073\:51fa\:3057\:306f scope \:4e0d\:660e -> \:5b89\:5168\:5074 HardDeny *)
   <|"Valid" -> False, "Reason" -> "NoAccessSpec",
     "ApprovalEligibility" -> "HardDeny"|>;
 
@@ -8105,11 +8109,11 @@ NBRegisterAction["ExternalTask",
     "ValidatorWantsAccessSpec" -> True,
     "Validator" -> iNBValidateExternalTask|>];
 
-(* ════════════════════════════════════════════════════════
-   Cooperative I/O guards (Phase 4.B): runner handler が I/O 直前に呼ぶ。
-   scope-match は ExternalTask の iNBDirInScope / iNBNetTargetInScope を再利用。
-   真の OS sandbox ではない (handler が自発的に通す前提; lint で raw I/O を検出)。
-   ════════════════════════════════════════════════════════ *)
+(* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
+   Cooperative I/O guards (Phase 4.B): runner handler \:304c I/O \:76f4\:524d\:306b\:547c\:3076\:3002
+   scope-match \:306f ExternalTask \:306e iNBDirInScope / iNBNetTargetInScope \:3092\:518d\:5229\:7528\:3002
+   \:771f\:306e OS sandbox \:3067\:306f\:306a\:3044 (handler \:304c\:81ea\:767a\:7684\:306b\:901a\:3059\:524d\:63d0; lint \:3067 raw I/O \:3092\:691c\:51fa)\:3002
+   \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
 iNBAllow[]            := <|"Allowed" -> True,  "Reason" -> "OK"|>;
 iNBDeny[reason_String] := <|"Allowed" -> False, "Reason" -> reason|>;
@@ -8139,7 +8143,7 @@ NBCheckFileRead[path_String, accessSpec_Association] :=
   ];
 NBCheckFileRead[_, _] := iNBDeny["BadArguments"];
 
-(* target は <|Scheme,Host,Port|> または URL 文字列 *)
+(* target \:306f <|Scheme,Host,Port|> \:307e\:305f\:306f URL \:6587\:5b57\:5217 *)
 iNBNormalizeNetTarget[t_Association] := t;
 iNBNormalizeNetTarget[url_String] :=
   Module[{p},
@@ -8176,7 +8180,7 @@ NBCheckExternalProcess[cmd_, accessSpec_Association] :=
       iNBAllow[], iNBDeny["ExternalCommandNotAllowed"]]
   ];
 
-(* ---- NBChecked* wrappers: check してから I/O。違反は AccessSpecViolation ---- *)
+(* ---- NBChecked* wrappers: check \:3057\:3066\:304b\:3089 I/O\:3002\:9055\:53cd\:306f AccessSpecViolation ---- *)
 iNBViolation[chk_] := <|"Status" -> "Failed",
   "ReasonClass" -> "AccessSpecViolation", "Reason" -> Lookup[chk, "Reason", "denied"]|>;
 
@@ -8209,7 +8213,7 @@ NBCheckedURLRead[url_String, accessSpec_Association] :=
     If[TrueQ[chk["Allowed"]],
       <|"Status" -> "OK", "Result" -> Quiet @ URLRead[url]|>, iNBViolation[chk]]];
 
-(* ---- PolicySnapshot per-call 適用 (P0 §8.3: digest 検証 + 正規化のみ) ---- *)
+(* ---- PolicySnapshot per-call \:9069\:7528 (P0 \[Section]8.3: digest \:691c\:8a3c + \:6b63\:898f\:5316\:306e\:307f) ---- *)
 NBApplyPolicySnapshot[snapshot_Association] :=
   Module[{acc},
     acc = NBAcceptPolicySnapshot[snapshot];
@@ -8220,7 +8224,7 @@ NBApplyPolicySnapshot[snapshot_Association] :=
   ];
 NBApplyPolicySnapshot[_] := <|"Valid" -> False, "Snapshot" -> None, "Reason" -> "NotAssociation"|>;
 
-(* ---- ConfidentialHandling gate (v7 §13D.1) ---- *)
+(* ---- ConfidentialHandling gate (v7 \[Section]13D.1) ---- *)
 NBConfidentialHandlingAllowedQ[mode_String, permissionMode_String] :=
   Switch[mode,
     "EncryptedBundle" | "ReferenceOnly" | "Redacted", True,
@@ -8231,11 +8235,11 @@ NBConfidentialHandlingAllowedQ[mode_String, permissionMode_String] :=
   ];
 NBConfidentialHandlingAllowedQ[___] := False;
 
-(* ---- credential-ref 解決 (secret は返さない; descriptor のみ) ---- *)
+(* ---- credential-ref \:89e3\:6c7a (secret \:306f\:8fd4\:3055\:306a\:3044; descriptor \:306e\:307f) ---- *)
 NBResolveCredentialRef[ref_String, accessSpec_Association:<||>] :=
   Module[{refs, provider},
     refs = Lookup[accessSpec, "CredentialRefs", {}];
-    (* accessSpec が CredentialRefs を宣言しているなら、その ref のみ許可 *)
+    (* accessSpec \:304c CredentialRefs \:3092\:5ba3\:8a00\:3057\:3066\:3044\:308b\:306a\:3089\:3001\:305d\:306e ref \:306e\:307f\:8a31\:53ef *)
     If[ListQ[refs] && refs =!= {} && ! MemberQ[refs, ref],
       Return[<|"Resolved" -> False, "Reason" -> "CredentialRefNotInScope"|>]];
     provider = Which[
@@ -8245,13 +8249,13 @@ NBResolveCredentialRef[ref_String, accessSpec_Association:<||>] :=
       True, None];
     If[provider === None,
       <|"Resolved" -> False, "Reason" -> "UnknownCredentialRef",
-        "Note" -> "IMAP/OAuth は SystemCredential ベースの拡張が必要 (Phase 5)"|>,
-      (* secret は返さない: handler が NBGetAPIKey[provider] を呼ぶための descriptor *)
+        "Note" -> "IMAP/OAuth \:306f SystemCredential \:30d9\:30fc\:30b9\:306e\:62e1\:5f35\:304c\:5fc5\:8981 (Phase 5)"|>,
+      (* secret \:306f\:8fd4\:3055\:306a\:3044: handler \:304c NBGetAPIKey[provider] \:3092\:547c\:3076\:305f\:3081\:306e descriptor *)
       <|"Resolved" -> True, "Provider" -> provider,
         "Accessor" -> "NBGetAPIKey"|>]
   ];
 
-(* ---- NBValidateAction: action を検証し Decision を返す ---- *)
+(* ---- NBValidateAction: action \:3092\:691c\:8a3c\:3057 Decision \:3092\:8fd4\:3059 ---- *)
 NBValidateAction[action_Association, accessSpec_Association] :=
   Module[{name, reg, vfn, vres, baseElig, ec, mode, transformed,
           requiresFinal},
@@ -8265,12 +8269,12 @@ NBValidateAction[action_Association, accessSpec_Association] :=
         "MayExecute" -> False|>]];
     ec = Lookup[reg, "EffectClass", "DesktopAction"];
     requiresFinal = TrueQ[Lookup[reg, "RequiresFinalNode", True]];
-    (* registry の Validator で path 等を検査し eligibility を確定 *)
+    (* registry \:306e Validator \:3067 path \:7b49\:3092\:691c\:67fb\:3057 eligibility \:3092\:78ba\:5b9a *)
     vfn = Lookup[reg, "Validator", None];
-    (* Validator は既定で vfn[action] (1 引数, 後方互換)。
-       registry が "ValidatorWantsAccessSpec" -> True を宣言する action のみ
-       vfn[action, accessSpec] (2 引数) を呼ぶ。scoped-permit (Phase 2b) で
-       role/scope を見るために ExternalTask validator が使う。 *)
+    (* Validator \:306f\:65e2\:5b9a\:3067 vfn[action] (1 \:5f15\:6570, \:5f8c\:65b9\:4e92\:63db)\:3002
+       registry \:304c "ValidatorWantsAccessSpec" -> True \:3092\:5ba3\:8a00\:3059\:308b action \:306e\:307f
+       vfn[action, accessSpec] (2 \:5f15\:6570) \:3092\:547c\:3076\:3002scoped-permit (Phase 2b) \:3067
+       role/scope \:3092\:898b\:308b\:305f\:3081\:306b ExternalTask validator \:304c\:4f7f\:3046\:3002 *)
     vres = Which[
       vfn === None,
         <|"Valid" -> True,
@@ -8283,7 +8287,7 @@ NBValidateAction[action_Association, accessSpec_Association] :=
       Lookup[vres, "ApprovalEligibility",
         Lookup[reg, "DefaultApprovalEligibility", "AskUserAllowed"]],
       "HardDeny"];
-    (* PermissionMode 変換 (I12: accessSpec の値を正とする) *)
+    (* PermissionMode \:5909\:63db (I12: accessSpec \:306e\:5024\:3092\:6b63\:3068\:3059\:308b) *)
     mode = Lookup[accessSpec, "PermissionMode",
       If[StringQ[$ClaudePermissionMode], $ClaudePermissionMode, "InteractiveSafe"]];
     If[!StringQ[mode], mode = "InteractiveSafe"];
@@ -8305,9 +8309,9 @@ NBValidateAction[action_Association, accessSpec_Association] :=
         "Action requires approval: " <> ToString[name]]|>
   ];
 
-(* ---- NBExecuteApprovedAction: 承認済み action を実行 ----
-   TOCTOU 対策: 実行直前に再 validate (NBValidateAction)。
-   承認済みでも HardDeny / path 変化なら拒否。 *)
+(* ---- NBExecuteApprovedAction: \:627f\:8a8d\:6e08\:307f action \:3092\:5b9f\:884c ----
+   TOCTOU \:5bfe\:7b56: \:5b9f\:884c\:76f4\:524d\:306b\:518d validate (NBValidateAction)\:3002
+   \:627f\:8a8d\:6e08\:307f\:3067\:3082 HardDeny / path \:5909\:5316\:306a\:3089\:62d2\:5426\:3002 *)
 Options[NBExecuteApprovedAction] = {"ApprovalMode" -> "UserApproved"};
 NBExecuteApprovedAction[action_Association, accessSpec_Association,
     opts:OptionsPattern[]] :=
@@ -8319,10 +8323,10 @@ NBExecuteApprovedAction[action_Association, accessSpec_Association,
       Return[<|"Success" -> False, "Decision" -> "Deny",
         "ReasonClass" -> "UnknownAction",
         "VisibleExplanation" -> "Unknown action: " <> ToString[name]|>]];
-    (* 再 validate (TOCTOU) *)
+    (* \:518d validate (TOCTOU) *)
     recheck = NBValidateAction[action, accessSpec];
     decision = Lookup[recheck, "Decision", "Deny"];
-    (* 承認済み (UserApproved) のとき NeedsApproval を許可。Deny は不可。 *)
+    (* \:627f\:8a8d\:6e08\:307f (UserApproved) \:306e\:3068\:304d NeedsApproval \:3092\:8a31\:53ef\:3002Deny \:306f\:4e0d\:53ef\:3002 *)
     Which[
       decision === "Deny",
         <|"Success" -> False, "Decision" -> "Deny",
@@ -8330,7 +8334,7 @@ NBExecuteApprovedAction[action_Association, accessSpec_Association,
           "VisibleExplanation" -> Lookup[recheck, "VisibleExplanation", ""]|>,
       decision === "Permit" ||
         (decision === "NeedsApproval" && approvalMode === "UserApproved"),
-        (* Executor を呼ぶ (NBAccess 内部、raw SystemOpen はここだけ) *)
+        (* Executor \:3092\:547c\:3076 (NBAccess \:5185\:90e8\:3001raw SystemOpen \:306f\:3053\:3053\:3060\:3051) *)
         efn = Lookup[reg, "Executor", None];
         If[efn === None,
           <|"Success" -> False, "Decision" -> "Deny",
@@ -8344,7 +8348,7 @@ NBExecuteApprovedAction[action_Association, accessSpec_Association,
     ]
   ];
 
-(* ---- NBOpenFolderWithApproval: 薄い互換 wrapper (spec 5B.7) ---- *)
+(* ---- NBOpenFolderWithApproval: \:8584\:3044\:4e92\:63db wrapper (spec 5B.7) ---- *)
 NBOpenFolderWithApproval[path_] :=
   NBExecuteApprovedAction[
     <|"Action" -> "OpenDesktopItem", "TargetType" -> "Folder",
@@ -8357,28 +8361,28 @@ NBOpenFolderWithApproval[path_, accessSpec_Association] :=
 
 
 (* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
-   Phase frontend-blocking-queue (2026-06-03, spec 案3-lite):
+   Phase frontend-blocking-queue (2026-06-03, spec \:68483-lite):
    PendingFinalActionQueue
    \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
-   FrontEnd ブロックリスクのある承認済み action を直接同期実行せず、
-   queue に積んで共有 polling tick が安全な隙に 1 件ずつ実行する。
-   新規 ScheduledTask は作らない (claudecode の共有 tick に相乗り)。
-   AsyncActive 中は WaitAll せず Pending のまま待つ。 *)
+   FrontEnd \:30d6\:30ed\:30c3\:30af\:30ea\:30b9\:30af\:306e\:3042\:308b\:627f\:8a8d\:6e08\:307f action \:3092\:76f4\:63a5\:540c\:671f\:5b9f\:884c\:305b\:305a\:3001
+   queue \:306b\:7a4d\:3093\:3067\:5171\:6709 polling tick \:304c\:5b89\:5168\:306a\:9699\:306b 1 \:4ef6\:305a\:3064\:5b9f\:884c\:3059\:308b\:3002
+   \:65b0\:898f ScheduledTask \:306f\:4f5c\:3089\:306a\:3044 (claudecode \:306e\:5171\:6709 tick \:306b\:76f8\:4e57\:308a)\:3002
+   AsyncActive \:4e2d\:306f WaitAll \:305b\:305a Pending \:306e\:307e\:307e\:5f85\:3064\:3002 *)
 
 If[!AssociationQ[$NBFinalActionQueue], $NBFinalActionQueue = <||>];
 If[!IntegerQ[$NBFinalActionCounter], $NBFinalActionCounter = 0];
-(* AsyncActive 判定 callback。Automatic のとき ClaudeRuntime に弱依存。 *)
+(* AsyncActive \:5224\:5b9a callback\:3002Automatic \:306e\:3068\:304d ClaudeRuntime \:306b\:5f31\:4f9d\:5b58\:3002 *)
 If[!ValueQ[$NBFinalActionAsyncActiveFunction],
   $NBFinalActionAsyncActiveFunction = Automatic];
-(* queue item のデフォルト寿命 (秒)。 *)
+(* queue item \:306e\:30c7\:30d5\:30a9\:30eb\:30c8\:5bff\:547d (\:79d2)\:3002 *)
 If[!NumericQ[$NBFinalActionDefaultTTL], $NBFinalActionDefaultTTL = 60];
 
-(* ---- AsyncActive 判定 (spec 5A.1) ---- *)
+(* ---- AsyncActive \:5224\:5b9a (spec 5A.1) ---- *)
 iNBFinalActionAsyncActiveQ[] :=
   Module[{fn = $NBFinalActionAsyncActiveFunction},
     Which[
       fn === Automatic,
-        (* ClaudeRuntime がロード済みなら診断を使う。未ロードなら False。 *)
+        (* ClaudeRuntime \:304c\:30ed\:30fc\:30c9\:6e08\:307f\:306a\:3089\:8a3a\:65ad\:3092\:4f7f\:3046\:3002\:672a\:30ed\:30fc\:30c9\:306a\:3089 False\:3002 *)
         If[Length[Names["ClaudeRuntime`ClaudeRuntimeAsyncActiveQ"]] > 0,
           TrueQ @ Quiet @ Check[
             Symbol["ClaudeRuntime`ClaudeRuntimeAsyncActiveQ"][], False],
@@ -8388,12 +8392,12 @@ iNBFinalActionAsyncActiveQ[] :=
     ]
   ];
 
-(* ---- FinalActionRunningQ (spec 5A.2): queue 状態だけで判定 ---- *)
+(* ---- FinalActionRunningQ (spec 5A.2): queue \:72b6\:614b\:3060\:3051\:3067\:5224\:5b9a ---- *)
 NBFinalActionRunningQ[] :=
   AnyTrue[Values[$NBFinalActionQueue],
     AssociationQ[#] && Lookup[#, "Status", ""] === "Running" &];
 
-(* ---- enqueue (spec 12: Approve = queue 投入許可) ---- *)
+(* ---- enqueue (spec 12: Approve = queue \:6295\:5165\:8a31\:53ef) ---- *)
 Options[NBEnqueueFinalAction] = {"TTL" -> Automatic,
   "ApprovalStatus" -> "UserApproved", "MaxRetries" -> 100};
 NBEnqueueFinalAction[action_Association, accessSpec_Association,
@@ -8404,7 +8408,7 @@ NBEnqueueFinalAction[action_Association, accessSpec_Association,
     If[!AssociationQ[reg],
       Return[<|"Enqueued" -> False, "ReasonClass" -> "UnknownAction",
         "VisibleExplanation" -> "Unknown action: " <> ToString[name]|>]];
-    (* enqueue 前検証: HardDeny は queue に積まない (spec 14)。 *)
+    (* enqueue \:524d\:691c\:8a3c: HardDeny \:306f queue \:306b\:7a4d\:307e\:306a\:3044 (spec 14)\:3002 *)
     validation = NBValidateAction[action, accessSpec];
     If[Lookup[validation, "ApprovalEligibility", "HardDeny"] === "HardDeny" ||
        Lookup[validation, "Decision", "Deny"] === "Deny",
@@ -8437,14 +8441,14 @@ NBEnqueueFinalAction[action_Association, accessSpec_Association,
     <|"Enqueued" -> True, "ActionID" -> actionID, "Status" -> "Pending"|>
   ];
 
-(* held expr 版 (spec 案3-lite): action association ではなく held expression
-   (NBOpenFolderWithApproval[path] 等の wrapper を含む式) を queue 化する。
-   LLM が生成した FrontEnd ブロックリスクのある式を、承認後に直接同期実行せず
-   queue 経由で安全な隙に実行するための経路。executor は NBExecuteHeldExpr。 *)
+(* held expr \:7248 (spec \:68483-lite): action association \:3067\:306f\:306a\:304f held expression
+   (NBOpenFolderWithApproval[path] \:7b49\:306e wrapper \:3092\:542b\:3080\:5f0f) \:3092 queue \:5316\:3059\:308b\:3002
+   LLM \:304c\:751f\:6210\:3057\:305f FrontEnd \:30d6\:30ed\:30c3\:30af\:30ea\:30b9\:30af\:306e\:3042\:308b\:5f0f\:3092\:3001\:627f\:8a8d\:5f8c\:306b\:76f4\:63a5\:540c\:671f\:5b9f\:884c\:305b\:305a
+   queue \:7d4c\:7531\:3067\:5b89\:5168\:306a\:9699\:306b\:5b9f\:884c\:3059\:308b\:305f\:3081\:306e\:7d4c\:8def\:3002executor \:306f NBExecuteHeldExpr\:3002 *)
 NBEnqueueFinalAction[heldExpr_HoldComplete, accessSpec_Association,
     opts:OptionsPattern[]] :=
   Module[{validation, actionID, ttl, now, item},
-    (* enqueue 前検証: HardDeny / Deny は積まない (spec 14)。 *)
+    (* enqueue \:524d\:691c\:8a3c: HardDeny / Deny \:306f\:7a4d\:307e\:306a\:3044 (spec 14)\:3002 *)
     validation = NBValidateHeldExpr[heldExpr, accessSpec];
     If[Lookup[validation, "ApprovalEligibility", "HardDeny"] === "HardDeny" ||
        Lookup[validation, "Decision", "Deny"] === "Deny",
@@ -8477,44 +8481,44 @@ NBEnqueueFinalAction[heldExpr_HoldComplete, accessSpec_Association,
     <|"Enqueued" -> True, "ActionID" -> actionID, "Status" -> "Pending"|>
   ];
 
-(* ---- tick (spec 6 の 12 ステップ): 安全条件確認 + 最大 1 件実行 ---- *)
+(* ---- tick (spec 6 \:306e 12 \:30b9\:30c6\:30c3\:30d7): \:5b89\:5168\:6761\:4ef6\:78ba\:8a8d + \:6700\:5927 1 \:4ef6\:5b9f\:884c ---- *)
 NBFinalActionTick[opts___] :=
   Module[{pendingIDs, id, item, now, recheck, approvalMode, efn, reg, result},
-    (* 1. final action 実行中なら何もしない *)
+    (* 1. final action \:5b9f\:884c\:4e2d\:306a\:3089\:4f55\:3082\:3057\:306a\:3044 *)
     If[NBFinalActionRunningQ[], Return[<|"Ticked" -> False, "Reason" -> "FinalActionRunning"|>]];
-    (* 2. AsyncActive なら何もしない (WaitAll しない、Pending のまま) *)
+    (* 2. AsyncActive \:306a\:3089\:4f55\:3082\:3057\:306a\:3044 (WaitAll \:3057\:306a\:3044\:3001Pending \:306e\:307e\:307e) *)
     If[iNBFinalActionAsyncActiveQ[],
       Return[<|"Ticked" -> False, "Reason" -> "AsyncActive"|>]];
-    (* 3. 先頭の Pending item (CreatedAt 昇順) *)
+    (* 3. \:5148\:982d\:306e Pending item (CreatedAt \:6607\:9806) *)
     now = AbsoluteTime[];
     pendingIDs = Select[Keys[$NBFinalActionQueue],
       AssociationQ[$NBFinalActionQueue[#]] &&
       Lookup[$NBFinalActionQueue[#], "Status", ""] === "Pending" &];
     pendingIDs = SortBy[pendingIDs, Lookup[$NBFinalActionQueue[#], "CreatedAt", 0] &];
-    (* 4. Pending が無ければ return *)
+    (* 4. Pending \:304c\:7121\:3051\:308c\:3070 return *)
     If[Length[pendingIDs] === 0, Return[<|"Ticked" -> False, "Reason" -> "NoPending"|>]];
     id = First[pendingIDs];
     item = $NBFinalActionQueue[id];
-    (* 5. 期限切れ *)
+    (* 5. \:671f\:9650\:5207\:308c *)
     If[now > Lookup[item, "ExpiresAt", now + 1],
       item["Status"] = "Expired";
       item["ReasonClass"] = "FinalActionQueueTimeout";
       item["CompletedAt"] = now;
       $NBFinalActionQueue[id] = item;
       Return[<|"Ticked" -> True, "ActionID" -> id, "Status" -> "Expired"|>]];
-    (* 6. 未承認 *)
+    (* 6. \:672a\:627f\:8a8d *)
     If[Lookup[item, "ApprovalStatus", ""] =!= "UserApproved",
       item["Status"] = "Failed";
       item["ReasonClass"] = "NotApproved";
       item["CompletedAt"] = now;
       $NBFinalActionQueue[id] = item;
       Return[<|"Ticked" -> True, "ActionID" -> id, "Status" -> "Failed"|>]];
-    (* 9. Running に遷移 (7,8 は executor 内 TOCTOU 再validate に委譲) *)
+    (* 9. Running \:306b\:9077\:79fb (7,8 \:306f executor \:5185 TOCTOU \:518dvalidate \:306b\:59d4\:8b72) *)
     item["Status"] = "Running";
     $NBFinalActionQueue[id] = item;
-    (* 10. NBAccess 内部 executor 経由で実行 (UserApproved で NeedsApproval 許可) *)
-    (* 10. NBAccess 内部 executor 経由で実行 (UserApproved で NeedsApproval 許可)。
-       item が held expr なら NBExecuteHeldExpr、action なら NBExecuteApprovedAction。 *)
+    (* 10. NBAccess \:5185\:90e8 executor \:7d4c\:7531\:3067\:5b9f\:884c (UserApproved \:3067 NeedsApproval \:8a31\:53ef) *)
+    (* 10. NBAccess \:5185\:90e8 executor \:7d4c\:7531\:3067\:5b9f\:884c (UserApproved \:3067 NeedsApproval \:8a31\:53ef)\:3002
+       item \:304c held expr \:306a\:3089 NBExecuteHeldExpr\:3001action \:306a\:3089 NBExecuteApprovedAction\:3002 *)
     result = Quiet @ Check[
       If[Lookup[item, "Action", ""] === "HeldExpr",
         NBExecuteHeldExpr[item["HeldExpr"], item["AccessSpec"],
@@ -8523,7 +8527,7 @@ NBFinalActionTick[opts___] :=
           "ApprovalMode" -> "UserApproved"]],
       <|"Success" -> False, "Decision" -> "Deny",
         "ReasonClass" -> "ExecutorError"|>];
-    (* 11,12. 結果格納 + Completed/Failed *)
+    (* 11,12. \:7d50\:679c\:683c\:7d0d + Completed/Failed *)
     item = $NBFinalActionQueue[id];
     item["Result"] = result;
     item["CompletedAt"] = AbsoluteTime[];
@@ -8775,11 +8779,11 @@ NBMakeContextPacket[nb_, accessSpec_Association, opts:OptionsPattern[]] :=
           
           If[privLevel > threshold,
             (* Confidential cell. (2026-06-06) Output cells send SCHEMA only
-               (data type / size / keys via iOutputSchemaText — no values) when
+               (data type / size / keys via iOutputSchemaText \[LongDash] no values) when
                $NBSendDataSchema is True, so a cloud LLM can still understand the
                structure and propose code without the actual data (e.g. mail rows)
                leaking. Non-Output confidential cells (Input/Text/...) stay fully
-               masked. $NBSendDataSchema = False で従来通り全マスク。 *)
+               masked. $NBSendDataSchema = False \:3067\:5f93\:6765\:901a\:308a\:5168\:30de\:30b9\:30af\:3002 *)
             If[style === "Output" && NBAccess`$NBSendDataSchema =!= False,
               AppendTo[cellAssocs, <|
                 "CellIndex" -> idx,
@@ -10071,7 +10075,7 @@ iNBMergeCellOptions[cell_, newOpts_List] :=
   ];
 
 (* Cell expr \:306e TaggingRules \:5185\:90e8\:306e key \:30d1\:30b9\:306b value \:3092\:30de\:30fc\:30b8\:3002
-   taggingKeyPath: List \:3001\:4f8b {\"SourceVault\", \"TodoStatus\"} \:2192 \:5185\:5074\:306b\:306c\:308b *)
+   taggingKeyPath: List \:3001\:4f8b {\"SourceVault\", \"TodoStatus\"} \[RightArrow] \:5185\:5074\:306b\:306c\:308b *)
 iNBMergeCellTaggingRule[cell_, taggingKeyPath_List, value_] :=
   Module[{tr, trAssoc, updated, opts},
     tr = iNBCellTaggingRules[cell];
@@ -10438,7 +10442,7 @@ NBClearCloudPublishable[path_String, opts:OptionsPattern[]] :=
   ];
 
 
-(* \:2500\:2500 .nb \:30d5\:30a1\:30a4\:30eb\:306e outline cache \:4fee\:5fa9 (Stage 9 P1 Step 2 Hotfix 4) \:2500\:2500
+(* \[HorizontalLine]\[HorizontalLine] .nb \:30d5\:30a1\:30a4\:30eb\:306e outline cache \:4fee\:5fa9 (Stage 9 P1 Step 2 Hotfix 4) \[HorizontalLine]\[HorizontalLine]
    iNBNormalizeNotebookCache \:3092\:516c\:958b API \:3068\:3057\:3066\:30e9\:30c3\:30d7\:3059\:308b\:3002 *)
 
 NBRepairNotebookCache[path_String] :=
@@ -10723,6 +10727,14 @@ If[AssociationQ[$iProviderMaxAccessLevel],
   If[!KeyExistsQ[$iProviderMaxAccessLevel, "codex"],
     $iProviderMaxAccessLevel["codex"] = 0.5]];
 
+(* z.ai (GLM \:30b7\:30ea\:30fc\:30ba) \:306f OpenAI \:4e92\:63db\:306e\:8ab2\:91d1 API \:30d7\:30ed\:30d0\:30a4\:30c0\:3002
+   \:5916\:90e8\:306e\:30af\:30e9\:30a6\:30c9\:306a\:306e\:3067\:4f4e\:4fe1\:983c\:6271\:3044\:3068\:3057\:3066 MaxAccessLevel = 0.25\:3002
+   \:65e2\:5b58\:306e $iProviderMaxAccessLevel \:3092\:4e0a\:66f8\:304d\:305b\:305a\:306b backfill \:3059\:308b
+   (\:30e6\:30fc\:30b6\:30fc\:304c NBSetProviderMaxAccessLevel \:3067\:5909\:66f4\:6e08\:307f\:306a\:3089\:5c0a\:91cd)\:3002 *)
+If[AssociationQ[$iProviderMaxAccessLevel],
+  If[!KeyExistsQ[$iProviderMaxAccessLevel, "zai"],
+    $iProviderMaxAccessLevel["zai"] = 0.25]];
+
 (* ---- spec 10.3: accessible-dirs audit ---- *)
 
 (* dangerous file name heuristics -> reason string or Null *)
@@ -10884,13 +10896,13 @@ NBAuditCodexAccessibleDirs[___] :=
 
 
 (* ============================================================
-   Phase A1: Policy Snapshot 実装本体
+   Phase A1: Policy Snapshot \:5b9f\:88c5\:672c\:4f53
    ============================================================ *)
 
-(* ---- digest 正規化 helper ----
-   生成側 (NBPolicySnapshot) と検証側 (NBAcceptPolicySnapshot) で
-   必ず同一の helper を通すことで、Association key 順序や
-   head list 順序、Wolfram version 差に依存しない digest を得る。 *)
+(* ---- digest \:6b63\:898f\:5316 helper ----
+   \:751f\:6210\:5074 (NBPolicySnapshot) \:3068\:691c\:8a3c\:5074 (NBAcceptPolicySnapshot) \:3067
+   \:5fc5\:305a\:540c\:4e00\:306e helper \:3092\:901a\:3059\:3053\:3068\:3067\:3001Association key \:9806\:5e8f\:3084
+   head list \:9806\:5e8f\:3001Wolfram version \:5dee\:306b\:4f9d\:5b58\:3057\:306a\:3044 digest \:3092\:5f97\:308b\:3002 *)
 
 iNBNormalizeHeadList[list_List] :=
   Sort @ DeleteDuplicates[ToString /@ list];
@@ -10935,9 +10947,9 @@ iNBComputePolicyDigest[snapshotOrPayload_Association] :=
     16
   ];
 
-(* snapshot mode 専用 accessor。
-   snapshot から判定入力を取り出す。カテゴリ global へは
-   フォールバックしない (snapshot が正本)。 *)
+(* snapshot mode \:5c02\:7528 accessor\:3002
+   snapshot \:304b\:3089\:5224\:5b9a\:5165\:529b\:3092\:53d6\:308a\:51fa\:3059\:3002\:30ab\:30c6\:30b4\:30ea global \:3078\:306f
+   \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:3057\:306a\:3044 (snapshot \:304c\:6b63\:672c)\:3002 *)
 iNBSnapshotAllowedHeads[snapshot_Association] :=
   Lookup[snapshot, "AllowedHeads", {}];
 iNBSnapshotApprovalHeads[snapshot_Association] :=
@@ -10948,18 +10960,18 @@ iNBSnapshotConfidentialSymbols[snapshot_Association] :=
   Lookup[snapshot, "ConfidentialSymbols", {}];
 
 (* ---- NBPolicySnapshot[] ----
-   main kernel で現在の動的 policy を凍結する。
-   注意: $NBAccessPolicyVersion は現行コードに存在しないため、
-   ValueQ で存在確認し、無ければ "unversioned" を入れる。 *)
+   main kernel \:3067\:73fe\:5728\:306e\:52d5\:7684 policy \:3092\:51cd\:7d50\:3059\:308b\:3002
+   \:6ce8\:610f: $NBAccessPolicyVersion \:306f\:73fe\:884c\:30b3\:30fc\:30c9\:306b\:5b58\:5728\:3057\:306a\:3044\:305f\:3081\:3001
+   ValueQ \:3067\:5b58\:5728\:78ba\:8a8d\:3057\:3001\:7121\:3051\:308c\:3070 "unversioned" \:3092\:5165\:308c\:308b\:3002 *)
 
 $NBActivePolicySnapshot = None;
 
 NBPolicySnapshot[] :=
   Module[{ver, allowed, approval, deny, conf, payload, digest},
-    (* 1. 導出済み AllowedHeads を最新化 *)
+    (* 1. \:5c0e\:51fa\:6e08\:307f AllowedHeads \:3092\:6700\:65b0\:5316 *)
     iRecomputeAllowedHeads[];
 
-    (* 2. 各集合を取得 *)
+    (* 2. \:5404\:96c6\:5408\:3092\:53d6\:5f97 *)
     ver = If[ValueQ[$NBAccessPolicyVersion],
       $NBAccessPolicyVersion, "unversioned"];
     allowed  = If[ListQ[$NBAllowedHeads],  $NBAllowedHeads,  {}];
@@ -10969,7 +10981,7 @@ NBPolicySnapshot[] :=
                   ListQ[$NBConfidentialSymbols],
                   $NBConfidentialSymbols, {}];
 
-    (* 3. digest payload (digest 対象キーのみ) *)
+    (* 3. digest payload (digest \:5bfe\:8c61\:30ad\:30fc\:306e\:307f) *)
     payload = <|
       "NBAccessPolicyVersion" -> ver,
       "AllowedHeads"          -> allowed,
@@ -10996,7 +11008,7 @@ NBPolicySnapshot[] :=
   ];
 
 (* ---- NBAcceptPolicySnapshot[snapshot] ----
-   subkernel 側で snapshot を検証する。 *)
+   subkernel \:5074\:3067 snapshot \:3092\:691c\:8a3c\:3059\:308b\:3002 *)
 
 NBAcceptPolicySnapshot[snapshot_Association] :=
   Module[{requiredKeys, recomputed, stored},
@@ -11006,7 +11018,7 @@ NBAcceptPolicySnapshot[snapshot_Association] :=
       "ConfidentialSymbols", "Digest", "Source"
     };
 
-    (* 1. 必須キー確認 *)
+    (* 1. \:5fc5\:9808\:30ad\:30fc\:78ba\:8a8d *)
     If[! AllTrue[requiredKeys, KeyExistsQ[snapshot, #] &],
       Return[<|
         "Valid"  -> False,
@@ -11014,7 +11026,7 @@ NBAcceptPolicySnapshot[snapshot_Association] :=
         "Reason" -> "MissingRequiredKeys"
       |>]];
 
-    (* 2. digest 再計算・照合 *)
+    (* 2. digest \:518d\:8a08\:7b97\:30fb\:7167\:5408 *)
     recomputed = iNBComputePolicyDigest[snapshot];
     If[recomputed =!= Lookup[snapshot, "Digest", None],
       Return[<|
@@ -11023,7 +11035,7 @@ NBAcceptPolicySnapshot[snapshot_Association] :=
         "Reason" -> "DigestMismatch"
       |>]];
 
-    (* 3. Valid: 参考用に保存 (正本ではない) *)
+    (* 3. Valid: \:53c2\:8003\:7528\:306b\:4fdd\:5b58 (\:6b63\:672c\:3067\:306f\:306a\:3044) *)
     $NBActivePolicySnapshot = snapshot;
 
     <|

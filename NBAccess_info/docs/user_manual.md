@@ -181,6 +181,26 @@ NBResolveCell[nb, 3]
 NBSelectCell[nb, 3]
 ```
 
+### NBDeleteCellsByTag
+
+指定 CellTags を持つセルをすべて削除します。
+
+```mathematica
+NBDeleteCellsByTag[nb, "myTag"]
+```
+
+通知セル（"claudecode-notice" タグ）の一括削除や、ジョブスロットセルのクリーンアップに使用します。
+
+### NBMoveAfterCell
+
+指定セルの後ろにカーソルを移動します。
+
+```mathematica
+NBMoveAfterCell[nb, cellIdx]
+```
+
+コード挿入後のカーソル位置制御や、アンカーセル直後への移動に使用します。
+
 ---
 
 ## セル内容の読み取り
@@ -408,6 +428,57 @@ NBSetSnapshotPrivacyLevel["snapshot-abc123", 1.0]
 ```
 
 `SourceVault` パッケージがロードされている必要があります。`NBSetSnapshotPrivacyLevel` も `$NBApprovalHeads` に登録されており、LLM 経由で呼び出した場合は人間の承認が要求されます。
+
+### NBInsertArtifactCell
+
+SourceVault artifact URI の内容を解決し、メディア種別に応じたセルとしてノートブックへ挿入します。
+
+```mathematica
+(* EvaluationNotebook[] へ挿入 *)
+NBInsertArtifactCell["sv://artifact/abc123"]
+
+(* 対象ノートブックを明示する場合 *)
+NBInsertArtifactCell[nb, "sv://artifact/abc123"]
+
+(* ハッシュ URI 形式 *)
+NBInsertArtifactCell["sv://hash/sha256/deadbeef..."]
+
+(* オプション指定 *)
+NBInsertArtifactCell[nb, uri,
+  "VideoCell" -> True,      (* True で Video[file] セル、既定はファイルリンク *)
+  "MaxImageSize" -> 800,    (* 表示上の最大幅 px。None で原寸 *)
+  "Materialize" -> Automatic
+]
+```
+
+サポートする URI 形式:
+- `sv://artifact/<id>` — artifact ID による参照
+- `sv://hash/sha256/<hex>` — コンテンツハッシュによる参照
+
+メディア種別ごとの挿入形式:
+
+| MediaKind | 挿入形式 |
+|---|---|
+| Image | 画像セル |
+| Video | Video[file] セルまたはファイルリンク（VideoCell オプション依存） |
+| Binary | ファイルリンクセル |
+| Text | 本文テキストセル |
+
+セルには artifact の PrivacyLevel が必ず TaggingRules (`claudecode/privacyLevel`, `claudecode/confidential`) として焼き込まれます。`level > 0.5` の場合は `$NBConfidentialCellOpts` の機密マーク（赤背景 + 警告 dingbat）付きで出力されます。
+
+内容解決は `SourceVault``SourceVaultResolveArtifactContent`（sanctioned reader）に委譲します。SourceVault が未ロードの場合はエラーを返します。生データを裸で返す API ではなく、実体化は常に privacy marking と一体であり、SourceVault のガードを剥がしません。
+
+返り値:
+
+```mathematica
+<|
+  "Status"       -> "Ok" | "Error",
+  "URI"          -> "sv://artifact/...",
+  "MediaKind"    -> "Image" | "Video" | "Binary" | "Text",
+  "PrivacyLevel" -> 0.0 | 1.0,
+  "Marked"       -> True | False
+|>
+```
 
 ### NBMarkCellDependent
 
@@ -1007,7 +1078,7 @@ NBHistoryCacheClear[]
 
 ```mathematica
 NBHistoryCreate[nb, "chat", {"fullPrompt", "response", "code"}]
-NBHistoryCreate[nb, "chat", {"fullPrompt", "response", "code"}, <|"model" -> "claude-opus-4-6"|>]
+NBHistoryCreate[nb, "chat", {"fullPrompt", "response", "code"}, <|"model" -> "claude-sonnet-4-6"|>]
 ```
 
 作成されるヘッダーには以下のフィールドが含まれます: `type`, `name`, `parent`, `inherit`, `created`, `diffFields`。
@@ -1064,7 +1135,7 @@ NBHistoryEntriesWithInherit[nb, "chat"]
 ```mathematica
 NBHistoryReadHeader[nb, "chat"]
 NBHistoryWriteHeader[nb, "chat", <|"type" -> "history_header", ...|>]
-NBHistoryUpdateHeader[nb, "chat", <|"model" -> "claude-opus-4-6"|>]
+NBHistoryUpdateHeader[nb, "chat", <|"model" -> "claude-sonnet-4-6"|>]
 ```
 
 ### NBHistoryListTags / NBHistoryDelete / NBHistoryReplaceEntries
@@ -1091,6 +1162,28 @@ NBHistoryClearAll[nb, "chat", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
 
 ```mathematica
 NBHistoryCacheClear[]
+```
+
+### NBFilterHistoryEntry
+
+履歴エントリ内の `response` / `instruction` フィールドに、現時点の機密変数名または値が含まれる場合に、そのフィールドをブロックします。
+
+```mathematica
+NBFilterHistoryEntry[entry, confVars]
+```
+
+- `entry`: 履歴エントリ Association（`<|"role" -> _, "response" -> _, ...|>` 形式）
+- `confVars`: 現在の機密変数名リスト
+
+機密変数名が `response` や `instruction` フィールドに含まれる場合、当該フィールドの値を非表示プレースホルダに置換して返します。LLM に送信する会話履歴から機密情報の漏洩を防ぐために `NBHistoryEntriesWithInherit` と組み合わせて使用します。
+
+```mathematica
+(* 機密変数リストを渡してエントリをフィルタ *)
+filtered = NBFilterHistoryEntry[
+  <|"role" -> "user", "response" -> "secretKey の値は ..."|>,
+  {"secretKey"}
+]
+(* → response フィールドがブロックされたエントリを返す *)
 ```
 
 ### セッションアタッチメント
@@ -1135,281 +1228,4 @@ jobId = NBBeginJobAtEvalCell[nb]
 
 ### NBWriteSlot
 
-ジョブのスロット（システムメッセージ / 完了メッセージ）に書き込みます。同じスロットに再度書き込むと上書きされます。書き込み時にスロットのタグが維持されます。
-
-```mathematica
-NBWriteSlot[jobId, 1, Cell["処理中...", "Text"]]
-```
-
-### NBJobMoveToAnchor
-
-アンカーセル直後にカーソルを移動します。レスポンス書き込み前に呼びます。
-
-```mathematica
-NBJobMoveToAnchor[jobId]
-```
-
----
-
-## API キー
-
-### クラウド LLM API キー
-
-#### NBGetAPIKey
-
-AI プロバイダの API キーを SystemCredential から取得します。AccessLevel が 1.0 未満の場合は `$Failed` を返します（API キーは最高機密データのため）。
-
-```mathematica
-NBGetAPIKey["anthropic"]
-NBGetAPIKey["openai"]
-NBGetAPIKey["github"]
-```
-
-サポートされるプロバイダー名と対応する SystemCredential キー:
-
-| プロバイダー名 | SystemCredential キー |
-|---|---|
-| `"anthropic"` | `ANTHROPIC_API_KEY` |
-| `"openai"` | `OPENAI_API_KEY` |
-| `"github"` / `"gh"` / `"github_pat"` | `GITHUB_TOKEN` |
-
-#### NBListProviderModels
-
-クラウドプロバイダー（anthropic / openai）の利用可能モデル ID リストを返します。API キーは内部で SystemCredential から読み取り、外部には出しません。返すのはモデル名リスト（秘匿性なし）だけのため、PrivacySpec / AccessLevel の指定は不要です。一般パッケージ（SourceVault 等）から API キーを直接読まずにモデル一覧を取得するための公開関数です。
-
-```mathematica
-NBListProviderModels["anthropic"]
-(* <|"Status" -> ..., "Provider" -> "anthropic", "Models" -> {"claude-...", ...}|> *)
-```
-
-返り値は `<|"Status" -> _, "Provider" -> _, "Models" -> {_String..}|>` の形式です。
-
----
-
-### ローカル LLM API キー (LM Studio 等)
-
-LM Studio などのローカル LLM サーバーに対して API キー認証が必要な場合に使用する API 群です。`{provider, url}` のペアを SystemCredential 名にマッピングする仕組みにより、複数のサーバー・エンドポイントの API キーを一元管理できます。
-
-キーは `{provider, normalizedUrl}` のリスト、値は SystemCredential 名です。
-
-#### LM Studio での API キー設定手順
-
-LM Studio で API キー認証を有効にするには、以下の手順を実施してください。
-
-1. LM Studio を起動し、**Server** タブを開きます。
-2. **Server Settings**（サーバー設定）を開きます。
-3. **Require Authentication**（認証を要求する）を **On** に切り替えます。
-4. API キー文字列を入力・確認します。
-5. サーバーを起動（または再起動）します。
-
-LM Studio がリッスンしているエンドポイント URL（例: `http://127.0.0.1:1234`）と上記で設定した API キーを `NBStoreLocalLLMAPIKey` で NBAccess に登録します。
-
-#### NBGetLocalLLMAPIKey
-
-ローカル LLM サーバー（LM Studio 等）の API キーを SystemCredential から取得します。照合は `{provider, url}` ペアで行われます。AccessLevel が 1.0 未満の場合は `$Failed` を返します。
-
-```mathematica
-NBGetLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234"]
-```
-
-解決優先度は以下の順で適用されます。
-
-1. `{provider, normalizedUrl}` の完全一致
-2. `localhost` ↔ `127.0.0.1` 置換版での一致
-3. `{provider, "*"}` ワイルドカードでの一致
-4. フォールバック名 `ToUpperCase[provider] <> "_API_KEY"`
-
-API キーが見つからない場合、または API キー名が解決できない場合は、それぞれ `ローカル LLM <provider> (<url>) に対する API キーが見つかりません。` / `ローカル LLM <provider> (<url>) の API キー名が解決できません。` というメッセージとともに `$Failed` が返されます。
-
-#### NBSetLocalLLMAPIKey
-
-`{provider, url}` → SystemCredential 名のマッピングを登録します。SystemCredential の実値そのものは書き込まず、名前の紐付けのみを行います。
-
-```mathematica
-NBSetLocalLLMAPIKey["lmstudio", "http://192.168.1.10:1234", "LMSTUDIO_STUDY_KEY"]
-(* 返り値: {provider, normalizedUrl} -> credentialName の Rule *)
-```
-
-#### NBStoreLocalLLMAPIKey
-
-マッピング登録に加え、`SystemCredential[credentialName] = key` の実値書き込みも同時に行います。初回セットアップ時に使用します。
-
-```mathematica
-(* LM Studio で設定した API キーを登録する例 *)
-NBStoreLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234", "LMSTUDIO_LOCAL_KEY", "lm-xxxx-..."]
-```
-
-#### NBRemoveLocalLLMAPIKey
-
-`{provider, url}` のマッピングエントリを削除します。SystemCredential 本体は変更しません。
-
-```mathematica
-NBRemoveLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234"]
-```
-
-#### NBLocalLLMAPIKeyMap
-
-現在登録されているローカル LLM サーバー → API キー名マッピングの一覧を Dataset で返します。`Configured` 列は SystemCredential が実際に設定済みかどうかを示します。
-
-```mathematica
-NBLocalLLMAPIKeyMap[]
-```
-
-#### NBLocalLLMCredentialName
-
-SystemCredential 名のみを返します（値は取得しません）。AccessLevel チェックなし。登録確認用に使用します。
-
-```mathematica
-NBLocalLLMCredentialName["lmstudio", "http://127.0.0.1:1234"]
-(* 例: "LMSTUDIO_LOCAL_KEY" *)
-```
-
-#### 典型的なセットアップ手順
-
-```mathematica
-(* 1. LM Studio の Server Settings で Require Authentication を On にし、
-      API キーを確認した上で以下を実行する *)
-
-(* 2. API キーと URL を NBAccess に登録する *)
-NBStoreLocalLLMAPIKey[
-  "lmstudio",
-  "http://127.0.0.1:1234",
-  "LMSTUDIO_LOCAL_KEY",
-  "lm-xxxxxxxxxxxxxxxx"   (* LM Studio で設定した API キー *)
-]
-
-(* 3. 登録内容を確認する *)
-NBLocalLLMAPIKeyMap[]
-
-(* 4. 実際に API キーを取得して使用する（AccessLevel 1.0 が必要） *)
-key = NBGetLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234"]
-```
-
----
-
-## 暗号鍵ストア (NBAccess_crypto)
-
-`NBAccess_crypto.wl` は、NBAccess 本体（`NBAccess.wl`）とは別ファイルでありながら同じ `NBAccess`` コンテキストに属する **鍵隔離層** です。SourceVault などの上位層に、暗号化・MAC・署名の機能を提供しますが、その際 **鍵材料（鍵そのもの）は NBAccess の外へ一切返しません**。上位層は不透明な KeyRef 文字列（例: `"MyApp:master:atrest:v1"`）を介して鍵を間接参照し、暗号操作の結果（暗号文・MAC・真偽値・公開鍵）だけを受け取ります。
-
-API キーが必ず `NBGetAPIKey` を経由するのと同様に、このレイヤーは資格情報バックエンドを自前で実装する「正規の場所」です。鍵材料はどの公開 API の戻り値・ログ・index レコードにも現れず、復元は `BinaryDeserialize` のみで行い `ToExpression` は使用しません。
-
-### 鍵ストアバックエンド (`$NBCredentialBackend`)
-
-鍵材料の保存先は `$NBCredentialBackend` で切り替えます。**鍵を生成・使用する前に**設定してください。
-
-```mathematica
-$NBCredentialBackend = "SystemCredential";  (* 本番想定 *)
-$NBCredentialBackend = "Memory";            (* 既定。開発・テスト用 *)
-```
-
-| バックエンド | 保存先 | 永続性 | 用途 | 注意 |
-|---|---|---|---|---|
-| `"Memory"`（既定） | カーネル内メモリ（`Private` スコープ） | カーネル終了で消失。同期・永続化されない | 開発・テスト | 鍵はカーネルごとにランダム。**この鍵で暗号化したデータは後で復号不能になる** |
-| `"SystemCredential"` | OS の資格情報ストア（Windows Credential Manager / DPAPI） | カーネル再起動後も残存。Windows ログイン / DPAPI で保護 | 本番・永続データ | index（metadata のみ、鍵材料なし）も 1 つの credential blob に永続化され、再起動後も `NBKeyStatus` が機能 |
-
-> **バックエンド選択の帰結:** `"Memory"` 鍵は揮発性のため、永続的に保存・後日復号する必要があるデータには **必ず `"SystemCredential"` を選択**してください。`"Memory"` で暗号化したデータは、同一カーネルセッション内でしか復号できません。
-
-### KeyRef index（metadata）
-
-各鍵には鍵材料を含まない index エントリが付随します。保持されるのは `KeyRef` / `Kind` / `Backend` / `Fingerprint` / `Status` / `CreatedAt` / `Purpose` / `Algorithm` などの **非秘密 metadata** のみで、鍵材料・秘密指数などは決して含まれません（非対称鍵の `PublicKey` は秘密でないため index に保持されます）。
-
-### 鍵の生成・保存・状態 API
-
-| 関数 | 説明 | 戻り値 |
-|---|---|---|
-| `NBGenerateSymmetricKeyRef[keyRef, metadata_:<\|\|>]` | AES256 対称鍵を生成して保存（ランダム生成。パスワード派生ではない） | `<\|"Status"->"Stored", "KeyRef"->..., "KeyMaterialReturned"->False\|>` |
-| `NBGenerateMacKeyRef[keyRef, metadata_:<\|\|>]` | 256bit ランダム HMAC 鍵を生成して保存 | 同上 |
-| `NBGenerateAsymmetricKeyRefPair[keyRef, metadata_:<\|\|>]` | RSA 鍵対を生成し、秘密鍵を保存。公開鍵は index metadata に保持（`PrivateKey["PublicKey"]` が無効なため） | 同上 |
-| `NBStoreCredentialKey[keyRef, keyObject, metadata_:<\|\|>]` | 任意の鍵オブジェクトを直列化して保存し index を作る（低レベル API） | 同上 |
-| `NBKeyStatus[keyRef]` | 鍵の metadata（**鍵材料を含まない**）を返す。存在しなければ `Missing["NotFound"]` | Association または `Missing` |
-| `NBListCredentialKeyRefs[pattern_:"*"]` | 登録済み keyRef の一覧を返す（鍵材料を含まない） | keyRef のリスト |
-| `NBDeleteCredentialKey[keyRef]` | 鍵を削除する | `<\|"Status"->"Deleted", "KeyRef"->...\|>` |
-
-### KeyRef による暗号操作 API
-
-いずれも keyRef を受け取り、内部で鍵を解決して暗号操作を行い、**結果だけを返します**。鍵材料は返しません。
-
-| 関数 | 入力 | 戻り値 |
-|---|---|---|
-| `NBEncryptWithKeyRef[keyRef, plaintextBytes, purpose_:None, accessSpec_:Automatic]` | `ByteArray` の平文 | `<\|"Status"->"Ok", "KeyRef"->..., "CiphertextB64"->..., "IV"->...\|>`（`CiphertextB64` は Base64 化した直列 `EncryptedObject`） |
-| `NBDecryptWithKeyRef[keyRef, ciphertextB64, purpose_:None, accessSpec_:Automatic]` | Base64 暗号文 | `ByteArray`（平文）／失敗時 `$Failed` |
-| `NBMacWithKeyRef[keyRef, bytes, purpose_:None, accessSpec_:Automatic]` | `ByteArray` | HMAC-SHA256 を hex 文字列で返す／失敗時 `$Failed` |
-| `NBVerifyMacWithKeyRef[keyRef, bytes, macHex, purpose_:None, accessSpec_:Automatic]` | `ByteArray` と hex MAC | `True` / `False`（**constant-time 比較**） |
-| `NBGetPublicKeyForKeyRef[keyRef]` | 非対称鍵 keyRef | `PublicKey`（秘密でないので返してよい）／失敗時 `$Failed` |
-
-`purpose` / `accessSpec` 引数はオプションのコンテキスト識別子で、既定はそれぞれ `None` / `Automatic` です。
-
-### 鍵ライフサイクルの一巡（生成 → 暗号化 → MAC → 検証 → 復号）
-
-WL 14.3 には AEAD/GCM がないため、`Encrypt` は完全性フィールドを持たない AES256/CBC です。したがって at-rest の完全性は **encrypt-then-MAC**（暗号文を別の MAC 鍵で MAC する）で確保します。下記は対称鍵と MAC 鍵を別々に生成し、暗号化と完全性検証を一巡させる例です。
-
-```mathematica
-(* 0. バックエンドを鍵生成より前に設定する *)
-$NBCredentialBackend = "SystemCredential";
-
-(* 1. 対称鍵と MAC 鍵を別々に生成（KeyRef だけが返る。鍵材料は返らない） *)
-NBGenerateSymmetricKeyRef["MyApp:master:atrest:v1"];
-NBGenerateMacKeyRef["MyApp:master:mac:v1"];
-
-(* 2. 平文（ByteArray）を暗号化 *)
-pt  = StringToByteArray["保護したい本文", "UTF-8"];
-enc = NBEncryptWithKeyRef["MyApp:master:atrest:v1", pt];
-ct  = enc["CiphertextB64"];
-
-(* 3. 暗号文に MAC を付与（encrypt-then-MAC） *)
-mac = NBMacWithKeyRef["MyApp:master:mac:v1", StringToByteArray[ct, "UTF-8"]];
-
-(* 4. 受信側: まず MAC を constant-time 検証してから復号する *)
-If[NBVerifyMacWithKeyRef["MyApp:master:mac:v1", StringToByteArray[ct, "UTF-8"], mac],
-  dec = NBDecryptWithKeyRef["MyApp:master:atrest:v1", ct];
-  ByteArrayToString[dec, "UTF-8"],
-  $Failed  (* MAC 不一致 → 改ざんの可能性。復号しない *)
-]
-```
-
-### 可搬鍵バンドル用プリミティブ
-
-SourceVault のパスフレーズ鍵バンドル向けに、鍵オブジェクトを別の鍵（`wrapKey`）で **暗号化した状態でのみ**取り出す内部プリミティブを提供します。出力は暗号文と非秘密 index meta だけで、平文鍵材料は決して返しません。
-
-| 関数 | 説明 |
-|---|---|
-| `NBExportWrappedKeys[keyRefs, wrapKey]` | 各鍵を `wrapKey`（`SymmetricKey`）で暗号化した `EncryptedObject` と非秘密 meta の Association を返す |
-| `NBImportWrappedKeys[wrappedAssoc, wrapKey]` | `wrapKey` で復号した鍵を現在のバックエンドに書き戻す（`BinaryDeserialize` のみ。`ToExpression` 不使用）。復元した keyRef のリストを返す |
-
-ここで `wrapKey` は、呼び出し側（SourceVault の鍵バンドル層）がパスフレーズから scrypt 等で派生した `SymmetricKey` を想定しています。
-
-### セルフテスト
-
-`NBCryptoSelfTest[]` は、ユーザーの実鍵を汚さないよう隔離した一時 Memory バックエンドで、鍵隔離・暗号/MAC roundtrip・誤鍵検出を検査します。
-
-```mathematica
-NBCryptoSelfTest[]
-(* 例: <|"EncryptRoundtrip" -> True, "MacRoundtrip" -> True,
-        "MacRejectsTamper" -> True, "WrongMacKeyFails" -> True,
-        "DecryptWrongTypeFails" -> True, "KeyIsolation" -> True,
-        "ListWorks" -> True, "DeleteWorks" -> True,
-        "AllPassed" -> True|> *)
-```
-
-`KeyIsolation` 項目は、暗号操作の戻り値・`NBKeyStatus` の index に `SymmetricKey` / `PrivateKey` や秘密指数が含まれていないこと、公開鍵だけが取得可能であることを併せて確認します。
-
-### WL 14.3 の暗号制約（設計上の前提）
-
-本レイヤーは WL 14.3（Windows）で実測した以下の制約を前提に設計されています。
-
-- **AEAD/GCM は利用不可** — `Encrypt` は AES256/CBC（IV 同梱・完全性フィールドなし）。完全性は **encrypt-then-MAC** で確保する。
-- **組み込み HMAC が無い** — RFC 2104 HMAC-SHA256 を `Hash[.., "SHA256", "ByteArray"]` から自前構成している。
-- **RSA-PSS は不可** — 既定の `GenerateDigitalSignature`（RSA, 概ね PKCS#1 v1.5）は動作する。
-- 動作するもの: `Encrypt[PublicKey, SymmetricKey]`（hybrid envelope）、`BinarySerialize` / `BinaryDeserialize`、`BaseEncode` / `BaseDecode`、`SystemCredential` / `SystemCredentialKeys`。
-
-> **メモ:** これは下位レイヤーであり、`SourceVault_crypto` がこの上に構築されます。鍵材料はどの公開 API でも露出しないため、鍵そのものを読みI'll switch to making targeted edits to the actual file rather than re-emitting the whole 2200-line document as plain text — that's the only reliable way to complete this given output limits. Let me first verify the current state of the file and confirm which changes are still needed.The manual on disk is still the old version (14:16, before the source's 19:39 update). I'll make surgical edits to it. Let me read the current manual to find exact insertion points.The disk TOC already has 21 sections including 暗号鍵ストア and フォールバックモデル. Let me check which new symbols are already documented vs. missing, to scope the actual gaps.The disk manual is the old version: it has `gpt-5` in 4 places and documents none of the new symbols. I'll make targeted edits. First let me read the fallback-model section and verify the source's exact new content.I'll apply the verified gpt-5 → gpt-5.5 default-value fixes first, then read the source to accurately document the new symbols.The Edit needs approval. Targeted edits are the reliable path here since re-emitting the whole 2400-line document as plain text can't complete within output limits. Let me retry the verified fixes.The Edit to `F:\...\user_manual.md` is being blocked by the permission system — it's returning "not granted" rather than prompting for approval, which suggests writes to that `F:` docs path aren't permitted in the current mode.
-
-This leaves two viable paths, and I need your call on which:
-
-1. **Approve file edits** to `NBAccess_info\docs\user_manual.md` — then I apply the update as targeted edits (reliable, minimal-diff). The concrete changes are: `gpt-5` → `gpt-5.5` in the fallback defaults, plus new sections for the model-selection/trusted-server API, deferred-output API, semantic file access, cloud-publishable/cache-repair, and the execution/security subsystems.
-
-2. **Run the proper pipeline** — `ClaudeUpdateDocumentation["NBAccess", "<指示>"]` from Mathematica, which handles backup/diff/write itself. This is what the project rules prescribe for doc updates.
-
-Re-emitting the full ~2400-line document as plain text isn't reliable here — it exceeds the output budget and a truncated emission would corrupt the file.
-
-Which do you want? If you grant write access to that path, I'll proceed immediately with the targeted edits.
+ジョブのスロット（システムメッセージ / 完
