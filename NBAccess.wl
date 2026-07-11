@@ -11048,7 +11048,140 @@ NBAcceptPolicySnapshot[snapshot_Association] :=
 NBAcceptPolicySnapshot[_] :=
   <|"Valid" -> False, "Digest" -> None, "Reason" -> "NotAnAssociation"|>;
 
+(* ════════════════════════════════════════════════════════════════════
+   Inc7 (session episode spec §16.2/§16.3/§13.2):
+     - WritableStagingRoot 包含検査 (単一 staging root、FinalTargetRefs 拒否)
+     - IsolationLevel の順序判定
+     - ToolCallId scoped permit (Phase 2b 予告の実装: one-shot・期限付き)
+   すべて純加法。既存の AllowedDirectories ベースの検査 (NBCheckFileWrite
+   等) は不変。定義は完全修飾で public 化する。
+   注意: path 正規化は ExpandFileName ベース (相対 path / ".." を解決)。
+   symlink/junction の実体解決は未対応 (実運用強化は Inc9 以降)。
+   ════════════════════════════════════════════════════════════════════ *)
 
+NBAccess`NBCheckStagingWrite::usage =
+  "NBCheckStagingWrite[path, accessSpec] は path が accessSpec の\n" <>
+  "WritableStagingRoot 配下にある場合のみ Permit を返す (§16.2)。\n" <>
+  "FinalTargetRefs 配下・staging 外は Deny。戻り値\n" <>
+  "<|\"Decision\"->\"Permit\"|\"Deny\", \"Reason\", \"Path\"|>。fail-closed。";
+
+NBAccess`NBIsolationRank::usage =
+  "NBIsolationRank[level] は IsolationLevel の強度 (CooperativeKernel=0 <\n" <>
+  "WorkspaceOverlay=1 < ExternalProcess=2 < Container=3)。不明は -1。";
+
+NBAccess`NBIsolationSatisfiedQ::usage =
+  "NBIsolationSatisfiedQ[required, actual] は actual の isolation が\n" <>
+  "required 以上なら True (§7.2/§20.3。CooperativeKernel は hard isolation\n" <>
+  "必須 task に選ばれない)。不明値は fail-closed で False。";
+
+NBAccess`NBGrantToolCallPermit::usage =
+  "NBGrantToolCallPermit[toolCallId, opts] は ToolCallId 一件だけを解禁する\n" <>
+  "one-shot permit を登録する (§13.2)。\"ExpiresInSeconds\"->300 既定。";
+
+NBAccess`NBToolCallPermitValidQ::usage =
+  "NBToolCallPermitValidQ[toolCallId] は未消費・未期限切れの permit が\n" <>
+  "あれば True。";
+
+NBAccess`NBConsumeToolCallPermit::usage =
+  "NBConsumeToolCallPermit[toolCallId] は permit を一度だけ消費して True。\n" <>
+  "無い/消費済み/期限切れは False (one-shot §13.2)。";
+
+NBAccess`NBToolCallPermits::usage =
+  "NBToolCallPermits[] は permit registry を返す (検査用)。";
+
+NBAccess`NBToolCallPermitReset::usage =
+  "NBToolCallPermitReset[] は permit registry をクリアする。テスト用。";
+
+iNBStagingNormalize[p_String] :=
+  Module[{e = ExpandFileName[p]},
+    If[$OperatingSystem === "Windows", ToLowerCase[e], e]];
+
+NBAccess`NBCheckStagingWrite[path_String, accessSpec_Association] :=
+  Module[{root, p, r, finals, insideRoot, underFinal},
+    root = Lookup[accessSpec, "WritableStagingRoot", None];
+    If[!StringQ[root] || root === "",
+      Return[<|"Decision" -> "Deny",
+        "Reason" -> "NoWritableStagingRoot", "Path" -> path|>]];
+    p = iNBStagingNormalize[path];
+    r = iNBStagingNormalize[root];
+    insideRoot = (p === r) ||
+      StringStartsQ[p, r <> $PathnameSeparator];
+    If[!insideRoot,
+      Return[<|"Decision" -> "Deny",
+        "Reason" -> "PathOutOfStagingRoot", "Path" -> p|>]];
+    (* FinalTargetRefs は staging 内にあっても直接 write 禁止 (§16.2) *)
+    finals = Select[Lookup[accessSpec, "FinalTargetRefs", {}], StringQ];
+    underFinal = AnyTrue[finals,
+      Function[f, Module[{fn = iNBStagingNormalize[f]},
+        p === fn || StringStartsQ[p, fn <> $PathnameSeparator]]]];
+    If[underFinal,
+      <|"Decision" -> "Deny",
+        "Reason" -> "FinalTargetDirectWriteForbidden", "Path" -> p|>,
+      <|"Decision" -> "Permit", "Reason" -> None, "Path" -> p|>]
+  ];
+
+NBAccess`NBCheckStagingWrite[___] :=
+  <|"Decision" -> "Deny", "Reason" -> "InvalidArguments"|>;
+
+NBAccess`NBIsolationRank[level_] :=
+  Switch[level,
+    "CooperativeKernel", 0,
+    "WorkspaceOverlay", 1,
+    "ExternalProcess", 2,
+    "Container", 3,
+    _, -1];
+
+NBAccess`NBIsolationSatisfiedQ[required_, actual_] :=
+  Module[{rq = NBAccess`NBIsolationRank[required],
+          ac = NBAccess`NBIsolationRank[actual]},
+    rq >= 0 && ac >= 0 && ac >= rq];
+
+If[!AssociationQ[NBAccess`Private`$iNBToolCallPermits],
+  NBAccess`Private`$iNBToolCallPermits = <||>];
+
+Options[NBAccess`NBGrantToolCallPermit] = {
+  "ExpiresInSeconds" -> 300,
+  "EffectClasses" -> All,
+  "GrantedBy" -> "user"};
+
+NBAccess`NBGrantToolCallPermit[toolCallId_String,
+    opts:OptionsPattern[NBAccess`NBGrantToolCallPermit]] := (
+  AssociateTo[NBAccess`Private`$iNBToolCallPermits,
+    toolCallId -> <|
+      "ToolCallId" -> toolCallId,
+      "EffectClasses" -> OptionValue["EffectClasses"],
+      "GrantedBy" -> OptionValue["GrantedBy"],
+      "GrantedAt" -> AbsoluteTime[],
+      "ExpiresAt" -> AbsoluteTime[] +
+        OptionValue["ExpiresInSeconds"],
+      "Used" -> False|>];
+  <|"Status" -> "Granted", "ToolCallId" -> toolCallId|>);
+
+NBAccess`NBToolCallPermitValidQ[toolCallId_String] :=
+  Module[{p = Lookup[NBAccess`Private`$iNBToolCallPermits,
+            toolCallId, None]},
+    AssociationQ[p] && !TrueQ[Lookup[p, "Used", True]] &&
+    AbsoluteTime[] <= Lookup[p, "ExpiresAt", 0]];
+
+NBAccess`NBToolCallPermitValidQ[___] := False;
+
+NBAccess`NBConsumeToolCallPermit[toolCallId_String] :=
+  If[NBAccess`NBToolCallPermitValidQ[toolCallId],
+    Module[{p = NBAccess`Private`$iNBToolCallPermits[toolCallId]},
+      p["Used"] = True;
+      p["UsedAt"] = AbsoluteTime[];
+      AssociateTo[NBAccess`Private`$iNBToolCallPermits,
+        toolCallId -> p];
+      True],
+    False];
+
+NBAccess`NBConsumeToolCallPermit[___] := False;
+
+NBAccess`NBToolCallPermits[] := NBAccess`Private`$iNBToolCallPermits;
+
+NBAccess`NBToolCallPermitReset[] := (
+  NBAccess`Private`$iNBToolCallPermits = <||>;
+  <|"Status" -> "Reset"|>);
 
 End[];
 EndPackage[];
