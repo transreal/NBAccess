@@ -36,6 +36,7 @@ NBStoreCredentialKey::usage = "NBStoreCredentialKey[keyRef, keyObject, metadata]
 NBKeyStatus::usage = "NBKeyStatus[keyRef] は鍵の metadata (鍵材料を含まない) を返す。存在しなければ Missing。";
 NBListCredentialKeyRefs::usage = "NBListCredentialKeyRefs[pattern_:\"*\"] は登録済み keyRef の一覧を返す (鍵材料は含まない)。";
 NBDeleteCredentialKey::usage = "NBDeleteCredentialKey[keyRef] は鍵を削除する。";
+NBKeyMaterialExistsQ::usage = "NBKeyMaterialExistsQ[keyRef] は鍵材料が backend に存在するかを index 非依存で返す(共有 index blob の clobber 耐性チェック用)。";
 NBGenerateSymmetricKeyRef::usage = "NBGenerateSymmetricKeyRef[keyRef, metadata_:<||>] は AES256 対称鍵を生成して keyRef に保存する。";
 NBGenerateMacKeyRef::usage = "NBGenerateMacKeyRef[keyRef, metadata_:<||>] は 256bit ランダム MAC 鍵を生成して keyRef に保存する。";
 NBGenerateAsymmetricKeyRefPair::usage = "NBGenerateAsymmetricKeyRefPair[keyRef, metadata_:<||>] は RSA 鍵対を生成し、秘密鍵を keyRef に保存する。公開鍵は index に保持する。";
@@ -99,10 +100,21 @@ iNBSysGet[name_String] :=
   Module[{v}, v = Quiet@Check[SystemCredential[name], $Failed];
     If[MissingQ[v] || v === $Failed, $Failed, v]];
 
-(* index (metadata のみ) を credential blob に永続化 / 復元。鍵材料は含まない。 *)
+(* index (metadata のみ) を credential blob に永続化 / 復元。鍵材料は含まない。
+   注意: index blob は複数カーネル共有の単一 blob。last-writer-wins で他カーネルの新規 keyRef を
+   消す clobber が起きるため、永続時は既存 blob と merge する(自カーネルで明示削除した keyRef は
+   $iNBDeletedKeyRefs で除外)。2026-07-13: cognition shard 鍵の index 消失(service カーネルの
+   上書き)を実データで確認して導入。 *)
+If[! ListQ[$iNBDeletedKeyRefs], $iNBDeletedKeyRefs = {}];
 iNBPersistIndex[] := If[$NBCredentialBackend === "SystemCredential",
   Quiet@Check[
-    SystemCredential[$iNBIndexCredName] = BaseEncode[BinarySerialize[$iNBKeyIndex]];, Null]];
+    Module[{blob = iNBSysGet[$iNBIndexCredName], disk = <||>, merged},
+      If[StringQ[blob],
+        disk = Quiet@Check[BinaryDeserialize[BaseDecode[blob]], <||>];
+        If[! AssociationQ[disk], disk = <||>]];
+      merged = KeyDrop[Join[disk, $iNBKeyIndex], $iNBDeletedKeyRefs];
+      $iNBKeyIndex = merged;
+      SystemCredential[$iNBIndexCredName] = BaseEncode[BinarySerialize[merged]];], Null]];
 
 If[! ValueQ[$iNBIndexLoaded], $iNBIndexLoaded = False];
 iNBEnsureIndexLoaded[] := If[$NBCredentialBackend === "SystemCredential" && ! $iNBIndexLoaded,
@@ -187,8 +199,11 @@ NBDeleteCredentialKey[keyRef_String, opts : OptionsPattern[]] := (
   iNBEnsureIndexLoaded[];
   iNBBackendDelete[keyRef];
   $iNBKeyIndex = KeyDrop[$iNBKeyIndex, keyRef];
+  AppendTo[$iNBDeletedKeyRefs, keyRef];  (* merge 永続で復活しないよう記録 *)
   iNBPersistIndex[];
   <|"Status" -> "Deleted", "KeyRef" -> keyRef|>);
+
+NBKeyMaterialExistsQ[keyRef_String] := StringQ[iNBBackendGet[keyRef]];
 
 (* ---- 公開 API: 暗号操作 (鍵は内部で解決し、返さない) ---- *)
 NBEncryptWithKeyRef[keyRef_String, plaintextBytes_ByteArray, purpose_ : None, accessSpec_ : Automatic] :=
