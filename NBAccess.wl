@@ -1287,7 +1287,116 @@ NBConfidentialHandlingAllowedQ::usage =
 NBResolveCredentialRef::usage =
   "NBResolveCredentialRef[ref, accessSpec] \:306f credential-ref \:3092\:89e3\:6c7a\:3057\:3001secret \:672c\:4f53\:3067\:306f\:306a\:304f\:53d6\:5f97\:7528 descriptor (<|\"Provider\"->_, ...|>) \:3092\:8fd4\:3059\:3002handler \:306f\:3053\:306e descriptor \:3067 NBGetAPIKey \:3092\:547c\:3076 (rules/20: \:9375\:3092\:8fd4\:3059\:88dc\:52a9\:95a2\:6570\:3092\:4f5c\:3089\:306a\:3044)\:3002";
 
-Begin["`Private`"];
+(* === Calendar access (iCal/ICS), access-level gated === *)
+
+NBCalendarEvents::usage =
+  "NBCalendarEvents[from, to, opts] reads the owner's iCal/ICS calendar and returns \
+event occurrences overlapping [from, to) as a list of Associations sorted by Start. \
+Recurring events (RRULE) are expanded to individual occurrences (FREQ DAILY/WEEKLY/\
+MONTHLY/YEARLY, INTERVAL, UNTIL, COUNT, BYDAY incl. ordinal like 2MO, BYMONTHDAY incl. \
+negative, EXDATE, RECURRENCE-ID overrides incl. cancelled instances). This fixes the \
+legacy NotebookExtensions`calendardata recurrence bugs (single-offset expansion, \
+ignored INTERVAL, approximate month arithmetic, unhandled DAILY/COUNT/BYDAY/EXDATE). \
+Returned fields depend on the caller's access level (PrivacySpec option, default \
+$NBPrivacySpec): >=0.5 free/busy + identity metadata only (Start/End/AllDay/Busy/\
+Mandatory/Recurring/UIDDigest + R0b identity: EventId/OriginalStart/SemanticDigest/\
+ObservedRevision), >=0.7 adds Summary/Categories/Status, >=1.0 full fields \
+(Description/Location/UID). Below 0.5 returns Failure[\"NBCalendarAccessDenied\"]. \
+R0b identity/revision fields (returned at EVERY level, all opaque): \"EventId\" = \
+HMAC-keyed stable id of the UID ($NBCalendarIdentityKeyRef; unkeyed fallback) \[Dash] \
+same across recurring occurrences; \"OriginalStart\" = the occurrence's original \
+series slot (RECURRENCE-ID for overrides, generated slot otherwise; a MOVED start \
+appears only in Start, not here) \[Dash] the stable per-occurrence token; \
+\"SemanticDigest\" = digest of the behaviour-bearing fields (OriginalStart, effective \
+Start/End, Status, Busy, AllDay) for supersede detection; \"ObservedRevision\" = \
+digest of SEQUENCE/DTSTAMP (observation-only; a DTSTAMP-only change does NOT change \
+SemanticDigest). Options: PrivacySpec -> Automatic ($NBPrivacySpec), \"Source\" -> \
+Automatic (SystemCredential[$NBCalendarCredentialName]; or an explicit .ics path / \
+http(s) URL), \"ICSText\" -> raw ICS text (injection seam for tests; bypasses Source), \
+\"MandatoryPatterns\" -> Automatic ($NBCalendarMandatoryPatterns; string patterns \
+matched case-insensitively against Summary/Categories/Description to set the \
+Mandatory flag, which survives all access levels), \"MaxEvents\" -> 500, \
+\"Refresh\" -> False (bypass the parse cache), \"Wrap\" -> False (when True, return \
+<|\"Events\"->{...}, \"ObservedAtUTC\", \"Count\", \"Truncated\", \"Completeness\" \
+(<1 when MaxEvents truncated), \"IdentityKeyed\"|> instead of a bare list).";
+
+NBCalendarFreeBusy::usage =
+  "NBCalendarFreeBusy[from, to, opts] returns merged busy blocks (overlapping busy \
+occurrences coalesced) in [from, to) as {<|\"Start\", \"End\", \"Mandatory\", \
+\"Count\"|>...}. Events with TRANSP:TRANSPARENT are excluded. Content-free \
+(metadata only), available from AccessLevel 0.5. Same source options as \
+NBCalendarEvents.";
+
+NBCalendarBusyQ::usage =
+  "NBCalendarBusyQ[t, opts] returns True when instant t falls inside a busy calendar \
+block (meeting in progress). \"Detailed\" -> True returns <|\"Busy\", \"Mandatory\", \
+\"Block\"|> instead. Returns False (not Failure) when the source is unavailable, so \
+notification gating fails open to 'not busy'. Same source options as NBCalendarEvents.";
+
+NBICSParseEvents::usage =
+  "NBICSParseEvents[icsText] parses raw iCal/ICS text into a list of event \
+Associations (UID/Summary/Description/Location/Status/Categories/Busy/Start/End/\
+AllDay/RRule/ExDates/RecurrenceId). Pure parser: no credential, network, or access \
+gating; malformed VEVENT blocks are skipped. Handles folded lines, TEXT escapes, \
+TZID/UTC/floating and VALUE=DATE (all-day) date forms, and DURATION.";
+
+NBICSEventOccurrences::usage =
+  "NBICSEventOccurrences[event, from, to] expands one parsed event (from \
+NBICSParseEvents) into its occurrences overlapping [from, to), applying the RRULE/\
+EXDATE semantics described in NBCalendarEvents. Pure; returns a list of event \
+Associations with occurrence Start/End and \"Recurring\" -> True|False.";
+
+$NBCalendarMandatoryPatterns::usage =
+  "$NBCalendarMandatoryPatterns is the default list of string patterns marking a \
+calendar event as attendance-mandatory (matched case-insensitively against Summary/\
+Categories/Description). Default {}. The owner sets this at runtime; the derived \
+Mandatory flag is exposed at every access level.";
+
+$NBCalendarCacheSeconds::usage =
+  "$NBCalendarCacheSeconds is the in-memory parse-cache TTL (seconds) for calendar \
+sources read by NBCalendarEvents. Default 300.";
+
+$NBCalendarCredentialName::usage =
+  "$NBCalendarCredentialName is the SystemCredential key holding the ICS calendar \
+location (file path or URL). Default \"ics-calendar\".";
+
+(* === $onWork task metadata (access-level gated, NON-EVALUATING read) === *)
+
+NBOnWorkTaskSafeExtract::usage =
+  "NBOnWorkTaskSafeExtract[held] extracts a $onWork notebook's task metadata from a \
+HELD expression (HoldComplete[...] or Hold[...] wrapping the metadata Association, \
+or a list whose first element is it) WITHOUT EVALUATING ANYTHING (routine spec 3.3 \
+/ P1-2 / AC-013). Only whitelisted string keys (Title/Status/Deadline/NextReview/\
+EventDate/Keywords/Effort/Movable/DependsOn/TaskId) with literal values (String, \
+Integer, Real, True/False, DateObject[{ints..},(gran)], Quantity[num,unit], list of \
+strings) are kept; every other key/value is dropped. Side-effect expressions, \
+Notebook boxes, huge expressions and UpValue symbols are never evaluated. The \
+implementation contains NO ReleaseHold (static AC-033). Returns a safe Association.";
+
+NBOnWorkTasks::usage =
+  "NBOnWorkTasks[opts] enumerates $onWork .nb files and returns access-level-\
+projected task records read via NBOnWorkTaskSafeExtract (metadata ONLY: the \
+notebook body/output is never read at any level). Each record derives \"Due\" \
+(Deadline, else NextReview; a NextReview Quantity is resolved as ModificationDate + \
+offset, matching NotebookExtensions) and \"State\" (Done/Pass/Keep from Status, else \
+Open). Fields by access level: 0.5 = Due/DueKind/State/FileDigest/ModificationDate; \
+0.7 adds Title/Keywords/TaskId/Effort/Movable/DependsOn; 1.0 adds Path. Options: \
+\"Directory\" -> Automatic (Global`$onWork), \"ModifiedWithinDays\" -> Automatic \
+(all), \"IncludeDone\" -> False (drop Status Done/Pass), PrivacySpec -> Automatic, \
+\"MaxFiles\" -> 2000, \"Files\" -> Automatic (test seam: a list of <|\"Path\"->_, \
+\"Held\"->HoldComplete[...], (\"ModificationDate\"->_)|> bypassing the filesystem). A \
+file that is unreadable or whose metadata fails the safe parse becomes a record with \
+\"State\"->\"Unknown\" and \"ParseFailed\"->True; it never aborts the whole scan.";
+
+$NBCalendarIdentityKeyRef::usage =
+  "$NBCalendarIdentityKeyRef is the SystemCredential key holding the HMAC identity \
+key used to derive each event's opaque, stable \"EventId\" (routine spec R0b, \
+kept SEPARATE from any signing/MAC key). The EventId is returned at EVERY access \
+level so a caller at AccessLevel 0.5 gets stable identity without the raw UID. \
+Default Missing[\"None\"]: when unset, EventId degrades to a non-keyed \
+\"unkeyed:<digest>\" form and NBCalendarEvents \"Wrap\"->True reports \
+\"IdentityKeyed\"->False. Rotating the key changes the embedded KeyId, so \
+callers must migrate their stored EventId mappings (routine spec P0-1).";
 
 (* ============================================================
    \:30c7\:30a3\:30d5\:30a9\:30eb\:30c8\:5024
@@ -11182,6 +11291,787 @@ NBAccess`NBToolCallPermits[] := NBAccess`Private`$iNBToolCallPermits;
 NBAccess`NBToolCallPermitReset[] := (
   NBAccess`Private`$iNBToolCallPermits = <||>;
   <|"Status" -> "Reset"|>);
+
+(* ============================================================
+   Calendar access (iCal/ICS): access-level gated read.
+   Pure parser + deterministic RRULE expansion. Fixes the legacy
+   NotebookExtensions`calendardata recurrence bugs (single-offset
+   expansion, ignored INTERVAL, approximate month arithmetic,
+   unhandled DAILY/COUNT/BYDAY/EXDATE/RECURRENCE-ID).
+   Wrapped in an explicit Begin/End so the iNBCal*/iNBICS* helpers stay in
+   NBAccess`Private` (public API keeps its explicit NBAccess` prefix) even if
+   the ambient context was popped early by a cross-loaded package.
+   ============================================================ *)
+
+Begin["NBAccess`Private`"];
+
+If[!ListQ[NBAccess`$NBCalendarMandatoryPatterns],
+  NBAccess`$NBCalendarMandatoryPatterns = {}];
+If[!NumberQ[NBAccess`$NBCalendarCacheSeconds],
+  NBAccess`$NBCalendarCacheSeconds = 300];
+If[!StringQ[NBAccess`$NBCalendarCredentialName],
+  NBAccess`$NBCalendarCredentialName = "ics-calendar"];
+If[!MatchQ[NBAccess`$NBCalendarIdentityKeyRef, _String],
+  NBAccess`$NBCalendarIdentityKeyRef = Missing["None"]];
+If[!AssociationQ[$iNBCalCache], $iNBCalCache = <||>];
+
+$iNBCalMaxOccurrences = 1000;
+$iNBCalMaxPeriods = 4000;
+
+$iNBICSDayMap = <|"MO" -> 1, "TU" -> 2, "WE" -> 3, "TH" -> 4,
+  "FR" -> 5, "SA" -> 6, "SU" -> 7|>;
+$iNBICSDayNames = {Monday, Tuesday, Wednesday, Thursday, Friday,
+  Saturday, Sunday};
+
+iNBCalDayIndex[d_] := Module[{p = FirstPosition[$iNBICSDayNames, DayName[d]]},
+  If[MissingQ[p], 1, p[[1]]]];
+
+iNBCalLeapQ[y_Integer] := Mod[y, 4] == 0 && (Mod[y, 100] != 0 || Mod[y, 400] == 0);
+iNBCalDaysInMonth[y_Integer, mo_Integer] :=
+  {31, 28 + If[iNBCalLeapQ[y], 1, 0], 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}[[mo]];
+
+iNBCalMakeDate[y_, mo_, d_, h_, mi_, s_, tz_] :=
+  DateObject[{y, mo, d, h, mi, s}, TimeZone -> tz];
+iNBCalShiftDays[d_, n_] := DatePlus[d, {n, "Day"}];
+iNBCalFromAbs[abs_, tz_] :=
+  Quiet@Check[DateObject[FromAbsoluteTime[abs], TimeZone -> tz], FromAbsoluteTime[abs]];
+
+iNBCalMinuteKey[d_] := Round[AbsoluteTime[d]/60];
+iNBCalDayKey[d_] := DateString[d, {"Year", "-", "Month", "-", "Day"}];
+
+(* ---- ICS text layer ---- *)
+
+iNBICSUnfoldLines[text_String] := Module[{t},
+  t = StringReplace[text, {"\r\n" -> "\n", "\r" -> "\n"}];
+  StringSplit[StringReplace[t, {"\n " -> "", "\n\t" -> ""}], "\n"]];
+
+iNBICSUnescapeText[s_String] := StringReplace[s,
+  {"\\\\" -> "\\", "\\n" -> "\n", "\\N" -> "\n", "\\," -> ",", "\\;" -> ";"}];
+
+iNBICSSplitLine[line_String] := Module[
+  {chars = Characters[line], inQ = False, cut = 0, i = 1, head, val, toks, name, params},
+  While[i <= Length[chars] && cut == 0,
+    Which[chars[[i]] === "\"", inQ = !inQ,
+      chars[[i]] === ":" && !inQ, cut = i];
+    i++];
+  If[cut == 0, Missing["NoColon"],
+    head = StringTake[line, cut - 1];
+    val = StringTake[line, {cut + 1, StringLength[line]}];
+    toks = StringSplit[head, ";"];
+    name = ToUpperCase[First[toks, ""]];
+    params = Association[Map[
+      Function[p, Module[{kv = StringSplit[p, "=", 2]},
+        If[Length[kv] == 2, ToUpperCase[kv[[1]]] -> kv[[2]], Nothing]]],
+      Rest[toks]]];
+    <|"Name" -> name, "Params" -> params, "Value" -> val|>]];
+
+$iNBCalWindowsTZMap = <|
+  "Tokyo Standard Time" -> "Asia/Tokyo",
+  "UTC" -> 0,
+  "GMT Standard Time" -> "Europe/London",
+  "Pacific Standard Time" -> "America/Los_Angeles",
+  "Eastern Standard Time" -> "America/New_York",
+  "China Standard Time" -> "Asia/Shanghai",
+  "Korea Standard Time" -> "Asia/Seoul"|>;
+
+iNBCalTZResolve[tzid_String] := Module[{cand = Lookup[$iNBCalWindowsTZMap, tzid, tzid]},
+  Quiet@Check[
+    (AbsoluteTime[DateObject[{2026, 1, 1, 0, 0, 0}, TimeZone -> cand]]; cand),
+    $TimeZone]];
+iNBCalTZResolve[___] := $TimeZone;
+
+iNBICSParseDateValue[v_String, params_Association] := Module[
+  {val = v, dateOnly, utc, y, mo, d, h = 0, mi = 0, s = 0, tzres},
+  dateOnly = TrueQ[ToUpperCase[Lookup[params, "VALUE", ""]] == "DATE"] ||
+    (StringLength[v] == 8 && StringMatchQ[v, DigitCharacter ..]);
+  utc = StringEndsQ[val, "Z"] || StringEndsQ[val, "z"];
+  If[utc, val = StringDrop[val, -1]];
+  If[StringLength[val] < 8 || !StringMatchQ[StringTake[val, 8], DigitCharacter ..],
+    Missing["BadDate"],
+    y = ToExpression[StringTake[val, 4]];
+    mo = ToExpression[StringTake[val, {5, 6}]];
+    d = ToExpression[StringTake[val, {7, 8}]];
+    If[!dateOnly && StringLength[val] >= 15 &&
+        ToUpperCase[StringTake[val, {9, 9}]] == "T",
+      h = ToExpression[StringTake[val, {10, 11}]];
+      mi = ToExpression[StringTake[val, {12, 13}]];
+      s = Quiet@Check[ToExpression[StringTake[val, {14, 15}]], 0]];
+    If[!(IntegerQ[y] && IntegerQ[mo] && IntegerQ[d] && 1 <= mo <= 12 && 1 <= d <= 31),
+      Missing["BadDate"],
+      tzres = Which[
+        utc, 0,
+        KeyExistsQ[params, "TZID"], iNBCalTZResolve[params["TZID"]],
+        True, $TimeZone];
+      <|"Date" -> DateObject[{y, mo, d, h, mi, s}, TimeZone -> tzres],
+        "AllDay" -> dateOnly|>]]];
+
+iNBICSParseByDay[s_String] := DeleteMissing[Map[
+  Function[p, Module[{pp = ToUpperCase[StringTrim[p]], dayCode, ordStr, ord},
+    If[StringLength[pp] < 2, Missing["Bad"],
+      dayCode = StringTake[pp, -2];
+      ordStr = StringDrop[pp, -2];
+      If[!KeyExistsQ[$iNBICSDayMap, dayCode], Missing["Bad"],
+        ord = If[ordStr === "", Missing["None"],
+          Quiet@Check[Round@ToExpression[StringReplace[ordStr, "+" -> ""]],
+            Missing["None"]]];
+        <|"Ord" -> ord, "Day" -> $iNBICSDayMap[dayCode]|>]]]],
+  StringSplit[s, ","]]];
+
+(* PT1H30M / P1D / P2W style durations -> seconds *)
+iNBICSParseDuration[s_String] := Module[{sign = 1, body = ToUpperCase[StringTrim[s]], w, dd, h, mi, sec},
+  If[StringStartsQ[body, "-"], sign = -1; body = StringDrop[body, 1]];
+  If[StringStartsQ[body, "+"], body = StringDrop[body, 1]];
+  If[!StringStartsQ[body, "P"], 0,
+    w = Quiet@Check[ToExpression@First[StringCases[body, (x : DigitCharacter ..) ~~ "W" :> x], "0"], 0];
+    dd = Quiet@Check[ToExpression@First[StringCases[body, (x : DigitCharacter ..) ~~ "D" :> x], "0"], 0];
+    h = Quiet@Check[ToExpression@First[StringCases[body, (x : DigitCharacter ..) ~~ "H" :> x], "0"], 0];
+    mi = Quiet@Check[ToExpression@First[StringCases[body, (x : DigitCharacter ..) ~~ "M" :> x], "0"], 0];
+    sec = Quiet@Check[ToExpression@First[StringCases[body, (x : DigitCharacter ..) ~~ "S" :> x], "0"], 0];
+    sign*(w*7*86400 + dd*86400 + h*3600 + mi*60 + sec)]];
+
+iNBICSParseRRule[value_String] := Module[{assoc},
+  assoc = Association[Map[
+    Function[p, Module[{kv = StringSplit[p, "=", 2]},
+      If[Length[kv] == 2, ToUpperCase[kv[[1]]] -> kv[[2]], Nothing]]],
+    StringSplit[value, ";"]]];
+  <|"Freq" -> ToUpperCase[Lookup[assoc, "FREQ", ""]],
+    "Interval" -> Max[1, Quiet@Check[Round@ToExpression[Lookup[assoc, "INTERVAL", "1"]], 1]],
+    "Count" -> If[KeyExistsQ[assoc, "COUNT"],
+      Quiet@Check[Round@ToExpression[assoc["COUNT"]], Missing["None"]], Missing["None"]],
+    "Until" -> If[KeyExistsQ[assoc, "UNTIL"],
+      Module[{pd = iNBICSParseDateValue[assoc["UNTIL"], <||>]},
+        If[AssociationQ[pd], pd["Date"], Missing["None"]]], Missing["None"]],
+    "ByDay" -> If[KeyExistsQ[assoc, "BYDAY"],
+      iNBICSParseByDay[assoc["BYDAY"]], Missing["None"]],
+    "ByMonthDay" -> If[KeyExistsQ[assoc, "BYMONTHDAY"],
+      DeleteCases[Map[Function[x, Quiet@Check[Round@ToExpression[x], Missing["Bad"]]],
+        StringSplit[assoc["BYMONTHDAY"], ","]], _Missing], Missing["None"]],
+    "Raw" -> value|>];
+
+iNBICSParseEvent[lines_List] := Module[
+  {props, propGet, propGetAll, dtstart, sd, startD, allday, dtend, durProp, endD,
+   tz, rrProp, exdates, recProp, recId, uidProp, seqProp, dtstampProp},
+  props = DeleteMissing[iNBICSSplitLine /@ lines];
+  propGet[nm_] := SelectFirst[props, #["Name"] === nm &, Missing["None"]];
+  propGetAll[nm_] := Select[props, #["Name"] === nm &];
+  dtstart = propGet["DTSTART"];
+  If[!AssociationQ[dtstart], Missing["NoStart"],
+    sd = iNBICSParseDateValue[dtstart["Value"], dtstart["Params"]];
+    If[!AssociationQ[sd], Missing["BadStart"],
+      startD = sd["Date"];
+      allday = TrueQ[sd["AllDay"]];
+      tz = Quiet@Check[startD["TimeZone"], $TimeZone];
+      dtend = propGet["DTEND"];
+      durProp = propGet["DURATION"];
+      endD = Which[
+        AssociationQ[dtend],
+        Module[{ed = iNBICSParseDateValue[dtend["Value"], dtend["Params"]]},
+          If[AssociationQ[ed], ed["Date"], Missing["Bad"]]],
+        AssociationQ[durProp],
+        iNBCalFromAbs[AbsoluteTime[startD] + iNBICSParseDuration[durProp["Value"]], tz],
+        True, Missing["None"]];
+      If[!DateObjectQ[endD],
+        endD = If[allday, iNBCalShiftDays[startD, 1], startD]];
+      If[AbsoluteTime[endD] < AbsoluteTime[startD], endD = startD];
+      rrProp = propGet["RRULE"];
+      exdates = Flatten[Map[
+        Function[ex, Map[
+          Function[v, Module[{pd = iNBICSParseDateValue[v, ex["Params"]]},
+            If[AssociationQ[pd], pd["Date"], Nothing]]],
+          StringSplit[ex["Value"], ","]]],
+        propGetAll["EXDATE"]]];
+      recProp = propGet["RECURRENCE-ID"];
+      recId = If[AssociationQ[recProp],
+        Module[{pd = iNBICSParseDateValue[recProp["Value"], recProp["Params"]]},
+          If[AssociationQ[pd], pd["Date"], Missing["None"]]],
+        Missing["None"]];
+      seqProp = propGet["SEQUENCE"];
+      dtstampProp = propGet["DTSTAMP"];
+      uidProp = propGet["UID"];
+      <|"UID" -> If[AssociationQ[uidProp], uidProp["Value"],
+          "nouid-" <> ToString[Hash[lines]]],
+        "Summary" -> With[{x = propGet["SUMMARY"]},
+          If[AssociationQ[x], iNBICSUnescapeText[x["Value"]], ""]],
+        "Description" -> With[{x = propGet["DESCRIPTION"]},
+          If[AssociationQ[x], iNBICSUnescapeText[x["Value"]], Missing["None"]]],
+        "Location" -> With[{x = propGet["LOCATION"]},
+          If[AssociationQ[x], iNBICSUnescapeText[x["Value"]], Missing["None"]]],
+        "Status" -> With[{x = propGet["STATUS"]},
+          If[AssociationQ[x], ToUpperCase[x["Value"]], "CONFIRMED"]],
+        "Categories" -> Flatten[Map[
+          Function[c, iNBICSUnescapeText /@ StringSplit[c["Value"], ","]],
+          propGetAll["CATEGORIES"]]],
+        "Busy" -> With[{x = propGet["TRANSP"]},
+          !(AssociationQ[x] && ToUpperCase[x["Value"]] === "TRANSPARENT")],
+        "Start" -> startD, "End" -> endD, "AllDay" -> allday,
+        "RRule" -> If[AssociationQ[rrProp],
+          iNBICSParseRRule[rrProp["Value"]], Missing["None"]],
+        "ExDates" -> exdates,
+        "RecurrenceId" -> recId,
+        "Sequence" -> If[AssociationQ[seqProp],
+          Quiet@Check[Round@ToExpression[seqProp["Value"]], 0], 0],
+        "Dtstamp" -> If[AssociationQ[dtstampProp], dtstampProp["Value"], Missing["None"]]|>]]];
+
+NBAccess`NBICSParseEvents[text_String] := Module[{lines, blocks = {}, cur = None},
+  lines = iNBICSUnfoldLines[text];
+  Do[Which[
+    StringMatchQ[ln, "BEGIN:VEVENT", IgnoreCase -> True], cur = {},
+    StringMatchQ[ln, "END:VEVENT", IgnoreCase -> True],
+      If[ListQ[cur], AppendTo[blocks, cur]]; cur = None,
+    ListQ[cur], AppendTo[cur, ln]], {ln, lines}];
+  Select[Quiet[iNBICSParseEvent /@ blocks], AssociationQ]];
+NBAccess`NBICSParseEvents[___] := {};
+
+(* ---- RRULE expansion (deterministic, chronological) ---- *)
+
+iNBCalNthWeekdayOfMonth[y_, mo_, ord_Integer, wday_Integer, h_, mi_, s_, tz_] := Module[
+  {dim = iNBCalDaysInMonth[y, mo], firstIdx, lastIdx, d},
+  If[ord > 0,
+    firstIdx = iNBCalDayIndex[DateObject[{y, mo, 1}]];
+    d = 1 + Mod[wday - firstIdx, 7] + 7*(ord - 1),
+    lastIdx = iNBCalDayIndex[DateObject[{y, mo, dim}]];
+    d = dim - Mod[lastIdx - wday, 7] + 7*(ord + 1)];
+  If[1 <= d <= dim, iNBCalMakeDate[y, mo, d, h, mi, s, tz], Missing["None"]]];
+
+iNBCalMonthCandidates[start_, interval_, k_, byday_, bymday_, h_, mi_, s_, tz_] := Module[
+  {y0 = DateValue[start, "Year"], m0 = DateValue[start, "Month"], idx, y, mo},
+  idx = 12*y0 + (m0 - 1) + k*interval;
+  y = Quotient[idx, 12]; mo = Mod[idx, 12] + 1;
+  Which[
+    MatchQ[byday, {__Association}] && AllTrue[byday, IntegerQ[#["Ord"]] &],
+    SortBy[DeleteMissing[Map[
+      Function[b, iNBCalNthWeekdayOfMonth[y, mo, b["Ord"], b["Day"], h, mi, s, tz]],
+      byday]], AbsoluteTime],
+    MatchQ[bymday, {__Integer}],
+    SortBy[DeleteMissing[Map[
+      Function[md, Module[{d = If[md > 0, md, iNBCalDaysInMonth[y, mo] + 1 + md]},
+        If[1 <= d <= iNBCalDaysInMonth[y, mo],
+          iNBCalMakeDate[y, mo, d, h, mi, s, tz], Missing["None"]]]],
+      bymday]], AbsoluteTime],
+    True,
+    Module[{d = DateValue[start, "Day"]},
+      If[d <= iNBCalDaysInMonth[y, mo],
+        {iNBCalMakeDate[y, mo, d, h, mi, s, tz]}, {}]]]];
+
+iNBCalPeriodCandidates[freq_, interval_, k_, start_, h_, mi_, s_, tz_, byday_, bymday_] :=
+  Switch[freq,
+    "DAILY", {iNBCalShiftDays[start, k*interval]},
+    "WEEKLY",
+    If[MatchQ[byday, {__Association}],
+      Module[{anchorMonday = iNBCalShiftDays[start, 1 - iNBCalDayIndex[start]], weekStart},
+        weekStart = iNBCalShiftDays[anchorMonday, 7*k*interval];
+        SortBy[Map[Function[b, iNBCalShiftDays[weekStart, b["Day"] - 1]], byday],
+          AbsoluteTime]],
+      {iNBCalShiftDays[start, 7*k*interval]}],
+    "MONTHLY", iNBCalMonthCandidates[start, interval, k, byday, bymday, h, mi, s, tz],
+    "YEARLY",
+    Module[{y = DateValue[start, "Year"] + k*interval,
+        mo = DateValue[start, "Month"], d = DateValue[start, "Day"]},
+      If[d <= iNBCalDaysInMonth[y, mo],
+        {iNBCalMakeDate[y, mo, d, h, mi, s, tz]}, {}]],
+    _, $Failed];
+
+iNBCalExcludedQ[c_, allday_, exMinKeys_, exDayKeys_] :=
+  If[TrueQ[allday], MemberQ[exDayKeys, iNBCalDayKey[c]],
+    MemberQ[exMinKeys, iNBCalMinuteKey[c]]];
+
+iNBCalExpandRRule[ev_Association, fromAbs_, toAbs_] := Module[
+  {rr = ev["RRule"], start = ev["Start"], startAbs, durSec, tz, h, mi, s, allday,
+   untilAbs, count, interval, freq, byday, bymday, exMinKeys, exDayKeys,
+   occs = {}, produced = 0, k = 0, done = False, guard = 0, cands},
+  startAbs = AbsoluteTime[start];
+  durSec = Max[0, AbsoluteTime[ev["End"]] - startAbs];
+  allday = TrueQ[ev["AllDay"]];
+  tz = Quiet@Check[start["TimeZone"], $TimeZone];
+  {h, mi, s} = If[allday, {0, 0, 0},
+    Round /@ (DateValue[start, {"Hour", "Minute", "Second"}] /. x_Real :> Round[x])];
+  freq = Lookup[rr, "Freq", ""];
+  interval = Lookup[rr, "Interval", 1];
+  count = Lookup[rr, "Count", Missing["None"]];
+  untilAbs = With[{u = Lookup[rr, "Until", Missing["None"]]},
+    If[DateObjectQ[u], AbsoluteTime[u], Infinity]];
+  byday = Lookup[rr, "ByDay", Missing["None"]];
+  bymday = Lookup[rr, "ByMonthDay", Missing["None"]];
+  exMinKeys = iNBCalMinuteKey /@ ev["ExDates"];
+  exDayKeys = iNBCalDayKey /@ ev["ExDates"];
+  While[!done && guard++ < $iNBCalMaxPeriods,
+    cands = iNBCalPeriodCandidates[freq, interval, k, start, h, mi, s, tz, byday, bymday];
+    If[cands === $Failed, done = True,
+      cands = Select[cands, AbsoluteTime[#] >= startAbs - 1 &];
+      Do[
+        If[!done,
+          Module[{cAbs = AbsoluteTime[c]},
+            Which[
+              cAbs > untilAbs + 1.0, done = True,
+              IntegerQ[count] && produced >= count, done = True,
+              True,
+              (produced++;
+               Which[
+                 cAbs >= toAbs, done = True,
+                 cAbs + durSec > fromAbs &&
+                   !iNBCalExcludedQ[c, allday, exMinKeys, exDayKeys],
+                 (AppendTo[occs,
+                    <|"Start" -> c, "End" -> iNBCalFromAbs[cAbs + durSec, tz]|>];
+                  If[Length[occs] >= $iNBCalMaxOccurrences, done = True])])]]],
+        {c, cands}]];
+    k++];
+  occs];
+
+NBAccess`NBICSEventOccurrences[ev_Association, from_, to_] := Module[
+  {fromAbs = Quiet@Check[AbsoluteTime[from], $Failed],
+   toAbs = Quiet@Check[AbsoluteTime[to], $Failed], rr},
+  If[!NumberQ[fromAbs] || !NumberQ[toAbs] || toAbs <= fromAbs, {},
+    rr = Lookup[ev, "RRule", Missing["None"]];
+    If[AssociationQ[rr] && StringQ[Lookup[rr, "Freq", ""]] &&
+        MemberQ[{"DAILY", "WEEKLY", "MONTHLY", "YEARLY"}, Lookup[rr, "Freq", ""]],
+      Map[Function[o, Join[KeyDrop[ev, {"RRule", "ExDates", "RecurrenceId"}],
+        <|"Start" -> o["Start"], "End" -> o["End"],
+          "OriginalStart" -> o["Start"], "Recurring" -> True|>]],
+        iNBCalExpandRRule[ev, fromAbs, toAbs]],
+      Module[{sAbs = Quiet@Check[AbsoluteTime[ev["Start"]], $Failed],
+          eAbs = Quiet@Check[AbsoluteTime[ev["End"]], $Failed],
+          recId = Lookup[ev, "RecurrenceId", Missing["None"]]},
+        If[NumberQ[sAbs] && NumberQ[eAbs] && sAbs < toAbs && Max[eAbs, sAbs + 1] > fromAbs,
+          {Join[KeyDrop[ev, {"RRule", "ExDates", "RecurrenceId"}],
+            <|"OriginalStart" -> If[DateObjectQ[recId], recId, ev["Start"]],
+              "Recurring" -> False|>]}, {}]]]]];
+NBAccess`NBICSEventOccurrences[___] := {};
+
+iNBCalOccurrencesAll[events_List, fromAbs_, toAbs_] := Module[
+  {overrides, masters, ovByUid, out = {}},
+  overrides = Select[events, DateObjectQ[Lookup[#, "RecurrenceId", Missing[]]] &];
+  masters = Select[events, !DateObjectQ[Lookup[#, "RecurrenceId", Missing[]]] &];
+  ovByUid = GroupBy[overrides, Lookup[#, "UID", ""] &];
+  Do[Module[{evx = ev, ovs = Lookup[ovByUid, Lookup[ev, "UID", ""], {}]},
+      If[ovs =!= {},
+        evx = Append[ev, "ExDates" ->
+          Join[Lookup[ev, "ExDates", {}], Map[#["RecurrenceId"] &, ovs]]]];
+      out = Join[out, NBAccess`NBICSEventOccurrences[evx,
+        iNBCalFromAbs[fromAbs, $TimeZone], iNBCalFromAbs[toAbs, $TimeZone]]]],
+    {ev, masters}];
+  Do[Module[{sAbs = Quiet@Check[AbsoluteTime[ov["Start"]], $Failed],
+      eAbs = Quiet@Check[AbsoluteTime[ov["End"]], $Failed],
+      recId = Lookup[ov, "RecurrenceId", Missing["None"]]},
+      If[NumberQ[sAbs] && NumberQ[eAbs] && sAbs < toAbs && Max[eAbs, sAbs + 1] > fromAbs,
+        AppendTo[out, Join[KeyDrop[ov, {"RRule", "ExDates", "RecurrenceId"}],
+          <|"OriginalStart" -> If[DateObjectQ[recId], recId, ov["Start"]],
+            "Recurring" -> True|>]]]],
+    {ov, overrides}];
+  out = Select[out, Lookup[#, "Status", "CONFIRMED"] =!= "CANCELLED" &];
+  SortBy[out, {AbsoluteTime[#["Start"]] &, Lookup[#, "UID", ""] &}]];
+
+(* ---- source resolution / fetch / cache ---- *)
+
+iNBCalResolveSource[Automatic] := Module[
+  {cred = Quiet@Check[SystemCredential[NBAccess`$NBCalendarCredentialName], $Failed], sec},
+  sec = Which[
+    StringQ[cred], cred,
+    cred === $Failed || MissingQ[cred] || cred === None, $Failed,
+    True, Quiet@Check[cred["Secret"], $Failed]];
+  If[StringQ[sec], sec, $Failed]];
+iNBCalResolveSource[src_String] := src;
+iNBCalResolveSource[___] := $Failed;
+
+iNBCalFetchICSText[source_String] := Which[
+  StringStartsQ[ToLowerCase[source], "http"],
+  Module[{r = Quiet@Check[URLRead[source], $Failed]},
+    If[MatchQ[r, _HTTPResponse] && r["StatusCode"] === 200,
+      Quiet@Check[ByteArrayToString[r["BodyByteArray"], "UTF-8"],
+        Quiet@Check[r["Body"], $Failed]],
+      $Failed]],
+  FileExistsQ[source],
+  Quiet@Check[ByteArrayToString[ReadByteArray[source], "UTF-8"],
+    Quiet@Check[Import[source, "Text"], $Failed]],
+  True, $Failed];
+iNBCalFetchICSText[___] := $Failed;
+
+iNBCalGetEvents[source_String, refresh_] := Module[
+  {key = ToString[Hash[source, "SHA256"]], now = AbsoluteTime[], entry, text, evs},
+  entry = Lookup[$iNBCalCache, key, Missing["None"]];
+  If[!TrueQ[refresh] && AssociationQ[entry] &&
+      now - entry["At"] <= NBAccess`$NBCalendarCacheSeconds,
+    entry["Events"],
+    text = iNBCalFetchICSText[source];
+    If[!StringQ[text], $Failed,
+      evs = NBAccess`NBICSParseEvents[text];
+      AssociateTo[$iNBCalCache, key -> <|"At" -> now, "Events" -> evs|>];
+      evs]]];
+
+(* ---- access level resolution / field filtering ---- *)
+
+iNBCalResolveLevel[spec_] := Module[{s = If[spec === Automatic, NBAccess`$NBPrivacySpec, spec]},
+  Which[
+    AssociationQ[s] && NumberQ[Lookup[s, "AccessLevel", Missing[]]],
+      N[s["AccessLevel"]],
+    NumberQ[s], N[s],
+    True, 0.5]];
+
+(* R0b identity fields are returned at EVERY level (all opaque). *)
+$iNBCalIdentityFields = {"EventId", "OriginalStart", "SemanticDigest", "ObservedRevision"};
+iNBCalLevelFields[level_] := Which[
+  level >= 1.0, All,
+  level >= 0.7, Join[{"Start", "End", "AllDay", "Busy", "Mandatory", "Recurring",
+    "Summary", "Categories", "Status", "UIDDigest"}, $iNBCalIdentityFields],
+  True, Join[{"Start", "End", "AllDay", "Busy", "Mandatory", "Recurring", "UIDDigest"},
+    $iNBCalIdentityFields]];
+
+iNBCalFilterFields[assoc_, All] := assoc;
+iNBCalFilterFields[assoc_, fields_List] := KeyTake[assoc, fields];
+
+iNBCalMandatoryQ[occ_, patterns_List] := Module[{hay},
+  If[patterns === {}, False,
+    hay = StringRiffle[Select[Flatten[{Lookup[occ, "Summary", ""],
+      Lookup[occ, "Categories", {}],
+      Lookup[occ, "Description", ""]}], StringQ], " "];
+    AnyTrue[patterns,
+      Function[p, TrueQ[Quiet@Check[StringContainsQ[hay, p, IgnoreCase -> True], False]]]]]];
+
+iNBCalUIDDigest[uid_] := StringTake[
+  IntegerString[Hash[If[StringQ[uid], uid, ToString[uid]], "SHA256"], 36] <>
+    "0000000000000000", 16];
+
+(* ---- R0b: identity / revision (returned at every access level) ---- *)
+
+(* HMAC-SHA256 (RFC 2104), hex. Verified against RFC 4231 test vector 2. *)
+iNBCalHMAC[key_String, msg_String] := Module[
+  {b = 64, kb, k0, ipad, opad, inner},
+  kb = Normal[StringToByteArray[key, "UTF-8"]];
+  If[Length[kb] > b, kb = Normal[Hash[StringToByteArray[key, "UTF-8"], "SHA256", "ByteArray"]]];
+  k0 = PadRight[kb, b, 0];
+  ipad = BitXor[k0, ConstantArray[16^^36, b]];
+  opad = BitXor[k0, ConstantArray[16^^5C, b]];
+  inner = Normal[Hash[ByteArray[Join[ipad, Normal[StringToByteArray[msg, "UTF-8"]]]],
+    "SHA256", "ByteArray"]];
+  IntegerString[Hash[ByteArray[Join[opad, inner]], "SHA256"], 16]];
+
+iNBCalIdentityKey[] := Module[
+  {ref = NBAccess`$NBCalendarIdentityKeyRef, cred},
+  If[!StringQ[ref] || ref === "", Missing["Unkeyed"],
+    cred = Quiet@Check[SystemCredential[ref], $Failed];
+    Which[
+      StringQ[cred] && cred =!= "", cred,
+      cred === $Failed || MissingQ[cred] || cred === None, Missing["Unkeyed"],
+      True, With[{s = Quiet@Check[cred["Secret"], $Failed]},
+        If[StringQ[s] && s =!= "", s, Missing["Unkeyed"]]]]]];
+
+(* stable short id for the key itself (does not expose the key) *)
+iNBCalKeyId[key_String] := StringTake[
+  IntegerString[Hash["nbcal-idkey:" <> key, "SHA256"], 36] <> "00000000", 8];
+
+iNBCalEventId[uid_String, key_String] :=
+  "idv1:" <> iNBCalKeyId[key] <> ":" <> StringTake[iNBCalHMAC[key, uid], 32];
+iNBCalEventId[uid_String, _] := "unkeyed:" <> iNBCalUIDDigest[uid];
+iNBCalEventId[uid_, k_] := iNBCalEventId[If[StringQ[uid], uid, ToString[uid]], k];
+
+(* canonical, TZ-independent instant for digesting *)
+iNBCalDigestTime[d_] := If[DateObjectQ[d], Round[AbsoluteTime[d]], "none"];
+
+iNBCalSemanticDigest[o_Association] := IntegerString[Hash[{
+  "os", iNBCalDigestTime[Lookup[o, "OriginalStart", Missing["None"]]],
+  "s", iNBCalDigestTime[Lookup[o, "Start", Missing["None"]]],
+  "e", iNBCalDigestTime[Lookup[o, "End", Missing["None"]]],
+  "st", ToUpperCase[ToString[Lookup[o, "Status", "CONFIRMED"]]],
+  "b", TrueQ[Lookup[o, "Busy", True]],
+  "ad", TrueQ[Lookup[o, "AllDay", False]]}, "SHA256"], 36];
+
+iNBCalObservedRevision[o_Association] := IntegerString[Hash[{
+  "seq", Lookup[o, "Sequence", 0],
+  "ts", ToString[Lookup[o, "Dtstamp", ""]]}, "SHA256"], 36];
+
+(* ---- public API ---- *)
+
+Options[NBAccess`NBCalendarEvents] = {
+  PrivacySpec -> Automatic,
+  "Source" -> Automatic,
+  "ICSText" -> Missing["None"],
+  "MandatoryPatterns" -> Automatic,
+  "MaxEvents" -> 500,
+  "Refresh" -> False,
+  "Wrap" -> False};
+
+NBAccess`NBCalendarEvents[from_, to_, OptionsPattern[]] := Module[
+  {level, fromAbs, toAbs, evs, occs, patterns, fields, maxE, idKey, keyed,
+   totalCount, truncated, result},
+  level = iNBCalResolveLevel[OptionValue[PrivacySpec]];
+  fromAbs = Quiet@Check[AbsoluteTime[from], $Failed];
+  toAbs = Quiet@Check[AbsoluteTime[to], $Failed];
+  Which[
+    !NumberQ[level] || level < 0.5,
+    Failure["NBCalendarAccessDenied", <|
+      "MessageTemplate" -> "AccessLevel below 0.5 cannot read calendar data.",
+      "RequiredAccessLevel" -> 0.5|>],
+    !NumberQ[fromAbs] || !NumberQ[toAbs] || toAbs <= fromAbs,
+    Failure["NBCalendarBadWindow", <|
+      "MessageTemplate" -> "Invalid from/to window for NBCalendarEvents."|>],
+    True,
+    evs = If[StringQ[OptionValue["ICSText"]],
+      NBAccess`NBICSParseEvents[OptionValue["ICSText"]],
+      Module[{src = iNBCalResolveSource[OptionValue["Source"]]},
+        If[!StringQ[src], $Failed,
+          iNBCalGetEvents[src, OptionValue["Refresh"]]]]];
+    If[evs === $Failed,
+      Failure["NBCalendarSourceUnavailable", <|
+        "MessageTemplate" ->
+          "Calendar source could not be read (credential/file/URL)."|>],
+      patterns = If[OptionValue["MandatoryPatterns"] === Automatic,
+        NBAccess`$NBCalendarMandatoryPatterns, OptionValue["MandatoryPatterns"]];
+      If[!ListQ[patterns], patterns = {}];
+      idKey = iNBCalIdentityKey[];
+      keyed = StringQ[idKey];
+      occs = iNBCalOccurrencesAll[evs, fromAbs, toAbs];
+      totalCount = Length[occs];
+      maxE = OptionValue["MaxEvents"];
+      truncated = IntegerQ[maxE] && maxE > 0 && totalCount > maxE;
+      If[truncated, occs = Take[occs, maxE]];
+      fields = iNBCalLevelFields[level];
+      result = Map[Function[o, Module[{enriched},
+        enriched = Join[o, <|
+          "Mandatory" -> iNBCalMandatoryQ[o, patterns],
+          "UIDDigest" -> iNBCalUIDDigest[Lookup[o, "UID", ""]],
+          "EventId" -> iNBCalEventId[Lookup[o, "UID", ""], idKey],
+          "SemanticDigest" -> iNBCalSemanticDigest[o],
+          "ObservedRevision" -> iNBCalObservedRevision[o]|>];
+        iNBCalFilterFields[KeyDrop[enriched, {"Sequence", "Dtstamp"}], fields]]], occs];
+      If[TrueQ[OptionValue["Wrap"]],
+        <|"Events" -> result,
+          "ObservedAtUTC" -> DateString[Now, "ISODateTime", TimeZone -> 0] <> "Z",
+          "Count" -> Length[result],
+          "Truncated" -> truncated,
+          "Completeness" -> If[truncated && totalCount > 0,
+            N[Length[result]/totalCount], 1.0],
+          "IdentityKeyed" -> keyed|>,
+        result]]]];
+
+Options[NBAccess`NBCalendarFreeBusy] = {
+  PrivacySpec -> Automatic,
+  "Source" -> Automatic,
+  "ICSText" -> Missing["None"],
+  "MandatoryPatterns" -> Automatic,
+  "Refresh" -> False};
+
+NBAccess`NBCalendarFreeBusy[from_, to_, opts : OptionsPattern[]] := Module[
+  {evres, busy, blocks = {}},
+  evres = NBAccess`NBCalendarEvents[from, to,
+    "MaxEvents" -> 10000,
+    PrivacySpec -> OptionValue[PrivacySpec],
+    "Source" -> OptionValue["Source"],
+    "ICSText" -> OptionValue["ICSText"],
+    "MandatoryPatterns" -> OptionValue["MandatoryPatterns"],
+    "Refresh" -> OptionValue["Refresh"]];
+  If[!ListQ[evres], evres,
+    busy = SortBy[Select[evres, TrueQ[#["Busy"]] &], AbsoluteTime[#["Start"]] &];
+    Do[Module[{s = AbsoluteTime[b["Start"]], e = AbsoluteTime[b["End"]],
+        m = TrueQ[b["Mandatory"]], last},
+      If[blocks === {} || s > blocks[[-1]]["EndAbs"],
+        AppendTo[blocks, <|"StartAbs" -> s, "EndAbs" -> e,
+          "Mandatory" -> m, "Count" -> 1|>],
+        last = blocks[[-1]];
+        blocks[[-1]] = <|"StartAbs" -> last["StartAbs"],
+          "EndAbs" -> Max[last["EndAbs"], e],
+          "Mandatory" -> (last["Mandatory"] || m),
+          "Count" -> last["Count"] + 1|>]],
+      {b, busy}];
+    Map[Function[b, <|"Start" -> iNBCalFromAbs[b["StartAbs"], $TimeZone],
+      "End" -> iNBCalFromAbs[b["EndAbs"], $TimeZone],
+      "Mandatory" -> b["Mandatory"], "Count" -> b["Count"]|>], blocks]]];
+
+Options[NBAccess`NBCalendarBusyQ] = {
+  PrivacySpec -> Automatic,
+  "Source" -> Automatic,
+  "ICSText" -> Missing["None"],
+  "MandatoryPatterns" -> Automatic,
+  "Refresh" -> False,
+  "Detailed" -> False};
+
+NBAccess`NBCalendarBusyQ[t_, OptionsPattern[]] := Module[
+  {tAbs = Quiet@Check[AbsoluteTime[t], $Failed], fb, hit},
+  If[!NumberQ[tAbs],
+    If[TrueQ[OptionValue["Detailed"]], <|"Busy" -> False, "Reason" -> "BadTime"|>, False],
+    fb = NBAccess`NBCalendarFreeBusy[
+      iNBCalFromAbs[tAbs - 32*86400, $TimeZone],
+      iNBCalFromAbs[tAbs + 60, $TimeZone],
+      PrivacySpec -> OptionValue[PrivacySpec],
+      "Source" -> OptionValue["Source"],
+      "ICSText" -> OptionValue["ICSText"],
+      "MandatoryPatterns" -> OptionValue["MandatoryPatterns"],
+      "Refresh" -> OptionValue["Refresh"]];
+    If[!ListQ[fb],
+      If[TrueQ[OptionValue["Detailed"]],
+        <|"Busy" -> False, "Reason" -> "SourceUnavailable"|>, False],
+      hit = SelectFirst[fb,
+        AbsoluteTime[#["Start"]] <= tAbs < AbsoluteTime[#["End"]] &, Missing["None"]];
+      If[TrueQ[OptionValue["Detailed"]],
+        If[MissingQ[hit], <|"Busy" -> False|>,
+          <|"Busy" -> True, "Mandatory" -> TrueQ[hit["Mandatory"]],
+            "Block" -> KeyTake[hit, {"Start", "End"}]|>],
+        !MissingQ[hit]]]]];
+
+End[]; (* NBAccess`Private` for the calendar block *)
+
+(* ============================================================
+   $onWork task metadata: access-level gated, NON-EVALUATING read.
+   The security core (NBOnWorkTaskSafeExtract) processes a HELD expression and
+   evaluates nothing but whitelisted literal values it rebuilds itself; it never
+   calls ReleaseHold (static AC-033). Wrapped in its own Begin/End Private.
+   ============================================================ *)
+
+Begin["NBAccess`Private`"];
+
+$iNBOnwWhitelist = {"Title", "Status", "Deadline", "NextReview", "EventDate",
+  "Keywords", "Effort", "Movable", "DependsOn", "TaskId"};
+
+(* ---- safe value matcher: pattern-match a HELD value, rebuild only literals ---- *)
+iNBOnwSafeValue[Hold[s_String]] := <|"OK" -> True, "Value" -> s|>;
+iNBOnwSafeValue[Hold[n_Integer]] := <|"OK" -> True, "Value" -> n|>;
+iNBOnwSafeValue[Hold[r_Real]] := <|"OK" -> True, "Value" -> r|>;
+iNBOnwSafeValue[Hold[True]] := <|"OK" -> True, "Value" -> True|>;
+iNBOnwSafeValue[Hold[False]] := <|"OK" -> True, "Value" -> False|>;
+iNBOnwSafeValue[Hold[DateObject[d : {__Integer}]]] :=
+  <|"OK" -> True, "Value" -> DateObject[d]|>;
+iNBOnwSafeValue[Hold[DateObject[d : {__Integer}, g_String]]] :=
+  <|"OK" -> True, "Value" -> DateObject[d, g]|>;
+iNBOnwSafeValue[Hold[Quantity[n : (_Integer | _Real), u_String]]] :=
+  <|"OK" -> True, "Value" -> Quantity[n, u]|>;
+iNBOnwSafeValue[Hold[{ss___String}]] := <|"OK" -> True, "Value" -> {ss}|>;
+iNBOnwSafeValue[_] := <|"OK" -> False, "Value" -> Missing["Unsafe"]|>;
+
+(* one held rule -> a (possibly empty) safe fragment. Whitelisted string key only. *)
+iNBOnwRuleFromHold[Hold[(Rule | RuleDelayed)[k_String, v_]]] :=
+  If[MemberQ[$iNBOnwWhitelist, k],
+    With[{sv = iNBOnwSafeValue[Hold[v]]},
+      If[TrueQ[sv["OK"]], <|k -> sv["Value"]|>, <||>]],
+    <||>];
+iNBOnwRuleFromHold[_] := <||>;
+
+(* collect held rules without evaluating any value *)
+SetAttributes[iNBOnwCollect, HoldAllComplete];
+iNBOnwCollect[rs___] := Module[{heldRules = List @@ (Hold /@ Hold[rs])},
+  Association[Flatten[Normal /@ (iNBOnwRuleFromHold /@ heldRules)]]];
+
+NBAccess`NBOnWorkTaskSafeExtract[h_] := Module[{held1},
+  held1 = Which[
+    MatchQ[h, _HoldComplete], Replace[h, HoldComplete[a_] :> Hold[a]],
+    MatchQ[h, _Hold], h,
+    True, Return[<||>]];
+  (* optional outer list (NotebookExtensions took icell[[1]]) *)
+  held1 = Replace[held1, Hold[{first_, ___}] :> Hold[first]];
+  Replace[held1, {
+    Hold[Association[rs___]] :> iNBOnwCollect[rs],
+    _ :> <||>}]];
+NBAccess`NBOnWorkTaskSafeExtract[___] := <||>;
+
+(* ---- file read glue: held expression from a .nb WITHOUT evaluating cells ---- *)
+iNBOnwHeldFromFile[path_String] := Module[{cells, inits, bd, held},
+  cells = Quiet@Check[Import[path, "Cells"], $Failed];
+  If[!ListQ[cells], Return[Missing["Unreadable"]]];
+  inits = Cases[cells, Cell[bx_, ___, InitializationCell -> True, ___] :> bx, Infinity];
+  If[inits === {},
+    inits = Cases[cells, Cell[BoxData[bx_], "Input", ___] :> BoxData[bx], Infinity]];
+  If[inits === {}, Return[Missing["NoInit"]]];
+  bd = First[inits];
+  held = Quiet@Check[MakeExpression[bd, StandardForm], $Failed];
+  If[MatchQ[held, _HoldComplete], held, Missing["ParseFailed"]]];
+iNBOnwHeldFromFile[___] := Missing["Unreadable"];
+
+(* ---- derivation: safe metadata -> normalized task record ---- *)
+iNBOnwState[meta_] := Module[{st = Lookup[meta, "Status", Missing["None"]]},
+  Which[
+    !StringQ[st], "Open",
+    MemberQ[{"Done", "Pass"}, st], st,
+    st === "Keep", "Keep",
+    True, "Open"]];
+
+iNBOnwDue[meta_, modDate_] := Module[{dl = Lookup[meta, "Deadline", Missing["None"]],
+   nr = Lookup[meta, "NextReview", Missing["None"]]},
+  Which[
+    DateObjectQ[dl], <|"Due" -> dl, "DueKind" -> "Deadline"|>,
+    DateObjectQ[nr], <|"Due" -> nr, "DueKind" -> "NextReview"|>,
+    (* NextReview as an offset Quantity resolves against ModificationDate *)
+    MatchQ[nr, _Quantity] && DateObjectQ[modDate],
+      <|"Due" -> DatePlus[modDate, nr], "DueKind" -> "NextReview"|>,
+    True, <|"Due" -> Missing["None"], "DueKind" -> Missing["None"]|>]];
+
+iNBOnwDigest[s_] := StringTake[
+  IntegerString[Hash[If[StringQ[s], s, ToString[s]], "SHA256"], 36] <>
+    "0000000000000000", 16];
+
+iNBOnwLevel[spec_] := Module[{s = If[spec === Automatic, NBAccess`$NBPrivacySpec, spec]},
+  Which[AssociationQ[s] && NumberQ[Lookup[s, "AccessLevel", Missing[]]], N[s["AccessLevel"]],
+    NumberQ[s], N[s], True, 0.5]];
+
+iNBOnwProject[rec_, level_] := Module[{base},
+  base = KeyTake[rec, {"Due", "DueKind", "State", "FileDigest", "ModificationDate",
+    "ParseFailed"}];
+  Which[
+    level >= 1.0, rec,
+    level >= 0.7, Join[base, KeyTake[rec,
+      {"Title", "Keywords", "TaskId", "Effort", "Movable", "DependsOn"}]],
+    True, base]];
+
+(* build one normalized record from (path, held-metadata, modDate) *)
+iNBOnwRecord[path_, held_, modDate_] := Module[{meta, due, parseFailed, rec},
+  parseFailed = MissingQ[held] || !MatchQ[held, _HoldComplete | _Hold];
+  meta = If[parseFailed, <||>, NBAccess`NBOnWorkTaskSafeExtract[held]];
+  If[!AssociationQ[meta], meta = <||>; parseFailed = True];
+  due = iNBOnwDue[meta, modDate];
+  rec = <|
+    "TaskId" -> Lookup[meta, "TaskId", Missing["None"]],
+    "Title" -> Lookup[meta, "Title", Missing["None"]],
+    "Keywords" -> Lookup[meta, "Keywords", {}],
+    "Effort" -> Lookup[meta, "Effort", Missing["None"]],
+    "Movable" -> Lookup[meta, "Movable", Missing["None"]],
+    "DependsOn" -> Lookup[meta, "DependsOn", {}],
+    "Due" -> due["Due"], "DueKind" -> due["DueKind"],
+    "State" -> If[parseFailed, "Unknown", iNBOnwState[meta]],
+    "ModificationDate" -> modDate,
+    "FileDigest" -> iNBOnwDigest[path],
+    "Path" -> path,
+    "ParseFailed" -> parseFailed|>;
+  rec];
+
+Options[NBAccess`NBOnWorkTasks] = {
+  "Directory" -> Automatic, "ModifiedWithinDays" -> Automatic,
+  "IncludeDone" -> False, PrivacySpec -> Automatic, "MaxFiles" -> 2000,
+  "Files" -> Automatic};
+
+NBAccess`NBOnWorkTasks[OptionsPattern[]] := Module[
+  {level, dir, files, recs, maxF = OptionValue["MaxFiles"], within, cutoff},
+  level = iNBOnwLevel[OptionValue[PrivacySpec]];
+  If[!NumberQ[level] || level < 0.5,
+    Return[Failure["NBOnWorkAccessDenied", <|
+      "MessageTemplate" -> "AccessLevel below 0.5 cannot read $onWork tasks.",
+      "RequiredAccessLevel" -> 0.5|>]]];
+  recs = Which[
+    (* test seam: injected files with held metadata *)
+    ListQ[OptionValue["Files"]],
+      Map[Function[f, iNBOnwRecord[Lookup[f, "Path", "injected"],
+        Lookup[f, "Held", Missing["None"]],
+        Lookup[f, "ModificationDate", Missing["None"]]]], OptionValue["Files"]],
+    True,
+      dir = OptionValue["Directory"];
+      If[dir === Automatic, dir = Quiet@Check[Symbol["Global`$onWork"], $Failed]];
+      If[!StringQ[dir] || !DirectoryQ[dir],
+        Return[Failure["NBOnWorkNoDirectory", <|
+          "MessageTemplate" -> "$onWork directory not found."|>]]];
+      files = Quiet@Check[
+        FileNames["*.nb", dir, Infinity], {}];
+      within = OptionValue["ModifiedWithinDays"];
+      If[NumberQ[within],
+        cutoff = AbsoluteTime[] - within*86400;
+        files = Select[files,
+          Quiet@Check[AbsoluteTime[FileDate[#]] >= cutoff, True] &]];
+      If[IntegerQ[maxF] && maxF > 0 && Length[files] > maxF,
+        files = Take[files, maxF]];
+      Map[Function[p, iNBOnwRecord[p, iNBOnwHeldFromFile[p],
+        Quiet@Check[FileDate[p], Missing["None"]]]], files]];
+  (* IncludeDone filter *)
+  If[!TrueQ[OptionValue["IncludeDone"]],
+    recs = Select[recs, !MemberQ[{"Done", "Pass"}, Lookup[#, "State", "Open"]] &]];
+  iNBOnwProject[#, level] & /@ recs];
+NBAccess`NBOnWorkTasks[___] :=
+  Failure["NBOnWorkBadArgs", <|"MessageTemplate" -> "Bad NBOnWorkTasks arguments."|>];
+
+End[]; (* NBAccess`Private` for the $onWork block *)
 
 End[];
 EndPackage[];
