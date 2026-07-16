@@ -11918,7 +11918,7 @@ End[]; (* NBAccess`Private` for the calendar block *)
 Begin["NBAccess`Private`"];
 
 $iNBOnwWhitelist = {"Title", "Status", "Deadline", "NextReview", "EventDate",
-  "Keywords", "Effort", "Movable", "DependsOn", "TaskId"};
+  "Keywords", "Effort", "Movable", "DependsOn", "TaskId", "MailRecordId"};
 
 (* ---- safe value matcher: pattern-match a HELD value, rebuild only literals ---- *)
 iNBOnwSafeValue[Hold[s_String]] := <|"OK" -> True, "Value" -> s|>;
@@ -12012,7 +12012,12 @@ iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held},
         inits0 = Cases[nb0, Cell[b_BoxData, "Input", ___] :> b, Infinity]];
       If[inits0 === {}, Missing["NoInit"],
         bd0 = First[inits0];
-        h0 = Quiet@Check[MakeExpression[bd0, StandardForm], $Failed];
+        (* text-content cells (e.g. mail-inherited notebooks) parse via
+           ToExpression+HoldComplete -- still NON-EVALUATING (third arg wraps
+           the parse result unevaluated); box cells via MakeExpression. *)
+        h0 = If[StringQ[bd0],
+          Quiet@Check[ToExpression[bd0, InputForm, HoldComplete], $Failed],
+          Quiet@Check[MakeExpression[bd0, StandardForm], $Failed]];
         If[MatchQ[h0, _HoldComplete], h0, Missing["ParseFailed"]]]]];
   If[fd =!= $Failed,
     $iNBOnwCache[path] = <|"D" -> fd, "H" -> held|>; $iNBOnwCacheDirty = True];

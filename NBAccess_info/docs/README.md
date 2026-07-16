@@ -36,6 +36,8 @@ API キー管理では、クラウド LLM（Anthropic、OpenAI）だけでなく
 
 **クラウド公開宣言（CloudPublishable）**: ノートブックに `CloudPublishable -> False` を宣言することで、そのノートブックが機密データを含みクラウド LLM への送信を拒否することを明示できます。`NBNotebookRequiredAccessLevel[nb]` はこの宣言を読み取り、Private 宣言済みのノートブックでは 1.0（ローカル LLM のみ）、それ以外では 0.0 を返します。この値は `NBGetAvailableFallbackModels` と組み合わせてプロバイダールーティング判定に利用できます。
 
+**ノートブックキャッシュ修復**: 外部ツール（エディタ・バージョン管理のマージ等）で Wolfram System の外側から直接編集された `.nb` ファイルは、ヘッダ内のバイト位置キャッシュ（NotebookDataLength / OutlinePosition / CellTagsIndexPosition 等）が実体とずれ、開くたびにクリーンアップダイアログが繰り返し出るなどの症状を起こします。`NBRepairNotebookCache[path]` は該当ファイルを FrontEnd 経由で一度開いて `NotebookSave` することでこのバイト位置キャッシュを再生成します（Notebook 式の内容自体は変更しません）。フォルダ配下を一括修復する `NBRepairNotebookCacheFolder[dir, opts]`、通常修復では効果がない場合の強力版フォールバック `NBRepairNotebookCacheStrict[path]`（`NotebookImport` で読み込み、`CreateDocument` で新規ノートブックを作成し直して元パスに上書き保存）、および修復作業で残る `.nb.tmp-*` の残骸を削除する `NBCleanupTmpFiles[dir, opts]` も提供されます。
+
 ### 変数依存グラフによる自動検出
 
 NBAccess は Input セルの代入文を静的に解析し、変数間の依存関係グラフを構築します。機密変数に直接・間接的に依存するすべてのセルを推移的に検出し、自動的に「依存機密」としてマークします。これにより、`apiKey = "sk-..."` のような直接的な機密だけでなく、`result = callAPI[apiKey]` のような間接的な機密も漏れなく保護されます。
@@ -70,6 +72,17 @@ NBAccess は、Claude Code が参照可能なディレクトリを **AccessPathR
 ### ノートブックモデル選択と信頼ローカルサーバー管理
 
 NBAccess は、ノートブック単位でどの LLM モデルを優先的に使用するかを設定し、信頼できるローカル LLM サーバーを管理する仕組みを提供します。これにより、ノートブックごとに異なるモデルやサーバーエンドポイントを割り当て、実行環境に応じた柔軟なルーティングが可能になります。詳細は [ユーザーマニュアル](docs/user_manual.md) のノートブックモデル選択セクションを参照してください。
+
+### カレンダーアクセスと $onWork タスクメタデータ（アクセスレベル制御・新機能）
+
+NBAccess は、プライバシーファーストの設計をノートブック外部の情報源にも拡張し、ユーザーの iCal/ICS カレンダーおよび `$onWork` ディレクトリ配下のタスク管理ノートブック群を、アクセスレベルに応じて安全に読み取る API を提供します。
+
+- **`NBCalendarEvents[from, to, opts]`** — iCal/ICS カレンダー（`SystemCredential` 経由のファイルパス / URL、または明示指定）を読み取り、指定期間に重なる予定を開始時刻順の Association リストとして返します。RRULE（FREQ DAILY/WEEKLY/MONTHLY/YEARLY、INTERVAL、UNTIL、COUNT、序数付き BYDAY、負数を含む BYMONTHDAY、EXDATE、RECURRENCE-ID による個別上書き・キャンセルを含む）を正しく展開します。返却フィールドはアクセスレベルに応じて段階的に開示されます：**0.5 以上** で空き/埋まり・出席必須フラグ・匿名化された安定 ID などのメタ情報のみ、**0.7 以上** で件名・カテゴリ・ステータスが追加、**1.0** で説明・場所・UID を含む全フィールドが開示されます。0.5 未満は `Failure["NBCalendarAccessDenied"]` を返します。
+- **`NBCalendarFreeBusy[from, to, opts]`** / **`NBCalendarBusyQ[t, opts]`** — 予定の内容を一切含まない空き時間ブロック（またはある時刻が会議中か）のみを返します。AccessLevel 0.5 から利用可能で、`NBCalendarBusyQ` はカレンダーソースが取得できない場合 `Failure` ではなく `False`（非多忙扱い）にフェイルオープンし、通知ゲーティングの安全側動作を保証します。
+- **`NBICSParseEvents[icsText]`** / **`NBICSEventOccurrences[event, from, to]`** — 資格情報・ネットワークアクセス・アクセス制御を伴わない純粋な ICS パーサおよび RRULE 展開関数です。
+- **`NBOnWorkTasks[opts]`** — `$onWork` ディレクトリ配下のタスク管理ノートブック（.nb）を列挙し、アクセスレベルに応じて射影されたタスクレコードを返します。各ノートブックのメタデータは `NBOnWorkTaskSafeExtract` が **式を一切評価せずに** 抽出します（許可された文字列キー Title/Status/Deadline/NextReview/EventDate/Keywords/Effort/Movable/DependsOn/TaskId とリテラル値のみを保持し、それ以外はすべて破棄）。0.5 未満は `Failure["NBOnWorkAccessDenied"]` を返し、ノートブック本文・出力はいかなるアクセスレベルでも読み取られません。
+
+これらの API は、Anthropic 等クラウド LLM にスケジュール情報を渡す際の意図しない情報漏洩を防ぎつつ、AI エージェントが空き時間確認やタスク進捗の把握を安全に行えるようにするために設計されています。
 
 ### 暗号鍵ストア (NBAccess_crypto)
 
@@ -294,6 +307,10 @@ path   = NBNormalizePath["C:/Data/secret.csv"]; (* SymbolicPath 情報 *)
 (* 14. [オプション] ClaudeRuntime 導入時: ルーティング判定と式の事前検証 *)
 (* NBRouteDecision[0.5]  *)
 (* NBValidateHeldExpr[HoldComplete[1 + 1], <|"AccessLevel" -> 0.5|>] *)
+
+(* 15. カレンダー・$onWork タスクの読み取り（アクセスレベルに応じて段階開示） *)
+(* NBCalendarFreeBusy[Now, Now + Quantity[7, "Days"]] *)
+(* NBOnWorkTasks["ModifiedWithinDays" -> 30] *)
 ```
 
 #### 主要設定変数
@@ -311,6 +328,10 @@ path   = NBNormalizePath["C:/Data/secret.csv"]; (* SymbolicPath 情報 *)
 | `$NBConfidentialCellOpts` | 機密マーク（直接）のセル表示オプション | 赤背景 + WarningSign |
 | `$NBDependentCellOpts` | 依存機密マークのセル表示オプション | 橙背景 + LockIcon |
 | `$NBCredentialBackend` | 暗号鍵ストアのバックエンド | `"Memory"` |
+| `$NBCalendarMandatoryPatterns` | 出席必須イベントを判定する文字列パターンリスト | `{}` |
+| `$NBCalendarCacheSeconds` | カレンダーソースのインメモリ解析キャッシュ TTL（秒） | `300` |
+| `$NBCalendarCredentialName` | ICS カレンダー所在地（パス/URL）を保持する `SystemCredential` キー名 | `"ics-calendar"` |
+| `$NBCalendarIdentityKeyRef` | イベント安定 ID 生成用 HMAC 鍵の KeyRef | `Missing["None"]` |
 
 > ClaudeRuntime を導入すると、式検証用に `$NBAllowedHeads` / `$NBApprovalHeads` / `$NBDenyHeads` などのグローバル変数が追加されます。既存コードがこれらのシンボル名を独自に使用している場合は名前の衝突を確認してください。
 
@@ -360,6 +381,9 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBParentNotebookOfCurrentCell[]`** — EvaluationCell の親ノートブックを返します
 - **`NBEvaluatePreviousCell[nb]`** — 直前のセルを選択して評価します
 - **`NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]`** — セルのプライバシーレベルに応じた LLM を自動選択し、非同期でセルを変換します
+- **`NBInvalidateCellsCache[]`** / **`NBInvalidateCellsCache[nb]`** — 内部セルキャッシュをクリアします（`nb` 省略時は全ノートブック分）
+- **`NBUserNotebooks[]`** — WindowFrame が通常のユーザーノートブックのみを返します（パレット・ダイアログ等を除外）
+- **`NBRefreshCellsCache[]`** — ユーザーノートブックのセルキャッシュをスマートに再検証し、変更があったノートブックのリストを返します
 
 #### プライバシー制御
 
@@ -401,6 +425,32 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBGetAvailableFallbackModels[accessLevel]`** — 指定アクセスレベルで利用可能なフォールバックモデルを返します
 - **`NBProviderCanAccess[provider, accessLevel]`** — プロバイダーが指定アクセスレベルのデータにアクセス可能か判定します
 - **`NBNotebookRequiredAccessLevel[nb]`** — ノートブックが要求するアクセスレベルを返します（`CloudPublishable -> False` の Private 宣言時は 1.0、それ以外は 0.0）
+
+#### ノートブックキャッシュ修復（新機能）
+
+外部ツールで直接編集された `.nb` ファイルのバイト位置キャッシュを正規化し、開くたびのダイアログ再表示や読み込み失敗を解消します。
+
+- **`NBRepairNotebookCache[path]`** — 対象ファイルを FrontEnd 経由で開いて `NotebookSave` することでキャッシュを再生成します（Notebook 式の内容は変更しません）
+- **`NBRepairNotebookCacheFolder[dir, opts]`** — ディレクトリ配下の `.nb` を一括修復します（`"Recursive" -> True` が既定）
+- **`NBRepairNotebookCacheStrict[path]`** — 通常修復が効かない場合の強力版フォールバック。`NotebookImport` で読み込み、`CreateDocument` で新規ノートブックを作成し直して元パスへ上書き保存します（TaggingRules 等の帯同オプションも引き継ぎます）
+- **`NBCleanupTmpFiles[dir, opts]`** — 修復処理で残る `.nb.tmp-*` 残骸ファイルを削除します
+
+#### カレンダーアクセス (iCal/ICS)（新機能）
+
+ユーザーの iCal/ICS カレンダーをアクセスレベルに応じて安全に読み取ります。
+
+- **`NBCalendarEvents[from, to, opts]`** — 指定期間の予定を Association リストとして返します（RRULE 展開対応）。返却フィールドはアクセスレベルにより 3 段階（0.5: メタ情報のみ / 0.7: 件名等追加 / 1.0: 全フィールド）で開示されます
+- **`NBCalendarFreeBusy[from, to, opts]`** — 予定内容を含まない、マージ済みの空き時間ブロックを返します
+- **`NBCalendarBusyQ[t, opts]`** — 指定時刻が会議中か判定します（ソース取得失敗時は安全側で `False`）
+- **`NBICSParseEvents[icsText]`** — 生の ICS テキストをイベント Association のリストへパースします（アクセス制御なしの純粋パーサ）
+- **`NBICSEventOccurrences[event, from, to]`** — パース済みイベントを期間内のオカレンスへ展開します
+
+#### $onWork タスクメタデータ（新機能）
+
+`$onWork` ディレクトリ配下のタスク管理ノートブックを、本文を読まずにメタデータのみアクセスレベルに応じて列挙します。
+
+- **`NBOnWorkTasks[opts]`** — `$onWork` .nb ファイルを列挙し、アクセスレベル別に射影されたタスクレコード（Due/State/Title/Keywords 等）を返します
+- **`NBOnWorkTaskSafeExtract[held]`** — HELD 式から許可されたキーのみを **式を評価せずに** 安全抽出する内部セキュリティコアです
 
 #### SourceVault 統合 / ObjectSpec API
 
@@ -519,7 +569,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 | `docs/api.md` | API リファレンス（全関数・オプション・グローバル変数・SourceVault 統合 API の詳細仕様） |
 | `docs/api_crypto.md` | 暗号鍵ストア API リファレンス（NBAccess_crypto の鍵生成・暗号/MAC・鍵バンドル仕様） |
 | `docs/setup.md` | セットアップガイド（インストール・設定・AccessPathRef・ClaudeRuntime/SourceVault/ClaudeTestKit 連携・EffectClass 検証モデル・出力モード・トラブルシューティング） |
-| `docs/user_manual.md` | ユーザーマニュアル（機能カテゴリ別の使い方・AccessPathRef・ノートブックモデル選択・SourceVault 統合・ClaudeRuntime 統合・後方互換性） |
+| `docs/user_manual.md` | ユーザーマニュアル（機能カテゴリ別の使い方・AccessPathRef・ノートブックモデル選択・カレンダー/$onWork タスク・ノートブックキャッシュ修復・SourceVault 統合・ClaudeRuntime 統合・後方互換性） |
 | `docs/examples/example.md` | 使用例集（実践的なコード例） |
 | `NBAccess_crypto.wl` | 暗号鍵ストア（鍵隔離層。鍵材料を露出せず KeyRef で暗号化/MAC/署名を提供） |
 
@@ -678,6 +728,25 @@ NBValueSpec[someDataset, 0.75]
 NBFileSpecCacheClear[];
 ```
 
+### カレンダーアクセスと $onWork タスク管理
+
+```mathematica
+(* 今後7日間の空き時間ブロックのみを取得（内容は含まない、AccessLevel 0.5 で利用可） *)
+NBCalendarFreeBusy[Now, Now + Quantity[7, "Days"]]
+
+(* 現在会議中かを判定（ソース取得失敗時は安全側で False） *)
+NBCalendarBusyQ[Now]
+
+(* アクセスレベル 1.0 なら件名・場所・説明まで含む全予定を取得（RRULE 展開込み） *)
+NBCalendarEvents[Now, Now + Quantity[1, "Weeks"],
+  PrivacySpec -> <|"AccessLevel" -> 1.0|>]
+
+(* $onWork ディレクトリ配下のタスクを、本文を読まずメタデータのみ列挙 *)
+NBOnWorkTasks["ModifiedWithinDays" -> 30, "IncludeDone" -> False]
+(* 例: {<|"Due" -> DateObject[...], "DueKind" -> "Deadline", "State" -> "Open",
+         "FileDigest" -> "...", "ModificationDate" -> DateObject[...]|>, ...} *)
+```
+
 ### ファイル型ノートブックの操作
 
 ```mathematica
@@ -712,6 +781,8 @@ NBAuthorize[<|"AccessLevel" -> 0.8, "Provider" -> "lmstudio"|>]
 NBFlushDeferredOutput[]
 ```
 
+---
+
 ## 免責事項
 
 本ソフトウェアは "as is"（現状有姿）で提供されており、明示・黙示を問わずいかなる保証もありません。
@@ -719,6 +790,8 @@ NBFlushDeferredOutput[]
 今後の動作保証のための更新が行われるとは限りません。
 本ソフトウェアとドキュメントはほぼすべてが生成AIによって生成されたものです。
 Windows 11上での実行を想定しており、MacOS, LinuxのMathematicaでの動作検証は一切していません(生成AIの処理で対応可能と想定されます)。
+
+---
 
 ## ライセンス
 

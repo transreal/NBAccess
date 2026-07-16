@@ -542,11 +542,13 @@ NBOnWorkTaskSafeExtract[held]
 (* HELD式 (HoldComplete[...] や Hold[...] でラップされたメタデータ Association、
    またはその先頭要素がそれであるリスト) から $onWork タスクメタデータを
    一切評価せずに抽出する。ホワイトリストされた文字列キー
-   (Title/Status/Deadline/NextReview/EventDate/Keywords/Effort/Movable/DependsOn/TaskId) の
+   (Title/Status/Deadline/NextReview/EventDate/Keywords/Effort/Movable/DependsOn/TaskId/MailRecordId) の
    リテラル値 (String/Integer/Real/True/False/DateObject[{整数...},(粒度)]/Quantity[数,単位]/
    文字列リスト) のみが保持され、それ以外のキー・値は破棄される。
    副作用式・Notebook box・巨大な式・UpValueを持つシンボルは決して評価されない。
-   実装にReleaseHoldを含まない (静的検査AC-033)。安全なAssociationを返す。 *)
+   実装にReleaseHoldを含まない (静的検査AC-033)。安全なAssociationを返す。
+   Notebook box セルに加え、テキストコンテンツセル（メール由来ノートブック等）も
+   非評価パース (ToExpression[..., InputForm, HoldComplete]) で扱えるようになった。 *)
 
 NBOnWorkTasks[]
 (* $onWork 配下の .nb ファイルを列挙し、NBOnWorkTaskSafeExtract 経由で読んだ
@@ -572,4 +574,4 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 ---
 
-以上が現時点でのソースコードに定義されている公開シンボルです。承認ゲート（`$NBApprovalHeads`）や機密変数・セル解析まわりの内部実装は Private コンテキストで完結しており、公開 API の使用方法には影響しません。今回のソースコード更新では、カレンダーアクセス API（`NBCalendarEvents`/`NBCalendarFreeBusy`/`NBCalendarBusyQ`/`NBICSParseEvents`/`NBICSEventOccurrences` と関連グローバル変数 `$NBCalendarMandatoryPatterns`/`$NBCalendarCacheSeconds`/`$NBCalendarCredentialName`/`$NBCalendarIdentityKeyRef`）、および `$onWork` タスクメタデータ API（`NBOnWorkTaskSafeExtract`/`NBOnWorkTasks`）が新たに追加されました。あわせて、Private コンテキストの `Begin`/`End` が明示的な `` NBAccess`Private` `` 表記に整理されるなど内部実装の調整も行われていますが、これは公開関数のシグネチャやオプション、使用方法には影響しません。
+以上が現時点でのソースコードに定義されている公開シンボルです。今回のドキュメント更新時点での確認では、公開関数・オプションの追加/削除はありませんでした。唯一の変更点は `$onWork` タスクメタデータ抽出（`NBOnWorkTaskSafeExtract`/`NBOnWorkTasks`）の内部実装（Private コンテキスト）に対する堅牢性向上です: (1) 安全に抽出できるキーのホワイトリストに `"MailRecordId"` が追加され、メール由来のタスクレコードなどを想定した拡張が行われました。(2) Notebook box 形式のセルに加え、テキストコンテンツ形式のセル（メール由来ノートブック等）も `ToExpression[..., InputForm, HoldComplete]` による非評価パースで扱えるようになりました。これらはいずれも公開関数のシグネチャや `::usage` 文字列、オプション体系には影響しません。
