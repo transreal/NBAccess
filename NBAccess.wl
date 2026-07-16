@@ -11953,24 +11953,70 @@ NBAccess`NBOnWorkTaskSafeExtract[h_] := Module[{held1},
     MatchQ[h, _HoldComplete], Replace[h, HoldComplete[a_] :> Hold[a]],
     MatchQ[h, _Hold], h,
     True, Return[<||>]];
+  (* metadata cells are often authored as Defer[<|...|>] (see newNote[]); strip
+     the display wrapper without evaluating anything inside. *)
+  held1 = Replace[held1, Hold[(Defer | HoldForm | Identity)[e_]] :> Hold[e]];
   (* optional outer list (NotebookExtensions took icell[[1]]) *)
   held1 = Replace[held1, Hold[{first_, ___}] :> Hold[first]];
+  held1 = Replace[held1, Hold[(Defer | HoldForm | Identity)[e_]] :> Hold[e]];
   Replace[held1, {
     Hold[Association[rs___]] :> iNBOnwCollect[rs],
     _ :> <||>}]];
 NBAccess`NBOnWorkTaskSafeExtract[___] := <||>;
 
-(* ---- file read glue: held expression from a .nb WITHOUT evaluating cells ---- *)
-iNBOnwHeldFromFile[path_String] := Module[{cells, inits, bd, held},
-  cells = Quiet@Check[Import[path, "Cells"], $Failed];
-  If[!ListQ[cells], Return[Missing["Unreadable"]]];
-  inits = Cases[cells, Cell[bx_, ___, InitializationCell -> True, ___] :> bx, Infinity];
-  If[inits === {},
-    inits = Cases[cells, Cell[BoxData[bx_], "Input", ___] :> BoxData[bx], Infinity]];
-  If[inits === {}, Return[Missing["NoInit"]]];
-  bd = First[inits];
-  held = Quiet@Check[MakeExpression[bd, StandardForm], $Failed];
-  If[MatchQ[held, _HoldComplete], held, Missing["ParseFailed"]]];
+(* ---- file read glue: held expression from a .nb WITHOUT evaluating cells ----
+   NOTE: Import[path,"Cells"] returns cell STYLE STRINGS, not Cell[] boxes; the
+   real Cell[] structure comes from Import[path,"Notebook"]. We locate the first
+   InitializationCell (or first Input cell) and MakeExpression its boxes -> a
+   HoldComplete[...] that is never evaluated (NBOnWorkTaskSafeExtract rebuilds
+   only whitelisted literals). *)
+(* parse cache keyed by path -> <|"D" -> fileDateAbs, "H" -> held|>, PERSISTED to a
+   LOCAL (non-Dropbox) .wxf so a fresh kernel re-parses only files whose FileDate
+   changed instead of Import-ing every .nb again (~0.3s/file over Dropbox). *)
+If[!AssociationQ[$iNBOnwCache], $iNBOnwCache = <||>];
+If[!BooleanQ[$iNBOnwCacheLoaded], $iNBOnwCacheLoaded = False];
+If[!BooleanQ[$iNBOnwCacheDirty], $iNBOnwCacheDirty = False];
+
+iNBOnwCacheFile[] := Module[{base, la = Environment["LOCALAPPDATA"]},
+  base = If[StringQ[la] && StringLength[la] > 0,
+    FileNameJoin[{la, "NBAccess"}], FileNameJoin[{$TemporaryDirectory, "NBAccess"}]];
+  Quiet@Check[If[!DirectoryQ[base],
+    CreateDirectory[base, CreateIntermediateDirectories -> True]], Null];
+  FileNameJoin[{base, "onwork_parse_cache.wxf"}]];
+
+iNBOnwEnsureCacheLoaded[] := If[!TrueQ[$iNBOnwCacheLoaded],
+  Module[{f = iNBOnwCacheFile[], loaded},
+    If[FileExistsQ[f],
+      loaded = Quiet@Check[Import[f, "WXF"], $Failed];
+      If[AssociationQ[loaded], $iNBOnwCache = loaded]];
+    $iNBOnwCacheLoaded = True]];
+
+(* write once per scan, only if something was (re)parsed; atomic via temp+rename *)
+iNBOnwPersistCache[] := If[TrueQ[$iNBOnwCacheDirty],
+  Module[{f = iNBOnwCacheFile[], tmp},
+    tmp = f <> ".tmp" <> ToString[$ProcessID];
+    Quiet@Check[Export[tmp, $iNBOnwCache, "WXF"];
+      RenameFile[tmp, f, OverwriteTarget -> True], Null];
+    $iNBOnwCacheDirty = False]];
+
+iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held},
+  fd = Quiet@Check[AbsoluteTime[FileDate[path]], $Failed];
+  cached = $iNBOnwCache[path];
+  If[AssociationQ[cached] && fd =!= $Failed && cached["D"] === fd,
+    Return[cached["H"]]];
+  held = Module[{nb0, inits0, bd0, h0},
+    nb0 = Quiet@Check[Import[path, "Notebook"], $Failed];
+    If[Head[nb0] =!= Notebook, Missing["Unreadable"],
+      inits0 = Cases[nb0, Cell[bx_, ___, InitializationCell -> True, ___] :> bx, Infinity];
+      If[inits0 === {},
+        inits0 = Cases[nb0, Cell[b_BoxData, "Input", ___] :> b, Infinity]];
+      If[inits0 === {}, Missing["NoInit"],
+        bd0 = First[inits0];
+        h0 = Quiet@Check[MakeExpression[bd0, StandardForm], $Failed];
+        If[MatchQ[h0, _HoldComplete], h0, Missing["ParseFailed"]]]]];
+  If[fd =!= $Failed,
+    $iNBOnwCache[path] = <|"D" -> fd, "H" -> held|>; $iNBOnwCacheDirty = True];
+  held];
 iNBOnwHeldFromFile[___] := Missing["Unreadable"];
 
 (* ---- derivation: safe metadata -> normalized task record ---- *)
@@ -12062,8 +12108,10 @@ NBAccess`NBOnWorkTasks[OptionsPattern[]] := Module[
           Quiet@Check[AbsoluteTime[FileDate[#]] >= cutoff, True] &]];
       If[IntegerQ[maxF] && maxF > 0 && Length[files] > maxF,
         files = Take[files, maxF]];
-      Map[Function[p, iNBOnwRecord[p, iNBOnwHeldFromFile[p],
-        Quiet@Check[FileDate[p], Missing["None"]]]], files]];
+      iNBOnwEnsureCacheLoaded[];
+      With[{out = Map[Function[p, iNBOnwRecord[p, iNBOnwHeldFromFile[p],
+          Quiet@Check[FileDate[p], Missing["None"]]]], files]},
+        iNBOnwPersistCache[]; out]];
   (* IncludeDone filter *)
   If[!TrueQ[OptionValue["IncludeDone"]],
     recs = Select[recs, !MemberQ[{"Done", "Pass"}, Lookup[#, "State", "Open"]] &]];
@@ -12073,5 +12121,4 @@ NBAccess`NBOnWorkTasks[___] :=
 
 End[]; (* NBAccess`Private` for the $onWork block *)
 
-End[];
 EndPackage[];

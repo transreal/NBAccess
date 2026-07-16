@@ -476,6 +476,94 @@ NBNormalizeAccessPathRef["C:\\projects\\A"]
    既にAccessPathRef Associationなら不足キーを既定で補う。NBSetAccessibleDirs互換ラッパが内部で使う。 *)
 ```
 
+## カレンダーアクセス API (iCal/ICS)
+
+所有者の iCal/ICS カレンダーを、`PrivacySpec` によるアクセスレベル制御のもとで読み取る API 群です。
+
+```
+NBCalendarEvents[from, to]
+(* [from, to) と重なるイベント発生 (occurrence) を Start 順の Association リストで返す。
+   RRULE (FREQ DAILY/WEEKLY/MONTHLY/YEARLY, INTERVAL, UNTIL, COUNT,
+   BYDAY(序数付き 2MO 等)/BYMONTHDAY(負数含む), EXDATE, RECURRENCE-ID による
+   上書き・キャンセル) を展開する。
+   返すフィールドはアクセスレベル (PrivacySpec、既定 $NBPrivacySpec) に応じて変わる:
+     >=0.5: Start/End/AllDay/Busy/Mandatory/Recurring/UIDDigest +
+            R0b識別情報 (EventId/OriginalStart/SemanticDigest/ObservedRevision)
+     >=0.7: 上記 + Summary/Categories/Status
+     >=1.0: 上記 + Description/Location/UID (フルフィールド)
+   0.5未満は Failure["NBCalendarAccessDenied"] を返す。
+   R0b識別情報 (どのアクセスレベルでも返る不透明な値):
+     "EventId": UID の HMAC鍵付き安定ID ($NBCalendarIdentityKeyRef、未鍵なら "unkeyed:<digest>")。
+                同一の繰り返しイベントではoccurrence間で共通。
+     "OriginalStart": occurrenceの本来のシリーズ位置 (上書き時はRECURRENCE-ID)。
+     "SemanticDigest": Start/End/Status/Busy/AllDay等の意味的内容のダイジェスト (差し替え検出用)。
+     "ObservedRevision": SEQUENCE/DTSTAMPのダイジェスト (観測用、DTSTAMPのみの変更では変化しない)。 *)
+
+NBCalendarFreeBusy[from, to]
+(* [from, to) 内のマージ済みビジーブロックを {<|"Start","End","Mandatory","Count"|>, ...} で返す。
+   重なるビジーイベントは1ブロックに統合される。TRANSP:TRANSPARENT のイベントは除外。
+   内容を含まない (メタデータのみ) ためAccessLevel 0.5から利用可能。
+   NBCalendarEvents と同じソースオプションを取る。 *)
+
+NBCalendarBusyQ[t]
+(* 時刻 t がビジーブロック内にあれば True を返す (会議中判定)。
+   "Detailed" -> True で <|"Busy", "Mandatory", "Block"|> を返す。
+   ソースが利用不可の場合は Failure ではなく False を返す (通知ゲーティングは「ビジーでない」側に倒す)。
+   NBCalendarEvents と同じソースオプションを取る。 *)
+
+NBICSParseEvents[icsText]
+(* 生の iCal/ICS テキストを解析し、イベント Association のリスト
+   (UID/Summary/Description/Location/Status/Categories/Busy/Start/End/AllDay/RRule/ExDates/RecurrenceId)
+   を返す。純粋なパーサーで credential・ネットワーク・アクセス制御は行わない。
+   壊れた VEVENT ブロックはスキップされる。折り返し行・TEXT エスケープ・
+   TZID/UTC/floating 各形式・VALUE=DATE (終日) 形式・DURATION に対応。 *)
+
+NBICSEventOccurrences[event, from, to]
+(* NBICSParseEvents で得た1イベントを [from, to) と重なる occurrence に展開する。
+   RRULE/EXDATE の意味論は NBCalendarEvents と同じ。純粋関数。
+   occurrenceのStart/Endと"Recurring" -> True|Falseを含むAssociationリストを返す。 *)
+```
+
+`NBCalendarEvents` のオプション: `PrivacySpec -> Automatic`、`"Source" -> Automatic`（`SystemCredential[$NBCalendarCredentialName]`、または明示的な `.ics` パス/URL）、`"ICSText" -> Missing["None"]`（生ICSテキストを直接渡すテスト用シーム。`Source` を無視）、`"MandatoryPatterns" -> Automatic`（`$NBCalendarMandatoryPatterns`）、`"MaxEvents" -> 500`、`"Refresh" -> False`（パースキャッシュを無視）、`"Wrap" -> False`（`True` で `<|"Events"->{...}, "ObservedAtUTC", "Count", "Truncated", "Completeness"(MaxEventsで打ち切られた場合は1未満), "IdentityKeyed"|>` を返す）。`NBCalendarFreeBusy`/`NBCalendarBusyQ` も同じソース関連オプション（`PrivacySpec`/`"Source"`/`"ICSText"`/`"MandatoryPatterns"`/`"Refresh"`）を取り、`NBCalendarBusyQ` はさらに `"Detailed" -> False` を持ちます。
+
+グローバル変数:
+
+- `$NBCalendarMandatoryPatterns` — 出席必須イベントとみなす文字列パターンの既定リスト（Summary/Categories/Description に大文字小文字を無視してマッチ）。既定 `{}`。導出される Mandatory フラグは全アクセスレベルで公開されます。
+- `$NBCalendarCacheSeconds` — `NBCalendarEvents` が使うカレンダーソースのインメモリ・パースキャッシュ TTL（秒）。既定 300。
+- `$NBCalendarCredentialName` — ICS カレンダーの所在（ファイルパスまたは URL）を保持する SystemCredential キー名。既定 `"ics-calendar"`。
+- `$NBCalendarIdentityKeyRef` — 各イベントの不透明で安定な `"EventId"` を導出する HMAC 鍵を保持する SystemCredential キー名（署名鍵とは別管理）。既定 `Missing["None"]`（未設定時は `EventId` が `"unkeyed:<digest>"` 形式に縮退し、`"Wrap"->True` は `"IdentityKeyed"->False` を報告します）。鍵をローテーションすると埋め込まれた KeyId が変わるため、保存済み EventId マッピングの移行が必要になります。
+
+## $onWork タスクメタデータ API
+
+`$onWork` 配下の `.nb` ファイルからタスクメタデータのみを、評価を一切行わずに安全に読み取る API 群です（ノートブック本文・出力は読みません）。
+
+```
+NBOnWorkTaskSafeExtract[held]
+(* HELD式 (HoldComplete[...] や Hold[...] でラップされたメタデータ Association、
+   またはその先頭要素がそれであるリスト) から $onWork タスクメタデータを
+   一切評価せずに抽出する。ホワイトリストされた文字列キー
+   (Title/Status/Deadline/NextReview/EventDate/Keywords/Effort/Movable/DependsOn/TaskId) の
+   リテラル値 (String/Integer/Real/True/False/DateObject[{整数...},(粒度)]/Quantity[数,単位]/
+   文字列リスト) のみが保持され、それ以外のキー・値は破棄される。
+   副作用式・Notebook box・巨大な式・UpValueを持つシンボルは決して評価されない。
+   実装にReleaseHoldを含まない (静的検査AC-033)。安全なAssociationを返す。 *)
+
+NBOnWorkTasks[]
+(* $onWork 配下の .nb ファイルを列挙し、NBOnWorkTaskSafeExtract 経由で読んだ
+   メタデータのみをアクセスレベルに応じて射影したタスクレコードのリストを返す。
+   各レコードは "Due" (Deadline、無ければNextReview；NextReviewがQuantityの場合は
+   ModificationDate + オフセットとして解決、NotebookExtensionsと同じ挙動) と
+   "State" (StatusからDone/Pass/Keep、無ければOpen) を導出する。
+   アクセスレベル別フィールド:
+     0.5: Due/DueKind/State/FileDigest/ModificationDate
+     0.7: 上記 + Title/Keywords/TaskId/Effort/Movable/DependsOn
+     1.0: 上記 + Path
+   読み取り不可・安全パース失敗のファイルは "State"->"Unknown", "ParseFailed"->True の
+   レコードになり、スキャン全体は中断しない。 *)
+```
+
+`NBOnWorkTasks` のオプション: `"Directory" -> Automatic`（`Global`$onWork`）、`"ModifiedWithinDays" -> Automatic`（既定は全件）、`"IncludeDone" -> False`（Status が Done/Pass のものを除外）、`PrivacySpec -> Automatic`、`"MaxFiles" -> 2000`、`"Files" -> Automatic`（テスト用シーム: `{<|"Path"->_, "Held"->HoldComplete[...], ("ModificationDate"->_)|>, ...}` でファイルシステムを迂回）。
+
 ## その他
 
 ```
@@ -484,4 +572,4 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 ---
 
-以上が現時点でのソースコードに定義されている公開シンボルです。承認ゲート（`$NBApprovalHeads`）や機密変数・セル解析まわりの内部実装は Private コンテキストで完結しており、公開 API の使用方法には影響しません。今回のソースコード更新では、承認判定ロジックが「セル・式ベースの基本判定 (BaseDecision)」と「式中に現れる関数ヘッドから副作用の種別 (EffectClass) を集約して承認要否 (ApprovalEligibility) を決める判定」の二層構成に整理され、両者を合成して最終的な承認要否を決定するようになりました。また、副作用語幹の分類・出力の逐次表示とバッチ集約の切り替え・履歴データのダイジェスト再計算による整合性検査など、内部の安全確認ロジックが精緻化されています。これらはいずれも Private コンテキスト内の判定ロジックの改良であり、公開関数のシグネチャやオプション、使用方法に変更はありません。
+以上が現時点でのソースコードに定義されている公開シンボルです。承認ゲート（`$NBApprovalHeads`）や機密変数・セル解析まわりの内部実装は Private コンテキストで完結しており、公開 API の使用方法には影響しません。今回のソースコード更新では、カレンダーアクセス API（`NBCalendarEvents`/`NBCalendarFreeBusy`/`NBCalendarBusyQ`/`NBICSParseEvents`/`NBICSEventOccurrences` と関連グローバル変数 `$NBCalendarMandatoryPatterns`/`$NBCalendarCacheSeconds`/`$NBCalendarCredentialName`/`$NBCalendarIdentityKeyRef`）、および `$onWork` タスクメタデータ API（`NBOnWorkTaskSafeExtract`/`NBOnWorkTasks`）が新たに追加されました。あわせて、Private コンテキストの `Begin`/`End` が明示的な `` NBAccess`Private` `` 表記に整理されるなど内部実装の調整も行われていますが、これは公開関数のシグネチャやオプション、使用方法には影響しません。
