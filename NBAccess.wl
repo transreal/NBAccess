@@ -1352,6 +1352,30 @@ calendar event as attendance-mandatory (matched case-insensitively against Summa
 Categories/Description). Default {}. The owner sets this at runtime; the derived \
 Mandatory flag is exposed at every access level.";
 
+$NBCalendarPublicPatterns::usage =
+  "$NBCalendarPublicPatterns is the owner's list of string patterns marking a \
+calendar event as PUBLIC information (matched case-insensitively against Summary/\
+Categories/Description, e.g. course names). It is UNIONED with the built-in \
+$NBCalendarPublicDefaultPatterns (\:5b66\:4f1a/\:7814\:7a76\:4f1a/\:96c6\:4f1a/\:30bb\:30df\:30ca\:30fc etc. -- inherently \
+public event kinds). A matching event is disclosed with its Summary (the 0.7 \
+field set) at ANY access level. Non-matching events are never dropped entirely: \
+below 0.5 they degrade to bare free/busy slots (Start/End/AllDay/Busy, no \
+content) so scheduling over occupied time still works. Default {}. Override per \
+call with the \"PublicPatterns\" option of NBCalendarEvents.";
+
+$NBCalendarPublicDefaultPatterns::usage =
+  "$NBCalendarPublicDefaultPatterns is the built-in list of inherently-public \
+event-kind patterns (\:5b66\:4f1a, \:7814\:7a76\:4f1a, \:96c6\:4f1a, \:30b7\:30f3\:30dd\:30b8\:30a6\:30e0, \:30bb\:30df\:30ca\:30fc, \:8b1b\:6f14, \
+\:30ef\:30fc\:30af\:30b7\:30e7\:30c3\:30d7, \:30aa\:30fc\:30d7\:30f3\:30ad\:30e3\:30f3\:30d1\:30b9, conference, seminar, ...). Always unioned \
+with $NBCalendarPublicPatterns; set to {} to disable the built-ins.";
+
+$NBCalendarPublicRecurring::usage =
+  "$NBCalendarPublicRecurring (default False): when True, RECURRING calendar \
+events are treated as public (Summary disclosed at any level). University \
+courses are recurring and their names are public (the timetable is published), \
+so course owners can opt in; leave False when recurring internal meetings must \
+stay hidden.";
+
 $NBCalendarCacheSeconds::usage =
   "$NBCalendarCacheSeconds is the in-memory parse-cache TTL (seconds) for calendar \
 sources read by NBCalendarEvents. Default 300.";
@@ -11307,6 +11331,17 @@ Begin["NBAccess`Private`"];
 
 If[!ListQ[NBAccess`$NBCalendarMandatoryPatterns],
   NBAccess`$NBCalendarMandatoryPatterns = {}];
+If[!ListQ[NBAccess`$NBCalendarPublicPatterns],
+  NBAccess`$NBCalendarPublicPatterns = {}];
+If[!ListQ[NBAccess`$NBCalendarPublicDefaultPatterns],
+  NBAccess`$NBCalendarPublicDefaultPatterns = {
+    "\:5b66\:4f1a", "\:7814\:7a76\:4f1a", "\:96c6\:4f1a", "\:52c9\:5f37\:4f1a",
+    "\:30b7\:30f3\:30dd\:30b8\:30a6\:30e0", "\:30bb\:30df\:30ca\:30fc", "\:8b1b\:6f14",
+    "\:30ef\:30fc\:30af\:30b7\:30e7\:30c3\:30d7", "\:30aa\:30fc\:30d7\:30f3\:30ad\:30e3\:30f3\:30d1\:30b9",
+    "\:516c\:958b\:8b1b\:5ea7", "conference", "symposium", "workshop", "seminar",
+    "lecture", "colloquium"}];
+If[!BooleanQ[NBAccess`$NBCalendarPublicRecurring],
+  NBAccess`$NBCalendarPublicRecurring = False];
 If[!NumberQ[NBAccess`$NBCalendarCacheSeconds],
   NBAccess`$NBCalendarCacheSeconds = 300];
 If[!StringQ[NBAccess`$NBCalendarCredentialName],
@@ -11712,8 +11747,13 @@ iNBCalLevelFields[level_] := Which[
   level >= 1.0, All,
   level >= 0.7, Join[{"Start", "End", "AllDay", "Busy", "Mandatory", "Recurring",
     "Summary", "Categories", "Status", "UIDDigest"}, $iNBCalIdentityFields],
-  True, Join[{"Start", "End", "AllDay", "Busy", "Mandatory", "Recurring", "UIDDigest"},
-    $iNBCalIdentityFields]];
+  level >= 0.5, Join[{"Start", "End", "AllDay", "Busy", "Mandatory", "Recurring",
+    "UIDDigest"}, $iNBCalIdentityFields],
+  (* below 0.5: bare free/busy slots. That a time slot is occupied is the
+     minimum scheduling substrate (a cloud LLM cannot plan without it);
+     everything content-like stays hidden unless the event matches the
+     owner's PublicPatterns. *)
+  True, Join[{"Start", "End", "AllDay", "Busy"}, $iNBCalIdentityFields]];
 
 iNBCalFilterFields[assoc_, All] := assoc;
 iNBCalFilterFields[assoc_, fields_List] := KeyTake[assoc, fields];
@@ -11729,6 +11769,14 @@ iNBCalMandatoryQ[occ_, patterns_List] := Module[{hay},
 iNBCalUIDDigest[uid_] := StringTake[
   IntegerString[Hash[If[StringQ[uid], uid, ToString[uid]], "SHA256"], 36] <>
     "0000000000000000", 16];
+
+(* public-event decision: pattern match (owner + built-in vocabularies) OR,
+   when opted in, a recurring event (university courses are recurring and
+   their timetable is public). *)
+iNBCalPublicQ[occ_, pubPatterns_List] :=
+  iNBCalMandatoryQ[occ, pubPatterns] ||
+  (TrueQ[NBAccess`$NBCalendarPublicRecurring] &&
+   TrueQ[Lookup[occ, "Recurring", False]]);
 
 (* ---- R0b: identity / revision (returned at every access level) ---- *)
 
@@ -11785,20 +11833,21 @@ Options[NBAccess`NBCalendarEvents] = {
   "Source" -> Automatic,
   "ICSText" -> Missing["None"],
   "MandatoryPatterns" -> Automatic,
+  "PublicPatterns" -> Automatic,
   "MaxEvents" -> 500,
   "Refresh" -> False,
   "Wrap" -> False};
 
 NBAccess`NBCalendarEvents[from_, to_, OptionsPattern[]] := Module[
-  {level, fromAbs, toAbs, evs, occs, patterns, fields, maxE, idKey, keyed,
-   totalCount, truncated, result},
+  {level, fromAbs, toAbs, evs, occs, patterns, pubPatterns, fields, maxE,
+   idKey, keyed, totalCount, truncated, result},
   level = iNBCalResolveLevel[OptionValue[PrivacySpec]];
   fromAbs = Quiet@Check[AbsoluteTime[from], $Failed];
   toAbs = Quiet@Check[AbsoluteTime[to], $Failed];
   Which[
-    !NumberQ[level] || level < 0.5,
+    !NumberQ[level],
     Failure["NBCalendarAccessDenied", <|
-      "MessageTemplate" -> "AccessLevel below 0.5 cannot read calendar data.",
+      "MessageTemplate" -> "Invalid PrivacySpec for NBCalendarEvents.",
       "RequiredAccessLevel" -> 0.5|>],
     !NumberQ[fromAbs] || !NumberQ[toAbs] || toAbs <= fromAbs,
     Failure["NBCalendarBadWindow", <|
@@ -11816,6 +11865,13 @@ NBAccess`NBCalendarEvents[from_, to_, OptionsPattern[]] := Module[
       patterns = If[OptionValue["MandatoryPatterns"] === Automatic,
         NBAccess`$NBCalendarMandatoryPatterns, OptionValue["MandatoryPatterns"]];
       If[!ListQ[patterns], patterns = {}];
+      pubPatterns = If[OptionValue["PublicPatterns"] === Automatic,
+        NBAccess`$NBCalendarPublicPatterns, OptionValue["PublicPatterns"]];
+      If[!ListQ[pubPatterns], pubPatterns = {}];
+      (* inherently-public event kinds are always unioned in *)
+      pubPatterns = DeleteDuplicates[Join[pubPatterns,
+        If[ListQ[NBAccess`$NBCalendarPublicDefaultPatterns],
+          NBAccess`$NBCalendarPublicDefaultPatterns, {}]]];
       idKey = iNBCalIdentityKey[];
       keyed = StringQ[idKey];
       occs = iNBCalOccurrencesAll[evs, fromAbs, toAbs];
@@ -11824,14 +11880,29 @@ NBAccess`NBCalendarEvents[from_, to_, OptionsPattern[]] := Module[
       truncated = IntegerQ[maxE] && maxE > 0 && totalCount > maxE;
       If[truncated, occs = Take[occs, maxE]];
       fields = iNBCalLevelFields[level];
-      result = Map[Function[o, Module[{enriched},
+      result = Map[Function[o, Module[{enriched, pubQ, f, plE},
         enriched = Join[o, <|
           "Mandatory" -> iNBCalMandatoryQ[o, patterns],
           "UIDDigest" -> iNBCalUIDDigest[Lookup[o, "UID", ""]],
           "EventId" -> iNBCalEventId[Lookup[o, "UID", ""], idKey],
           "SemanticDigest" -> iNBCalSemanticDigest[o],
           "ObservedRevision" -> iNBCalObservedRevision[o]|>];
-        iNBCalFilterFields[KeyDrop[enriched, {"Sequence", "Dtstamp"}], fields]]], occs];
+        (* a PUBLIC event (owner/built-in vocabulary, or recurring when opted
+           in) discloses its Summary (the 0.7 field set) at any level; other
+           events keep the staged fields *)
+        pubQ = iNBCalPublicQ[o, pubPatterns];
+        f = If[fields =!= All && level < 0.7 && pubQ,
+          iNBCalLevelFields[0.7], fields];
+        (* PRIVACY-INHERITANCE PRINCIPLE: each event carries the effective
+           PL of what was ACTUALLY disclosed. Full disclosure must win over
+           the public flag: at All the record includes Description/Location/
+           UID, which are NOT public even for a public event. Below that, a
+           public event's disclosed fields are the public (0.7) tier -> 0.0. *)
+        plE = Which[f === All, 1.0, pubQ, 0.0,
+          level >= 0.7, 0.7, level >= 0.5, 0.5, True, 0.4];
+        Append[
+          iNBCalFilterFields[KeyDrop[enriched, {"Sequence", "Dtstamp"}], f],
+          "PrivacyLevel" -> plE]]], occs];
       If[TrueQ[OptionValue["Wrap"]],
         <|"Events" -> result,
           "ObservedAtUTC" -> DateString[Now, "ISODateTime", TimeZone -> 0] <> "Z",
@@ -11999,18 +12070,35 @@ iNBOnwPersistCache[] := If[TrueQ[$iNBOnwCacheDirty],
       RenameFile[tmp, f, OverwriteTarget -> True], Null];
     $iNBOnwCacheDirty = False]];
 
-iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held},
+(* the notebook's own cloud-publishability DECLARATION (dashboard "Public"),
+   read from the already-imported Notebook expression's options -- zero extra
+   I/O. TaggingRules > "SourceVault" > "CloudPublishable": True -> 0.0
+   (Public), False -> 1.0 (Private), absent -> Missing (treated as 1.0). *)
+iNBOnwDeclaredPL[nb_Notebook] := Module[{lk, opts, tr, cp},
+  lk = Function[{x, k}, Which[
+    AssociationQ[x], Lookup[x, k, Missing[]],
+    MatchQ[x, {___Rule}], Lookup[x, k, Missing[]],
+    True, Missing[]]];
+  opts = Rest[List @@ nb];
+  tr = FirstCase[opts, HoldPattern[TaggingRules -> t_] :> t, Missing[]];
+  cp = lk[lk[tr, "SourceVault"], "CloudPublishable"];
+  Switch[cp, True, 0.0, False, 1.0, _, Missing["Undeclared"]]];
+iNBOnwDeclaredPL[___] := Missing["Undeclared"];
+
+iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held, declPL},
   fd = Quiet@Check[AbsoluteTime[FileDate[path]], $Failed];
   cached = $iNBOnwCache[path];
-  If[AssociationQ[cached] && fd =!= $Failed && cached["D"] === fd,
+  (* legacy cache entries lack "PL": re-import once to backfill it *)
+  If[AssociationQ[cached] && fd =!= $Failed && cached["D"] === fd &&
+      KeyExistsQ[cached, "PL"],
     Return[cached["H"]]];
-  held = Module[{nb0, inits0, bd0, h0},
+  {held, declPL} = Module[{nb0, inits0, bd0, h0},
     nb0 = Quiet@Check[Import[path, "Notebook"], $Failed];
-    If[Head[nb0] =!= Notebook, Missing["Unreadable"],
+    If[Head[nb0] =!= Notebook, {Missing["Unreadable"], Missing["Undeclared"]},
       inits0 = Cases[nb0, Cell[bx_, ___, InitializationCell -> True, ___] :> bx, Infinity];
       If[inits0 === {},
         inits0 = Cases[nb0, Cell[b_BoxData, "Input", ___] :> b, Infinity]];
-      If[inits0 === {}, Missing["NoInit"],
+      If[inits0 === {}, {Missing["NoInit"], iNBOnwDeclaredPL[nb0]},
         bd0 = First[inits0];
         (* text-content cells (e.g. mail-inherited notebooks) parse via
            ToExpression+HoldComplete -- still NON-EVALUATING (third arg wraps
@@ -12018,9 +12106,11 @@ iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held},
         h0 = If[StringQ[bd0],
           Quiet@Check[ToExpression[bd0, InputForm, HoldComplete], $Failed],
           Quiet@Check[MakeExpression[bd0, StandardForm], $Failed]];
-        If[MatchQ[h0, _HoldComplete], h0, Missing["ParseFailed"]]]]];
+        {If[MatchQ[h0, _HoldComplete], h0, Missing["ParseFailed"]],
+         iNBOnwDeclaredPL[nb0]}]]];
   If[fd =!= $Failed,
-    $iNBOnwCache[path] = <|"D" -> fd, "H" -> held|>; $iNBOnwCacheDirty = True];
+    $iNBOnwCache[path] = <|"D" -> fd, "H" -> held, "PL" -> declPL|>;
+    $iNBOnwCacheDirty = True];
   held];
 iNBOnwHeldFromFile[___] := Missing["Unreadable"];
 
@@ -12050,14 +12140,45 @@ iNBOnwLevel[spec_] := Module[{s = If[spec === Automatic, NBAccess`$NBPrivacySpec
   Which[AssociationQ[s] && NumberQ[Lookup[s, "AccessLevel", Missing[]]], N[s["AccessLevel"]],
     NumberQ[s], N[s], True, 0.5]];
 
-iNBOnwProject[rec_, level_] := Module[{base},
+(* per-note privacy: the note's OWN declared PrivacyLevel (CloudPublishable /
+   NBFileSpec; <0.5 = cloud-publishable "Public"). A record whose note-level PL
+   is within the caller's AccessLevel is fully disclosable at that level --
+   e.g. a Public notebook keeps Title AND Path even at 0.5/0.7, so agenda
+   labels/links work. Injected records may carry an explicit "PrivacyLevel";
+   real files resolve lazily through NBFileSpec (mtime-cached). Fail-safe 1.0. *)
+iNBOnwPLNorm[pl_] := Which[
+  NumberQ[pl], N[pl],
+  ListQ[pl] && pl =!= {} && AllTrue[pl, NumberQ], N[Max[pl]],
+  True, 1.0];
+
+(* per-note PL: injected "PrivacyLevel" first (tests); else the declared PL
+   captured at parse time in the persistent cache (zero extra I/O); absent /
+   undeclared -> 1.0 (conservative). *)
+iNBOnwNotePL[rec_] := Module[{pl = Lookup[rec, "PrivacyLevel", Missing[]],
+    path, entry},
+  If[NumberQ[pl] || (ListQ[pl] && pl =!= {}), Return[iNBOnwPLNorm[pl]]];
+  path = Lookup[rec, "Path", Missing[]];
+  If[!StringQ[path], Return[1.0]];
+  entry = Lookup[$iNBOnwCache, path, Missing[]];
+  With[{c = If[AssociationQ[entry], Lookup[entry, "PL", Missing[]], Missing[]]},
+    If[NumberQ[c], N[c], 1.0]]];
+
+iNBOnwProject[rec_, level_] := Module[{pl = iNBOnwNotePL[rec], base},
+  (* PRIVACY-INHERITANCE PRINCIPLE: every output record carries its effective
+     "PrivacyLevel" (the note's declared PL, fail-safe 1.0), so aggregators
+     (agenda, plans, views) can propagate max(input PL) into their outputs. *)
+  If[level >= 1.0 || pl <= level,
+    Return[Append[rec, "PrivacyLevel" -> pl]]];
   base = KeyTake[rec, {"Due", "DueKind", "State", "FileDigest", "ModificationDate",
     "ParseFailed"}];
-  Which[
-    level >= 1.0, rec,
-    level >= 0.7, Join[base, KeyTake[rec,
-      {"Title", "Keywords", "TaskId", "Effort", "Movable", "DependsOn"}]],
-    True, base]];
+  Append[
+    Which[
+      level >= 0.7, Join[base, KeyTake[rec,
+        {"Title", "Keywords", "TaskId", "Effort", "Movable", "DependsOn"}]],
+      True, base],
+    (* the STAGED projection discloses only level-appropriate fields, so the
+       record as disclosed is exactly at the caller's level *)
+    "PrivacyLevel" -> N[level]]];
 
 (* build one normalized record from (path, held-metadata, modDate) *)
 iNBOnwRecord[path_, held_, modDate_] := Module[{meta, due, parseFailed, rec},
@@ -12088,16 +12209,24 @@ Options[NBAccess`NBOnWorkTasks] = {
 NBAccess`NBOnWorkTasks[OptionsPattern[]] := Module[
   {level, dir, files, recs, maxF = OptionValue["MaxFiles"], within, cutoff},
   level = iNBOnwLevel[OptionValue[PrivacySpec]];
-  If[!NumberQ[level] || level < 0.5,
+  If[!NumberQ[level],
     Return[Failure["NBOnWorkAccessDenied", <|
-      "MessageTemplate" -> "AccessLevel below 0.5 cannot read $onWork tasks.",
+      "MessageTemplate" -> "Invalid PrivacySpec for NBOnWorkTasks.",
       "RequiredAccessLevel" -> 0.5|>]]];
+  (* below 0.5 the STAGED metadata (Due/State/...) is not disclosable, but a
+     note the owner DECLARED public at/below the level still is: the scan
+     proceeds and the projection step keeps only fully-disclosable notes
+     (was: blanket Failure, which hid even Public notebooks). *)
   recs = Which[
     (* test seam: injected files with held metadata *)
     ListQ[OptionValue["Files"]],
-      Map[Function[f, iNBOnwRecord[Lookup[f, "Path", "injected"],
-        Lookup[f, "Held", Missing["None"]],
-        Lookup[f, "ModificationDate", Missing["None"]]]], OptionValue["Files"]],
+      Map[Function[f, Module[{r = iNBOnwRecord[Lookup[f, "Path", "injected"],
+          Lookup[f, "Held", Missing["None"]],
+          Lookup[f, "ModificationDate", Missing["None"]]]},
+        (* test seam: an injected per-note PrivacyLevel feeds iNBOnwNotePL *)
+        With[{pl = Lookup[f, "PrivacyLevel", Missing[]]},
+          If[NumberQ[pl] || ListQ[pl], r["PrivacyLevel"] = pl]];
+        r]], OptionValue["Files"]],
     True,
       dir = OptionValue["Directory"];
       If[dir === Automatic, dir = Quiet@Check[Symbol["Global`$onWork"], $Failed]];
@@ -12120,7 +12249,12 @@ NBAccess`NBOnWorkTasks[OptionsPattern[]] := Module[
   (* IncludeDone filter *)
   If[!TrueQ[OptionValue["IncludeDone"]],
     recs = Select[recs, !MemberQ[{"Done", "Pass"}, Lookup[#, "State", "Open"]] &]];
-  iNBOnwProject[#, level] & /@ recs];
+  (* below 0.5: only notes declared public at/below the level survive (they
+     project to full records); everything else is dropped entirely *)
+  If[level < 0.5, recs = Select[recs, iNBOnwNotePL[#] <= level &]];
+  Module[{out = iNBOnwProject[#, level] & /@ recs},
+    (* a sub-1.0 projection may have added per-note PLs to the cache *)
+    iNBOnwPersistCache[]; out]];
 NBAccess`NBOnWorkTasks[___] :=
   Failure["NBOnWorkBadArgs", <|"MessageTemplate" -> "Bad NBOnWorkTasks arguments."|>];
 
