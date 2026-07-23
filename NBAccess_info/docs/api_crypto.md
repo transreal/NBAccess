@@ -27,6 +27,12 @@ last-writer-wins の clobber が起きうるため、「鍵が本当に存在す
 既存 blob と **merge** される(他カーネルが発行した keyRef を消さない。自カーネルで削除した
 keyRef は除外)。鍵材料 credential(`SourceVault__k__*`)は keyRef 毎に独立で clobber しない。
 
+### NBRebuildKeyIndexFromCredentials[keyRefs] → Association
+index に無いが鍵材料 credential が存在する keyRef の index entry を材料から再構築する
+(index blob のサイズ超過による silent 失敗からの復旧用)。鍵材料は返さない。keyRefs はリスト。
+戻り値は keyRef ごとに Rebuilt(再構築した) | AlreadyIndexed(既に index にある) |
+NoMaterial(鍵材料が存在しない)を対応付けた Association。
+
 ## 鍵生成
 
 ### NBGenerateSymmetricKeyRef[keyRef, metadata_:<||>] → keyRef

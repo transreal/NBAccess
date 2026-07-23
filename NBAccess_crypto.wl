@@ -47,6 +47,7 @@ NBVerifyMacWithKeyRef::usage = "NBVerifyMacWithKeyRef[keyRef, bytes, macHex, pur
 NBGetPublicKeyForKeyRef::usage = "NBGetPublicKeyForKeyRef[keyRef] は非対称鍵対の公開鍵 (秘密でない) を返す。";
 NBCryptoSelfTest::usage = "NBCryptoSelfTest[] は鍵隔離・暗号/MAC roundtrip・誤鍵検出を検査する。";
 NBExportWrappedKeys::usage = "NBExportWrappedKeys[keyRefs, wrapKey] は各鍵オブジェクトを wrapKey (SymmetricKey) で暗号化した EncryptedObject と非秘密 index meta だけを返す。平文鍵材料は決して返さない (可搬な鍵バンドル用の内部プリミティブ)。";
+NBRebuildKeyIndexFromCredentials::usage = "NBRebuildKeyIndexFromCredentials[keyRefs] は index に無いが鍵材料 credential が存在する keyRef の index entry を材料から再構築する (index blob のサイズ超過 silent 失敗からの復旧用)。鍵材料は返さない。keyRef ごとに Rebuilt | AlreadyIndexed | NoMaterial を返す。";
 NBImportWrappedKeys::usage = "NBImportWrappedKeys[wrappedAssoc, wrapKey] は wrapKey で復号した鍵オブジェクトを現 backend の credential store に書き戻す。BinaryDeserialize のみ (ToExpression 不使用)。復元した keyRef のリストを返す。";
 
 $NBCredentialBackend::usage = "$NBCredentialBackend は鍵ストア backend (\"Memory\" | \"SystemCredential\")。既定 \"Memory\"。";
@@ -100,29 +101,45 @@ iNBSysGet[name_String] :=
   Module[{v}, v = Quiet@Check[SystemCredential[name], $Failed];
     If[MissingQ[v] || v === $Failed, $Failed, v]];
 
-(* index (metadata のみ) を credential blob に永続化 / 復元。鍵材料は含まない。
-   注意: index blob は複数カーネル共有の単一 blob。last-writer-wins で他カーネルの新規 keyRef を
-   消す clobber が起きるため、永続時は既存 blob と merge する(自カーネルで明示削除した keyRef は
-   $iNBDeletedKeyRefs で除外)。2026-07-13: cognition shard 鍵の index 消失(service カーネルの
-   上書き)を実データで確認して導入。 *)
+(* index (metadata のみ、鍵材料なし) の永続化 / 復元。
+   [2026-07-23 変更] 永続先を credential blob からファイルへ移行。
+   真因: Windows Credential Manager の値上限 (CRED_MAX_CREDENTIAL_BLOB_SIZE = 2560 bytes
+   ≒ 1280 文字。実測: 1224 文字 OK / 1500 文字 NG)。鍵が増えると index blob の書込みが
+   silent に失敗し、再起動で index 消失 -> 各カーネルが鍵を再生成して credential を上書き
+   (2026-07-13 の cognition shard 鍵 index 消失、2026-07-23 の anonymize 鍵消失の真因)。
+   index は鍵材料を含まないメタデータなのでファイル可 (マシンローカル、Dropbox 外)。
+   旧 credential blob は legacy として読み継ぎ、初回 persist でファイルへ移行する。
+   複数カーネル共有につき persist は既存と merge (明示削除は $iNBDeletedKeyRefs で除外)。 *)
 If[! ListQ[$iNBDeletedKeyRefs], $iNBDeletedKeyRefs = {}];
+
+iNBIndexFilePath[] := FileNameJoin[{$HomeDirectory, ".nbaccess", "key-index.wxf.b64"}];
+
+iNBReadIndexBlob[] := Module[{path = iNBIndexFilePath[], blob = $Failed},
+  If[FileExistsQ[path], blob = Quiet@Check[ReadString[path], $Failed]];
+  If[! StringQ[blob], blob = iNBSysGet[$iNBIndexCredName]];  (* legacy credential blob *)
+  blob];
+
 iNBPersistIndex[] := If[$NBCredentialBackend === "SystemCredential",
   Quiet@Check[
-    Module[{blob = iNBSysGet[$iNBIndexCredName], disk = <||>, merged},
+    Module[{path = iNBIndexFilePath[], blob = iNBReadIndexBlob[], disk = <||>, merged, strm},
       If[StringQ[blob],
         disk = Quiet@Check[BinaryDeserialize[BaseDecode[blob]], <||>];
         If[! AssociationQ[disk], disk = <||>]];
       merged = KeyDrop[Join[disk, $iNBKeyIndex], $iNBDeletedKeyRefs];
       $iNBKeyIndex = merged;
-      SystemCredential[$iNBIndexCredName] = BaseEncode[BinarySerialize[merged]];], Null]];
+      If[! DirectoryQ[DirectoryName[path]], CreateDirectory[DirectoryName[path]]];
+      strm = OpenWrite[path, BinaryFormat -> True];
+      If[Head[strm] === OutputStream,
+        BinaryWrite[strm, StringToByteArray[BaseEncode[BinarySerialize[merged]], "ASCII"]];
+        Close[strm]];], Null]];
 
 If[! ValueQ[$iNBIndexLoaded], $iNBIndexLoaded = False];
 iNBEnsureIndexLoaded[] := If[$NBCredentialBackend === "SystemCredential" && ! $iNBIndexLoaded,
-  Module[{blob, idx},
-    blob = iNBSysGet[$iNBIndexCredName];
+  Module[{blob = iNBReadIndexBlob[], idx},
     If[StringQ[blob],
       idx = Quiet@Check[BinaryDeserialize[BaseDecode[blob]], $Failed];
-      If[AssociationQ[idx], $iNBKeyIndex = idx]];
+      (* メモリ側 (このカーネルで生成済みの鍵) を優先して merge *)
+      If[AssociationQ[idx], $iNBKeyIndex = Join[idx, $iNBKeyIndex]]];
     $iNBIndexLoaded = True]];
 
 iNBBackendPut[keyRef_String, b64_String] :=
@@ -204,6 +221,30 @@ NBDeleteCredentialKey[keyRef_String, opts : OptionsPattern[]] := (
   <|"Status" -> "Deleted", "KeyRef" -> keyRef|>);
 
 NBKeyMaterialExistsQ[keyRef_String] := StringQ[iNBBackendGet[keyRef]];
+
+(* index 復旧: 材料 credential は生きているが index entry が無い keyRef を再構築する。
+   Fingerprint は材料から再計算 (元 metadata の Purpose/CreatedAt は復元不能なので明示)。 *)
+NBRebuildKeyIndexFromCredentials[keyRefs_List] := Module[{res},
+  iNBEnsureIndexLoaded[];
+  res = Map[Function[kr, Module[{obj, kind},
+    Which[
+      KeyExistsQ[$iNBKeyIndex, kr], kr -> "AlreadyIndexed",
+      True,
+      obj = iNBResolveKeyObject[kr];
+      If[obj === $Failed, kr -> "NoMaterial",
+        kind = Switch[Head[obj],
+          SymmetricKey, "SymmetricKey", PrivateKey, "PrivateKey",
+          PublicKey, "PublicKey", ByteArray, "MacKey", _, "Unknown"];
+        AssociateTo[$iNBKeyIndex, kr -> <|
+          "KeyRef" -> kr, "Kind" -> kind, "Backend" -> $NBCredentialBackend,
+          "Fingerprint" -> iNBFingerprint[obj],
+          "Status" -> "Active",
+          "CreatedAt" -> DateString["ISODateTime"],
+          "Purpose" -> "RebuiltFromCredential",
+          "PublicKey" -> Missing["NotApplicable"]|>];
+        kr -> "Rebuilt"]]]], keyRefs];
+  iNBPersistIndex[];
+  Association[res]];
 
 (* ---- 公開 API: 暗号操作 (鍵は内部で解決し、返さない) ---- *)
 NBEncryptWithKeyRef[keyRef_String, plaintextBytes_ByteArray, purpose_ : None, accessSpec_ : Automatic] :=
