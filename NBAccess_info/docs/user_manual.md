@@ -14,19 +14,20 @@
 12. [Job 管理](#job-管理)
 13. [カレンダーアクセス (iCal/ICS)](#カレンダーアクセス-ical-ics)
 14. [$onWork タスクメタデータ](#onwork-タスクメタデータ)
-15. [API キー](#api-キー)
+15. [NBImport（LLM 生成コード向け仲介 Import）](#nbimportllm-生成コード向け仲介-import)
+16. [API キー](#api-キー)
     - [クラウド LLM API キー](#クラウド-llm-api-キー)
     - [ローカル LLM API キー (LM Studio 等)](#ローカル-llm-api-キー-lm-studio-等)
-16. [暗号鍵ストア (NBAccess_crypto)](#暗号鍵ストア-nbaccess_crypto)
-17. [フォールバックモデル / プロバイダーアクセスレベル](#フォールバックモデル--プロバイダーアクセスレベル)
-18. [ノートブックモデル選択と信頼ローカルサーバー管理](#ノートブックモデル選択と信頼ローカルサーバー管理)
-19. [SourceVault との統合とパス参照 API](#sourcevault-との統合とパス参照-api)
-20. [その他のユーティリティ](#その他のユーティリティ)
-21. [クラウド公開宣言とノートブックキャッシュ修復](#クラウド公開宣言とノートブックキャッシュ修復)
-22. [[実験的] ノートブックファイルのセル操作](#実験的-ノートブックファイルのセル操作)
-23. [ClaudeRuntime との統合](#clauderuntime-との統合)
-24. [ClaudeTestKit との連携](#claudetestkit-との連携)
-25. [後方互換性](#後方互換性)
+17. [暗号鍵ストア (NBAccess_crypto)](#暗号鍵ストア-nbaccess_crypto)
+18. [フォールバックモデル / プロバイダーアクセスレベル](#フォールバックモデル--プロバイダーアクセスレベル)
+19. [ノートブックモデル選択と信頼ローカルサーバー管理](#ノートブックモデル選択と信頼ローカルサーバー管理)
+20. [SourceVault との統合とパス参照 API](#sourcevault-との統合とパス参照-api)
+21. [その他のユーティリティ](#その他のユーティリティ)
+22. [クラウド公開宣言とノートブックキャッシュ修復](#クラウド公開宣言とノートブックキャッシュ修復)
+23. [[実験的] ノートブックファイルのセル操作](#実験的-ノートブックファイルのセル操作)
+24. [ClaudeRuntime との統合](#clauderuntime-との統合)
+25. [ClaudeTestKit との連携](#claudetestkit-との連携)
+26. [後方互換性](#後方互換性)
 
 ---
 
@@ -1385,6 +1386,51 @@ NBOnWorkTasks["ModifiedWithinDays" -> 7, "IncludeDone" -> False]
 ```
 
 読み取り不能なファイル、またはメタデータの安全なパースに失敗したファイルは、スキャン全体を中断させずに `"State" -> "Unknown"`, `"ParseFailed" -> True` のレコードとして扱われます。
+
+---
+
+## NBImport（LLM 生成コード向け仲介 Import）
+
+生の `Import` は `$NBDenyHeads` に登録された恒久禁止 head であり、ClaudeRuntime 経由で LLM 生成コードとして実行しようとすると ForbiddenHead 検出によりターン全体が即座に失敗します。とはいえ `Import` は WL でファイルを読み込む最も自然な関数であるため、単に禁止するだけでなく「代わりにこれを呼べ」と言える安全な受け皿として `NBImport` が追加されました。
+
+```mathematica
+NBImport[path]
+NBImport[path, fmt]
+```
+
+### accessSpec を引数に取らない設計
+
+`NBImport` は `accessSpec` を引数として受け取りません。もし引数で受け取る設計にすると、LLM 生成コードが自分に都合の良い緩い `accessSpec`（例: `<|"MayAccessFileSystem" -> "ReadOnly"|>` のような無制限指定）を書いてチェックを自己承認してしまいます。代わりに `NBImport` は、`NBExecuteHeldExpr` が検証済みの式を実行する際に `Block` で束縛する「本物の」ambient accessSpec（内部変数 `$iNBAmbientAccessSpec`）だけを参照します。
+
+- **`NBExecuteHeldExpr` の管理下でのみ使用可能**: ambient accessSpec が束縛されていない文脈（NBAccess の管理された評価の外）で呼び出すと、`NBImport::noctx`（「NBImport は NBAccess 管理下の評価（NBExecuteHeldExpr）の中でのみ使えます」）を発行して `$Failed` を返します。
+- **読み取り範囲**: ambient accessSpec の `AllowedDirectories`、それが空ならノートブックに宣言済みのアクセス可能ディレクトリ（`NBGetAccessibleDirs[]`）にスコープされます。どちらも空の場合は fail-closed で全拒否されます。
+- **拒否時**: `NBImport::denied` メッセージ（`「〈path〉の読み取りは許可されていません（〈理由〉）。NBSetAccessibleDirs[{...}] でアクセス可能ディレクトリを宣言してください。」`）を発行し `$Failed` を返します。
+
+```mathematica
+(* NBExecuteHeldExpr が実行する LLM 生成コード内で使う想定 *)
+data = NBImport["C:\\data\\report.csv", "CSV"];
+
+(* アクセス可能ディレクトリが未宣言、または対象パスがスコープ外の場合 *)
+NBImport["C:\\secret\\keys.txt"]
+(* NBImport::denied: ... の読み取りは許可されていません (...)。NBSetAccessibleDirs[{...}] で ... *)
+(* $Failed *)
+```
+
+### 評価スコープのプライバシー透かし（EvaluationPrivacy watermark）
+
+変数単位の秘密依存追跡は、WL の組み込み評価に値レベルの taint 追跡フックが無いため原理的に不可能です。その代わりに `NBImport` は、読み込んだファイルの PrivacyLevel（`NBFileSpec` から取得）で、その評価スコープ全体の「透かしレベル」`$iNBEvaluationPrivacy` を `Max` 更新します。
+
+この仕組みにより、静的解析（機密変数名や `Out[n]`/`In[n]`/`InString[n]`/`%` 参照の検出）だけでは捕捉できない経路——たとえば読み込んだファイル内容を静的解析が追跡できないローカル変数へ代入する場合など——で機密データが評価結果に混入しても、当該評価の出力全体を `NBRedactExecutionResult` が schema-only（値を含まずスキーマ情報のみ）にフォールバックできます。読み取り自体は許可しつつ、「読めるが漏れない」を成立させる保守的だが安全な設計です。`$iNBEvaluationPrivacy` は `NBExecuteHeldExpr` が式を実行するたびに `0.0` にリセットされます。
+
+### 既存の NBCheckedImport との違い
+
+低レベルの `NBCheckedImport[path, fmt, accessSpec]`（`NBCheckFileRead` 通過後に生の `Import` を呼ぶだけの薄いラッパー）は今も存在しますが、`accessSpec` を引数で受け取るため LLM 生成コードに直接使わせてはいけません。`NBAccess` の内部評価経路（例: `mathematica_eval` の評価ヘルパー）から呼ぶ内部プリミティブとしてのみ想定されています。LLM 向けには必ず `NBImport` を使用してください。
+
+### Allowed Expression Surface / EffectClass 上の扱い
+
+`NBImport` は許可 head カテゴリ `$NBAllowedHeadsByCategory["NBAccess_ReadOnly"]`（→ `$NBAllowedHeads` に自動反映）に登録されています。ただし実効的なアクセス制御は head 名の許可可否ではなく、上記の ambient accessSpec + ディレクトリスコープの検査で行われます。EffectClass 分類では `"EffectClass" -> "ReadOnlyFileSystem"`、`"ExecutionPlacement" -> "FileSystemReadOnly"` として登録されており、通常のファイル読み取りと同様 auto-permit 対象ですが、プライバシー漏洩の防止は上記の評価スコープ透かしが担います。
+
+なお、組み込みの `FileByteCount`（ファイルサイズ等のメタデータのみを返し、本文は一切読まない関数）も同じ EffectClass override テーブルに `"ReadOnlyFileSystem"` として登録されています。以前は `"File"` という語幹からファイルシステムに触れる副作用系ビルトインと誤判定され、ファイル一覧の集計程度の用途でも承認要求が発生していましたが、この分類修正により不要な承認要求は発生しなくなりました。
 
 ---
 

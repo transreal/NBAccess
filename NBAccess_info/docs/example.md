@@ -342,12 +342,13 @@ NBHistoryClearAll[nb, "myTag", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
 
 ```
 NBGetAPIKey["anthropic", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
-(* provider: "anthropic" | "openai" | "github"
+(* provider: "anthropic" | "openai" | "zai" | "kimi" | "github"
    AccessLevel >= 1.0 が必須。呼び出し側で PrivacySpec -> <|"AccessLevel" -> 1.0|> を明示指定すること。
    SystemCredential へのアクセスを一元管理する。 *)
 
 NBListProviderModels["anthropic"]
 (* クラウドプロバイダ (anthropic / openai) の利用可能モデルIDリストを返す。
+   provider: "anthropic" | "openai" | "zai" | "kimi"。
    APIキーは内部でSystemCredentialから読み、外部には出さない。
    返すのはモデル名リスト（秘匿性なし）だけなので、PrivacySpec / AccessLevel の指定は不要。
    戻り値: <|"Status" -> _, "Provider" -> _, "Models" -> {_String..}|> *)
@@ -476,6 +477,26 @@ NBNormalizeAccessPathRef["C:\\projects\\A"]
    既にAccessPathRef Associationなら不足キーを既定で補う。NBSetAccessibleDirs互換ラッパが内部で使う。 *)
 ```
 
+## 安全な Import API
+
+LLM 生成コードから直接ファイルを読み込むための、NBAccess 仲介の `Import` です。
+
+```
+NBImport[path]
+NBImport[path, fmt]
+```
+
+生の `Import` は `$NBDenyHeads` に列挙された恒久禁止 head ですが、`NBImport` はその代わりに呼べる許可 head として用意されています。`accessSpec` を引数として受け取るのではなく、NBAccess 管理下の評価（`NBExecuteHeldExpr` 実行時に束縛される ambient な実体）を内部的に参照するため、呼び出し側が権限を偽装することはできません。そのため通常のトップレベル評価から直接呼び出すことはできず、NBAccess が仲介する評価コンテキストの中でのみ使用できます。
+
+読み取り範囲は accessSpec の `AllowedDirectories`、それが無ければ `NBSetAccessibleDirs` でノートブックに宣言された `NBGetAccessibleDirs[]` の範囲に scope されます。範囲外のパス・未宣言時は拒否され `$Failed` を返します。
+
+```
+NBImport["C:\\projects\\A\\data.csv"]
+NBImport["C:\\projects\\A\\report.txt", "Text"]
+```
+
+読み込んだファイルの `PrivacyLevel` は自動的に評価スコープのプライバシーレベルへ反映されます。scope 内であっても秘匿度の高いファイルを読み込んだ評価の出力は `NBRedactExecutionResult` によってスキーマのみに縮退されるため、「読み込みは許可されるが内容は漏れない」という性質が保たれます。戻り値は `Import` の結果そのもの、拒否・失敗時は `$Failed` です。
+
 ## カレンダーアクセス API (iCal/ICS)
 
 所有者の iCal/ICS カレンダーを、`PrivacySpec` によるアクセスレベル制御のもとで読み取る API 群です。
@@ -574,4 +595,11 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 ---
 
-以上が現時点でのソースコードに定義されている公開シンボルです。今回のドキュメント更新時点での確認では、公開関数・オプションの追加/削除はありませんでした。唯一の変更点は `$onWork` タスクメタデータ抽出（`NBOnWorkTaskSafeExtract`/`NBOnWorkTasks`）の内部実装（Private コンテキスト）に対する堅牢性向上です: (1) 安全に抽出できるキーのホワイトリストに `"MailRecordId"` が追加され、メール由来のタスクレコードなどを想定した拡張が行われました。(2) Notebook box 形式のセルに加え、テキストコンテンツ形式のセル（メール由来ノートブック等）も `ToExpression[..., InputForm, HoldComplete]` による非評価パースで扱えるようになりました。これらはいずれも公開関数のシグネチャや `::usage` 文字列、オプション体系には影響しません。
+以上が現時点でのソースコードに定義されている公開シンボルのうち、本ドキュメントが対象とするノートブック操作・プライバシー制御・LLM 連携まわりの API です（`NBAuthorize`/`GuardedApply`/`Declassify`/`NBRegisterFunctionSecurity` 等のセキュリティラベルカーネル本体や `NBValidateHeldExpr`/`NBExecuteHeldExpr`/`NBCheckFileRead`/`NBCheckedImport` 等の内部 I/O ガード層は、上位パッケージ・LLM 生成コードから直接扱うものではないため対象外としています）。
+
+今回のドキュメント更新での変更点:
+
+1. **`NBImport` を新規追加**（[安全な Import API](#安全な-import-api)）。LLM 生成コードが直接ファイルを読み込むための NBAccess 仲介 `Import` です。内部ガード層 `NBCheckedImport` は「呼び出し側が accessSpec を自分で用意できてしまう」ため LLM 生成コードには使わせられないとの理由から、代わりにアクセス範囲を ambient に束縛する `NBImport` が用意されました。`NBCheckedImport` 自体は内部 API のままです。
+2. **`NBGetAPIKey` / `NBListProviderModels` の対応プロバイダーを更新**。Moonshot AI（`"kimi"`、国際版エンドポイント `api.moonshot.ai`）が `"zai"` と並んで利用可能になり、`provider` 引数に指定できる値が `"anthropic" | "openai" | "zai" | "kimi" | "github"` になりました。
+
+これら以外の公開関数・オプションの追加・削除はありませんでした。`$onWork` タスクメタデータ抽出（`NBOnWorkTaskSafeExtract`/`NBOnWorkTasks`）まわりは内部実装（キャッシュ・パース処理）の堅牢性向上が続いていますが、公開シグネチャ・`::usage`・オプション体系への影響はありません。

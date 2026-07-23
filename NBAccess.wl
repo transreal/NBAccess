@@ -504,7 +504,7 @@ NBHistoryClearAll::usage =
 (* ---- API \:30ad\:30fc\:30a2\:30af\:30bb\:30b5\:30fc ---- *)
 NBGetAPIKey::usage =
   "NBGetAPIKey[provider] \:306f AI \:30d7\:30ed\:30d0\:30a4\:30c0\:306e API \:30ad\:30fc\:3092\:8fd4\:3059\:3002\n" <>
-  "provider: \"anthropic\" | \"openai\" | \"github\"\n" <>
+  "provider: \"anthropic\" | \"openai\" | \"zai\" | \"kimi\" | \"github\"\n" <>
   "AccessLevel >= 1.0 \:304c\:5fc5\:9808\:3002\:547c\:3073\:51fa\:3057\:5074\:3067 PrivacySpec -> <|\"AccessLevel\" -> 1.0|> \:3092\:660e\:793a\:6307\:5b9a\:3059\:308b\:3053\:3068\:3002\n" <>
   "SystemCredential \:3078\:306e\:30a2\:30af\:30bb\:30b9\:3092\:4e00\:5143\:7ba1\:7406\:3059\:308b\:3002";
 
@@ -514,7 +514,7 @@ NBListProviderModels::usage =
   "\:5916\:90e8\:306b\:306f\:51fa\:3055\:306a\:3044\:3002\:8fd4\:3059\:306e\:306f\:30e2\:30c7\:30eb\:540d\:30ea\:30b9\:30c8 (\:79d8\:533f\:6027\:306a\:3057) \:3060\:3051\:306a\:306e\:3067\:3001\n" <>
   "PrivacySpec / AccessLevel \:306e\:6307\:5b9a\:306f\:4e0d\:8981\:3002\:4e00\:822c\:30d1\:30c3\:30b1\:30fc\:30b8 (SourceVault \:7b49) \:304b\:3089\n" <>
   "API \:30ad\:30fc\:3092\:76f4\:63a5\:8aad\:307e\:305a\:306b\:30e2\:30c7\:30eb\:4e00\:89a7\:3092\:53d6\:5f97\:3059\:308b\:305f\:3081\:306e\:516c\:958b\:95a2\:6570\:3002\n" <>
-  "provider: \"anthropic\" | \"openai\"\:3002\n" <>
+  "provider: \"anthropic\" | \"openai\" | \"zai\" | \"kimi\"\:3002\n" <>
   "\:623b\:308a\:5024: <|\"Status\" -> _, \"Provider\" -> _, \"Models\" -> {_String..}|>\:3002";
 
 (* ---- \:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc\:306e API \:30ad\:30fc\:30a2\:30af\:30bb\:30b5\:30fc ---- *)
@@ -1275,7 +1275,16 @@ NBCheckNetworkAccess::usage =
   "NBCheckNetworkAccess[target, accessSpec] \:306f target (URL \:6587\:5b57\:5217\:307e\:305f\:306f <|Scheme,Host,Port|>) \:304c AllowedNetworkTargets scope \:5185\:304b\:691c\:67fb\:3059\:308b\:3002";
 NBCheckExternalProcess::usage =
   "NBCheckExternalProcess[cmd, accessSpec] \:306f\:5916\:90e8\:30b3\:30de\:30f3\:30c9\:304c AllowedExternalCommands \:5185\:304b\:691c\:67fb\:3059\:308b\:3002";
-NBCheckedImport::usage = "NBCheckedImport[path, fmt, accessSpec] \:306f NBCheckFileRead \:901a\:904e\:5f8c\:306b Import \:3059\:308b\:3002\:9055\:53cd\:6642\:306f AccessSpecViolation \:3092\:8fd4\:3059\:3002";
+NBCheckedImport::usage = "NBCheckedImport[path, fmt, accessSpec] \:306f NBCheckFileRead \:901a\:904e\:5f8c\:306b Import \:3059\:308b\:3002\:9055\:53cd\:6642\:306f AccessSpecViolation \:3092\:8fd4\:3059\:3002 \:6ce8: accessSpec \:3092\:5f15\:6570\:3067\:53d7\:3051\:308b\:306e\:3067 LLM \:751f\:6210\:30b3\:30fc\:30c9\:306b\:76f4\:63a5\:4f7f\:308f\:305b\:3066\:306f\:3044\:3051\:306a\:3044 (\:81ea\:5206\:3067\:7de9\:3044 accessSpec \:3092\:66f8\:3051\:3070\:81ea\:5df1\:627f\:8a8d\:3067\:304d\:3066\:3057\:307e\:3046)\:3002LLM \:5411\:3051\:306b\:306f NBImport \:3092\:4f7f\:3046\:3002";
+
+NBImport::usage =
+  "NBImport[path] / NBImport[path, fmt] \:306f LLM \:751f\:6210\:30b3\:30fc\:30c9\:5411\:3051\:306e NBAccess \:4ef2\:4ecb Import\:3002\n" <>
+  "\:751f\:306e Import \:306f $NBDenyHeads \:306e\:6052\:4e45\:7981\:6b62 head \:3060\:304c\:3001\:3053\:308c\:306f\:8a31\:53ef head \:3068\:3057\:3066\n" <>
+  "\:5229\:7528\:3067\:304d\:308b\:3002accessSpec \:306f\:5f15\:6570\:3067\:306f\:306a\:304f NBExecuteHeldExpr \:304c\:5b9f\:884c\:6642\:306b\n" <>
+  "\:675f\:7e1b\:3057\:305f\:300c\:672c\:7269\:300d\:3092\:53c2\:7167\:3059\:308b\:305f\:3081\:3001\:547c\:3073\:51fa\:3057\:5074\:304b\:3089\:6a29\:9650\:3092\:507d\:88c5\:3067\:304d\:306a\:3044\:3002\n" <>
+  "\:8aad\:307f\:53d6\:308a\:7bc4\:56f2\:306f accessSpec \:306e AllowedDirectories\:3001\:7121\:3051\:308c\:3070\n" <>
+  "NBGetAccessibleDirs[] (\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5ba3\:8a00) \:306b scope \:3055\:308c\:308b\:3002\:672a\:5ba3\:8a00\:306a\:3089\:5168\:62d2\:5426\:3002\n" <>
+  "\:8fd4\:308a\:5024: Import \:306e\:7d50\:679c\:305d\:306e\:3082\:306e\:3002\:62d2\:5426\:30fb\:5931\:6557\:6642\:306f $Failed\:3002";
 NBCheckedExport::usage = "NBCheckedExport[path, expr, fmt, accessSpec] \:306f NBCheckFileWrite \:901a\:904e\:5f8c\:306b Export \:3059\:308b\:3002";
 NBCheckedURLRead::usage = "NBCheckedURLRead[url, accessSpec] \:306f NBCheckNetworkAccess \:901a\:904e\:5f8c\:306b URLRead \:3059\:308b\:3002";
 NBCheckedFileWrite::usage = "NBCheckedFileWrite[path, content, accessSpec] \:306f NBCheckFileWrite \:901a\:904e\:5f8c\:306b\:66f8\:304d\:8fbc\:3080\:3002";
@@ -1403,7 +1412,11 @@ projected task records read via NBOnWorkTaskSafeExtract (metadata ONLY: the \
 notebook body/output is never read at any level). Each record derives \"Due\" \
 (Deadline, else NextReview; a NextReview Quantity is resolved as ModificationDate + \
 offset, matching NotebookExtensions) and \"State\" (Done/Pass/Keep from Status, else \
-Open). Fields by access level: 0.5 = Due/DueKind/State/FileDigest/ModificationDate; \
+Open). Deadline and NextReview are ALSO kept separately as \"DeadlineDue\" and \
+\"ReviewDue\" (Missing when absent), because they are independent occurrences of the \
+same note: a scheduler must be able to place a review that falls tomorrow even when \
+the deadline is a year out. Fields by access level: 0.5 = \
+Due/DueKind/DeadlineDue/ReviewDue/State/FileDigest/ModificationDate; \
 0.7 adds Title/Keywords/TaskId/Effort/Movable/DependsOn; 1.0 adds Path. Options: \
 \"Directory\" -> Automatic (Global`$onWork), \"ModifiedWithinDays\" -> Automatic \
 (all), \"IncludeDone\" -> False (drop Status Done/Pass), PrivacySpec -> Automatic, \
@@ -1465,6 +1478,7 @@ If[!AssociationQ[$iProviderMaxAccessLevel],
     "anthropic"  -> 0.5,
     "openai"     -> 0.5,
     "zai"        -> 0.25,
+    "kimi"       -> 0.25,
     "lmstudio"   -> 1.0
   |>];
 
@@ -3848,6 +3862,7 @@ $iAPIKeyMap = <|
   "anthropic"  -> "ANTHROPIC_API_KEY",
   "openai"     -> "OPENAI_API_KEY",
   "zai"        -> "ZAI_API_KEY",
+  "kimi"       -> "KIMI_API_KEY",
   "github"     -> "GITHUB_TOKEN",
   "gh"         -> "GITHUB_TOKEN",
   "github_pat" -> "GITHUB_TOKEN"
@@ -3871,7 +3886,7 @@ NBAccess`NBGetAPIKey[provider_String, opts:OptionsPattern[]] :=
     key
   ];
 
-NBGetAPIKey::unkn = "\:672a\:77e5\:306e\:30d7\:30ed\:30d0\:30a4\:30c0: `1`\:3002\"anthropic\"\:3001\"openai\"\:3001\"zai\"\:3001\"github\" \:306e\:3044\:305a\:308c\:304b\:3092\:6307\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+NBGetAPIKey::unkn = "\:672a\:77e5\:306e\:30d7\:30ed\:30d0\:30a4\:30c0: `1`\:3002\"anthropic\"\:3001\"openai\"\:3001\"zai\"\:3001\"kimi\"\:3001\"github\" \:306e\:3044\:305a\:308c\:304b\:3092\:6307\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
 NBGetAPIKey::nokey = "`1` \:306e API \:30ad\:30fc\:304c\:898b\:3064\:304b\:308a\:307e\:305b\:3093\:3002SystemCredential[\"`2`\"] \:3092\:8a2d\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
 
 
@@ -3889,7 +3904,11 @@ $iProviderModelsURL = <|
   "anthropic" -> "https://api.anthropic.com/v1/models",
   "openai"    -> "https://api.openai.com/v1/models",
   (* z.ai (GLM) \:306f OpenAI \:4e92\:63db\:306e /models \:3092\:6301\:3064 *)
-  "zai"       -> "https://api.z.ai/api/paas/v4/models"
+  "zai"       -> "https://api.z.ai/api/paas/v4/models",
+  (* Kimi (Moonshot AI) \:3082 OpenAI \:4e92\:63db\:306e /models \:3092\:6301\:3064\:3002
+     \:56fd\:969b\:7248\:30a8\:30f3\:30c9\:30dd\:30a4\:30f3\:30c8\:306f api.moonshot.ai (\:4e2d\:56fd\:672c\:571f\:7248\:306e
+     api.moonshot.cn \:3068\:306f\:30ad\:30fc\:304c\:5225\:7cfb\:7d71\:306a\:306e\:3067\:6ce8\:610f)\:3002 *)
+  "kimi"      -> "https://api.moonshot.ai/v1/models"
 |>;
 
 (* OpenAI \:4e92\:63db /v1/models JSON \:304b\:3089 model id \:3092\:62bd\:51fa\:3059\:308b\:3002
@@ -3928,7 +3947,7 @@ NBAccess`NBListProviderModels[provider_String] :=
     headers = Which[
       prov === "anthropic",
         {"x-api-key" -> key, "anthropic-version" -> "2023-06-01"},
-      prov === "openai" || prov === "zai",
+      prov === "openai" || prov === "zai" || prov === "kimi",
         {"Authorization" -> "Bearer " <> key},
       True, {}];
     resp = Quiet @ Check[
@@ -6220,7 +6239,12 @@ If[!AssociationQ[$NBAllowedHeadsByCategory],
       "NBCellExtractVarNames", "NBCellExtractAssignedNames",
       "NBShouldExcludeFromPrompt", "NBIsClaudeFunctionCell",
       "NBBuildVarDependencies", "NBTransitiveDependents",
-      "NBDependencyEdges", "NBGetTaggingRule"
+      "NBDependencyEdges", "NBGetTaggingRule",
+      (* 2026-07-22: NBAccess \:4ef2\:4ecb Import\:3002\:751f\:306e Import \:306f\:6052\:4e45 Deny \:306e\:307e\:307e\:3067\:3001
+         LLM \:306b\:306f\:3053\:3061\:3089\:3092\:4f7f\:308f\:305b\:308b\:3002\:5b9f\:52b9\:6a29\:9650\:306f head \:3067\:306f\:306a\:304f
+         ambient accessSpec + NBGetAccessibleDirs \:306e scope \:304c\:6c7a\:3081\:308b\:305f\:3081\:3001
+         auto-permit \:3067\:3082\:672a\:5ba3\:8a00\:30c7\:30a3\:30ec\:30af\:30c8\:30ea\:306f\:8aad\:3081\:306a\:3044 (fail-closed)\:3002 *)
+      "NBImport"
     },
     "Control" -> {
       "CompoundExpression", "Module", "With", "Block",
@@ -6343,6 +6367,16 @@ iRecomputeAllowedHeads[] := (
   $NBAllowedHeads = Flatten @ KeyValueMap[
     If[NBCategoryEnabled[#1], #2, {}] &,
     $NBAllowedHeadsByCategory]);
+
+(* \:4e0a\:306e\:30ab\:30c6\:30b4\:30ea\:521d\:671f\:5316\:306f !AssociationQ \:30ac\:30fc\:30c9\:4ed8\:304d\:306a\:306e\:3067\:3001\:65e2\:306b
+   $NBAllowedHeadsByCategory \:304c\:5b58\:5728\:3059\:308b\:30ab\:30fc\:30cd\:30eb\:3067\:518d\:30ed\:30fc\:30c9\:3057\:3066\:3082
+   \:5f8c\:304b\:3089\:8ffd\:52a0\:3057\:305f head \:304c\:53cd\:6620\:3055\:308c\:306a\:3044\:3002backfill \:3057\:3066\:304b\:3089\:518d\:8a08\:7b97\:3059\:308b\:3002 *)
+If[AssociationQ[$NBAllowedHeadsByCategory] &&
+   ListQ[$NBAllowedHeadsByCategory["NBAccess_ReadOnly"]] &&
+   !MemberQ[$NBAllowedHeadsByCategory["NBAccess_ReadOnly"], "NBImport"],
+  $NBAllowedHeadsByCategory["NBAccess_ReadOnly"] =
+    Append[$NBAllowedHeadsByCategory["NBAccess_ReadOnly"], "NBImport"]];
+
 iRecomputeAllowedHeads[];
 
 If[!ListQ[$NBApprovalHeads],
@@ -7068,6 +7102,22 @@ If[!AssociationQ[$NBEffectClassOverrides],
       "ExecutionPlacement" -> "FileSystemReadOnly"|>,
     "DirectoryQ" -> <|"EffectClass" -> "ReadOnlyFileSystem",
       "ExecutionPlacement" -> "FileSystemReadOnly"|>,
+    (* 2026-07-22: FileByteCount \:306f\:30d5\:30a1\:30a4\:30eb\:306e\:30b5\:30a4\:30ba (\:30e1\:30bf\:30c7\:30fc\:30bf) \:3092\:8fd4\:3059\:3060\:3051\:3067\:3001
+       \:672c\:6587\:3092\:30ab\:30fc\:30cd\:30eb\:306b\:8aad\:307f\:8fbc\:307e\:306a\:3044\:3002"File" \:8a9e\:5e79\:3067 SideEffectishBuiltin \:3068
+       \:8aa4\:5224\:5b9a\:3055\:308c\:3001\:30d5\:30a1\:30a4\:30eb\:4e00\:89a7\:306e\:96c6\:8a08\:306e\:305f\:3073\:306b\:627f\:8a8d\:3092\:8981\:6c42\:3057\:3066\:3044\:305f\:305f\:3081
+       ReadOnlyFileSystem \:3068\:3057\:3066 override \:3059\:308b\:3002
+       \:306a\:304a ReadString / ReadList \:7b49\:306e\:672c\:6587\:8aad\:307f\:8fbc\:307f\:7cfb\:306f\:610f\:56f3\:7684\:306b\:627f\:8a8d\:8981\:306e\:307e\:307e
+       \:6b8b\:3059 (\:5185\:5bb9\:304c LLM \:30b3\:30f3\:30c6\:30ad\:30b9\:30c8\:3078\:6d41\:308c\:308b\:7d4c\:8def\:304c\:3042\:308b\:305f\:3081)\:3002 *)
+    "FileByteCount" -> <|"EffectClass" -> "ReadOnlyFileSystem",
+      "ExecutionPlacement" -> "FileSystemReadOnly"|>,
+    (* 2026-07-22: NBImport (NBAccess \:4ef2\:4ecb Import)\:3002$NBAllowedHeads (\:5c64 1) \:306b\:306f
+       \:5165\:3063\:3066\:3044\:308b\:304c\:3001EffectClass \:5c64 (\:5c64 2) \:3067\:306f NBAccess` \:6587\:8108\:306e\:975e\:767b\:9332 head \:306a\:306e\:3067
+       UnknownUserCode -> AskUserAllowed -> InteractiveSafe \:3067 NeedsApproval \:306b\:964d\:683c\:3057\:3066\:3044\:305f\:3002
+       \:5b9f\:614b\:306f scope \:5185\:8aad\:307f\:53d6\:308a\:306a\:306e\:3067 ReadOnlyFileSystem (AutoPermit) \:3067 override \:3059\:308b\:3002
+       privacy \:6f0f\:6d29\:306f\:8a55\:4fa1\:30b9\:30b3\:30fc\:30d7\:900f\:304b\:3057 (EvaluationPrivacy) \:304c\:53d7\:3051\:6301\:3064\:305f\:3081\:3001
+       \:3053\:3053\:3092 AutoPermit \:306b\:3057\:3066\:3082\:9ad8 privacy \:30c7\:30fc\:30bf\:306f schema-only \:306b\:843d\:3061\:308b\:3002 *)
+    "NBImport" -> <|"EffectClass" -> "ReadOnlyFileSystem",
+      "ExecutionPlacement" -> "FileSystemReadOnly"|>,
     (* \:627f\:8a8d wrapper head (spec \:68483-lite): FrontEnd \:30d6\:30ed\:30c3\:30af\:30ea\:30b9\:30af\:306e\:3042\:308b
        desktop action \:3092\:8868\:3059\:5f0f\:3002queue \:5316\:5206\:5c90\:304c\:3053\:306e metadata \:3092\:898b\:3066\:3001
        \:627f\:8a8d\:5f8c\:306b\:76f4\:63a5\:5b9f\:884c\:305b\:305a PendingFinalActionQueue \:3078\:7a4d\:3080\:3002 *)
@@ -7096,6 +7146,20 @@ If[!AssociationQ[$NBEffectClassOverrides],
     "FileNameDepth" -> <|"EffectClass" -> "PureComputation",
       "ExecutionPlacement" -> "SubkernelSafe"|>
   |>];
+
+(* \:4e0a\:306e\:521d\:671f\:5316\:306f !AssociationQ \:30ac\:30fc\:30c9\:4ed8\:304d\:306a\:306e\:3067\:3001\:65e2\:306b $NBEffectClassOverrides \:304c
+   \:5b58\:5728\:3059\:308b\:30ab\:30fc\:30cd\:30eb\:3067 NBAccess \:3092\:518d\:30ed\:30fc\:30c9\:3057\:3066\:3082\:5f8c\:304b\:3089\:8ffd\:52a0\:3057\:305f\:30a8\:30f3\:30c8\:30ea\:304c
+   \:53cd\:6620\:3055\:308c\:306a\:3044\:3002\:65b0\:898f\:8ffd\:52a0\:5206\:3092 backfill \:3059\:308b (\:30e6\:30fc\:30b6\:30fc\:304c\:660e\:793a\:8a2d\:5b9a\:6e08\:307f\:306e
+   \:30a8\:30f3\:30c8\:30ea\:306f\:4e0a\:66f8\:304d\:3057\:306a\:3044)\:3002 *)
+If[AssociationQ[$NBEffectClassOverrides],
+  If[!KeyExistsQ[$NBEffectClassOverrides, "FileByteCount"],
+    $NBEffectClassOverrides["FileByteCount"] =
+      <|"EffectClass" -> "ReadOnlyFileSystem",
+        "ExecutionPlacement" -> "FileSystemReadOnly"|>];
+  If[!KeyExistsQ[$NBEffectClassOverrides, "NBImport"],
+    $NBEffectClassOverrides["NBImport"] =
+      <|"EffectClass" -> "ReadOnlyFileSystem",
+        "ExecutionPlacement" -> "FileSystemReadOnly"|>]];
 
 (* ---- EffectClass \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:5206\:985e (spec 5B.5A) ----
    \:512a\:5148\:9806: explicit Deny/Approval/Allowed \:306f\:547c\:3073\:51fa\:3057\:5074\:3067\:51e6\:7406\:6e08\:307f\:306e\:60f3\:5b9a\:3002
@@ -7555,8 +7619,9 @@ iNBRunNotebookPreActions[validatedActions_List] :=
   ];
 
 NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
-  Module[{result, timeout, screenMode, snapshot, approvalMode, audit,
-          permitCheck, preActions, validatedPreActions, executedPreActions = {}},
+  Module[{result, evalPriv = 0.0, timeout, screenMode, snapshot, approvalMode,
+          audit, permitCheck, preActions, validatedPreActions,
+          executedPreActions = {}},
     If[!MatchQ[heldExpr, HoldComplete[_]],
       Return[<|"Success" -> False, "Decision" -> "Deny",
         "RawResult" -> None, "HeldExpr" -> heldExpr,
@@ -7591,10 +7656,23 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
     (* Phase 30 fix Trap #16: Check \:3092\:4f7f\:308f\:305a Quiet \:306e\:307f\:3002
        Trap (Infinity): TimeConstraint === Infinity \:306f TimeConstrained \:3092
        \:4f7f\:308f\:305a\:76f4\:63a5 ReleaseHold (timc \:30e1\:30c3\:30bb\:30fc\:30b8\:56de\:907f)\:3002 *)
-    result = If[timeout === Infinity,
-      Quiet[ReleaseHold[heldExpr]],
-      Quiet[TimeConstrained[ReleaseHold[heldExpr], timeout, $TimedOut]]
-    ];
+    (* 2026-07-22: \:5b9f\:884c\:4e2d\:3060\:3051 accessSpec \:3092 ambient \:306b\:675f\:7e1b\:3059\:308b\:3002
+       NBImport \:7b49\:306e\:300cNBAccess \:4ef2\:4ecb I/O\:300d\:306f\:3053\:308c\:3092\:53c2\:7167\:3059\:308b\:3002accessSpec \:3092
+       \:5f15\:6570\:3067\:6e21\:3055\:305b\:306a\:3044\:306e\:304c\:8981\:70b9\:3067\:3001\:5f15\:6570\:306b\:3059\:308b\:3068 LLM \:304c
+       NBCheckedImport[p, f, <|"MayAccessFileSystem"->"ReadOnly"|>] \:306e\:3088\:3046\:306b
+       \:81ea\:5206\:3067\:7de9\:3044\:6a29\:9650\:3092\:66f8\:3044\:3066\:81ea\:5df1\:627f\:8a8d\:3067\:304d\:3066\:3057\:307e\:3046\:3002
+       Block \:306a\:306e\:3067 ReleaseHold \:304c\:7d42\:308f\:308c\:3070\:5fc5\:305a\:5143\:306b\:623b\:308b (fail-closed)\:3002
+       \:540c\:6642\:306b $iNBEvaluationPrivacy \:3092 0.0 \:306b Block \:675f\:7e1b\:3057\:3001NBImport \:7b49\:304c
+       \:8aad\:3093\:3060\:30c7\:30fc\:30bf\:306e privacy \:900f\:304b\:3057\:3092\:3053\:306e\:8a55\:4fa1\:5185\:3060\:3051\:3067\:96c6\:8a08\:3059\:308b\:3002
+       \:900f\:304b\:3057\:306f Block \:5185\:90e8\:3067\:6355\:6349\:3059\:308b (\:5916\:5074\:3067\:306f 0.0 \:306b\:623b\:308b\:305f\:3081)\:3002 *)
+    {result, evalPriv} = Block[
+        {$iNBAmbientAccessSpec = accessSpec, $iNBEvaluationPrivacy = 0.0},
+      Module[{r},
+        r = If[timeout === Infinity,
+          Quiet[ReleaseHold[heldExpr]],
+          Quiet[TimeConstrained[ReleaseHold[heldExpr], timeout, $TimedOut]]];
+        {r, $iNBEvaluationPrivacy}]];
+    If[!NumericQ[evalPriv], evalPriv = 0.0];
 
     If[result === $TimedOut,
       <|"Success" -> False,
@@ -7611,6 +7689,7 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
           "RawResult" -> result, "HeldExpr" -> heldExpr,
           "ReasonClass" -> "UnresolvedApprovalWrapperSymbol",
           "Error" -> "Approval wrapper did not resolve to NBAccess` symbol",
+          "EvaluationPrivacy" -> evalPriv,
           "AuditID" -> None|>,
       <|"Success" -> True,
         "Decision" -> permitCheck["Decision"],
@@ -7618,6 +7697,9 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
         "HeldExpr" -> heldExpr,
         "Error" -> None,
         "AuditID" -> None,
+        (* 2026-07-22: \:8a55\:4fa1\:30b9\:30b3\:30fc\:30d7\:900f\:304b\:3057\:3002NBRedactExecutionResult \:304c
+           accessLevel \:3068\:6bd4\:8f03\:3057\:3001\:8d85\:904e\:6642\:306f schema-only \:306b\:843d\:3068\:3059\:3002 *)
+        "EvaluationPrivacy" -> evalPriv,
         "ScreenWarnOnlyExecuted" -> TrueQ[permitCheck["ScreenWarnOnly"]],
         "CommitterAutoApproveExecuted" ->
           TrueQ[permitCheck["CommitterAutoApproved"]],
@@ -8331,20 +8413,126 @@ NBCheckedFileWrite[path_String, content_, accessSpec_Association] :=
         "Path" -> path|>,
       iNBViolation[chk]]];
 
+(* NBChecked* \:306e\:8aad\:307f\:53d6\:308a\:7cfb\:3082\:300c\:5168 NBAccess I/O\:300d\:306e\:4e00\:74b0\:3068\:3057\:3066\:8a55\:4fa1\:30b9\:30b3\:30fc\:30d7
+   \:900f\:304b\:3057\:3092\:6301\:3061\:4e0a\:3052\:308b (2026-07-22)\:3002mathematica_eval \:306e\:8a55\:4fa1\:5185\:3067\:547c\:3070\:308c\:305f
+   \:5834\:5408\:306b NBImport \:3068\:540c\:69d8\:306e\:6f0f\:6d29\:906e\:65ad\:304c\:304b\:304b\:308b\:3002 *)
 NBCheckedImport[path_String, fmt_String, accessSpec_Association] :=
   Module[{chk}, chk = NBCheckFileRead[path, accessSpec];
     If[TrueQ[chk["Allowed"]],
+      iNBRaiseEvaluationPrivacy[iNBPathPrivacyScore[path]];
       <|"Status" -> "OK", "Result" -> Quiet @ Import[path, fmt]|>, iNBViolation[chk]]];
 
 NBCheckedFileRead[path_String, accessSpec_Association] :=
   Module[{chk}, chk = NBCheckFileRead[path, accessSpec];
     If[TrueQ[chk["Allowed"]],
+      iNBRaiseEvaluationPrivacy[iNBPathPrivacyScore[path]];
       <|"Status" -> "OK", "Result" -> Quiet @ ReadString[path]|>, iNBViolation[chk]]];
 
 NBCheckedURLRead[url_String, accessSpec_Association] :=
   Module[{chk}, chk = NBCheckNetworkAccess[url, accessSpec];
     If[TrueQ[chk["Allowed"]],
       <|"Status" -> "OK", "Result" -> Quiet @ URLRead[url]|>, iNBViolation[chk]]];
+
+
+(* ============================================================
+   NBImport: LLM \:751f\:6210\:30b3\:30fc\:30c9\:5411\:3051\:306e NBAccess \:4ef2\:4ecb Import (2026-07-22)
+
+   \:80cc\:666f: \:751f\:306e Import \:306f $NBDenyHeads \:306e\:6052\:4e45\:7981\:6b62 head \:3067\:3001\:3057\:304b\:3082
+   ForbiddenHead \:306f ClaudeRuntime \:306e $fatalClasses \:306a\:306e\:3067\:30bf\:30fc\:30f3\:5168\:4f53\:304c
+   \:5373\:6b7b\:3059\:308b\:3002\:3057\:304b\:3057 Import \:306f WL \:3067\:30d5\:30a1\:30a4\:30eb\:3092\:8aad\:3080\:6700\:3082\:81ea\:7136\:306a\:95a2\:6570\:306a\:306e\:3067\:3001
+   \:30e2\:30c7\:30eb\:306f\:653e\:3063\:3066\:304a\:304f\:3068\:5fc5\:305a\:9078\:3076 (result3.nb)\:3002\:7981\:6b62\:3059\:308b\:3060\:3051\:3067\:306a\:304f
+   \:300c\:4ee3\:308f\:308a\:306b\:3053\:308c\:3092\:547c\:3079\300d\:3068\:8a00\:3048\:308b\:53d7\:3051\:76bf\:3092\:7528\:610f\:3059\:308b\:3002
+
+   \:65e2\:5b58\:306e NBCheckedImport \:3092\:305d\:306e\:307e\:307e\:4f7f\:308f\:305b\:306a\:3044\:7406\:7531:
+     (a) accessSpec \:3092\:5f15\:6570\:3067\:53d7\:3051\:308b\:306e\:3067\:3001LLM \:304c
+         NBCheckedImport[p, f, <|"MayAccessFileSystem" -> "ReadOnly"|>] \:3068\:66f8\:3051\:3070
+         \:30c1\:30a7\:30c3\:30af\:3092\:81ea\:5206\:3067\:901a\:305b\:3066\:3057\:307e\:3046 (\:73fe\:72b6\:306e Deny \:3088\:308a\:53b3\:3057\:304f\:306a\:3044)\:3002
+     (b) \:8fd4\:308a\:5024\:304c <|"Status", "Result"|> \:306a\:306e\:3067 Length[...] \:7b49\:306b\:305d\:306e\:307e\:307e\:7e4b\:3052\:306a\:3044\:3002
+
+   NBImport \:306f accessSpec \:3092\:53d7\:3051\:53d6\:3089\:305a\:3001NBExecuteHeldExpr \:304c Block \:3067\:675f\:7e1b\:3057\:305f
+   $iNBAmbientAccessSpec (\:672c\:7269) \:3060\:3051\:3092\:898b\:308b\:3002ambient \:304c\:7121\:3051\:308c\:3070 fail-closed\:3002
+   ============================================================ *)
+
+(* ambient accessSpec: NBExecuteHeldExpr \:306e ReleaseHold \:5468\:8fba\:3067\:306e\:307f\:675f\:7e1b\:3055\:308c\:308b\:3002 *)
+If[!ValueQ[$iNBAmbientAccessSpec], $iNBAmbientAccessSpec = None];
+
+(* ============================================================
+   \:8a55\:4fa1\:30b9\:30b3\:30fc\:30d7\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:900f\:304b\:3057 (2026-07-22)
+
+   \:8a2d\:8a08: WL \:306e\:7d44\:307f\:8fbc\:307f\:8a55\:4fa1\:306b\:306f\:5024\:30ec\:30d9\:30eb\:306e taint \:8ffd\:8de1\:30d5\:30c3\:30af\:304c\:7121\:3044\:305f\:3081\:3001
+   \:5909\:6570\:5358\:4f4d\:306e\:79d8\:5bc6\:4f9d\:5b58\:8ffd\:8de1\:306f\:539f\:7406\:7684\:306b\:4e0d\:53ef\:80fd\:3002\:4ee3\:308f\:308a\:306b\:300c1 \:56de\:306e
+   \:8a55\:4fa1\:30b9\:30b3\:30fc\:30d7\:5185\:3067 privacy N \:306e\:30c7\:30fc\:30bf\:3092\:8aad\:3093\:3060\:3089\:3001\:305d\:306e\:8a55\:4fa1\:306e\:51fa\:529b\:5168\:4f53\:3092
+   >= N \:3068\:307f\:306a\:3059\:300d\:8a55\:4fa1\:30b9\:30b3\:30fc\:30d7\:900f\:304b\:3057\:3092\:7528\:3044\:308b (\:4fdd\:5b88\:7684\:3060\:304c\:5065\:5168)\:3002
+
+   \:91cd\:8981: \:3053\:306e\:6a5f\:69cb\:306f NBAccess \:5185\:306b\:9589\:3058\:308b\:3002SourceVault_privacy.wl
+   (SourceVaultEvaluationPrivacy) \:306b\:4f9d\:5b58\:3055\:305b\:308b\:3068\:3001NBAccess + claudecode \:306e\:307f\:3092
+   \:30ed\:30fc\:30c9\:3059\:308b\:30ec\:30ac\:30b7\:30fc\:74b0\:5883\:3067\:52d5\:304b\:306a\:304f\:306a\:308b\:3002SourceVault \:304c\:3042\:308c\:3070\:305d\:3061\:3089\:306e
+   \:900f\:304b\:3057\:3082\:5c06\:6765\:5408\:6d41\:3055\:305b\:3089\:308c\:308b\:304c\:3001\:672c\:5b9f\:88c5\:306f\:5358\:4f53\:3067\:5b8c\:7d50\:3059\:308b\:3002
+   ============================================================ *)
+
+(* \:73fe\:8a55\:4fa1\:30b9\:30b3\:30fc\:30d7\:3067\:8aad\:3093\:3060\:30c7\:30fc\:30bf\:306e PrivacyLevel \:6700\:5927\:5024\:3002
+   NBExecuteHeldExpr \:304c ReleaseHold \:5468\:8fba\:3067 0.0 \:306b Block \:675f\:7e1b\:3057\:3001
+   NBImport \:7b49\:306e NBAccess \:4ef2\:4ecb\:8aad\:307f\:53d6\:308a\:304c Max \:3067\:6301\:3061\:4e0a\:3052\:308b\:3002 *)
+If[!NumericQ[$iNBEvaluationPrivacy], $iNBEvaluationPrivacy = 0.0];
+
+iNBRaiseEvaluationPrivacy[level_?NumericQ] :=
+  ($iNBEvaluationPrivacy = Max[
+     If[NumericQ[$iNBEvaluationPrivacy], $iNBEvaluationPrivacy, 0.0],
+     N[level]]);
+iNBRaiseEvaluationPrivacy[_] := $iNBEvaluationPrivacy;
+
+(* \:30d5\:30a1\:30a4\:30eb\:306e PrivacyLevel \:3092 1 \:3064\:306e\:6570\:5024\:306b\:3059\:308b (.nb \:306e\:6df7\:5728\:30ec\:30f3\:30b8\:306f\:6700\:5927\:5024)\:3002
+   file_read \:3068\:5b8c\:5168\:306b\:540c\:3058\:5024\:3092\:4f7f\:3046\:305f\:3081 NBFileSpec (\:30ad\:30e3\:30c3\:30b7\:30e5\:6e08\:307f) \:7d4c\:7531\:3002
+   spec \:304c\:53d6\:308c\:306a\:3044\:5834\:5408\:306f 1.0 (fail-closed)\:3002 *)
+iNBPathPrivacyScore[path_String] :=
+  Module[{spec, pl},
+    spec = Quiet @ Check[NBFileSpec[path], <||>];
+    pl = If[AssociationQ[spec], Lookup[spec, "PrivacyLevel", 1.0], 1.0];
+    Which[
+      NumericQ[pl], N[pl],
+      ListQ[pl] && pl =!= {} && AllTrue[pl, NumericQ], N[Max[pl]],
+      True, 1.0]];
+iNBPathPrivacyScore[_] := 1.0;
+
+NBImport::noctx =
+  "NBImport \:306f NBAccess \:7ba1\:7406\:4e0b\:306e\:8a55\:4fa1 (NBExecuteHeldExpr) \:306e\:4e2d\:3067\:306e\:307f\:4f7f\:3048\:307e\:3059\:3002";
+NBImport::denied =
+  "`1` \:306e\:8aad\:307f\:53d6\:308a\:306f\:8a31\:53ef\:3055\:308c\:3066\:3044\:307e\:305b\:3093 (`2`)\:3002NBSetAccessibleDirs[{...}] \:3067 \
+\:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:30c7\:30a3\:30ec\:30af\:30c8\:30ea\:3092\:5ba3\:8a00\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+
+NBAccess`NBImport[path_String] := NBAccess`NBImport[path, Automatic];
+
+NBAccess`NBImport[path_String, fmt_] :=
+  Module[{spec, dirs, fs, chk},
+    spec = $iNBAmbientAccessSpec;
+    If[!AssociationQ[spec],
+      Message[NBImport::noctx]; Return[$Failed]];
+    (* \:8aad\:307f\:53d6\:308a\:7bc4\:56f2: accessSpec \:512a\:5148\:3001\:7121\:3051\:308c\:3070\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5ba3\:8a00\:306e
+       accessible dirs\:3002\:3069\:3061\:3089\:3082\:7a7a\:306a\:3089 fs="None" \:3068\:306a\:308a\:5168\:62d2\:5426\:3055\:308c\:308b\:3002 *)
+    dirs = Lookup[spec, "AllowedDirectories", {}];
+    If[!ListQ[dirs] || dirs === {},
+      dirs = Quiet @ Check[NBAccess`NBGetAccessibleDirs[], {}]];
+    If[!ListQ[dirs], dirs = {}];
+    fs = iNBFSEnumNormalize[
+      Lookup[spec, "MayAccessFileSystem",
+        If[dirs =!= {}, "ScopedRead", "None"]]];
+    chk = NBCheckFileRead[path,
+      <|"MayAccessFileSystem" -> fs, "AllowedDirectories" -> dirs|>];
+    If[!TrueQ[Lookup[chk, "Allowed", False]],
+      Message[NBImport::denied, path, Lookup[chk, "Reason", "denied"]];
+      Return[$Failed]];
+    (* \[HorizontalLine]\[HorizontalLine] \:8a55\:4fa1\:30b9\:30b3\:30fc\:30d7\:900f\:304b\:3057\:3092\:6301\:3061\:4e0a\:3052\:308b \[HorizontalLine]\[HorizontalLine]
+       \:3053\:306e\:30d5\:30a1\:30a4\:30eb\:306e PrivacyLevel \:3067 $iNBEvaluationPrivacy \:3092 Max \:66f4\:65b0\:3059\:308b\:3002
+       scope \:5185 (NBCheckFileRead \:901a\:904e) \:3067\:3082 privacy \:304c\:9ad8\:3051\:308c\:3070\:3001\:3053\:306e\:8aad\:307f\:53d6\:308a\:3092
+       \:542b\:3080\:8a55\:4fa1\:306e\:51fa\:529b\:306f NBRedactExecutionResult \:3067 schema-only \:306b\:843d\:3061\:308b\:3002
+       \:8aad\:307f\:53d6\:308a\:81ea\:4f53\:306f\:8a31\:53ef\:3057\:3001\:300c\:8aad\:3081\:308b\:304c\:6f0f\:308c\:306a\:3044\:300d\:3092\:6210\:7acb\:3055\:305b\:308b\:3002 *)
+    iNBRaiseEvaluationPrivacy[iNBPathPrivacyScore[path]];
+    Quiet @ Check[
+      If[fmt === Automatic, Import[path], Import[path, fmt]],
+      $Failed]
+  ];
+
+NBAccess`NBImport[___] := $Failed;
 
 (* ---- PolicySnapshot per-call \:9069\:7528 (P0 \[Section]8.3: digest \:691c\:8a3c + \:6b63\:898f\:5316\:306e\:307f) ---- *)
 NBApplyPolicySnapshot[snapshot_Association] :=
@@ -8784,6 +8972,20 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
             refsConfidential = True
         ]
       ]];
+
+    (* \[HorizontalLine]\[HorizontalLine] 2026-07-22: \:5b9f\:884c\:6642\:8a55\:4fa1\:30b9\:30b3\:30fc\:30d7\:900f\:304b\:3057 \[HorizontalLine]\[HorizontalLine]
+       \:9759\:7684\:89e3\:6790 (\:6a5f\:5bc6\:5909\:6570\:540d / Out[n] \:53c2\:7167) \:3060\:3051\:3067\:306f\:3001NBImport \:3067\:8aad\:3093\:3060
+       \:79d8\:533f\:30c7\:30fc\:30bf\:3092\:5225\:5909\:6570\:306b\:79fb\:3057\:3066\:8fd4\:3059\:30b3\:30fc\:30c9\:3092\:6355\:6349\:3067\:304d\:306a\:3044\:3002
+       NBExecuteHeldExpr \:304c\:8a18\:9332\:3057\:305f EvaluationPrivacy (\:3053\:306e\:8a55\:4fa1\:3067\:8aad\:3093\:3060
+       \:30c7\:30fc\:30bf\:306e PrivacyLevel \:6700\:5927\:5024) \:304c accessLevel \:3092\:8d85\:3048\:308b\:306a\:3089\:3001
+       file_read \:3068\:540c\:3058 privLvl > accessLevel \:898f\:5247\:3067 schema-only \:306b\:843d\:3068\:3059\:3002 *)
+    If[!refsConfidential,
+      Module[{evalPriv, aLevel},
+        evalPriv = Lookup[result, "EvaluationPrivacy", 0.0];
+        If[!NumericQ[evalPriv], evalPriv = 0.0];
+        aLevel = Lookup[accessSpec, "AccessLevel", 0.5];
+        If[!NumericQ[aLevel], aLevel = 0.5];
+        If[evalPriv > aLevel, refsConfidential = True]]];
 
     If[refsConfidential,
       (* \[HorizontalLine]\[HorizontalLine] \:6a5f\:5bc6\:4f9d\:5b58: \:578b\:30fb\:30b5\:30a4\:30ba\:30fbHead \:306e\:30b9\:30ad\:30fc\:30de\:60c5\:5831\:306e\:307f\:8fd4\:3059 \[HorizontalLine]\[HorizontalLine] *)
@@ -10868,6 +11070,12 @@ If[AssociationQ[$iProviderMaxAccessLevel],
   If[!KeyExistsQ[$iProviderMaxAccessLevel, "zai"],
     $iProviderMaxAccessLevel["zai"] = 0.25]];
 
+(* Kimi (Moonshot AI) \:3082 z.ai \:3068\:540c\:69d8\:306b OpenAI \:4e92\:63db\:306e\:8ab2\:91d1 API
+   \:30af\:30e9\:30a6\:30c9\:30d7\:30ed\:30d0\:30a4\:30c0\:306a\:306e\:3067 MaxAccessLevel = 0.25 \:3067 backfill \:3059\:308b\:3002 *)
+If[AssociationQ[$iProviderMaxAccessLevel],
+  If[!KeyExistsQ[$iProviderMaxAccessLevel, "kimi"],
+    $iProviderMaxAccessLevel["kimi"] = 0.25]];
+
 (* ---- spec 10.3: accessible-dirs audit ---- *)
 
 (* dangerous file name heuristics -> reason string or Null *)
@@ -12037,10 +12245,13 @@ NBAccess`NBOnWorkTaskSafeExtract[___] := <||>;
 
 (* ---- file read glue: held expression from a .nb WITHOUT evaluating cells ----
    NOTE: Import[path,"Cells"] returns cell STYLE STRINGS, not Cell[] boxes; the
-   real Cell[] structure comes from Import[path,"Notebook"]. We locate the first
-   InitializationCell (or first Input cell) and MakeExpression its boxes -> a
-   HoldComplete[...] that is never evaluated (NBOnWorkTaskSafeExtract rebuilds
-   only whitelisted literals). *)
+   real Cell[] structure comes from Import[path,"Notebook"]. Metadata cell
+   preference (matching the SourceVault header-parse migration order): first a
+   "NotebookStatus" style cell (template new-style), else the first
+   InitializationCell (or first BoxData Input cell, legacy). Its content is
+   parsed non-evaluating (ToExpression+HoldComplete for raw-string content,
+   MakeExpression for boxes) -> a HoldComplete[...] that is never evaluated
+   (NBOnWorkTaskSafeExtract rebuilds only whitelisted literals). *)
 (* parse cache keyed by path -> <|"D" -> fileDateAbs, "H" -> held|>, PERSISTED to a
    LOCAL (non-Dropbox) .wxf so a fresh kernel re-parses only files whose FileDate
    changed instead of Import-ing every .nb again (~0.3s/file over Dropbox). *)
@@ -12085,31 +12296,44 @@ iNBOnwDeclaredPL[nb_Notebook] := Module[{lk, opts, tr, cp},
   Switch[cp, True, 0.0, False, 1.0, _, Missing["Undeclared"]]];
 iNBOnwDeclaredPL[___] := Missing["Undeclared"];
 
+(* non-evaluating content parse: raw-string content (BoxData["<|...|>"] as
+   written by SourceVault mail-inherit, or a plain text cell) via
+   ToExpression+HoldComplete (third arg wraps the parse result unevaluated);
+   box content via MakeExpression. *)
+iNBOnwParseHeld[c_] := Which[
+  MatchQ[c, BoxData[_String]],
+    Quiet@Check[ToExpression[First[c], InputForm, HoldComplete], $Failed],
+  StringQ[c],
+    Quiet@Check[ToExpression[c, InputForm, HoldComplete], $Failed],
+  True,
+    Quiet@Check[MakeExpression[c, StandardForm], $Failed]];
+
 iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held, declPL},
   fd = Quiet@Check[AbsoluteTime[FileDate[path]], $Failed];
   cached = $iNBOnwCache[path];
-  (* legacy cache entries lack "PL": re-import once to backfill it *)
+  (* "V" 2 = NotebookStatus-cell-aware parse (2026-07); entries from older
+     versions (incl. legacy ones lacking "PL") re-import once to upgrade *)
   If[AssociationQ[cached] && fd =!= $Failed && cached["D"] === fd &&
-      KeyExistsQ[cached, "PL"],
+      KeyExistsQ[cached, "PL"] && Lookup[cached, "V", 1] === 2,
     Return[cached["H"]]];
-  {held, declPL} = Module[{nb0, inits0, bd0, h0},
+  {held, declPL} = Module[{nb0, cands0, h0},
     nb0 = Quiet@Check[Import[path, "Notebook"], $Failed];
     If[Head[nb0] =!= Notebook, {Missing["Unreadable"], Missing["Undeclared"]},
-      inits0 = Cases[nb0, Cell[bx_, ___, InitializationCell -> True, ___] :> bx, Infinity];
-      If[inits0 === {},
-        inits0 = Cases[nb0, Cell[b_BoxData, "Input", ___] :> b, Infinity]];
-      If[inits0 === {}, {Missing["NoInit"], iNBOnwDeclaredPL[nb0]},
-        bd0 = First[inits0];
-        (* text-content cells (e.g. mail-inherited notebooks) parse via
-           ToExpression+HoldComplete -- still NON-EVALUATING (third arg wraps
-           the parse result unevaluated); box cells via MakeExpression. *)
-        h0 = If[StringQ[bd0],
-          Quiet@Check[ToExpression[bd0, InputForm, HoldComplete], $Failed],
-          Quiet@Check[MakeExpression[bd0, StandardForm], $Failed]];
+      (* metadata cell, in preference order: (0) "NotebookStatus" style cell
+         (template new-style), (1) InitializationCell, (2) first BoxData
+         Input cell (legacy). Within the winning tier only the FIRST cell is
+         the metadata cell (unchanged semantics). *)
+      cands0 = Cases[nb0, Cell[c_, "NotebookStatus", ___] :> c, Infinity];
+      If[cands0 === {},
+        cands0 = Cases[nb0, Cell[bx_, ___, InitializationCell -> True, ___] :> bx, Infinity]];
+      If[cands0 === {},
+        cands0 = Cases[nb0, Cell[b_BoxData, "Input", ___] :> b, Infinity]];
+      If[cands0 === {}, {Missing["NoInit"], iNBOnwDeclaredPL[nb0]},
+        h0 = iNBOnwParseHeld[First[cands0]];
         {If[MatchQ[h0, _HoldComplete], h0, Missing["ParseFailed"]],
          iNBOnwDeclaredPL[nb0]}]]];
   If[fd =!= $Failed,
-    $iNBOnwCache[path] = <|"D" -> fd, "H" -> held, "PL" -> declPL|>;
+    $iNBOnwCache[path] = <|"D" -> fd, "H" -> held, "PL" -> declPL, "V" -> 2|>;
     $iNBOnwCacheDirty = True];
   held];
 iNBOnwHeldFromFile[___] := Missing["Unreadable"];
@@ -12122,15 +12346,25 @@ iNBOnwState[meta_] := Module[{st = Lookup[meta, "Status", Missing["None"]]},
     st === "Keep", "Keep",
     True, "Open"]];
 
+(* Deadline and NextReview are INDEPENDENT occurrences of the same note, not
+   competing candidates for one date. "Due"/"DueKind" keep the historical
+   primary (Deadline wins) for existing consumers, but both normalized dates
+   are also exposed so a scheduler can place each on its own day -- otherwise a
+   far-future deadline silently hides a review that is due tomorrow. *)
 iNBOnwDue[meta_, modDate_] := Module[{dl = Lookup[meta, "Deadline", Missing["None"]],
-   nr = Lookup[meta, "NextReview", Missing["None"]]},
-  Which[
-    DateObjectQ[dl], <|"Due" -> dl, "DueKind" -> "Deadline"|>,
-    DateObjectQ[nr], <|"Due" -> nr, "DueKind" -> "NextReview"|>,
+   nr = Lookup[meta, "NextReview", Missing["None"]], dlD, nrD},
+  dlD = If[DateObjectQ[dl], dl, Missing["None"]];
+  nrD = Which[
+    DateObjectQ[nr], nr,
     (* NextReview as an offset Quantity resolves against ModificationDate *)
-    MatchQ[nr, _Quantity] && DateObjectQ[modDate],
-      <|"Due" -> DatePlus[modDate, nr], "DueKind" -> "NextReview"|>,
-    True, <|"Due" -> Missing["None"], "DueKind" -> Missing["None"]|>]];
+    MatchQ[nr, _Quantity] && DateObjectQ[modDate], DatePlus[modDate, nr],
+    True, Missing["None"]];
+  Join[
+    Which[
+      DateObjectQ[dlD], <|"Due" -> dlD, "DueKind" -> "Deadline"|>,
+      DateObjectQ[nrD], <|"Due" -> nrD, "DueKind" -> "NextReview"|>,
+      True, <|"Due" -> Missing["None"], "DueKind" -> Missing["None"]|>],
+    <|"DeadlineDue" -> dlD, "ReviewDue" -> nrD|>]];
 
 iNBOnwDigest[s_] := StringTake[
   IntegerString[Hash[If[StringQ[s], s, ToString[s]], "SHA256"], 36] <>
@@ -12169,8 +12403,8 @@ iNBOnwProject[rec_, level_] := Module[{pl = iNBOnwNotePL[rec], base},
      (agenda, plans, views) can propagate max(input PL) into their outputs. *)
   If[level >= 1.0 || pl <= level,
     Return[Append[rec, "PrivacyLevel" -> pl]]];
-  base = KeyTake[rec, {"Due", "DueKind", "State", "FileDigest", "ModificationDate",
-    "ParseFailed"}];
+  base = KeyTake[rec, {"Due", "DueKind", "DeadlineDue", "ReviewDue", "State",
+    "FileDigest", "ModificationDate", "ParseFailed"}];
   Append[
     Which[
       level >= 0.7, Join[base, KeyTake[rec,
@@ -12194,6 +12428,7 @@ iNBOnwRecord[path_, held_, modDate_] := Module[{meta, due, parseFailed, rec},
     "Movable" -> Lookup[meta, "Movable", Missing["None"]],
     "DependsOn" -> Lookup[meta, "DependsOn", {}],
     "Due" -> due["Due"], "DueKind" -> due["DueKind"],
+    "DeadlineDue" -> due["DeadlineDue"], "ReviewDue" -> due["ReviewDue"],
     "State" -> If[parseFailed, "Unknown", iNBOnwState[meta]],
     "ModificationDate" -> modDate,
     "FileDigest" -> iNBOnwDigest[path],
