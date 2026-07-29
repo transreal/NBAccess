@@ -294,6 +294,8 @@ NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存の�
 - **アクセス可能ディレクトリの正本形式変更**（Stage 9 拡張）: 旧 `NBSetAccessibleDirs`／`NBGetAccessibleDirs`（絶対パス文字列リスト）はそのまま後方互換 API として動作しますが、内部的な正本は AccessPathRef 形式（`NBSetAccessiblePathRefs`／`NBGetAccessiblePathRefs`）に移行しました。既存コードは変更なく動作します。
 - **`NBImport` の追加と `NBCheckedImport` の廃止**（新規変更）: ClaudeRuntime 経由で実行される式の中では生の `Import` は恒久的に Deny されるため、代わりに NBAccess 仲介の `NBImport`（[NBAccess 経由のファイルインポート](#nbaccess-経由のファイルインポートnbimport新規追加)を参照）を使用してください。旧来の `NBCheckedImport[path, fmt, accessSpec]`（アクセス判定を引数で渡す方式）は廃止されました。accessSpec を引数として渡せる設計は LLM 生成コードによるチェックのすり抜けを許してしまうため、`NBImport` では実行時にアンビエントな評価コンテキストへ accessSpec を束縛する方式に統合されています。`NBCheckedImport` を直接呼び出していたコードは `NBImport` へ移行してください。
 - **`NBJobMoveToAnchor` の戻り値変更**（2026-06-24 修正）: アンカーセルの直後にカーソルを移動する関数が True/False を返すようになりました。位置を確定できた場合（アンカーが消失している場合のノートブック末尾退避を含む）は True、jobId が `$NBJobTable` に存在しない場合のみ False を返します。従来は戻り値を使用していないコードには影響ありません。
+- **機密識別子マッチングの改善**: `$NBConfidentialSymbols` に登録された名前による機密漏洩チェック（`NBFilterHistoryEntry` 等が内部で使用）において、ASCII 識別子はトークン境界マッチング（完全一致）に変更されました。これにより、`"v"` のような短い変数名が `"SourceVaultExamOverviewView"` などの長い識別子に部分一致して式全体が誤って拒否される問題（Module の局所変数名 `v`、`rows`、`keys`、`sel` 等が機密リストに含まれる場合に発生）が解消されます。非 ASCII の値（日本語の値など）は従来どおり部分文字列一致で漏洩を検出します。既存の動作に影響するのは ASCII の短い変数名が機密シンボル名として登録されている場合のみであり、それ以外の既存コードへの影響はありません。
+- **デフォルトフォールバックモデルの更新**: 組み込みのデフォルトフォールバックモデルリスト（`NBSetFallbackModels` でカスタム設定していない場合に使用される内部デフォルト）において、Anthropic のモデルが `claude-opus-5` に更新されました。`NBSetFallbackModels` でカスタム設定済みの環境には影響しません。現在のフォールバックモデルリストは `NBAccess`NBGetFallbackModels[]` で確認できます。
 - **カレンダー access API（`NBCalendarEvents`／`NBCalendarFreeBusy`／`NBCalendarBusyQ`／`NBICSParseEvents`／`NBICSEventOccurrences`）と `$onWork` タスク管理 API（`NBOnWorkTasks`／`NBOnWorkTaskSafeExtract`）**（新規追加）: いずれも新規 API であり、既存 API・グローバル変数には影響しません。カレンダー API はアクセスレベル 0.5 未満では `Failure["NBCalendarAccessDenied"]`（`NBCalendarBusyQ` のみ `False`、または `"Detailed" -> True` 指定時は `<|"Busy" -> False, ...|>`）を返すため、既定の `$NBPrivacySpec`（AccessLevel 0.5）のままでも free/busy 用途には利用できます。
 
 ### ClaudeRuntime 導入時の注意点
@@ -491,6 +493,10 @@ NBAccess`NBGetCells[nb, PrivacySpec -> <|"AccessLevel" -> 1.0|>]
 ### 式の実行が不必要に承認待ちになる場合
 
 `NBValidateHeldExpr`／`NBExecuteHeldExpr` が、本来は安全なローカル定義や純粋な数学関数を承認対象としてしまう場合は、検証エンジンの EffectClass ベース判定が想定どおり機能しているかを確認してください。`Module`／`Block`／`With` のスコープ局所変数や `Set`／`SetDelayed` で定義したローカル関数名は承認対象から除外されます。`Total` や `IntegerPart`、`Round`、`Floor`、`Ceiling` などの純粋な数学関数も `PureComputation` として扱われ、ブロックされにくくなっています。`Evaluate` は Deny 対象から除去済みのため、`ParametricPlot[Evaluate[...]]` のような式が不必要に拒否・承認待ちになることもありません。信頼パッケージ由来の head（`SourceVault*` 等）についても過剰反復ガードにより承認要求が繰り返し発火しないようになっています。意図せず承認が要求される場合は、式が副作用のある head（ノートブック書き込みやファイル操作など）を含んでいないかを確認してください。
+
+### 機密変数の短い名前が無関係な識別子に誤マッチする場合
+
+`$NBConfidentialSymbols` に `"v"`、`"rows"`、`"keys"` のような短い ASCII 変数名が登録されている場合、以前のバージョンでは部分文字列マッチにより `"SourceVaultExamOverviewView"` などの長い識別子を含む式が誤って機密漏洩として検出される問題がありました（`NBFilterHistoryEntry` 等の内部チェックに影響）。現在のバージョンではこの問題は修正されており、ASCII 識別子はトークン境界マッチング（完全一致）で評価されるようになっています。最新のパッケージに更新しても同様の誤検出が続く場合は、`$NBConfidentialSymbols` の内容を確認し、意図しない短い変数名が登録されていないかを確認してください。
 
 ### 式の中で Import を使うとブロックされる場合
 

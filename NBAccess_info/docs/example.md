@@ -211,6 +211,8 @@ NBShouldExcludeFromPrompt[nb, 3]        (* プロンプトから除外すべき�
 NBIsClaudeFunctionCell[nb, 3]           (* Claude関数呼び出しセルか *)
 ```
 
+`NBCellUsesConfidentialSymbol` は機密変数リストの各エントリについて、ASCII 識別子（英数字・`$`・`` ` `` のみで構成される名前）はセル式をトークン分割してトークン境界での完全一致で判定します。非 ASCII の値（日本語文字列等）は従来どおり部分一致で判定します。これにより、`v` や `rows` のような短い Module 局所変数名が `SourceVaultExamOverviewView` 等の長い識別子に誤ってマッチするフォールスポジティブを防ぎます。コンテキスト付き短縮名（例: `` MyPkg`v ``）は末尾セグメントでも照合されます。
+
 ## 依存グラフ API
 
 ```
@@ -235,7 +237,9 @@ NBScanDependentCells[nb, confVarNames]
 NBScanDependentCells[nb, confVarNames, deps]   (* 事前計算済みの依存グラフdepsを使う（二重計算回避） *)
 
 NBFilterHistoryEntry[entry, confVars]
-(* 履歴エントリ内のresponse/instructionに現時点の機密変数名または値が含まれる場合にそのフィールドをブロックする。 *)
+(* 履歴エントリ内のresponse/instructionに現時点の機密変数名または値が含まれる場合にそのフィールドをブロックする。
+   ASCII識別子はトークン境界での完全一致で判定し、非ASCII値（日本語文字列等）は従来どおり部分一致で判定する。
+   これにより短い変数名（v, rows等）が長い識別子に誤ってマッチするフォールスポジティブを防ぐ。 *)
 
 NBDependencyEdges[nb]
 (* ノートブックの変数依存関係をエッジリストで返す: {DirectedEdge["dep", "var"], ...}
@@ -599,7 +603,4 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 今回のドキュメント更新での変更点:
 
-1. **`NBImport` を新規追加**（[安全な Import API](#安全な-import-api)）。LLM 生成コードが直接ファイルを読み込むための NBAccess 仲介 `Import` です。内部ガード層 `NBCheckedImport` は「呼び出し側が accessSpec を自分で用意できてしまう」ため LLM 生成コードには使わせられないとの理由から、代わりにアクセス範囲を ambient に束縛する `NBImport` が用意されました。`NBCheckedImport` 自体は内部 API のままです。
-2. **`NBGetAPIKey` / `NBListProviderModels` の対応プロバイダーを更新**。Moonshot AI（`"kimi"`、国際版エンドポイント `api.moonshot.ai`）が `"zai"` と並んで利用可能になり、`provider` 引数に指定できる値が `"anthropic" | "openai" | "zai" | "kimi" | "github"` になりました。
-
-これら以外の公開関数・オプションの追加・削除はありませんでした。`$onWork` タスクメタデータ抽出（`NBOnWorkTaskSafeExtract`/`NBOnWorkTasks`）まわりは内部実装（キャッシュ・パース処理）の堅牢性向上が続いていますが、公開シグネチャ・`::usage`・オプション体系への影響はありません。
+1. **`NBCellUsesConfidentialSymbol` / `NBFilterHistoryEntry` の照合ロジック改善**。ASCII 識別子（英数字・`$`・`` ` `` のみで構成される名前）はセル式をトークン分割してトークン境界での完全一致で判定するように変更されました（従来は部分文字列一致）。非 ASCII の値（日本語文字列等）は従来どおり部分一致のままです。これにより、`v` や `rows` のような短い Module 局所変数名が `SourceVaultExamOverviewView` 等の長い識別子に誤ってマッチするフォールスポジティブが実機で発生していた問題が解消されました。コンテキスト付き短縮名（例: `` MyPkg`v ``）は末尾セグメントでの照合も行います。

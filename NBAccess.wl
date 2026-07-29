@@ -1469,7 +1469,7 @@ If[!MatchQ[NBAccess`$NBLLMQueryFunc, _Function | _Symbol],
 
 (* \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:30e2\:30c7\:30eb\:30ea\:30b9\:30c8: {{provider, model}, {provider, model, url}, ...} *)
 If[!ListQ[$iFallbackModels],
-  $iFallbackModels = {{"anthropic", "claude-opus-4-6"}, {"openai", "gpt-5.5"}}];
+  $iFallbackModels = {{"anthropic", "claude-opus-5"}, {"openai", "gpt-5.5"}}];
 
 (* \:30d7\:30ed\:30d0\:30a4\:30c0\:30fc\:5225\:6700\:5927\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb: \:672a\:767b\:9332\:306f 0.5 *)
 If[!AssociationQ[$iProviderMaxAccessLevel],
@@ -7388,8 +7388,20 @@ iSanitizeExpr[heldExpr_] :=
    \:30b7\:30f3\:30dc\:30eb\:540d (keys) \:3067\:7167\:5408\:3059\:308b\:3088\:3046\:4fee\:6b63\:3059\:308b\:3002
    snapshot mode \:3067\:306f accessSpec[\"ConfidentialSymbols\"] \:306b
    snapshot \:7531\:6765\:5024\:304c\:6ce8\:5165\:3055\:308c\:3066\:6e21\:308b (\:30b7\:30b0\:30cd\:30c1\:30e3\:306f\:5909\:3048\:306a\:3044)\:3002 *)
+(* 識別子として現れているかを見る。**部分文字列一致は使わない**:
+   機密リストには Module の局所変数名 (v, rows, keys, sel …) が入り得るため、
+   部分一致だと "v" が SourceVaultExamOverviewView に当たって
+   「小文字の v を含む式はすべて拒否」になる (実機で発生)。
+   ASCII の識別子は境界つきの完全一致、非 ASCII (日本語の値など) は
+   従来どおり部分一致で見る (値そのものの混入を拾うため)。 *)
+iNBExprIdentifierTokens[heldExpr_] := DeleteDuplicates[
+  StringCases[ToString[heldExpr, InputForm],
+    RegularExpression["[A-Za-z0-9$`]+"]]];
+
+iNBAsciiIdentifierQ[s_String] := StringMatchQ[s, RegularExpression["[A-Za-z0-9$`]+"]];
+
 iContainsConfidentialLeak[heldExpr_, accessSpec_Association] :=
-  Module[{raw, confNames, exprStr},
+  Module[{raw, confNames, exprStr, toks},
     raw = Lookup[accessSpec, "ConfidentialSymbols", $NBConfidentialSymbols];
     confNames = Which[
       AssociationQ[raw], ToString /@ Keys[raw],
@@ -7399,7 +7411,14 @@ iContainsConfidentialLeak[heldExpr_, accessSpec_Association] :=
     confNames = DeleteDuplicates @ Select[confNames, StringLength[#] > 0 &];
     If[Length[confNames] === 0, Return[False]];
     exprStr = ToString[heldExpr, InputForm];
-    AnyTrue[confNames, StringContainsQ[exprStr, #] &]
+    toks = iNBExprIdentifierTokens[heldExpr];
+    AnyTrue[confNames, Function[c,
+      If[iNBAsciiIdentifierQ[c],
+       (* 識別子: トークンとして丸ごと一致したときだけ漏洩とみなす。
+          文脈つきの短縮名も拾えるよう末尾セグメントも比較する。 *)
+       MemberQ[toks, c] || AnyTrue[toks, Last[StringSplit[#, "`"]] === c &],
+       (* 値らしき文字列 (日本語など) は従来どおり部分一致 *)
+       StringContainsQ[exprStr, c]]]]
   ];
 
 (* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550

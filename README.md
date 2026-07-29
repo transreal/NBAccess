@@ -91,7 +91,7 @@ NBAccess は、`NBAccess_crypto.wl`（本体とは別ファイルだが同じ `N
 主な特徴は以下のとおりです。
 
 - **2 種類のバックエンド** — `$NBCredentialBackend` で `"Memory"`（既定。カーネル内・揮発性・開発/テスト用、同期も永続化もされない）と `"SystemCredential"`（OS の資格情報ストア = Windows Credential Manager/DPAPI による永続化。本番想定）を切り替えます。鍵を生成・使用する **前に** 設定してください。永続データには必ず `"SystemCredential"` を選びます（`"Memory"` 鍵はカーネルごとにランダムで、終了時に失われ、暗号化したデータは後で復号できません）。
-- **鍵生成と管理** — `NBGenerateSymmetricKeyRef`（AES256）/ `NBGenerateMacKeyRef`（HMAC 鍵）/ `NBGenerateAsymmetricKeyRefPair`（RSA）でランダム鍵を生成し、`NBKeyStatus` / `NBListCredentialKeyRefs` / `NBDeleteCredentialKey` で管理します。`NBKeyStatus` は鍵材料を含まない metadata のみを返します。`NBKeyMaterialExistsQ` は index に依存せず、鍵材料そのものが backend に存在するかを直接判定します（crypto-shredding 済みかどうかの確認等に使用）。
+- **鍵生成と管理** — `NBGenerateSymmetricKeyRef`（AES256）/ `NBGenerateMacKeyRef`（HMAC 鍵）/ `NBGenerateAsymmetricKeyRefPair`（RSA）でランダム鍵を生成し、`NBKeyStatus` / `NBListCredentialKeyRefs` / `NBDeleteCredentialKey` で管理します。`NBKeyStatus` は鍵材料を含まない metadata のみを返します。`NBKeyMaterialExistsQ` は index に依存せず、鍵材料そのものが backend に存在するかを直接判定します（crypto-shredding 済みかどうかの確認等に使用）。`NBRebuildKeyIndexFromCredentials` は鍵 index blob のサイズ超過等による silent 失敗が発生した場合に、鍵材料 credential から失われた index entry を再構築します（復旧用）。
 - **KeyRef による暗号操作** — `NBEncryptWithKeyRef` / `NBDecryptWithKeyRef` / `NBMacWithKeyRef`（HMAC-SHA256）/ `NBVerifyMacWithKeyRef`（constant-time 比較）/ `NBGetPublicKeyForKeyRef`。WL 14.3 には AEAD/GCM がないため、at-rest の完全性は **encrypt-then-MAC** で確保します。
 - **可搬鍵バンドル** — `NBExportWrappedKeys` / `NBImportWrappedKeys` は、SourceVault のパスフレーズ鍵バンドル向けに、鍵を `wrapKey` で暗号化した状態でのみ取り出し / 書き戻します（出力は暗号文のみ）。
 - **セルフテスト** — `NBCryptoSelfTest[]` が鍵隔離・暗号/MAC roundtrip・誤鍵検出を検査します。
@@ -542,6 +542,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBGenerateAsymmetricKeyRefPair[keyRef, metadata]`** — RSA 鍵対を生成し、秘密鍵を保存・公開鍵を index に保持します
 - **`NBStoreCredentialKey` / `NBKeyStatus` / `NBListCredentialKeyRefs` / `NBDeleteCredentialKey`** — 鍵の保存・状態確認（metadata のみ）・一覧・削除
 - **`NBKeyMaterialExistsQ[keyRef]`**（新機能） — index に依存せず、鍵材料が backend に実在するかを直接判定します（crypto-shredding 済み判定など）
+- **`NBRebuildKeyIndexFromCredentials[keyRefs]`** — index に無いが鍵材料 credential が存在する keyRef の index entry を材料から再構築します（index blob のサイズ超過による silent 失敗からの復旧用）
 - **`NBEncryptWithKeyRef` / `NBDecryptWithKeyRef`** — KeyRef による対称暗号化・復号（暗号文は Base64、鍵材料は返しません）
 - **`NBMacWithKeyRef` / `NBVerifyMacWithKeyRef`** — HMAC-SHA256 の生成と constant-time 検証
 - **`NBGetPublicKeyForKeyRef`** — 非対称鍵の公開鍵（秘密でない）を取得します
@@ -573,7 +574,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 | ファイル | 内容 |
 |----------|------|
 | `docs/api.md` | API リファレンス（全関数・オプション・グローバル変数・SourceVault 統合 API の詳細仕様） |
-| `docs/api_crypto.md` | 暗号鍵ストア API リファレンス（NBAccess_crypto の鍵生成・暗号/MAC・鍵バンドル仕様） |
+| `docs/api_crypto.md` | 暗号鍵ストア API リファレンス（NBAccess_crypto の鍵生成・暗号/MAC・鍵バンドル・index 復旧仕様） |
 | `docs/setup.md` | セットアップガイド（インストール・設定・AccessPathRef・ClaudeRuntime/SourceVault/ClaudeTestKit 連携・EffectClass 検証モデル・NBImport・出力モード・トラブルシューティング） |
 | `docs/user_manual.md` | ユーザーマニュアル（機能カテゴリ別の使い方・AccessPathRef・ノートブックモデル選択・カレンダー/$onWork タスク・NBImport・ノートブックキャッシュ修復・SourceVault 統合・ClaudeRuntime 統合・後方互換性） |
 | `docs/examples/example.md` | 使用例集（実践的なコード例） |
@@ -670,6 +671,9 @@ If[NBVerifyMacWithKeyRef["MyApp:master:mac:v1", ctBytes, mac],
 
 (* 鍵材料が実在するかを index に依存せず直接判定（crypto-shredding 確認など） *)
 NBKeyMaterialExistsQ["MyApp:master:atrest:v1"]
+
+(* index blob のサイズ超過等による silent 失敗からの index 復旧 *)
+NBRebuildKeyIndexFromCredentials[{"MyApp:master:atrest:v1", "MyApp:master:mac:v1"}]
 
 (* 鍵隔離・roundtrip・誤鍵検出のセルフテスト *)
 NBCryptoSelfTest[]

@@ -1172,7 +1172,18 @@ NBFilterHistoryEntry[entry, confVars]
 - `entry`: 履歴エントリ Association（`<|"role" -> _, "response" -> _, ...|>` 形式）
 - `confVars`: 現在の機密変数名リスト
 
-機密変数名が `response` や `instruction` フィールドに含まれる場合、当該フィールドの値を非表示プレースホルダに置換して返します。LLM に送信する会話履歴から機密情報の漏洩を防ぐために `NBHistoryEntriesWithInherit` と組み合わせて使用します。
+#### マッチング戦略
+
+機密変数名リスト（`confVars`）に対して、変数名の種類に応じて以下の2段階の戦略で漏洩を判定します。
+
+**ASCII 識別子**（英数字・`$`・バッククォートのみで構成される名前）:
+- フィールドテキストを識別子トークンに分解し（内部関数 `iNBExprIdentifierTokens` が `StringCases` と `RegularExpression["[A-Za-z0-9$` + "`" + `]+"]` で抽出）、**トークン完全一致**または**末尾セグメント一致**（コンテキスト修飾名 `Package\`X` の末尾 `X` との照合）でのみ漏洩とみなします。
+- **部分文字列一致は使用しません**。
+
+**非 ASCII 値（日本語などの文字列）**:
+- 従来どおり部分文字列一致（`StringContainsQ`）で判定します（値そのものの混入を拾うため）。
+
+この区別が重要な理由: `$NBConfidentialSymbols` には `Module` の局所変数名（`v`、`rows`、`keys`、`sel` など短い名前）が登録されることがあります。以前の実装（すべて部分文字列一致）では、`"v"` が `SourceVaultExamOverviewView` のような長い識別子にマッチしてしまい、「小文字の v を含む式はすべて拒否」という誤動作が実機で発生していました。トークン単位の完全一致に変更することでこの誤検知を防ぎます。
 
 ```mathematica
 (* 機密変数リストを渡してエントリをフィルタ *)
@@ -1181,7 +1192,16 @@ filtered = NBFilterHistoryEntry[
   {"secretKey"}
 ]
 (* → response フィールドがブロックされたエントリを返す *)
+
+(* 短い変数名 "v" が長い識別子に誤マッチしない例 *)
+filtered2 = NBFilterHistoryEntry[
+  <|"role" -> "assistant", "response" -> "SourceVaultExamOverviewView を参照"|>,
+  {"v"}
+]
+(* → "v" はトークンとして現れていないためブロックされない *)
 ```
+
+LLM に送信する会話履歴から機密情報の漏洩を防ぐために `NBHistoryEntriesWithInherit` と組み合わせて使用します。
 
 ### セッションアタッチメント
 
@@ -1441,5 +1461,135 @@ NBImport["C:\\secret\\keys.txt"]
 （本セクションは今後追記予定です。）
 
 ### ローカル LLM API キー (LM Studio 等)
+
+（本セクションは今後追記予定です。）
+
+---
+
+## 暗号鍵ストア (NBAccess_crypto)
+
+（本セクションは今後追記予定です。詳細は [NBAccess_crypto](https://github.com/transreal/NBAccess_crypto) を参照してください。）
+
+---
+
+## フォールバックモデル / プロバイダーアクセスレベル
+
+LLM プロバイダーが利用不能な場合や、プライバシーレベルが高いデータへのアクセスに別プロバイダーが必要な場合に使用する、フォールバックモデルとプロバイダーアクセスレベルの管理 API です。
+
+### $iFallbackModels（内部デフォルト）
+
+パッケージ初期化時のフォールバックモデルデフォルト値です。現在の初期値は以下のとおりです。
+
+```mathematica
+$iFallbackModels = {{"anthropic", "claude-opus-5"}, {"openai", "gpt-5.5"}}
+```
+
+実際の運用では `NBSetFallbackModels` でこの値を上書きして使用します。
+
+### NBSetFallbackModels / NBGetFallbackModels
+
+フォールバックモデルリストを設定・取得します。各エントリは `{provider, model}` または `{provider, model, url}` の形式です。
+
+```mathematica
+NBSetFallbackModels[{
+  {"anthropic", "claude-opus-5"},
+  {"lmstudio", "qwen3-30b", "http://127.0.0.1:1234"}
+}]
+
+NBGetFallbackModels[]
+(* {{"anthropic", "claude-opus-5"}, {"lmstudio", "qwen3-30b", "http://127.0.0.1:1234"}} *)
+```
+
+### NBSetProviderMaxAccessLevel / NBGetProviderMaxAccessLevel
+
+プロバイダーが扱えるデータの最大アクセスレベルを設定・取得します。このレベルを超えるアクセスレベルのリクエストにはそのプロバイダーを使用しません。
+
+```mathematica
+NBSetProviderMaxAccessLevel["anthropic", 0.5]   (* クラウド LLM: 公開データのみ *)
+NBSetProviderMaxAccessLevel["lmstudio", 1.0]    (* ローカル LLM: 全データ可 *)
+
+NBGetProviderMaxAccessLevel["anthropic"]   (* 0.5 *)
+NBGetProviderMaxAccessLevel["openai"]      (* 未登録プロバイダーは 0.5 を返す *)
+```
+
+### NBGetAvailableFallbackModels
+
+指定アクセスレベルで利用可能なフォールバックモデルのみを返します。`MaxAccessLevel >= accessLevel` のプロバイダーのモデルだけが含まれます。
+
+```mathematica
+NBGetAvailableFallbackModels[0.5]   (* anthropic / openai 等クラウドモデルを含む *)
+NBGetAvailableFallbackModels[1.0]   (* lmstudio 等ローカルモデルのみ *)
+```
+
+### NBProviderCanAccess / NBModelCanHandleAccessLevel
+
+プロバイダーまたはモデル指定が指定アクセスレベルのデータを扱えるかを返します。
+
+```mathematica
+NBProviderCanAccess["anthropic", 0.5]   (* True *)
+NBProviderCanAccess["anthropic", 1.0]   (* False — MaxAccessLevel 0.5 のため *)
+
+NBModelCanHandleAccessLevel[{"lmstudio", "qwen3-30b", "http://127.0.0.1:1234"}, 1.0]
+(* True *)
+NBModelCanHandleAccessLevel[{"anthropic", "claude-opus-5"}, 1.0]
+(* False *)
+```
+
+`modelSpec` には `{provider, model}`、`{provider, model, url}`、文字列、または `Automatic`（常に `True`）を指定できます。
+
+### NBModelProviderName
+
+modelSpec からプロバイダー文字列を取り出します。
+
+```mathematica
+NBModelProviderName[{"anthropic", "claude-opus-5"}]   (* "anthropic" *)
+NBModelProviderName["claude-opus-5"]                  (* "claude-opus-5" — 文字列はそのまま *)
+```
+
+---
+
+## ノートブックモデル選択と信頼ローカルサーバー管理
+
+（本セクションは今後追記予定です。）
+
+---
+
+## SourceVault との統合とパス参照 API
+
+（本セクションは今後追記予定です。）
+
+---
+
+## その他のユーティリティ
+
+（本セクションは今後追記予定です。）
+
+---
+
+## クラウド公開宣言とノートブックキャッシュ修復
+
+（本セクションは今後追記予定です。）
+
+---
+
+## [実験的] ノートブックファイルのセル操作
+
+（本セクションは今後追記予定です。）
+
+---
+
+## ClaudeRuntime との統合
+
+（本セクションは今後追記予定です。）
+
+---
+
+## ClaudeTestKit との連携
+
+（本セクションは今後追記予定です。）
+
+---
+
+## 後方互換性
 
 （本セクションは今後追記予定です。）
