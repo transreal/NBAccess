@@ -96,7 +96,7 @@ TaggingRules のネスト値を返す。
 例: `NBCellGetTaggingRule[nb, 3, {"claudecode", "confidential"}]`
 
 ### NBCellSetTaggingRule[nb, cellIdx, path, value]
-セルの TaggingRules にネスト値を設定する。NBCellGetTaggingRule の対のセッター。
+セルの TaggingRules にネスト値を設定する。NBCellGetTaggingRule の対のセッター。value に Inherited を渡すとキーを削除する。
 例: `NBCellSetTaggingRule[nb, 3, {"documentation", "idea"}, "元のアイデア"]`
 
 ### NBCellRasterize[nb, cellIdx, file, opts]
@@ -134,6 +134,9 @@ completionFn が受け取る Association: `<|"Response" -> text, "OriginalText" 
 ## プライバシー
 ### NBCellPrivacyLevel[nb, cellIdx] → Real
 セルのプライバシーレベル(0.0〜1.0)を返す。0.0=非秘密、1.0=秘密(Confidentialマーク or 秘密変数参照)。
+
+### NBCellObjectPrivacyLevel[cell] → Real
+CellObject のプライバシーレベル(0.0〜1.0)を返す。評価中セル(EvaluationCell[])など cellIdx を持たないセルの判定に使う。判定規則は NBCellPrivacyLevel と完全に共通。マッチしないセルは 0.0 を返す。
 
 ### NBIsAccessible[nb, cellIdx, PrivacySpec -> ps] → Boolean
 セルが指定 PrivacySpec でアクセス可能かを返す。
@@ -251,7 +254,7 @@ NBFileOpen で開いたノートブックを閉じる。
 例: `NBFileWriteAllCells[nb2, <|2->"text", 3->"[CONFIDENTIAL]"|>]`
 
 ## SourceVault ヘッダー・Todo
-閉じた .nb ファイルのヘッダーと Todo を読み書きするファイルベース API。
+閉じた .nb ファイルのヘッダーと Todo を読み書きするファイルベース API。このファミリーは PrivacySpec ではなく文字列オプション "AccessSpec" を使う(セル/ノートブックオブジェクト系 API の PrivacySpec とは別系統)。
 ### NBReadHeader[path, opts] → Association
 notebook の SourceVault ヘッダーを抽出する。TaggingRules・HeaderCell・BoxData の順に探索。
 Options: "AccessSpec" -> Automatic (既定で AccessLevel 0.5 相当のフィルタリング)
@@ -307,7 +310,7 @@ ResolutionStatus: "ResolvedOnThisPC" | "AliasOnly" | "Unrooted"。MatchedBy: "Lo
 必要なモデルルートリストを返す。0.5 -> {"cloud"}, 1.0 -> {"local"}, {0.5,1.0} -> {"cloud","local"}。
 
 ### NBFileReadCellsInRange[nb, lo, hi] → List
-PrivacyLevel が lo〜hi のセルのみ返す。
+PrivacyLevel が lo〜hi のセルのみ返す。オプションなし。
 例: `NBFileReadCellsInRange[nb2, 0.5, 0.5]`(公開セルのみ)
 
 ### NBSplitNotebookCells[path, threshold] → {publicCells, privateCells}
@@ -433,7 +436,7 @@ Options: "ExcludeVars" -> {} (NBTransitiveDependents に渡す伝搬ファイア
 
 ### NBPlotDependencyGraph[opts] / NBPlotDependencyGraph[nb, opts]
 全ノートブック統合(既定)または指定ノートブックの依存グラフをプロットする。ノードは変数名・Out[n]、直接秘密は赤、依存秘密は橙で着色。NB内エッジは濃い実線、クロスNBエッジは薄い破線。
-Options: "Scope" -> "Global"(既定)|"Local", PrivacySpec -> `<|"AccessLevel" -> 1.0|>`
+Options: "Scope" -> "Global"(既定)|"Local", PrivacySpec -> `<|"AccessLevel" -> 1.0|>`, GraphLayout -> "LayeredDigraphEmbedding"(内部既定、通常は変更不要)
 例: `NBPlotDependencyGraph[EvaluationNotebook[], "Scope" -> "Local"]`
 
 ## 関数定義解析
@@ -602,7 +605,7 @@ modelSpec から provider 文字列を取り出す。
 
 ### NBSyncClaudeModelVars[opts]
 SourceVault にキャッシュされているモデルで ClaudeCode の `$ClaudeModel` / `$ClaudeDocModel` / `$ClaudePrivateModel` / `$ClaudeFallbackModels` を更新する。intent 割当てマップ(SourceVaultModelIntentMap)を読み SourceVaultResolve でモデル ID に解決、ローカルサーバの URL は NBResolveLocalServer で安全に解決して実変数へ代入。SourceVault 未ロードなら何もしない。SourceVault ロード時に自動実行。
-Options: Verbose -> False
+Options: "Verbose" -> False
 
 ## アクセス可能ディレクトリ
 ### NBSetAccessibleDirs[nb, {dir1, ...}] / NBSetAccessibleDirs[{dir1, ...}]
@@ -724,11 +727,11 @@ LLM が自由に実行可能な head のリスト。$NBAllowedHeadsByCategory �
 
 ### $NBDenyHeads
 型: List
-常に拒否する head のリスト。
+常に拒否する head のリスト。DeleteFile/RenameFile/CopyFile/SystemOpen/Run/RunProcess/Import/Export/Get/Put/Install/URLExecute/Quit/Remove/ExternalEvaluate 等の破壊的・脱出可能な head を含む恒久禁止リスト。
 
 ### $NBEffectClassOverrides
 型: Association(`<|head -> <|"EffectClass", "BlockingRisk", "ExecutionPlacement", "RequiresFinalNode"|>, ...|>`)
-head 名ごとの分類上書きテーブル(spec 5B.5A)。allowlist ではなく分類精度向上用。未登録 head はフォールバック分類(System` 純粋関数 -> PureComputation 等)に進む。
+head 名ごとの分類上書きテーブル(spec 5B.5A)。allowlist ではなく分類精度向上用。未登録 head はフォールバック分類(System` 純粋関数 -> PureComputation 等)に進む。既定で NIntegrate/NDSolve/NSolve/FindMinimum 等に LongRunningComputation/PossiblyLong/SubkernelSafe を割り当て済み。
 
 ### $NBTrustedPackageHeads
 型: Association(`<|"コンテキスト`" -> {"名前パターン", ...}|>`), 初期値: `<|"SourceVault`" -> {"SourceVault*"}|>`
@@ -893,14 +896,14 @@ Options: "ApprovalMode" -> "UserApproved"
 snapshot の必須キーと Digest を検証する。`<|"Valid" -> True|False, "Digest", "Reason"|>`。Valid のとき subkernel 内 $NBActivePolicySnapshot に保存してよいが、実行判定の正本は accessSpec["PolicySnapshot"]。
 
 ### $NBActivePolicySnapshot
-型: Association|Missing[]
-NBAcceptPolicySnapshot が Valid と判定した最新 snapshot を保持する(主に subkernel 側)。参考情報であり実行判定の正本ではない(正本は各実行の accessSpec["PolicySnapshot"])。
+型: Association|Missing[]、初期値: None
+NBAcceptPolicySnapshot が Valid と判定した最新 snapshot を保持する(主に subkernel 側)。参考情報であり実行判定の正本ではない(正本は各実行の accessSpec["PolicySnapshot"])。ノートブック再ロード時に無条件で None にリセットされる。
 
 ### NBApplyPolicySnapshot[snapshot] → Association
 snapshot の digest を検証し正規化した snapshot を返す(global 復元はせず accessSpec 注入の補助に限定)。`<|"Valid", "Snapshot", "Reason"|>`。
 
 ### NBDefaultFilePolicyLabel[spec] → label
-Phase 4 暫定の file policy label を返す(DLM/LabelJoin 完全実装までの最小実装)。
+Phase 4 暫定の file policy label を返す(DLM/LabelJoin 完全実装までの最小実装)。DLM ラベル体系は現時点で部分的なスタブであり、全面的に強制されているわけではない。
 
 ### NBNoExtraContainerLabel[] → label
 Phase 4 暫定の container label を返す。
@@ -1015,7 +1018,7 @@ permit registry をクリアする(テスト用)。
 ## カテゴリ管理
 ### $NBAllowedHeadsByCategory
 型: Association(`<|カテゴリ名 -> {head, ...}, ...|>`)
-カテゴリ別の許可 head リスト。初期カテゴリ: "NBAccess_ReadOnly", "Control", "Arithmetic", "DataOps", "StringOps", "TypeChecks", "KernelRead", "Formatting", "NotebookData"。
+カテゴリ別の許可 head リスト。初期カテゴリ: "NBAccess_ReadOnly", "Control", "Arithmetic", "DataOps", "StringOps", "TypeChecks", "KernelRead", "Formatting", "NotebookData"。"NBAccess_ReadOnly" には NBImport も含まれる。
 
 ### $NBDisabledCategories
 型: Association, 初期値: `<||>`
@@ -1033,14 +1036,16 @@ permit registry をクリアする(テスト用)。
 ## カレンダーアクセス (iCal/ICS)
 アクセスレベルでフィールドを段階的に開示する読み取り専用カレンダー API。純粋パーサと決定論的な RRULE 展開により、旧 NotebookExtensions`calendardata の再帰展開バグ(単発オフセット展開・INTERVAL無視・月演算の近似・DAILY/COUNT/BYDAY/EXDATE未対応)を修正する。
 ### NBCalendarEvents[from, to, opts] → List
-所有者の iCal/ICS カレンダーを読み、[from, to) と重なるイベント発生を Start 順の Association リストで返す。RRULE(FREQ DAILY/WEEKLY/MONTHLY/YEARLY, INTERVAL, UNTIL, COUNT, BYDAY(序数付き含む), BYMONTHDAY(負数含む), EXDATE, RECURRENCE-ID 差し替え・キャンセル)を正しく展開する。返却フィールドはアクセスレベル(PrivacySpec、既定 $NBPrivacySpec)で段階的に変化する: 0.5以上=空き時間+識別メタデータのみ(Start/End/AllDay/Busy/Mandatory/Recurring/UIDDigest + EventId/OriginalStart/SemanticDigest/ObservedRevision)、0.7以上=Summary/Categories/Status を追加、1.0=Description/Location/UID を含む全フィールド。0.5未満は内容を一切含まない空き時間スロット(Start/End/AllDay/Busy + R0b識別フィールドのみ)に縮退する(クラウドLLMでもスケジューリングの最低限の基盤として空き/埋まりだけは分かる)。ただし PublicPatterns にマッチするイベント、または $NBCalendarPublicRecurring が True で当該イベントが繰り返しの場合は、アクセスレベルに関わらず 0.7 相当(Summary/Categories/Status)まで開示される(Description/Location/UID などの完全開示にはならない)。各イベントには実際に開示された内容に対応する "PrivacyLevel" が付与される(全フィールド開示=1.0、Public 開示=0.0、それ以外は level に応じ 0.7/0.5/0.4)。`Failure["NBCalendarAccessDenied"]` は無効な PrivacySpec を渡した場合のみ発生する。R0b 識別/リビジョンフィールド(全レベルで返る、すべて opaque): "EventId" = $NBCalendarIdentityKeyRef による HMAC鍵付き安定ID(同一イベントの全出現で共通、未鍵設定時は "unkeyed:<digest>")、"OriginalStart" = 出現の系列上の元スロット(override は RECURRENCE-ID、MOVEDされた開始時刻は Start にのみ現れる)、"SemanticDigest" = 挙動に関わるフィールド(OriginalStart/実効Start・End/Status/Busy/AllDay)のダイジェスト、"ObservedRevision" = SEQUENCE/DTSTAMP のダイジェスト(観測用のみ、DTSTAMPのみの変更では SemanticDigest は変わらない)。
-Options: PrivacySpec -> Automatic ($NBPrivacySpec), "Source" -> Automatic (SystemCredential[$NBCalendarCredentialName]、または明示的な .ics パス/http(s) URL), "ICSText" -> Missing["None"] (テスト用の生ICSテキスト直接注入、Source を無視), "MandatoryPatterns" -> Automatic ($NBCalendarMandatoryPatterns、Summary/Categories/Description に大小無視でマッチし Mandatory フラグを立てる), "PublicPatterns" -> Automatic ($NBCalendarPublicPatterns と組み込み $NBCalendarPublicDefaultPatterns の和集合、呼び出し単位で上書き可能), "MaxEvents" -> 500, "Refresh" -> False (パースキャッシュを無視), "Wrap" -> False (True で `<|"Events"->{...}, "ObservedAtUTC", "Count", "Truncated", "Completeness"(MaxEvents 切り詰め時 <1), "IdentityKeyed"|>` を返す)
+所有者の iCal/ICS カレンダーを読み、[from, to) と重なるイベント発生を Start 順の Association リストで返す。RRULE(FREQ DAILY/WEEKLY/MONTHLY/YEARLY, INTERVAL, UNTIL, COUNT, BYDAY(序数付き含む), BYMONTHDAY(負数含む), EXDATE, RECURRENCE-ID 差し替え・キャンセル)を正しく展開する(内部安全上限: 最大展開発生数1000件・最大期間4000周期)。返却フィールドはアクセスレベル(PrivacySpec、既定 $NBPrivacySpec)で段階的に変化する: 0.5以上=空き時間+識別メタデータのみ(Start/End/AllDay/Busy/Mandatory/Recurring/UIDDigest + EventId/OriginalStart/SemanticDigest/ObservedRevision)、0.7以上=Summary/Categories/Status を追加、1.0=Description/Location/UID を含む全フィールド。0.5未満は内容を一切含まない空き時間スロット(Start/End/AllDay/Busy + R0b識別フィールドのみ)に縮退する(クラウドLLMでもスケジューリングの最低限の基盤として空き/埋まりだけは分かる)。ただし PublicPatterns にマッチするイベント、または $NBCalendarPublicRecurring が True で当該イベントが繰り返しの場合は、アクセスレベルに関わらず 0.7 相当(Summary/Categories/Status)まで開示される(Description/Location/UID などの完全開示にはならない)。各イベントには実際に開示された内容に対応する "PrivacyLevel" が付与される(全フィールド開示=1.0、Public 開示=0.0、それ以外は level に応じ 0.7/0.5/0.4)。`Failure["NBCalendarAccessDenied"]` は無効な PrivacySpec を渡した場合のみ発生する。R0b 識別/リビジョンフィールド(全レベルで返る、すべて opaque): "EventId" = $NBCalendarIdentityKeyRef による HMAC鍵付き安定ID(同一イベントの全出現で共通、未鍵設定時は "unkeyed:<digest>")、"OriginalStart" = 出現の系列上の元スロット(override は RECURRENCE-ID、MOVEDされた開始時刻は Start にのみ現れる)、"SemanticDigest" = 挙動に関わるフィールド(OriginalStart/実効Start・End/Status/Busy/AllDay)のダイジェスト、"ObservedRevision" = SEQUENCE/DTSTAMP のダイジェスト(観測用のみ、DTSTAMPのみの変更では SemanticDigest は変わらない)。
+Options: PrivacySpec -> Automatic ($NBPrivacySpec)、"Source" -> Automatic (SystemCredential[$NBCalendarCredentialName]、または明示的な .ics パス/http(s) URL)、"ICSText" -> Missing["None"] (テスト用の生ICSテキスト直接注入、Source を無視)、"MandatoryPatterns" -> Automatic ($NBCalendarMandatoryPatterns、Summary/Categories/Description に大小無視でマッチし Mandatory フラグを立てる)、"PublicPatterns" -> Automatic ($NBCalendarPublicPatterns と組み込み $NBCalendarPublicDefaultPatterns の和集合、呼び出し単位で上書き可能)、"MaxEvents" -> 500、"Refresh" -> False (パースキャッシュを無視)、"Wrap" -> False (True で `<|"Events"->{...}, "ObservedAtUTC", "Count", "Truncated", "Completeness"(MaxEvents 切り詰め時 <1), "IdentityKeyed"|>` を返す)
 
 ### NBCalendarFreeBusy[from, to, opts] → List
-[from, to) の忙しいブロックを(重複するもの同士を統合して)`{<|"Start", "End", "Mandatory", "Count"|>, ...}` で返す。TRANSP:TRANSPARENT のイベントは除外。内容非公開(メタデータのみ)なので AccessLevel 0.5 から利用可。ソース関連オプションは NBCalendarEvents と同じ(PublicPatterns は転送されない)。
+[from, to) の忙しいブロックを(重複するもの同士を統合して)`{<|"Start", "End", "Mandatory", "Count"|>, ...}` で返す。TRANSP:TRANSPARENT のイベントは除外。内容非公開(メタデータのみ)なので AccessLevel 0.5 から利用可。
+Options: PrivacySpec -> Automatic、"Source" -> Automatic、"ICSText" -> Missing["None"]、"MandatoryPatterns" -> Automatic、"Refresh" -> False (PublicPatterns は転送されない)
 
 ### NBCalendarBusyQ[t, opts] → Boolean
-時刻 t が忙しいカレンダーブロック内(会議進行中)かを返す。"Detailed" -> True で `<|"Busy", "Mandatory", "Block"|>` を返す。ソース取得不可時は Failure ではなく False を返す(通知ゲートは fail-open で「非busy」扱い)。ソース関連オプションは NBCalendarEvents と同じ(PublicPatterns は転送されない)。
+時刻 t が忙しいカレンダーブロック内(会議進行中)かを返す。"Detailed" -> True で `<|"Busy", "Mandatory", "Block"|>` を返す。ソース取得不可時は Failure ではなく False を返す(通知ゲートは fail-open で「非busy」扱い)。
+Options: PrivacySpec -> Automatic、"Source" -> Automatic、"ICSText" -> Missing["None"]、"MandatoryPatterns" -> Automatic、"Refresh" -> False、"Detailed" -> False (PublicPatterns は転送されない)
 
 ### NBICSParseEvents[icsText] → List
 生 iCal/ICS テキストをイベント Association リストへパースする(UID/Summary/Description/Location/Status/Categories/Busy/Start/End/AllDay/RRule/ExDates/RecurrenceId)。純粋パーサ(認証情報・ネットワーク・アクセス制御を一切扱わない)。壊れた VEVENT ブロックはスキップする。folded line・TEXT エスケープ・TZID/UTC/floating 日時・VALUE=DATE(終日)・DURATION に対応。

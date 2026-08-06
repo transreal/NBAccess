@@ -151,6 +151,11 @@ NBCellPrivacyLevel::usage =
   "NBCellPrivacyLevel[nb, cellIdx] \:306f\:30bb\:30eb\:306e\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb (0.0\:301c1.0) \:3092\:8fd4\:3059\:3002\n" <>
   "0.0: \:975e\:79d8\:5bc6, 1.0: \:79d8\:5bc6 (Confidential\:30de\:30fc\:30af or \:79d8\:5bc6\:5909\:6570\:53c2\:7167)";
 
+NBCellObjectPrivacyLevel::usage =
+  "NBCellObjectPrivacyLevel[cell] \:306f CellObject \:306e\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb (0.0\:223c1.0) \:3092\:8fd4\:3059\:3002\n" <>
+  "\:8a55\:4fa1\:4e2d\:30bb\:30eb (EvaluationCell[]) \:306a\:3069 cellIdx \:3092\:6301\:305f\:306a\:3044\:30bb\:30eb\:306e\:5224\:5b9a\:306b\:4f7f\:3046\:3002\n" <>
+  "\:5224\:5b9a\:898f\:5247\:306f NBCellPrivacyLevel \:3068\:5b8c\:5168\:306b\:5171\:901a\:3002";
+
 NBIsAccessible::usage =
   "NBIsAccessible[nb, cellIdx, PrivacySpec -> ps] \:306f\:30bb\:30eb\:304c\:6307\:5b9a\:306e\n" <>
   "PrivacySpec \:3067\:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:304b\:3069\:3046\:304b\:3092\:8fd4\:3059 (True/False)\:3002";
@@ -1943,14 +1948,15 @@ NBAccess`NBSetNotebookPrivate[nb_NotebookObject, makePrivate:(True | False):True
 NBAccess`NBSetNotebookPrivate[makePrivate:(True | False):True] :=
   NBAccess`NBSetNotebookPrivate[EvaluationNotebook[], makePrivate];
 
-NBAccess`NBCellPrivacyLevel[nb_NotebookObject, cellIdx_Integer] :=
-  Module[{cell, tag, depTag, numTag},
+(* \:5171\:901a\:672c\:4f53: \:89e3\:6c7a\:6e08\:307f CellObject \:306e\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb\:3002
+   nb \:306f Private \:5ba3\:8a00\:5224\:5b9a\:3068\:79d8\:5bc6\:30b7\:30f3\:30dc\:30eb\:8d70\:67fb\:306b\:4f7f\:3046 (\:53d6\:308c\:306a\:3051\:308c\:3070\:305d\:306e 2 \:3064\:306f\:30b9\:30ad\:30c3\:30d7)\:3002
+   index \:7248 / CellObject \:7248\:306e\:5224\:5b9a\:304c\:305a\:308c\:306a\:3044\:3088\:3046\:5358\:4e00\:5b9a\:7fa9\:306b\:307e\:3068\:3081\:308b\:3002 *)
+iCellPrivacyLevelOfCell[nb_, cell_CellObject] :=
+  Module[{tag, depTag, numTag},
     (* Stage 9 P1.5: \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5168\:4f53\:304c Private (CloudPublishable -> False) \:5ba3\:8a00\:6e08\:307f\:306a\:3089\:3001
        \:5168\:30bb\:30eb\:306e\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb\:3092 1.0 \:3068\:3057\:3066\:6271\:3046 (\:30af\:30e9\:30a6\:30c9 LLM \:3078\:306e
        \:6295\:5165\:3092\:660e\:793a\:7684\:306b\:7981\:6b62)\:3002\:500b\:5225\:30bb\:30eb\:306e\:6a5f\:5bc6\:30bf\:30b0\:3088\:308a\:512a\:5148\:3059\:308b\:3002 *)
-    If[iNBNotebookDeclaredPrivateQ[nb], Return[1.0]];
-    cell = iResolveCell[nb, cellIdx];
-    If[cell === $Failed, Return[0.0]];
+    If[Head[nb] === NotebookObject && iNBNotebookDeclaredPrivateQ[nb], Return[1.0]];
     (* Stage 9 P1 Step 7: \:6570\:5024 privacyLevel \:30bf\:30b0\:304c\:3042\:308c\:3070\:6700\:512a\:5148 *)
     numTag = iGetCellPrivacyLevelTag[cell];
     If[NumericQ[numTag], Return[numTag]];
@@ -1960,10 +1966,25 @@ NBAccess`NBCellPrivacyLevel[nb_NotebookObject, cellIdx_Integer] :=
       tag === False,                 0.0,
       TrueQ[depTag],                 0.75,
       tag === True,                  1.0,
-      iCellUsesConfSymbol[nb, cell], 1.0,
+      Head[nb] === NotebookObject && iCellUsesConfSymbol[nb, cell], 1.0,
       True,                          0.0
     ]
   ];
+iCellPrivacyLevelOfCell[___] := 0.0;
+
+NBAccess`NBCellPrivacyLevel[nb_NotebookObject, cellIdx_Integer] :=
+  Module[{cell},
+    If[iNBNotebookDeclaredPrivateQ[nb], Return[1.0]];
+    cell = iResolveCell[nb, cellIdx];
+    If[cell === $Failed, Return[0.0]];
+    iCellPrivacyLevelOfCell[nb, cell]
+  ];
+
+(* CellObject \:7248\:3002\:8a55\:4fa1\:4e2d\:30bb\:30eb (EvaluationCell[]) \:306f cellIdx \:3092\:6301\:305f\:306a\:3044\:305f\:3081\:3001
+   \:30d7\:30ed\:30f3\:30d7\:30c8\:30bb\:30eb\:81ea\:8eab\:306e\:6a5f\:5bc6\:6027\:5224\:5b9a\:306f\:3053\:3061\:3089\:3092\:4f7f\:3046\:3002 *)
+NBAccess`NBCellObjectPrivacyLevel[cell_CellObject] :=
+  iCellPrivacyLevelOfCell[Quiet[ParentNotebook[cell]], cell];
+NBAccess`NBCellObjectPrivacyLevel[___] := 0.0;
 
 (* ============================================================
    \:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:5224\:5b9a\:95a2\:6570
@@ -4965,7 +4986,10 @@ NBAccess`NBWriteDynamicCell[nb_NotebookObject, dynBoxExpr_, tag_String:"", opts_
 NBAccess`NBWriteExternalLanguageCell[nb_NotebookObject, code_String,
     lang_String, autoEvaluate_:False] := (
   NotebookWrite[nb,
-    Cell[code, "ExternalLanguage", CellEvaluationLanguage -> lang], After];
+    (* \:30aa\:30d7\:30b7\:30e7\:30f3\:540d\:306f System` \:3092\:660e\:793a\:3059\:308b\:3002\:3053\:306e\:884c\:306f $Context = "NBAccess`" \:306e\:9818\:57df\:306b\:3042\:308b\:305f\:3081\:3001
+       \:88f8\:540d\:3067\:66f8\:304f\:3068\:8aad\:307f\:8fbc\:307f\:6642\:306e $ContextPath \:6b21\:7b2c\:3067 NBAccess`CellEvaluationLanguage \:304c
+       \:751f\:307e\:308c\:3001System`CellEvaluationLanguage \:3092 shadow \:3059\:308b (::shdw)\:3002 *)
+    Cell[code, "ExternalLanguage", System`CellEvaluationLanguage -> lang], After];
   If[TrueQ[autoEvaluate],
     Quiet[SelectionMove[nb, Previous, Cell]];
     Quiet[SelectionEvaluate[nb]];
