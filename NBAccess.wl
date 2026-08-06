@@ -300,6 +300,18 @@ NBMarkCellConfidential::usage =
   "Options: PrivacySpec -> Automatic\:3002\n" <>
   "\:3053\:306e\:95a2\:6570\:306f $NBApprovalHeads \:306b\:767b\:9332\:3055\:308c\:3066\:304a\:308a\:3001\:5b9f\:884c\:6642\:306b\:627f\:8a8d\:30b2\:30fc\:30c8\:3092\:767a\:706b\:3055\:305b\:308b\:3002";
 
+NBSetWriteConfidential::usage =
+  "NBSetWriteConfidential[nb, level] \:306f\:300c\:3053\:306e\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:3078\:4eca\:66f8\:304d\:8fbc\:307e\:308c\:308b\:30bb\:30eb\:306f\:6a5f\:5bc6\:300d\:3068\:3044\:3046\n" <>
+  "\:66f8\:304d\:8fbc\:307f\:95a2\:6240\:30d5\:30e9\:30b0\:3092\:7acb\:3066\:308b\:3002NBSetWriteConfidential[nb, False] \:3067\:89e3\:9664\:3002\n" <>
+  "\:30d5\:30e9\:30b0\:304c\:7acb\:3063\:3066\:3044\:308b\:9593\:3001NBWriteCell \:7cfb\:306e\:30bb\:30eb\:751f\:6210\:306f TaggingRules \:3068\:8996\:899a\:30de\:30fc\:30af\:3092\n" <>
+  "\:751f\:6210\:6642\:70b9\:3067\:57cb\:3081\:8fbc\:3080 (\:4e8b\:5f8c\:30b9\:30a4\:30fc\:30d7\:3068\:9055\:3044\:300c\:30de\:30fc\:30af\:3057\:5fd8\:308c\:305f\:30bb\:30eb\:300d\:304c\:539f\:7406\:7684\:306b\:51fa\:306a\:3044)\:3002";
+
+NBWriteConfidentialLevel::usage =
+  "NBWriteConfidentialLevel[nb] \:306f\:66f8\:304d\:8fbc\:307f\:95a2\:6240\:30d5\:30e9\:30b0\:306e\:73fe\:5728\:5024 (0.0-1.0) \:3092\:8fd4\:3059\:3002";
+
+NBClearWriteConfidential::usage =
+  "NBClearWriteConfidential[] \:306f\:5168\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\:66f8\:304d\:8fbc\:307f\:95a2\:6240\:30d5\:30e9\:30b0\:3092\:89e3\:9664\:3059\:308b (\:5b89\:5168\:5f01)\:3002";
+
 NBSetSnapshotPrivacyLevel::usage =
   "NBSetSnapshotPrivacyLevel[snapshotId, level] \:306f SourceVault snapshot \:306e PrivacyLevel \:3092\:8a2d\:5b9a\:3059\:308b\:3002\n" <>
   "snapshot \:306e PrivacyLevel \:306f\:901a\:5e38\:30bb\:30eb\:5224\:5b9a\:304b\:3089\:306e\:5c0e\:51fa\:5024\:3060\:304c\:3001\:4eba\:9593\:304c\:660e\:793a\:7684\:306b\:4e0a\:66f8\:304d\:3057\:305f\:3044\:5834\:5408\:306b\:4f7f\:3046\:3002\n" <>
@@ -547,6 +559,45 @@ NBRemoveLocalLLMAPIKey::usage =
 NBLocalLLMAPIKeyMap::usage =
   "NBLocalLLMAPIKeyMap[] \:306f\:73fe\:5728\:767b\:9332\:3055\:308c\:3066\:3044\:308b\:30ed\:30fc\:30ab\:30eb LLM \:30b5\:30fc\:30d0\:30fc\[RightArrow]API\:30ad\:30fc\:540d\:30de\:30c3\:30d4\:30f3\:30b0\:3092\n" <>
   "Dataset \:3067\:8fd4\:3059\:3002Configured \:5217\:306f SystemCredential \:304c\:5b9f\:969b\:306b\:8a2d\:5b9a\:6e08\:307f\:304b\:3069\:3046\:304b\:3092\:793a\:3059\:3002";
+
+(* ---- \:6c4e\:7528 credential \:30a2\:30af\:30bb\:30b9 (2026-08-06) ----
+   API \:30ad\:30fc\:4ee5\:5916\:306e\:8cc7\:683c\:60c5\:5831 (IMAP \:30d1\:30b9\:30ef\:30fc\:30c9\:30fbOAuth \:30c8\:30fc\:30af\:30f3\:30fbHMAC \:9375\:7b49) \:3092
+   \:6271\:3046\:305f\:3081\:306e\:552f\:4e00\:306e\:6b63\:898f\:53e3\:3002\:5f93\:6765\:306f\:5404\:30d1\:30c3\:30b1\:30fc\:30b8\:304c SystemCredential \:3092\:76f4\:63a5\:547c\:3093\:3067\:304a\:308a\:3001
+   NBAccess \:304c\:300c\:8cc7\:683c\:60c5\:5831\:30a2\:30af\:30bb\:30b9\:3092\:4e00\:5143\:7ba1\:7406\:3059\:308b\:300d\:3068\:3044\:3046\:898f\:7d04\:304c\:5b88\:3089\:308c\:3066\:3044\:306a\:304b\:3063\:305f\:3002 *)
+NBGetCredential::usage =
+  "NBGetCredential[name] \:306f SystemCredential \:304b\:3089\:5024\:3092\:8fd4\:3059\:552f\:4e00\:306e\:6b63\:898f\:8aad\:307f\:51fa\:3057\:53e3\:3002\n" <>
+  "\:672a\:8a2d\:5b9a\:30fb\:53d6\:5f97\:5931\:6557\:306f Missing[\"NotFound\", name]\:3002\:5024\:306f\:30ed\:30b0\:306b\:6b8b\:3055\:306a\:3044\:3002\n" <>
+  "API \:30ad\:30fc\:306f NBGetAPIKey / NBGetLocalLLMAPIKey \:3092\:512a\:5148\:3059\:308b\:3053\:3068\:3002";
+
+NBSetCredential::usage =
+  "NBSetCredential[name, value] \:306f SystemCredential \:3078\:306e\:552f\:4e00\:306e\:6b63\:898f\:66f8\:304d\:8fbc\:307f\:53e3\:3002\:6210\:529f\:3067 True\:3001\:5931\:6557\:3067 $Failed\:3002";
+
+NBRemoveCredential::usage =
+  "NBRemoveCredential[name] \:306f SystemCredential \:306e\:30a8\:30f3\:30c8\:30ea\:3092\:524a\:9664\:3059\:308b\:3002\:6210\:529f\:3067 True\:3001\:5931\:6557\:3067 $Failed\:3002";
+
+NBCredentialConfiguredQ::usage =
+  "NBCredentialConfiguredQ[name] \:306f\:5024\:3092\:8fd4\:3055\:305a\:306b\:8a2d\:5b9a\:6e08\:307f\:304b\:3069\:3046\:304b\:3060\:3051\:3092\:8fd4\:3059\:3002";
+
+(* ---- NBAccess \:7ba1\:7406\:5909\:6570\:3078\:306e\:767b\:9332 API (2026-08-06) ----
+   \:5916\:90e8\:30d1\:30c3\:30b1\:30fc\:30b8\:304c $NBAllowedHeads / $NBApprovalHeads / $NBTrustedPackageHeads /
+   $NBLLMQueryFunc / $NBAutoEvalProhibitedPatterns \:3092\:76f4\:63a5\:66f8\:304d\:63db\:3048\:3066\:3044\:305f\:306e\:3092\:7f6e\:304d\:63db\:3048\:308b\:3002
+   \:5024\:306e\:6b63\:898f\:5316\:30fb\:91cd\:8907\:6392\:9664\:30fb\:578b\:691c\:67fb\:306f\:3053\:3053\:3067\:4e00\:5143\:7684\:306b\:884c\:3046\:3002 *)
+NBRegisterAllowedHeads::usage =
+  "NBRegisterAllowedHeads[heads] \:306f head \:540d (String \:307e\:305f\:306f\:305d\:306e List) \:3092 $NBAllowedHeads \:3078\:8ffd\:52a0\:3059\:308b\:3002\:8ffd\:52a0\:5f8c\:306e\:4ef6\:6570\:3092\:8fd4\:3059\:3002";
+
+NBRegisterApprovalHeads::usage =
+  "NBRegisterApprovalHeads[heads] \:306f head \:540d\:3092 $NBApprovalHeads \:3078\:8ffd\:52a0\:3059\:308b (\:627f\:8a8d\:30b2\:30fc\:30c8\:5bfe\:8c61\:5316)\:3002";
+
+NBRegisterTrustedPackageHeads::usage =
+  "NBRegisterTrustedPackageHeads[context, patterns] \:306f package \:6587\:8108\:306e\:4fe1\:983c head \:30d1\:30bf\:30fc\:30f3\:3092\:767b\:9332\:3059\:308b\:3002\n" <>
+  "$NBDenyHeads / $NBApprovalHeads \:306e\:660e\:793a\:767b\:9332\:306f\:3053\:306e\:4fe1\:983c\:3088\:308a\:512a\:5148\:3055\:308c\:308b\:3002";
+
+NBRegisterLLMQueryFunc::usage =
+  "NBRegisterLLMQueryFunc[f] \:306f NBCellTransformWithLLM \:304c\:4f7f\:3046\:975e\:540c\:671f LLM \:30b3\:30fc\:30eb\:30d0\:30c3\:30af\:3092\:767b\:9332\:3059\:308b\:3002\n" <>
+  "\:30b7\:30b0\:30cd\:30c1\:30e3: f[prompt, callback, nb, opts]\:3002None \:3067\:89e3\:9664\:3002";
+
+NBRegisterAutoEvalProhibitedPatterns::usage =
+  "NBRegisterAutoEvalProhibitedPatterns[patterns] \:306f\:81ea\:52d5\:8a55\:4fa1\:7981\:6b62\:30d1\:30bf\:30fc\:30f3\:3092\:767b\:9332\:3059\:308b\:3002";
 
 NBLocalLLMCredentialName::usage =
   "NBLocalLLMCredentialName[provider, url] \:306f SystemCredential \:540d\:306e\:307f\:3092\:8fd4\:3059 (\:5024\:306f\:53d6\:5f97\:3057\:306a\:3044)\:3002\n" <>
@@ -4132,6 +4183,106 @@ NBAccess`NBLocalLLMAPIKeyMap[] :=
 
 
 (* ============================================================
+   \:6c4e\:7528 credential \:30a2\:30af\:30bb\:30b9 (2026-08-06)
+   ------------------------------------------------------------
+   SystemCredential \:3078\:306e\:751f\:30a2\:30af\:30bb\:30b9\:306f\:3053\:306e 4 \:95a2\:6570\:306b\:9589\:3058\:308b\:3002
+   API \:30ad\:30fc\:306f\:5f93\:6765\:901a\:308a NBGetAPIKey / NBGetLocalLLMAPIKey \:3092\:512a\:5148\:3057\:3001
+   \:305d\:308c\:4ee5\:5916\:306e\:8cc7\:683c\:60c5\:5831 (IMAP \:30d1\:30b9\:30ef\:30fc\:30c9\:30fbOAuth \:30c8\:30fc\:30af\:30f3\:30fbHMAC \:9375\:7b49) \:306f
+   NBGetCredential / NBSetCredential \:3092\:4f7f\:3046\:3002
+   ============================================================ *)
+
+NBAccess`NBGetCredential[name_String] :=
+  Module[{v},
+    If[StringTrim[name] === "", Return[Missing["NotFound", name], Module]];
+    v = Quiet @ Check[SystemCredential[name], $Failed];
+    (* \:8cc7\:683c\:60c5\:5831\:30aa\:30d6\:30b8\:30a7\:30af\:30c8\:5f62\:5f0f (\:30ad\:30fc "Secret" \:3092\:6301\:3064) \:3082\:53d7\:3051\:308b\:3002
+       \:65e7\:5b9f\:88c5 (autotrigger \:306e permit key \:7b49) \:304c\:3053\:306e\:5f62\:3092\:6271\:3063\:3066\:3044\:305f\:3002 *)
+    If[! StringQ[v],
+      With[{s = Quiet @ Check[v["Secret"], $Failed]},
+        If[StringQ[s] && StringLength[s] > 0, Return[s, Module]]]];
+    Which[
+      StringQ[v] && StringLength[v] > 0, v,
+      (* \:65e7\:5b9f\:88c5\:306b\:306f ToString[SystemCredential[...]] \:3067\:53d7\:3051\:3066\:3044\:305f\:7b87\:6240\:304c\:3042\:308b\:305f\:3081\:3001
+         \:6587\:5b57\:5217\:4ee5\:5916\:3067\:3082\:610f\:5473\:306e\:3042\:308b\:5024\:306a\:3089\:6587\:5b57\:5217\:5316\:3057\:3066\:8fd4\:3059\:3002 *)
+      v === $Failed || v === None || v === Null || MissingQ[v],
+        Missing["NotFound", name],
+      True,
+        With[{s = ToString[v]},
+          If[StringLength[StringTrim[s]] > 0 && s =!= "Null",
+            s, Missing["NotFound", name]]]]
+  ];
+NBAccess`NBGetCredential[___] := Missing["NotFound"];
+
+NBAccess`NBSetCredential[name_String, value_String] :=
+  If[StringTrim[name] === "",
+    $Failed,
+    Quiet @ Check[(SystemCredential[name] = value); True, $Failed]];
+NBAccess`NBSetCredential[___] := $Failed;
+
+NBAccess`NBRemoveCredential[name_String] :=
+  If[StringTrim[name] === "",
+    $Failed,
+    Quiet @ Check[(SystemCredential[name] =.); True, $Failed]];
+NBAccess`NBRemoveCredential[___] := $Failed;
+
+NBAccess`NBCredentialConfiguredQ[name_String] :=
+  StringQ[NBAccess`NBGetCredential[name]];
+NBAccess`NBCredentialConfiguredQ[___] := False;
+
+(* ============================================================
+   NBAccess \:7ba1\:7406\:5909\:6570\:3078\:306e\:767b\:9332 API (2026-08-06)
+   ------------------------------------------------------------
+   \:5916\:90e8\:30d1\:30c3\:30b1\:30fc\:30b8\:306f\:3053\:308c\:3089\:3092\:901a\:3059\:3053\:3068\:3002\:5909\:6570\:3078\:306e\:76f4\:63a5\:4ee3\:5165\:306f\:898f\:7d04\:9055\:53cd\:3002
+   ============================================================ *)
+
+(* head \:5f15\:6570\:306e\:6b63\:898f\:5316: String \:5358\:4f53 / List / Symbol \:3092\:53d7\:3051\:308b *)
+iNBNormalizeHeadArg[h_String] := {h};
+iNBNormalizeHeadArg[h_Symbol] := {SymbolName[h]};
+iNBNormalizeHeadArg[l_List] := Flatten[iNBNormalizeHeadArg /@ l];
+iNBNormalizeHeadArg[_] := {};
+
+NBAccess`NBRegisterAllowedHeads[heads_] :=
+  Module[{add = iNBNormalizeHeadArg[heads]},
+    If[add === {}, Return[Length[Replace[NBAccess`$NBAllowedHeads,
+      Except[_List] -> {}]], Module]];
+    If[! ListQ[NBAccess`$NBAllowedHeads], NBAccess`$NBAllowedHeads = {}];
+    NBAccess`$NBAllowedHeads =
+      DeleteDuplicates[Join[NBAccess`$NBAllowedHeads, add]];
+    Length[NBAccess`$NBAllowedHeads]];
+
+NBAccess`NBRegisterApprovalHeads[heads_] :=
+  Module[{add = iNBNormalizeHeadArg[heads]},
+    If[add === {}, Return[Length[Replace[NBAccess`$NBApprovalHeads,
+      Except[_List] -> {}]], Module]];
+    If[! ListQ[NBAccess`$NBApprovalHeads], NBAccess`$NBApprovalHeads = {}];
+    NBAccess`$NBApprovalHeads =
+      DeleteDuplicates[Join[NBAccess`$NBApprovalHeads, add]];
+    Length[NBAccess`$NBApprovalHeads]];
+
+NBAccess`NBRegisterTrustedPackageHeads[context_String, patterns_] :=
+  Module[{add = iNBNormalizeHeadArg[patterns]},
+    If[StringTrim[context] === "" || add === {}, Return[$Failed, Module]];
+    If[! AssociationQ[NBAccess`$NBTrustedPackageHeads],
+      NBAccess`$NBTrustedPackageHeads = <||>];
+    NBAccess`$NBTrustedPackageHeads[context] =
+      DeleteDuplicates[Join[
+        Replace[Lookup[NBAccess`$NBTrustedPackageHeads, context, {}],
+          Except[_List] -> {}],
+        add]];
+    NBAccess`$NBTrustedPackageHeads[context]];
+NBAccess`NBRegisterTrustedPackageHeads[___] := $Failed;
+
+NBAccess`NBRegisterLLMQueryFunc[None] := (NBAccess`$NBLLMQueryFunc = None; None);
+NBAccess`NBRegisterLLMQueryFunc[f_] :=
+  If[f === Null, $Failed, (NBAccess`$NBLLMQueryFunc = f; f)];
+NBAccess`NBRegisterLLMQueryFunc[___] := $Failed;
+
+NBAccess`NBRegisterAutoEvalProhibitedPatterns[patterns_List] :=
+  (NBAccess`$NBAutoEvalProhibitedPatterns = patterns;
+   Length[patterns]);
+NBAccess`NBRegisterAutoEvalProhibitedPatterns[___] := $Failed;
+
+(* ============================================================
    \:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:30c7\:30a3\:30ec\:30af\:30c8\:30ea API
    ============================================================ *)
 
@@ -4950,7 +5101,61 @@ NBAccess`NBFlushDeferredOutput[] :=
 (* \:30d0\:30c3\:30d5\:30a1\:3092\:7834\:68c4 (\:30d5\:30e9\:30c3\:30b7\:30e5\:305b\:305a\:6368\:3066\:308b)\:3002 *)
 NBAccess`NBDiscardDeferredOutput[] := ($iNBDeferredCells = {};);
 
+(* ============================================================
+   \:66f8\:304d\:8fbc\:307f\:95a2\:6240 (2026-08-06)
+   ------------------------------------------------------------
+   \:6a5f\:5bc6\:30bf\:30fc\:30f3\:306e\:9593\:3060\:3051\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5358\:4f4d\:3067\:30d5\:30e9\:30b0\:3092\:7acb\:3066\:3001\:305d\:306e\:9593\:306b\:751f\:6210\:3055\:308c\:308b
+   \:30bb\:30eb\:5f0f\:3078 privacy \:30bf\:30b0\:3068\:8996\:899a\:30de\:30fc\:30af\:3092\:300c\:751f\:6210\:6642\:70b9\:3067\:300d\:713c\:304d\:8fbc\:3080\:3002
+   \:5f93\:6765\:306e\:300c\:66f8\:3044\:305f\:5f8c\:3067\:30a4\:30f3\:30c7\:30c3\:30af\:30b9\:8d70\:67fb\:3057\:3066\:30de\:30fc\:30af\:300d\:65b9\:5f0f\:306f\:3001\:65b0\:3057\:3044\:66f8\:304d\:8fbc\:307f\:7d4c\:8def\:3084
+   \:9045\:5ef6\:6750\:6599\:5316\:3059\:308b Output \:3092\:53d6\:308a\:3053\:307c\:3057\:3001\:305d\:306e\:305f\:3073\:306b\:6f0f\:6d29\:7d4c\:8def\:306b\:306a\:3063\:3066\:3044\:305f\:3002
+   iNBArtifactCellExpr \:304c\:65e2\:306b\:63a1\:7528\:3057\:3066\:3044\:308b\:300c\:30bb\:30eb\:5f0f\:306b\:713c\:304d\:8fbc\:3080\:300d\:65b9\:5f0f\:3068\:540c\:3058\:5f62\:3002
+   \:9045\:5ef6\:51fa\:529b ($iNBDeferredCells) \:3068\:3082\:6574\:5408\:3057\:3001index \:63a2\:7d22\:306e\:30ec\:30fc\:30b9\:304c\:7121\:3044\:3002
+   ============================================================ *)
+
+If[!AssociationQ[$iNBWriteConf], $iNBWriteConf = <||>];
+
+(* \:5024\:304c\:58ca\:308c\:3066\:3044\:3066\:3082\:81ea\:5df1\:53c2\:7167\:4ee3\:5165 (KeyDrop[\:672a\:5b9a\:7fa9]) \:306b\:306a\:3089\:306a\:3044\:3088\:3046\:6bce\:56de\:6b63\:898f\:5316\:3059\:308b\:3002 *)
+iNBWriteConfTable[] :=
+  (If[! AssociationQ[$iNBWriteConf], $iNBWriteConf = <||>]; $iNBWriteConf);
+
+NBAccess`NBSetWriteConfidential[nb_NotebookObject, lvl_?NumericQ] :=
+  ($iNBWriteConf = Append[iNBWriteConfTable[],
+     nb -> N[Clip[lvl, {0.0, 1.0}]]];);
+NBAccess`NBSetWriteConfidential[nb_NotebookObject, False] :=
+  ($iNBWriteConf = KeyDrop[iNBWriteConfTable[], {nb}];);
+NBAccess`NBSetWriteConfidential[___] := Null;
+
+NBAccess`NBClearWriteConfidential[] := ($iNBWriteConf = <||>;);
+
+NBAccess`NBWriteConfidentialLevel[nb_NotebookObject] :=
+  Replace[Lookup[iNBWriteConfTable[], nb, 0.0], Except[_?NumericQ] -> 0.0];
+NBAccess`NBWriteConfidentialLevel[___] := 0.0;
+
+(* \:30b9\:30bf\:30f3\:30d7\:5bfe\:8c61\:30b9\:30bf\:30a4\:30eb\:3002Print/Subsection (\:544a\:77e5\:985e) \:306f\:5bfe\:8c61\:5916\:3002 *)
+$iNBStampStyles = {"Input", "Output", "Code", "ExternalLanguage", "Text"};
+
+iNBStampConfidentialCell[nb_, cellExpr_Cell] :=
+  Module[{lvl, style},
+    lvl = NBAccess`NBWriteConfidentialLevel[nb];
+    If[! TrueQ[lvl > 0.5], Return[cellExpr, Module]];
+    style = If[Length[cellExpr] >= 2 && StringQ[cellExpr[[2]]], cellExpr[[2]], ""];
+    If[! MemberQ[$iNBStampStyles, style], Return[cellExpr, Module]];
+    (* \:547c\:3073\:51fa\:3057\:5074\:304c\:65e2\:306b TaggingRules \:3092\:6301\:305f\:305b\:3066\:3044\:308b\:5834\:5408\:306f\:5c0a\:91cd\:3059\:308b
+       (\:627f\:8a8d UI \:306e approvalTag \:7b49\:3002\:305d\:3061\:3089\:306f\:5f8c\:6bb5\:306e\:30de\:30fc\:30ab\:30fc\:304c\:62c5\:5f53) *)
+    If[! FreeQ[cellExpr, HoldPattern[TaggingRules -> _]], Return[cellExpr, Module]];
+    Join[cellExpr,
+      Cell[
+        TaggingRules -> {
+          "claudecode" -> {"privacyLevel" -> lvl, "confidential" -> True}},
+        Sequence @@ NBAccess`$NBConfidentialCellOpts]]
+  ];
+iNBStampConfidentialCell[_, x_] := x;
+
 NBAccess`NBWriteCell[nb_NotebookObject, cellExpr_Cell, where_:After] :=
+  With[{stamped = iNBStampConfidentialCell[nb, cellExpr]},
+  iNBWriteCellRaw[nb, stamped, where]];
+
+iNBWriteCellRaw[nb_NotebookObject, cellExpr_Cell, where_] :=
   If[TrueQ[$iNBDeferActive],
     (* Batch/Deferred: \:30d0\:30c3\:30d5\:30a1\:306b\:6e9c\:3081\:308b (NotebookWrite \:3057\:306a\:3044)\:3002
        where \:304c After \:4ee5\:5916 (\:4f4d\:7f6e\:6307\:5b9a) \:306e\:5834\:5408\:306f\:9045\:5ef6\:306b\:4e57\:305b\:305a\:5373\:66f8\:304d\:8fbc\:307f\:3059\:308b
@@ -4989,7 +5194,8 @@ NBAccess`NBWriteExternalLanguageCell[nb_NotebookObject, code_String,
     (* \:30aa\:30d7\:30b7\:30e7\:30f3\:540d\:306f System` \:3092\:660e\:793a\:3059\:308b\:3002\:3053\:306e\:884c\:306f $Context = "NBAccess`" \:306e\:9818\:57df\:306b\:3042\:308b\:305f\:3081\:3001
        \:88f8\:540d\:3067\:66f8\:304f\:3068\:8aad\:307f\:8fbc\:307f\:6642\:306e $ContextPath \:6b21\:7b2c\:3067 NBAccess`CellEvaluationLanguage \:304c
        \:751f\:307e\:308c\:3001System`CellEvaluationLanguage \:3092 shadow \:3059\:308b (::shdw)\:3002 *)
-    Cell[code, "ExternalLanguage", System`CellEvaluationLanguage -> lang], After];
+    iNBStampConfidentialCell[nb,
+      Cell[code, "ExternalLanguage", System`CellEvaluationLanguage -> lang]], After];
   If[TrueQ[autoEvaluate],
     Quiet[SelectionMove[nb, Previous, Cell]];
     Quiet[SelectionEvaluate[nb]];
@@ -4997,19 +5203,22 @@ NBAccess`NBWriteExternalLanguageCell[nb_NotebookObject, code_String,
 
 (* Input \:30bb\:30eb\:3092\:633f\:5165\:3057\:3066\:5373\:5ea7\:306b\:8a55\:4fa1 *)
 NBAccess`NBInsertAndEvaluateInput[nb_NotebookObject, boxes_] := (
-  NotebookWrite[nb, Cell[BoxData[boxes], "Input"], After];
+  NotebookWrite[nb,
+    iNBStampConfidentialCell[nb, Cell[BoxData[boxes], "Input"]], After];
   Quiet[SelectionEvaluate[nb]]);
 
 (* Input \:30bb\:30eb\:3092 After \:306b\:66f8\:304d\:8fbc\:307f\:3001Before CellContents \:306b\:79fb\:52d5 *)
 NBAccess`NBInsertInputAfter[nb_NotebookObject, boxes_] := (
-  NotebookWrite[nb, Cell[BoxData[boxes], "Input"], After];
+  NotebookWrite[nb,
+    iNBStampConfidentialCell[nb, Cell[BoxData[boxes], "Input"]], After];
   SelectionMove[nb, Before, CellContents]);
 
 (* \:30ab\:30fc\:30bd\:30eb\:5f8c\:306b Input \:30bb\:30eb\:3092\:633f\:5165\:3057\:3001\:30ab\:30fc\:30bd\:30eb\:914d\:7f6e + \:6761\:4ef6\:4ed8\:304d\:8a55\:4fa1 *)
 NBAccess`NBWriteInputCellAndMaybeEvaluate[nb_NotebookObject, boxes_,
     autoEvaluate_:False] := (
   Quiet[SelectionMove[nb, After, Cell]];
-  NotebookWrite[nb, Cell[BoxData[boxes], "Input"], After];
+  NotebookWrite[nb,
+    iNBStampConfidentialCell[nb, Cell[BoxData[boxes], "Input"]], After];
   Quiet[SelectionMove[nb, Previous, Cell]];
   Quiet[SelectionMove[nb, Before, CellContents]];
   SetSelectedNotebook[nb];
@@ -6454,7 +6663,18 @@ If[!ListQ[$NBDenyHeads],
     "DumpSave", "CloudEvaluate", "CloudSubmit", "CloudDeploy",
     "ServiceExecute", "SendMessage", "MailReceiverFunction",
     "Splice", "FilePrint", "CopyDirectory", "SetDirectory",
-    "ResetDirectory", "CreateArchive", "ExtractArchive"
+    "ResetDirectory", "CreateArchive", "ExtractArchive",
+    (* 2026-08-06: \:6a5f\:5bc6\:4fdd\:8b77\:3092\:300c\:5f31\:3081\:308b\:300d head \:7fa4\:3092 LLM \:63d0\:6848\:304b\:3089\:6052\:4e45\:7981\:6b62\:3059\:308b\:3002
+       \:5b9f\:4f8b: \:6a5f\:5bc6 ChatCell \:306e\:30bf\:30fc\:30f3\:3067\:30ed\:30fc\:30ab\:30eb\:30e2\:30c7\:30eb\:304c
+         $SessionPassphrase = "<\:79d8\:5bc6>"; NonConfidential[Row[{..., $SessionPassphrase}]]
+       \:3092\:63d0\:6848\:3057\:3001\:627f\:8a8d 1 \:56de\:3067\:81ea\:5206\:306e\:51fa\:529b\:30bb\:30eb\:306e\:6a5f\:5bc6\:30de\:30fc\:30af\:3092\:5265\:304c\:3057\:305f\:3002
+       \:305d\:306e\:7d50\:679c\:3001\:5f8c\:7d9a\:306e\:30af\:30e9\:30a6\:30c9\:30bf\:30fc\:30f3\:304c notebook_info \:7d4c\:7531\:3067\:79d8\:5bc6\:3092\:8aad\:3081\:3066\:3057\:307e\:3063\:305f\:3002
+       \:30de\:30fc\:30af\:3092\:5f37\:3081\:308b\:65b9\:5411 (Confidential / MarkConfidential) \:306f\:5f15\:304d\:7d9a\:304d\:8a31\:53ef\:3002
+       \:30e6\:30fc\:30b6\:30fc\:81ea\:8eab\:304c\:30bb\:30eb\:306b\:76f4\:63a5\:66f8\:3044\:3066\:8a55\:4fa1\:3059\:308b\:5206\:306b\:306f\:3053\:306e\:5236\:9650\:306f\:304b\:304b\:3089\:306a\:3044
+       (deny \:5224\:5b9a\:306f LLM \:63d0\:6848\:5f0f\:306e\:691c\:8a3c\:7d4c\:8def\:3060\:3051)\:3002 *)
+    "NonConfidential", "UnmarkConfidential",
+    "NBSetConfidentialTag", "NBSetNotebookPrivate",
+    "NBSetSnapshotPrivacyLevel"
     (* 2026-06-03: "Evaluate" \:3092 Deny \:304b\:3089\:9664\:53bb\:3002ParametricPlot[Evaluate[..]] \:7b49
        \:63cf\:753b\:306e\:5b9a\:77f3\:3092\:5dfb\:304d\:8fbc\:3093\:3067\:5168 Deny \:3057\:3066\:3044\:305f\:3002Evaluate \:306e\:4e2d\:8eab\:306e\:5371\:967a head \:306f
        iExtractAllHeads \:304c {1,Infinity} \:3067\:5225\:9014\:6355\:6349\:3057 Deny \:3059\:308b\:305f\:3081\:3001Evaluate

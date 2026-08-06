@@ -23,7 +23,7 @@ NBAccess の詳細ログ出力を制御。True=内部の詳細ログを Messages
 
 ### $NBAutoEvalProhibitedPatterns
 型: List(RegularExpression または StringExpression), 初期値: `{}`
-NBEvaluatePreviousCell で自動実行をブロックするパターンのリスト。セル内容がいずれかにマッチすると評価をスキップし警告を表示。ClaudeCode がロード時に登録する。
+NBEvaluatePreviousCell で自動実行をブロックするパターンのリスト。セル内容がいずれかにマッチすると評価をスキップし警告を表示。ClaudeCode がロード時に登録する。外部パッケージは直接代入せず NBRegisterAutoEvalProhibitedPatterns を使うこと。
 
 ### $NBSeparationIgnoreList
 型: List(String), 初期値: `{"NBAccess", "NotebookExtensions"}`
@@ -32,7 +32,7 @@ ClaudeCheckSeparation の分離検査で無視するファイル名・パッケ�
 
 ### $NBLLMQueryFunc
 型: 関数(コールバック)
-非同期 LLM 呼び出し用コールバック関数。ClaudeCode が `ClaudeQueryAsync` を自動登録する。
+非同期 LLM 呼び出し用コールバック関数。ClaudeCode が `ClaudeQueryAsync` を自動登録する(登録は NBRegisterLLMQueryFunc 経由が正規)。
 シグネチャ: `$NBLLMQueryFunc[prompt, callback, nb, Model -> spec, Fallback -> bool, Integrations -> {...}]`
 callback は応答文字列を受け取る関数、nb は出力先 NotebookObject、Integrations は LM Studio MCP 用(lmstudio モデル時のみ有効、Automatic なら無視)。カーネルをブロックしない。
 
@@ -180,7 +180,7 @@ CellPrint[] パターンを自動検出してスマートにセルを書き込�
 .nb ファイルを非表示で開き、末尾に Subsection セル(name)と Text セル(prompt)を挿入して保存・閉じる。
 
 ### NBWriteCell[nb, cellExpr] / NBWriteCell[nb, cellExpr, pos]
-ノートブックに Cell 式を書き込む。pos は After(既定)/Before/All。遅延出力が有効な間は After 書き込みをバッファに溜める。
+ノートブックに Cell 式を書き込む。pos は After(既定)/Before/All。遅延出力が有効な間は After 書き込みをバッファに溜める。書き込み関所フラグ([[NBSetWriteConfidential]])が立っている場合、生成セルに機密 TaggingRules・視覚マークを生成時点で埋め込む。
 
 ### NBWritePrintNotice[nb, text, color]
 ノートブックに通知用 Print セルを書き込む。nb が None なら CellPrint を使用。
@@ -347,6 +347,15 @@ TaggingRules から機密タグを返す。
 ### NBMarkCellConfidential[nb, cellIdx, opts]
 セルを機密(PrivacyLevel 1.0)に設定し赤背景マークを付ける。`NBMarkCellConfidential[nb, cellIdx, level]` で PrivacyLevel を任意数値(0.0-1.0)に設定。level > 0.5 で赤背景マーク、<= 0.5 でマーク除去。$NBApprovalHeads に登録され実行時に承認ゲートを発火。
 Options: PrivacySpec -> Automatic
+
+### NBSetWriteConfidential[nb, level] / NBSetWriteConfidential[nb, False]
+「このノートブックへ今書き込まれるセルは機密」という書き込み関所フラグを立てる。level は 0.0-1.0(True は 1.0 相当)。フラグが立っている間、NBWriteCell 系のセル生成は TaggingRules と視覚マーク($NBConfidentialCellOpts 相当)を生成時点で埋め込む(事後スイープと違い「マークし忘れたセル」が原理的に出ない)。NBSetWriteConfidential[nb, False] で解除。
+
+### NBWriteConfidentialLevel[nb] → Real
+書き込み関所フラグの現在値(0.0-1.0)を返す。フラグが立っていなければ 0.0。
+
+### NBClearWriteConfidential[]
+全ノートブックの書き込み関所フラグを解除する(安全弁)。
 
 ### NBSetSnapshotPrivacyLevel[snapshotId, level, opts]
 SourceVault snapshot の PrivacyLevel を設定する。人間が明示的に上書きしたい場合に使用。SourceVault がロード済み必須。$NBApprovalHeads に登録され承認ゲートを発火。
@@ -561,6 +570,38 @@ AI プロバイダの API キーを返す。provider: "anthropic" | "openai" | "
 ### NBLocalLLMCredentialName[provider, url] → String
 SystemCredential 名のみを返す(値は取得しない)。AccessLevel チェックなし。登録確認用。
 
+## 汎用 credential アクセス
+API キー以外の資格情報(IMAP パスワード・OAuth トークン・HMAC 鍵等)を扱う唯一の正規口。SystemCredential への生アクセスはこの 4 関数に閉じる。API キーは従来通り NBGetAPIKey / NBGetLocalLLMAPIKey を優先。
+### NBGetCredential[name] → String|Missing["NotFound", name]
+SystemCredential から値を返す唯一の正規読み出し口。文字列値のほか `<|"Secret" -> ...|>` 形式の資格情報オブジェクトも受け付ける。未設定・空名・取得失敗は Missing["NotFound", name]。値はログに残さない。
+
+### NBSetCredential[name, value] → True|$Failed
+SystemCredential への唯一の正規書き込み口。name/value ともに文字列。成功で True、失敗・空名で $Failed。
+
+### NBRemoveCredential[name] → True|$Failed
+SystemCredential のエントリを削除する。成功で True、失敗・空名で $Failed。
+
+### NBCredentialConfiguredQ[name] → Boolean
+値を返さずに設定済みかどうかだけを返す。
+
+## NBAccess 管理変数への登録 API
+外部パッケージは $NBAllowedHeads / $NBApprovalHeads / $NBTrustedPackageHeads / $NBLLMQueryFunc / $NBAutoEvalProhibitedPatterns へ直接代入せず、必ずこれらを通すこと(正規化・重複排除・型検査を一元化)。head 引数は String 単体 / List / Symbol を受け付ける。
+### NBRegisterAllowedHeads[heads] → Integer
+head 名を $NBAllowedHeads へ追加する(重複排除)。戻り値は追加後の総件数。
+
+### NBRegisterApprovalHeads[heads] → Integer
+head 名を $NBApprovalHeads へ追加し承認ゲート対象化する。戻り値は追加後の総件数。
+
+### NBRegisterTrustedPackageHeads[context, patterns] → List|$Failed
+package 文脈の信頼 head パターンを $NBTrustedPackageHeads[context] に登録する。戻り値は登録後のパターンリスト。context が空文字/パターンが空なら $Failed。$NBDenyHeads / $NBApprovalHeads の明示登録はこの信頼より優先される。
+例: `NBRegisterTrustedPackageHeads["SourceVault`", {"SourceVault*"}]`
+
+### NBRegisterLLMQueryFunc[f] → f|None|$Failed
+NBCellTransformWithLLM が使う非同期 LLM コールバックを登録する。シグネチャ: `f[prompt, callback, nb, opts]`。`NBRegisterLLMQueryFunc[None]` で解除。Null は $Failed。
+
+### NBRegisterAutoEvalProhibitedPatterns[patterns] → Integer|$Failed
+自動評価禁止パターンリストを設定する(追加ではなく置換)。patterns は List。戻り値は件数、非 List は $Failed。
+
 ## フォールバックモデル / プロバイダアクセスレベル
 ### NBSetFallbackModels[models]
 フォールバックモデルリストを設定する。models: `{{"provider","model"}, {"provider","model","url"}, ...}`。
@@ -719,11 +760,11 @@ Options: "Recursive" -> True
 NBAccess のアクセス制御・承認システム。NBAuthorize が PolicyGate + ScoreGate + EnvironmentGate を統合して AccessDecision を返す。
 ### $NBAllowedHeads
 型: List
-LLM が自由に実行可能な head のリスト。$NBAllowedHeadsByCategory から有効カテゴリの head を集約して動的に計算される。
+LLM が自由に実行可能な head のリスト。$NBAllowedHeadsByCategory から有効カテゴリの head を集約して動的に計算される。外部からの追加は NBRegisterAllowedHeads を使う。
 
 ### $NBApprovalHeads
 型: List
-人間承認を要する head のリスト。NBMarkCellConfidential・NBSetSnapshotPrivacyLevel 等がここに登録され、実行時に承認ゲートを発火する。
+人間承認を要する head のリスト。NBMarkCellConfidential・NBSetSnapshotPrivacyLevel 等がここに登録され、実行時に承認ゲートを発火する。追加は NBRegisterApprovalHeads を使う。
 
 ### $NBDenyHeads
 型: List
@@ -735,7 +776,7 @@ head 名ごとの分類上書きテーブル(spec 5B.5A)。allowlist ではな�
 
 ### $NBTrustedPackageHeads
 型: Association(`<|"コンテキスト`" -> {"名前パターン", ...}|>`), 初期値: `<|"SourceVault`" -> {"SourceVault*"}|>`
-「package 文脈だが承認不要とみなす head」の登録テーブル。SourceVault* 公開関数は全経路で PrivacyLevel を考慮した安全設計(release gate / fail-closed / 承認は関数内部の gate が担う)であるため unknown-head 承認を免除する。$NBDenyHeads / $NBApprovalHeads の明示登録はこの信頼より優先される(deny/approval チェックが先に走る)。過剰実行は $NBTrustedHeadIterationLimit の静的 guard と SourceVault 側の実行時 guard で保護する。
+「package 文脈だが承認不要とみなす head」の登録テーブル。SourceVault* 公開関数は全経路で PrivacyLevel を考慮した安全設計(release gate / fail-closed / 承認は関数内部の gate が担う)であるため unknown-head 承認を免除する。$NBDenyHeads / $NBApprovalHeads の明示登録はこの信頼より優先される(deny/approval チェックが先に走る)。過剰実行は $NBTrustedHeadIterationLimit の静的 guard と SourceVault 側の実行時 guard で保護する。登録は NBRegisterTrustedPackageHeads を使う。
 
 ### $NBTrustedHeadIterationLimit
 型: Integer, 初期値: 100
