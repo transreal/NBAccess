@@ -135,6 +135,9 @@ completionFn が受け取る Association: `<|"Response" -> text, "OriginalText" 
 ### NBCellPrivacyLevel[nb, cellIdx] → Real
 セルのプライバシーレベル(0.0〜1.0)を返す。0.0=非秘密、1.0=秘密(Confidentialマーク or 秘密変数参照)。
 
+### NBCellExprPrivacyLevel[cellExpr] → Real
+Cell 式(Import[path, "Notebook"] 経由など CellObject を持たない形)からプライバシーレベル(0.0〜1.0)を返す。1.0=confidential マーク、0.75=dependent マーク、それ以外は 0.0。判定規則は NBCellPrivacyLevel と共通だが FrontEnd を必要としない。フォルダ一括処理など FE を巻き込まずにセル単位の機密判定が必要な場合に使う。
+
 ### NBCellObjectPrivacyLevel[cell] → Real
 CellObject のプライバシーレベル(0.0〜1.0)を返す。評価中セル(EvaluationCell[])など cellIdx を持たないセルの判定に使う。判定規則は NBCellPrivacyLevel と完全に共通。マッチしないセルは 0.0 を返す。
 
@@ -296,6 +299,15 @@ Options: PrivacySpec -> Automatic, "IncludeProjections" -> False
 
 ### NBFileSpecCacheClear[]
 NBFileSpec の base/projection キャッシュをクリアする(Phase 4.3)。
+
+### NBFileLoadSlim[path] → Association
+.nb ファイルを Notebook 式として読み込む際、parse 前に重いグラフィックス payload を剥離する。
+→ `<|"Status", "NotebookExpr", "Path", "Slimmed", "Assets", "OriginalChars", "SlimChars"|>`
+"Assets" は `<|"AssetId", "Kind", "Chars"|>` のリスト。剥離された payload は式内で `"<<SVAsset:id>>"` という inert な文字列に置き換わるため、セル構造・スタイル・TaggingRules・テキストはそのまま保持される。$NBSlimNotebookThresholdMB 以下のファイルは剥離せずそのまま読む(Slimmed -> False)。剥離後の式が parse できない場合は原文の parse に fallback する。
+
+### $NBSlimNotebookThresholdMB
+型: Number, 初期値: 5
+NBFileLoadSlim が notebook を parse する前にグラフィック payload を剥離するかを決めるファイルサイズ閾値(MB)。0 にすると全 notebook を剥離、Infinity にすると剥離を無効化する。
 
 ### NBNormalizePath[path] → Association
 絶対パスを複数PC間で安定なシンボリックパス情報の Association に正規化する。

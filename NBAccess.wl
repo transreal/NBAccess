@@ -151,6 +151,13 @@ NBCellPrivacyLevel::usage =
   "NBCellPrivacyLevel[nb, cellIdx] \:306f\:30bb\:30eb\:306e\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb (0.0\:301c1.0) \:3092\:8fd4\:3059\:3002\n" <>
   "0.0: \:975e\:79d8\:5bc6, 1.0: \:79d8\:5bc6 (Confidential\:30de\:30fc\:30af or \:79d8\:5bc6\:5909\:6570\:53c2\:7167)";
 
+NBCellExprPrivacyLevel::usage =
+  "NBCellExprPrivacyLevel[cellExpr] \:306f Cell \:5f0f (Import[path, \"Notebook\"] \:7d4c\:7531\:306a\:3069\:3001\n" <>
+  "CellObject \:3092\:6301\:305f\:306a\:3044\:5f62) \:304b\:3089\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb (0.0\:301c1.0) \:3092\:8fd4\:3059\:3002\n" <>
+  "1.0: confidential \:30de\:30fc\:30af\:30010.75: dependent \:30de\:30fc\:30af\:3001\:305d\:308c\:4ee5\:5916\:306f 0.0\:3002\n" <>
+  "\:5224\:5b9a\:898f\:5247\:306f NBCellPrivacyLevel \:3068\:5171\:901a\:3060\:304c\:3001FrontEnd \:3092\:5fc5\:8981\:3068\:3057\:306a\:3044\:3002\n" <>
+  "\:30d5\:30a9\:30eb\:30c0\:4e00\:62ec\:51e6\:7406\:306a\:3069 FE \:3092\:5dfb\:304d\:8fbc\:307e\:305a\:306b\:30bb\:30eb\:5358\:4f4d\:306e\:6a5f\:5bc6\:5224\:5b9a\:304c\:5fc5\:8981\:306a\:5834\:5408\:306b\:4f7f\:3046\:3002";
+
 NBCellObjectPrivacyLevel::usage =
   "NBCellObjectPrivacyLevel[cell] \:306f CellObject \:306e\:30d7\:30e9\:30a4\:30d0\:30b7\:30fc\:30ec\:30d9\:30eb (0.0\:223c1.0) \:3092\:8fd4\:3059\:3002\n" <>
   "\:8a55\:4fa1\:4e2d\:30bb\:30eb (EvaluationCell[]) \:306a\:3069 cellIdx \:3092\:6301\:305f\:306a\:3044\:30bb\:30eb\:306e\:5224\:5b9a\:306b\:4f7f\:3046\:3002\n" <>
@@ -253,6 +260,21 @@ NBFileSpec::usage =
 
 NBFileSpecCacheClear::usage =
   "NBFileSpecCacheClear[] clears the NBFileSpec base/projection caches introduced in Phase 4.3.";
+
+NBFileLoadSlim::usage =
+  "NBFileLoadSlim[path] reads a .nb file as a Notebook expression with the heavy graphics\n" <>
+  "payloads stripped out before parsing.\n" <>
+  "\:623b\:308a\:5024: <|\"Status\", \"NotebookExpr\", \"Path\", \"Slimmed\", \"Assets\", \"OriginalChars\", \"SlimChars\"|>\:3002\n" <>
+  "\"Assets\" \:306f <|\"AssetId\", \"Kind\", \"Chars\"|> \:306e\:30ea\:30b9\:30c8\:3002\:5265\:96e2\:3055\:308c\:305f payload \:306f\:5f0f\:306e\:4e2d\:3067\n" <>
+  "\"<<SVAsset:id>>\" \:3068\:3044\:3046 inert \:306a\:6587\:5b57\:5217\:306b\:7f6e\:304d\:63db\:308f\:308b\:305f\:3081\:3001\:30bb\:30eb\:69cb\:9020\:30fb\:30b9\:30bf\:30a4\:30eb\:30fb\n" <>
+  "TaggingRules \:30fb\:30c6\:30ad\:30b9\:30c8\:306f\:305d\:306e\:307e\:307e\:4fdd\:305f\:308c\:308b\:3002\n" <>
+  "$NBSlimNotebookThresholdMB \:4ee5\:4e0b\:306e\:30d5\:30a1\:30a4\:30eb\:306f\:5265\:96e2\:305b\:305a\:305d\:306e\:307e\:307e\:8aad\:3080 (Slimmed -> False)\:3002\n" <>
+  "\:5265\:96e2\:5f8c\:306e\:5f0f\:304c parse \:3067\:304d\:306a\:3044\:5834\:5408\:306f\:539f\:6587\:306e parse \:306b fallback \:3059\:308b\:3002";
+
+$NBSlimNotebookThresholdMB::usage =
+  "$NBSlimNotebookThresholdMB \:306f\:3001notebook \:3092 parse \:3059\:308b\:524d\:306b\:30b0\:30e9\:30d5\:30a3\:30c3\:30af payload \:3092\n" <>
+  "\:5265\:96e2\:3059\:308b\:304b\:3092\:6c7a\:3081\:308b\:30d5\:30a1\:30a4\:30eb\:30b5\:30a4\:30ba\:95be\:5024 (MB)\:3002\:65e2\:5b9a 5\:3002\n" <>
+  "0 \:306b\:3059\:308b\:3068\:5168 notebook \:3092\:5265\:96e2\:3057\:3001Infinity \:306b\:3059\:308b\:3068\:5265\:96e2\:3092\:7121\:52b9\:5316\:3059\:308b\:3002";
 
 NBNormalizePath::usage =
   "NBNormalizePath[path] \:306f\:7d76\:5bfe\:30d1\:30b9\:3092\:3001\:8907\:6570 PC \:9593\:3067\:5b89\:5b9a\:306a\:30b7\:30f3\:30dc\:30ea\:30c3\:30af\:30d1\:30b9\:60c5\:5831\:306e Association \:306b\:6b63\:898f\:5316\:3059\:308b\:3002\n" <>
@@ -1554,6 +1576,33 @@ $iCellStyleCache = <||>;
 If[!AssociationQ[$iNBFileSpecBaseCache], $iNBFileSpecBaseCache = <||>];
 If[!AssociationQ[$iNBFileSpecProjectionCache], $iNBFileSpecProjectionCache = <||>];
 If[!IntegerQ[$iNBFileProjectionPolicyVersion], $iNBFileProjectionPolicyVersion = 1];
+
+(* Declared-CloudPublishable memo, keyed on file content metadata.
+   iNBFileDeclaredPublishable answers via NBReadHeader, which does a full
+   Import[path, "Notebook"]. One NBFileSpec[path] call used to trigger that
+   4-5 times for the same file (iNBFilePrivacyLevel, iNBFileCellPrivacyRange,
+   iNBFileSpecBase, and the NBGetCloudPublishable boundary repair). The cached
+   value is a tiny True/False/Missing, so the memo is bounded, and the content
+   cache key already carries mtime and byte count so an edited file misses. *)
+If[!AssociationQ[$iNBDeclaredPublishableCache], $iNBDeclaredPublishableCache = <||>];
+
+(* Dynamically scoped notebook-expression reuse for iNBFileLoadAsExpr.
+   None means "do not retain anything", which is the default everywhere.
+   iNBFileSpecBase Blocks it to <||> so that one NBFileSpec call parses a
+   notebook once instead of once per helper that needs the expression, and
+   the (potentially very large) expression is released the moment that call
+   returns. Deliberately not a persistent cache: holding notebook
+   expressions across calls would pin hundreds of MB per file. *)
+$iNBFileExprScope = None;
+
+(* One-entry notebook-expression cache, keyed on file content metadata.
+   Indexing one notebook calls iNBFileLoadAsExpr from several independent
+   places (the caller's own read, header parsing, and the NBFileSpec
+   privacy pass). Without this, a 378 MB notebook was stripped and parsed
+   three times for a single index pass - measured at 33 s each. One entry
+   is enough because callers work through notebooks one at a time, and it
+   bounds what is retained to a single (slimmed) expression. *)
+If[!AssociationQ[$iNBFileExprLast], $iNBFileExprLast = <||>];
 
 iResolveCells[nb_NotebookObject] :=
   Module[{cached},
@@ -5291,10 +5340,7 @@ NBAccess`NBFileOpen[path_String] :=
     (* \:65e2\:306b\:958b\:3044\:3066\:3044\:308b\:30a6\:30a4\:30f3\:30c9\:30a6 (\:5229\:7528\:8005\:306e\:4f5c\:696d\:4e2d\:30a6\:30a4\:30f3\:30c9\:30a6\:7b49) \:304c\:3042\:308c\:3070\:3001\:305d\:308c\:3092\:8fd4\:3059\:304c
        \:300c\:81ea\:5206\:3067\:958b\:3044\:305f\:300d\:767b\:9332\:306f\:3057\:306a\:3044\:3002NotebookOpen[..., Visible->False] \:306f\:65e2\:958b\:304d\:306e
        \:30a6\:30a4\:30f3\:30c9\:30a6\:306b\:306f\:7121\:52b9\:3067\:3001\:305d\:306e\:307e\:307e\:9589\:3058\:308b\:3068\:5229\:7528\:8005\:306e\:30a6\:30a4\:30f3\:30c9\:30a6\:304c\:6d88\:3048\:308b\:305f\:3081\:3002 *)
-    already = SelectFirst[Quiet@Check[Notebooks[], {}],
-      Function[w,
-        Module[{fn = Quiet@Check[NotebookFileName[w], $Failed]},
-          StringQ[fn] && ExpandFileName[fn] === abs]], None];
+    already = iNBFileFindOpenNotebook[abs];
     If[Head[already] === NotebookObject, Return[already]];
     nb = Quiet @ NotebookOpen[path, Visible -> False];
     If[Head[nb] =!= NotebookObject,
@@ -5360,6 +5406,14 @@ iNBFileCellPrivacyLevel[cellExpr_] :=
       True,                                              0.0
     ]
   ];
+
+(* Public, front-end-free cell privacy judgement. Same rules as
+   NBCellPrivacyLevel, but driven by a Cell expression rather than a
+   CellObject, so a bulk folder pass can classify cells without loading
+   notebooks into the front end. *)
+NBAccess`NBCellExprPrivacyLevel[cellExpr_] :=
+  Module[{lvl = Quiet @ Check[iNBFileCellPrivacyLevel[cellExpr], 1.0]},
+    If[NumericQ[lvl], N[lvl], 1.0]];
 
 iNBFileCellStyle[cellExpr_] :=
   Replace[cellExpr,
@@ -5819,8 +5873,71 @@ iNBFilePrivacyLevel[path_String] :=
   ];
 
 (* .nb \:30d5\:30a1\:30a4\:30eb\:56fa\:6709: \:79d8\:533f\:30bb\:30eb\:306e\:6709\:7121\:3067 PrivacyLevel \:30ec\:30f3\:30b8\:3092\:8fd4\:3059 *)
-iNBFileCellPrivacyRange[path_String] :=
-  Module[{nb2, allCells, hasConf, hasPublic, baseLevel},
+(* ------------------------------------------------------------------
+   Cell privacy summary for a .nb path, without loading it into the FE.
+
+   This used to be answered by NBFileOpen -> NBFileReadAllCells ->
+   NBFileClose, i.e. NotebookOpen[path, Visible -> False] plus one
+   NotebookRead per cell. For a folder-wide scan that is the dominant
+   cost: the front end has to fully load and lay out every notebook while
+   the kernel blocks waiting on it, which starves Dynamic and ends in the
+   "abandoned dynamic evaluation" dialog with an apparently frozen FE.
+
+   The confidentiality predicates (iNBFileCellIsConfidential and friends)
+   are pure functions of a Cell expression, so the same answer can be
+   derived from Import[path, "Notebook"] with no front end involved.
+
+   A notebook that is ALREADY open keeps using the FE path: its window can
+   hold unsaved edits, and reading the file instead would under-report
+   confidential cells. That case is also cheap - the notebook is loaded
+   already, so no NotebookOpen is needed.
+   ------------------------------------------------------------------ *)
+
+(* Already-open window for a path, or None. Never opens anything. *)
+iNBFileFindOpenNotebook[abs_String] :=
+  SelectFirst[Quiet @ Check[Notebooks[], {}],
+    Function[w,
+      Module[{fn = Quiet @ Check[NotebookFileName[w], $Failed]},
+        StringQ[fn] && ExpandFileName[fn] === abs]], None];
+
+(* Flat list of Cell expressions read from the file. No front end. *)
+iNBFileFlatCellExprs[path_String] :=
+  Module[{loaded, cells, flat},
+    loaded = iNBFileLoadAsExpr[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[$Failed]];
+    cells = iNBNotebookCells[Lookup[loaded, "NotebookExpr"]];
+    If[!ListQ[cells], Return[$Failed]];
+    flat = iNBFlattenCells[cells, {}];
+    If[!ListQ[flat] || Length[flat] === 0, Return[{}]];
+    flat[[All, 1]]
+  ];
+
+(* <|"Total" -> _, "Confidential" -> _, "Public" -> _, "Source" -> _|>
+   or $Failed when the notebook cannot be read at all. *)
+iNBFileCellPrivacySummary[path_String] :=
+  Module[{abs, open, allCells, cellExprs, nTotal, nConf},
+    abs = Quiet @ Check[ExpandFileName[path], path];
+    open = iNBFileFindOpenNotebook[abs];
+    If[Head[open] === NotebookObject,
+      allCells = Quiet @ NBAccess`NBFileReadAllCells[open];
+      If[!ListQ[allCells], Return[$Failed]];
+      nTotal = Length[allCells];
+      nConf  = Count[allCells, _?(TrueQ[#["IsConfidential"]] &)];
+      Return[<|"Total" -> nTotal, "Confidential" -> nConf,
+               "Public" -> nTotal - nConf, "Source" -> "FrontEnd"|>]];
+    cellExprs = iNBFileFlatCellExprs[abs];
+    If[!ListQ[cellExprs], Return[$Failed]];
+    nTotal = Length[cellExprs];
+    nConf  = Count[cellExprs, _?(TrueQ[iNBFileCellIsConfidential[#]] &)];
+    <|"Total" -> nTotal, "Confidential" -> nConf,
+      "Public" -> nTotal - nConf, "Source" -> "File"|>
+  ];
+
+(* .nb \:30d5\:30a1\:30a4\:30eb\:56fa\:6709: \:79d8\:533f\:30bb\:30eb\:306e\:6709\:7121\:3067 PrivacyLevel \:30ec\:30f3\:30b8\:3092\:8fd4\:3059\:3002
+   summary \:306f iNBFileCellPrivacySummary \:306e\:7d50\:679c\:3002\:547c\:3073\:51fa\:3057\:5074\:3067\:4e00\:5ea6\:3060\:3051
+   \:8a08\:7b97\:3057\:3066\:5171\:6709\:3059\:308b\:305f\:3081\:306b\:5f15\:6570\:3067\:53d7\:3051\:53d6\:308b\:3002 *)
+iNBFileCellPrivacyRangeFromSummary[path_String, summary_] :=
+  Module[{hasConf, hasPublic, baseLevel},
     baseLevel = iNBFilePrivacyLevel[path];
     If[NumericQ[baseLevel] && baseLevel < 0.5,
       (* Explicit CloudPublishable -> True: cloud-safe score must be below 0.5. *)
@@ -5828,13 +5945,10 @@ iNBFileCellPrivacyRange[path_String] :=
     If[baseLevel === 0.5,
       (* Path-accessible but not cloud-send by default. *)
       Return[0.5]];
-    nb2 = Quiet @ NBAccess`NBFileOpen[path];
-    If[Head[nb2] =!= NotebookObject, Return[1.0]];
-    allCells  = Quiet @ NBAccess`NBFileReadAllCells[nb2];
-    Quiet @ NBAccess`NBFileClose[nb2];
-    If[!ListQ[allCells] || Length[allCells] === 0, Return[1.0]];
-    hasConf   = AnyTrue[allCells, TrueQ[#["IsConfidential"]] &];
-    hasPublic = AnyTrue[allCells, !TrueQ[#["IsConfidential"]] &];
+    If[!AssociationQ[summary], Return[1.0]];
+    If[Lookup[summary, "Total", 0] === 0, Return[1.0]];
+    hasConf   = Lookup[summary, "Confidential", 0] > 0;
+    hasPublic = Lookup[summary, "Public", 0] > 0;
     Which[
       hasConf && hasPublic, {0.5, 1.0},   (* \:6df7\:5728 *)
       hasConf,              1.0,           (* \:5168\:3066\:79d8\:533f *)
@@ -5843,6 +5957,16 @@ iNBFileCellPrivacyRange[path_String] :=
       iNBFileDeclaredPublishable[path] === False, 1.0,
       True,                 0.5            (* \:5168\:3066\:516c\:958b \[LongDash] \:30d5\:30a1\:30a4\:30eb\:306f1.0\:3060\:304c\:30bb\:30eb\:304c\:5168\:516c\:958b *)
     ]
+  ];
+
+(* Standalone entry point. Keeps the original laziness: the notebook is only
+   read when the path-level base level cannot already decide the answer. *)
+iNBFileCellPrivacyRange[path_String] :=
+  Module[{baseLevel},
+    baseLevel = iNBFilePrivacyLevel[path];
+    If[NumericQ[baseLevel] && baseLevel < 0.5, Return[baseLevel]];
+    If[baseLevel === 0.5, Return[0.5]];
+    iNBFileCellPrivacyRangeFromSummary[path, iNBFileCellPrivacySummary[path]]
   ];
 
 (* \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
@@ -6206,8 +6330,13 @@ iNBProjectionPolicyFingerprint[] :=
   ];
 
 (* Base spec without projection fields. This is the old NBFileSpec body. *)
+(* The Block bounds notebook-expression reuse to this one call; see
+   $iNBFileExprScope. *)
 iNBFileSpecBase[path_String] :=
-  Module[{exists, ext, fsize, privLevel, declared, nb2, allCells,
+  Block[{$iNBFileExprScope = <||>}, iNBFileSpecBaseCore[path]];
+
+iNBFileSpecBaseCore[path_String] :=
+  Module[{exists, ext, fsize, privLevel, declared, summary,
           nConf = 0, nPublic = 0, nTotal = 0},
     exists = FileExistsQ[path];
     If[!exists,
@@ -6215,17 +6344,16 @@ iNBFileSpecBase[path_String] :=
                "PrivacyLevel" -> 1.0|>]];
     ext   = ToLowerCase[FileExtension[path]];
     fsize = Quiet @ Check[FileByteCount[path], 0];
-    (* .nb file: get cell privacy summary. *)
+    (* .nb file: cell privacy summary and the cell counts come from one
+       pass. The old code answered them separately, which meant the
+       notebook was opened in the front end twice per NBFileSpec call. *)
     If[ext === "nb",
-      privLevel = iNBFileCellPrivacyRange[path];
-      nb2 = Quiet @ NBAccess`NBFileOpen[path];
-      If[Head[nb2] === NotebookObject,
-        allCells = Quiet @ NBAccess`NBFileReadAllCells[nb2];
-        Quiet @ NBAccess`NBFileClose[nb2];
-        If[ListQ[allCells],
-          nTotal  = Length[allCells];
-          nConf   = Count[allCells, _?(TrueQ[#["IsConfidential"]] &)];
-          nPublic = nTotal - nConf]]];
+      summary   = iNBFileCellPrivacySummary[path];
+      privLevel = iNBFileCellPrivacyRangeFromSummary[path, summary];
+      If[AssociationQ[summary],
+        nTotal  = Lookup[summary, "Total", 0];
+        nConf   = Lookup[summary, "Confidential", 0];
+        nPublic = Lookup[summary, "Public", 0]]];
     If[ext =!= "nb",
       privLevel = iNBFilePrivacyLevel[path]];
 
@@ -6316,6 +6444,8 @@ NBAccess`NBFileSpecCacheClear[] :=
   (
     $iNBFileSpecBaseCache = <||>;
     $iNBFileSpecProjectionCache = <||>;
+    $iNBDeclaredPublishableCache = <||>;
+    $iNBFileExprLast = <||>;
     Null
   );
 
@@ -10118,17 +10248,186 @@ iNBNormalizeAccessSpec[accessSpec_] := Which[
      \:5931\:6557 \[Rule] <|\"Status\" -> \"Failed\", \"Reason\" -> _String|>
 *)
 iNBFileLoadAsExpr[path_String] :=
-  Module[{abs, raw, nbExpr},
+  Module[{abs, key, cached, result},
+    abs = ExpandFileName[path];
+    key = Hash[iNBFileContentCacheKey[abs], "SHA256"];
+    (* (1) dynamically scoped reuse, bounded by the Block in iNBFileSpecBase *)
+    If[AssociationQ[$iNBFileExprScope],
+      cached = Lookup[$iNBFileExprScope, abs, None];
+      If[AssociationQ[cached], Return[cached]];
+      result = iNBFileLoadAsExprCached[abs, key];
+      $iNBFileExprScope[abs] = result;
+      Return[result]];
+    (* (2) one-entry cache, so separate top-level readers of the same
+       notebook do not each pay for a parse *)
+    iNBFileLoadAsExprCached[abs, key]
+  ];
+
+iNBFileLoadAsExprCached[abs_String, key_] :=
+  Module[{result, retain},
+    If[Lookup[$iNBFileExprLast, "Key", None] === key &&
+        Lookup[$iNBFileExprLast, "Path", None] === abs,
+      Return[Lookup[$iNBFileExprLast, "Result", <||>]]];
+    result = iNBFileLoadAsExprUncached[abs];
+    (* Keep only a successful read, and only when what would be retained is
+       small: a slimmed expression, or a file under the slim threshold. A
+       notebook the stripper could not round-trip falls back to a full parse,
+       and pinning hundreds of MB between calls is not worth the reuse. *)
+    retain = AssociationQ[result] && Lookup[result, "Status", ""] === "OK" &&
+      (TrueQ[Lookup[result, "Slimmed", False]] ||
+        TrueQ[Quiet @ Check[N[FileByteCount[abs]] / 1024.^2, Infinity] <=
+          If[NumericQ[$NBSlimNotebookThresholdMB],
+            N[$NBSlimNotebookThresholdMB], 5.]]);
+    If[retain,
+      $iNBFileExprLast = <|"Path" -> abs, "Key" -> key, "Result" -> result|>];
+    result
+  ];
+
+(* ==================================================================
+   Slim notebook loading.
+
+   Measured over Off Work\2025 (230 notebooks, 3320 MB of source text):
+   95.8 % of that text is graphics payload. Stripping it before parsing
+   takes the tree to 139 MB, brings every notebook under 10 MB, and lets
+   the 16 notebooks a raw size gate used to skip be indexed after all.
+
+   Three constraints, all found by measurement rather than assumption:
+
+   1. CompressedData is NOT inert. The notebook reader decodes it while
+      parsing, so replacing only the quoted blob fails the whole Import
+      with CompressedData::corrupt. The entire call has to go, and the
+      replacement has to be inert - a plain string literal holding the
+      asset id.
+   2. Wrappers evaluate too (ByteArray::lend), so a wrapper left holding
+      an asset token has to collapse to the token.
+   3. The multi-hundred-MB cells are vector graphics: hundreds of
+      thousands of small LineBox primitives, with no long numeric run to
+      strip. There the whole cell is the asset. Such cells sit inside a
+      CellGroupData, so a text chunk running to the next top-level Cell[
+      carries the group's closing brackets - the cell end is located by
+      bracket matching and everything after it is kept verbatim.
+   ================================================================== *)
+
+If[!NumericQ[$NBSlimNotebookThresholdMB], $NBSlimNotebookThresholdMB = 5];
+
+(* A cell bigger than this (chars) is replaced by an asset token. *)
+$iNBSlimCellChars = 2000000;
+
+iNBAssetId[s_String] :=
+  "asset-sha256-" <> IntegerString[Hash[s, "SHA256"], 16, 64];
+iNBAssetToken[id_String] := "\"<<SVAsset:" <> id <> ">>\"";
+
+$iNBPayloadPatterns = {
+  "CompressedData" -> "CompressedData\\[\\s*\"[^\"]*\"\\s*\\]",
+  "GraphicsData"   -> "GraphicsData\\[\\s*\"[^\"]*\"\\s*,\\s*\"[^\"]*\"\\s*\\]",
+  (* raw base64 blob not wrapped in CompressedData *)
+  "ByteArray"      -> "ByteArray\\[\\s*\"[A-Za-z0-9+/=\\s]{200,}\"\\s*\\]"
+};
+
+$iNBAssetWrapperPattern =
+  "(?:ByteArray|RawArray|NumericArray|Uncompress|BinaryDeserialize|ImportByteArray)" <>
+  "\\[\\s*\"<<SVAsset:[^\"]*>>\"\\s*\\]";
+
+iNBStripNotebookText[text_String] :=
+  Module[{assets = {}, slim = text, prev},
+    Do[
+      slim = StringReplace[slim,
+        m : RegularExpression[Last[rule]] :>
+          Module[{id = iNBAssetId[m]},
+            AppendTo[assets, <|"AssetId" -> id, "Kind" -> First[rule],
+              "Chars" -> StringLength[m]|>];
+            iNBAssetToken[id]]],
+      {rule, $iNBPayloadPatterns}];
+    (* collapse wrappers that would evaluate an asset token *)
+    Do[
+      prev = slim;
+      slim = StringReplace[slim,
+        m : RegularExpression[$iNBAssetWrapperPattern] :>
+          First[StringCases[m, RegularExpression["\"<<SVAsset:[^\"]*>>\""]],
+            iNBAssetToken["unresolved"]]];
+      If[slim === prev, Break[]],
+      {3}];
+    If[StringLength[slim] > $iNBSlimCellChars,
+      slim = iNBStripCellChunks[slim, $iNBSlimCellChars, assets]];
+    <|"Text" -> slim, "Assets" -> assets,
+      "OriginalChars" -> StringLength[text],
+      "SlimChars" -> StringLength[slim]|>
+  ];
+
+(* Index of the ] closing the first [ of the chunk, or Missing when the
+   brackets never balance. Only bracket positions are materialised, never
+   a per-character array, so this stays viable on 100 MB+ chunks. *)
+iNBCellEnd[c_String] :=
+  Module[{ob, cb, ev, depth, k},
+    ob = StringPosition[c, "["][[All, 1]];
+    cb = StringPosition[c, "]"][[All, 1]];
+    If[ob === {} || cb === {}, Return[Missing["NoBrackets"]]];
+    ev = SortBy[
+      Join[Transpose[{ob, ConstantArray[1, Length[ob]]}],
+           Transpose[{cb, ConstantArray[-1, Length[cb]]}]], First];
+    depth = Accumulate[ev[[All, 2]]];
+    k = FirstPosition[depth, 0, Missing["Unbalanced"], {1}];
+    If[MissingQ[k], Return[Missing["Unbalanced"]]];
+    ev[[First[k], 1]]
+  ];
+
+SetAttributes[iNBStripCellChunks, HoldRest];
+iNBStripCellChunks[text_String, thr_, assetsVar_] :=
+  Module[{pos, bounds, out},
+    pos = StringPosition[text, RegularExpression["(?m)^Cell\\["]][[All, 1]];
+    If[Length[pos] < 2, Return[text]];
+    bounds = Transpose[{pos, Rest[Append[pos, StringLength[text] + 1]] - 1}];
+    out = Map[
+      Function[b,
+        Module[{c = StringTake[text, b], e},
+          If[StringLength[c] <= thr, c,
+            e = iNBCellEnd[c];
+            If[MissingQ[e], c,
+              Module[{id = iNBAssetId[StringTake[c, {1, e}]]},
+                AppendTo[assetsVar, <|"AssetId" -> id,
+                  "Kind" -> "GraphicsCell", "Chars" -> e|>];
+                "Cell[" <> iNBAssetToken[id] <> ", \"Output\"]" <>
+                  StringDrop[c, e]]]]]],
+      bounds];
+    StringJoin[StringTake[text, {1, First[pos] - 1}], StringJoin[out]]
+  ];
+
+iNBFileLoadAsExprUncached[path_String] :=
+  Module[{abs, thr, sizeMB, txt, stripped, nb},
     abs = ExpandFileName[path];
     If[!FileExistsQ[abs],
       Return[<|"Status" -> "Failed", "Reason" -> "FileNotFound", "Path" -> abs|>]];
+    thr = If[NumericQ[$NBSlimNotebookThresholdMB],
+      N[$NBSlimNotebookThresholdMB], 5.];
+    sizeMB = Quiet @ Check[N[FileByteCount[abs]] / 1024.^2, 0.];
+    If[!TrueQ[sizeMB > thr], Return[iNBFileLoadAsExprPlain[abs]]];
+    txt = Quiet @ Check[ReadString[abs], $Failed];
+    If[!StringQ[txt], Return[iNBFileLoadAsExprPlain[abs]]];
+    stripped = iNBStripNotebookText[txt];
+    txt = Null;   (* release the raw text before parsing *)
+    nb = Quiet @ Check[ImportString[stripped["Text"], "NB"], $Failed];
+    (* fail safe: a notebook the stripper cannot round-trip is read as is *)
+    If[!MatchQ[nb, _Notebook], Return[iNBFileLoadAsExprPlain[abs]]];
+    <|"Status" -> "OK", "NotebookExpr" -> nb, "Path" -> abs,
+      "Slimmed" -> True,
+      "Assets" -> stripped["Assets"],
+      "OriginalChars" -> stripped["OriginalChars"],
+      "SlimChars" -> stripped["SlimChars"]|>
+  ];
+
+iNBFileLoadAsExprPlain[path_String] :=
+  Module[{abs, raw, nbExpr, base},
+    abs = ExpandFileName[path];
+    If[!FileExistsQ[abs],
+      Return[<|"Status" -> "Failed", "Reason" -> "FileNotFound", "Path" -> abs|>]];
+    base = <|"Slimmed" -> False, "Assets" -> {}|>;
     raw = Quiet @ Import[abs, "Notebook"];
     Which[
       MatchQ[raw, _Notebook],
-        <|"Status" -> "OK", "NotebookExpr" -> raw, "Path" -> abs|>,
+        Join[<|"Status" -> "OK", "NotebookExpr" -> raw, "Path" -> abs|>, base],
       MatchQ[raw, HoldComplete[_Notebook]],
         nbExpr = ReleaseHold[raw];
-        <|"Status" -> "OK", "NotebookExpr" -> nbExpr, "Path" -> abs|>,
+        Join[<|"Status" -> "OK", "NotebookExpr" -> nbExpr, "Path" -> abs|>, base],
       MatchQ[raw, $Failed],
         <|"Status" -> "Failed", "Reason" -> "ImportFailed", "Path" -> abs|>,
       True,
@@ -10136,6 +10435,8 @@ iNBFileLoadAsExpr[path_String] :=
           "Path" -> abs, "ImportHeadName" -> SymbolName[Head[raw]]|>
     ]
   ];
+
+NBAccess`NBFileLoadSlim[path_String] := iNBFileLoadAsExpr[path];
 
 (* Notebook[...] \:304b\:3089\:5168\:30bb\:30eb\:30ea\:30b9\:30c8\:3092\:53d6\:5f97\:3002\:7f60 #23 \:6e96\:62e0\:3067 SymbolName[Head[]] \:6bd4\:8f03\:3002 *)
 iNBNotebookCells[nbExpr_] :=
@@ -10417,7 +10718,17 @@ iNBCloudPublishableValue[raw_Association] :=
   ];
 iNBCloudPublishableValue[_] := Missing["NotDeclared"];
 
+(* Memoized on file content metadata; see $iNBDeclaredPublishableCache.
+   NBFileSpecCacheClear[] and NBSetCloudPublishable[] both drop the memo. *)
 iNBFileDeclaredPublishable[path_String] :=
+  Module[{key},
+    key = Hash[iNBFileContentCacheKey[path], "SHA256"];
+    If[KeyExistsQ[$iNBDeclaredPublishableCache, key],
+      Return[$iNBDeclaredPublishableCache[key]]];
+    $iNBDeclaredPublishableCache[key] = iNBFileDeclaredPublishableUncached[path]
+  ];
+
+iNBFileDeclaredPublishableUncached[path_String] :=
   Module[{header, raw},
     header = Quiet @ NBAccess`NBReadHeader[path,
       "AccessSpec" -> <|"AccessLevel" -> 1.0|>];
