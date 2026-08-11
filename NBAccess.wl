@@ -2936,6 +2936,22 @@ NBAccess`NBCellUsesConfidentialSymbol[nb_NotebookObject, cellIdx_Integer] :=
   ];
 
 (* \:30bb\:30eb\:5185\:5bb9\:304b\:3089 Set/SetDelayed \:306e LHS \:5909\:6570\:540d\:3092\:62bd\:51fa *)
+(* テキスト中のスコープ付きローカル名 (Module/Block/With/Function の局所変数 +
+   パターン変数 x_ の名前) を返す。機密変数昇格の除外集合に使う。
+   2026-08-11: 機密マークされたコードセルの Module ローカル (kws/rows/from 等) が
+   $NBConfidentialSymbols に昇格し、同名ローカルを使う以後の LLM 提案がすべて
+   ConfidentialLeakRisk で拒否される自己汚染ループがあった (result3 直後の再クエリ)。
+   スコープ付きローカルは評価後に消え永続データを持たないので昇格対象にしない。
+   トップレベル代入 (snaps = SourceVaultSearch...[..] 等) は従来どおり昇格する。 *)
+NBAccess`NBTextScopedVarNames::usage =
+  "NBTextScopedVarNames[text] はコード文字列中の Module/Block/With/Function 局所変数とパターン変数の名前リストを返す。機密変数昇格 (NBCellExtractVarNames / CellEpilog 連鎖登録) のスコープ除外に使う。";
+NBAccess`NBTextScopedVarNames[text_String] :=
+  Quiet @ Check[
+    DeleteDuplicates @ Flatten[
+      {iExtractScopeVars[text], iExtractPatternVars[text]}],
+    {}];
+NBAccess`NBTextScopedVarNames[___] := {};
+
 NBAccess`NBCellExtractVarNames[nb_NotebookObject, cellIdx_Integer] :=
   Module[{cell, text, matches, style},
     (* \:51fa\:529b/\:30c6\:30ad\:30b9\:30c8/\:898b\:51fa\:3057\:7b49\:306e\:30bb\:30eb\:306f var = ... \:306e\:5b9a\:7fa9\:3092\:6301\:305f\:306a\:3044\:3002
@@ -2955,10 +2971,14 @@ NBAccess`NBCellExtractVarNames[nb_NotebookObject, cellIdx_Integer] :=
       RegularExpression[
         "(?:^|;|\\n)\\s*((?:[\\p{L}$][\\p{L}\\p{N}$]*))\\s*:?=(?!=)"
       ] :> "$1"];
-    DeleteDuplicates[Select[matches,
+    matches = DeleteDuplicates[Select[matches,
       !MemberQ[{"If","Module","With","Block","Do","Table","Map","Select",
                 "Function","While","For","Switch","Which","Return",
-                "Set","SetDelayed","Rule","RuleDelayed"}, #] &]]
+                "Set","SetDelayed","Rule","RuleDelayed"}, #] &]];
+    (* 2026-08-11: Module/With/Block/Function 局所とパターン変数は昇格しない
+       (評価後に消えるローカルであり、登録すると同名ローカルを使う以後の
+       提案が ConfidentialLeakRisk で全拒否される)。 *)
+    Complement[matches, NBAccess`NBTextScopedVarNames[text]]
   ];
 
 (* Confidential[] \:5185\:306e\:4ee3\:5165\:5148\:5909\:6570\:540d\:3092\:62bd\:51fa *)
