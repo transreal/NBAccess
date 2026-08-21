@@ -649,13 +649,15 @@ NBTrustedLocalServers::usage =
 
 NBSyncClaudeModelVars::usage =
   "NBSyncClaudeModelVars[opts] \:306f SourceVault \:306b\:30ad\:30e3\:30c3\:30b7\:30e5\:3055\:308c\:3066\:3044\:308b\:30e2\:30c7\:30eb\:3067\n" <>
-  "ClaudeCode \:306e $ClaudeModel / $ClaudeDocModel / $ClaudePrivateModel / $ClaudeFallbackModels \:3092\n" <>
+  "ClaudeCode \:306e $ClaudeModel / $ClaudeDocModel / $ClaudeAdvisaryModel / $ClaudePrivateModel /\n" <>
+  "$ClaudeFallbackModels \:3092\n" <>
   "\:66f4\:65b0\:3059\:308b\:3002SourceVault \:304c intent \:5272\:308a\:5f53\:3066\:30de\:30c3\:30d7 (SourceVaultModelIntentMap) \:3092\:4fdd\:6301\:3057\:3001\n" <>
   "NBAccess \:304c\:305d\:308c\:3092\:8aad\:307f\:53d6\:3063\:3066 SourceVaultResolve \:3067\:30e2\:30c7\:30eb ID \:306b\:89e3\:6c7a\:3057\:3001\:30ed\:30fc\:30ab\:30eb\:30b5\:30fc\:30d0\:306e\n" <>
   "URL \:306f NBResolveLocalServer \:3067\:5b89\:5168\:306b\:89e3\:6c7a\:3057\:3066\:5b9f\:5909\:6570\:3078\:4ee3\:5165\:3059\:308b\:3002\:30e2\:30c7\:30eb\:5909\:6570\:306e\:4ee3\:5165\:306f\n" <>
   "\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:60c5\:5831 ($ClaudePrivateModel \:306e URL) \:3092\:542b\:3080\:305f\:3081\:3001\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:5883\:754c\:3092\:7ba1\:7406\:3059\:308b\n" <>
   "NBAccess \:306b\:4e00\:5143\:5316\:3059\:308b\:3002SourceVault \:304c\:672a\:30ed\:30fc\:30c9\:306a\:3089\:4f55\:3082\:3057\:306a\:3044 (claudecode \:5358\:4f53\:306e\:5f8c\:65b9\:4e92\:63db)\:3002\n" <>
-  "SourceVault \:30ed\:30fc\:30c9\:6642\:306b\:81ea\:52d5\:5b9f\:884c\:3055\:308c\:308b\:3002\:30aa\:30d7\:30b7\:30e7\:30f3: Verbose (\:65e2\:5b9a False)\:3002";
+  "SourceVault \:30ed\:30fc\:30c9\:6642\:306b\:81ea\:52d5\:5b9f\:884c\:3055\:308c\:308b\:3002\:30aa\:30d7\:30b7\:30e7\:30f3: Verbose (\:65e2\:5b9a False) /\n" <>
+  "Force (\:65e2\:5b9a False; $ClaudeAdvisaryModel \:306e\:30bb\:30c3\:30b7\:30e7\:30f3\:624b\:52d5\:8a2d\:5b9a\:3092\:4e0a\:66f8\:304d\:3059\:308b)\:3002";
 
 NBGetFallbackModels::usage =
   "NBGetFallbackModels[] \:306f\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:30e2\:30c7\:30eb\:30ea\:30b9\:30c8\:5168\:4f53\:3092\:8fd4\:3059\:3002";
@@ -5699,6 +5701,13 @@ NBAccess`NBResolveLocalServer[] :=
 
 (* spec {provider, intent} \:3092 SourceVaultResolve \:3067 {provider, modelId} \:306b
    \:89e3\:6c7a\:3059\:308b\:3002SourceVault \:5fc5\:9808\:3002\:5931\:6557\:6642\:306f Missing\:3002 *)
+(* 具体モデル ID / "Automatic" は intent 解決を経ずそのまま採用する
+   (SourceVault 側 iSVLiteralModelIdQ のミラー)。 *)
+iNBLiteralModelIdQ[provider_String, id_String] :=
+  id === "Automatic" ||
+    MemberQ[Quiet @ Check[SourceVault`SourceVaultListModels[provider], {}], id];
+iNBLiteralModelIdQ[___] := False;
+
 iNBResolveIntentTuple[spec_] :=
   Module[{provider, intent, resolved, mid},
     If[!ListQ[spec] || Length[spec] < 2, Return[Missing["BadSpec", spec]]];
@@ -5706,6 +5715,7 @@ iNBResolveIntentTuple[spec_] :=
     If[!StringQ[provider], provider = ToString[provider]];
     If[!StringQ[intent], intent = ToString[intent]];
     If[provider === "" || intent === "", Return[Missing["EmptySpec", spec]]];
+    If[iNBLiteralModelIdQ[provider, intent], Return[{provider, intent}]];
     resolved = Quiet @ Check[
       SourceVault`SourceVaultResolve["Model",
         <|"Provider" -> provider, "Intent" -> intent|>],
@@ -5715,13 +5725,24 @@ iNBResolveIntentTuple[spec_] :=
     If[!StringQ[mid], Return[Missing["NoModelId", {provider, intent}]]];
     {provider, mid}];
 
-Options[NBAccess`NBSyncClaudeModelVars] = {"Verbose" -> False};
+(* $ClaudeAdvisaryModel の「未設定」を表すパッケージ既定 (claudecode.wl と同値)。
+   SourceVault 側 $iSVAdvisaryPackageDefault / iSVAdvisaryAssignableQ のミラー:
+   セッション中に手で入れた値は上書きしない。 *)
+$iNBAdvisaryPackageDefault = {"chatgptcodex", "Automatic"};
+
+iNBAdvisaryAssignableQ[resolved_] :=
+  ! ValueQ[ClaudeCode`$ClaudeAdvisaryModel] ||
+    ClaudeCode`$ClaudeAdvisaryModel === $iNBAdvisaryPackageDefault ||
+    ClaudeCode`$ClaudeAdvisaryModel === resolved;
+
+Options[NBAccess`NBSyncClaudeModelVars] = {"Verbose" -> False, "Force" -> False};
 
 NBAccess`NBSyncClaudeModelVars[opts:OptionsPattern[]] :=
-  Module[{verbose, report = <||>, intentMap, mainSpec, docSpec,
-          privSpec, fbSpec, mainTuple, docTuple, privTuple,
+  Module[{verbose, force, report = <||>, intentMap, mainSpec, docSpec, advSpec,
+          privSpec, fbSpec, mainTuple, docTuple, advTuple, privTuple,
           localServer, fbResolved},
     verbose = TrueQ[OptionValue["Verbose"]];
+    force = TrueQ[OptionValue["Force"]];
 
     (* SourceVault \:304c\:672a\:30ed\:30fc\:30c9\:306a\:3089 no-op (\:5f8c\:65b9\:4e92\:63db) *)
     If[Length[Names["SourceVault`SourceVaultModelIntentMap"]] === 0,
@@ -5754,6 +5775,20 @@ NBAccess`NBSyncClaudeModelVars[opts:OptionsPattern[]] :=
       report["$ClaudeDocModel"] = docTuple,
       report["$ClaudeDocModel_FAILED"] =
         <|"Spec" -> docSpec, "Result" -> docTuple|>];
+
+    (* --- $ClaudeAdvisaryModel (\:4ed5\:69d8\:751f\:6210\:306e\:8d77\:8349\:5f79 / \:4ed5\:69d8\:5b9f\:88c5\:306e\:691c\:8a3c\:5f79) --- *)
+    advSpec = Lookup[intentMap, "$ClaudeAdvisaryModel",
+      $iNBAdvisaryPackageDefault];
+    advTuple = iNBResolveIntentTuple[advSpec];
+    If[ListQ[advTuple],
+      If[force || iNBAdvisaryAssignableQ[advTuple],
+        ClaudeCode`$ClaudeAdvisaryModel = advTuple;
+        report["$ClaudeAdvisaryModel"] = advTuple,
+        report["$ClaudeAdvisaryModel_SKIPPED"] =
+          <|"Reason" -> "SessionOverride", "Spec" -> advSpec,
+            "Current" -> ClaudeCode`$ClaudeAdvisaryModel|>],
+      report["$ClaudeAdvisaryModel_FAILED"] =
+        <|"Spec" -> advSpec, "Result" -> advTuple|>];
 
     (* --- $ClaudePrivateModel ---
        provider/URL \:306f NBResolveLocalServer (\:30bb\:30ad\:30e5\:30ea\:30c6\:30a3\:5883\:754c)\:3001

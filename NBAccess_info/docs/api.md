@@ -409,6 +409,9 @@ TaggingRules に `{"claudecode", "declassified"}` タグを持つセルで代入
 ### NBCellExtractVarNames[nb, cellIdx] → List
 セル内容から Set/SetDelayed の LHS 変数名を抽出する。
 
+### NBAccess`NBTextScopedVarNames[text] → List
+コード文字列中の Module/Block/With/Function 局所変数とパターン変数(`x_` 等)の名前リストを返す。機密変数昇格(NBCellExtractVarNames や CellEpilog 連鎖登録)のスコープ除外に使う。スコープ付きローカルは評価後に消え永続データを持たないため機密変数テーブルへの昇格対象から外す(トップレベル代入は従来どおり昇格する)。
+
 ### NBCellExtractAssignedNames[nb, cellIdx] → List
 セル内容から Confidential[] 内の代入先変数名を抽出する。
 
@@ -657,8 +660,8 @@ modelSpec から provider 文字列を取り出す。
 現在登録されている信頼ローカルサーバのリストを返す。
 
 ### NBSyncClaudeModelVars[opts]
-SourceVault にキャッシュされているモデルで ClaudeCode の `$ClaudeModel` / `$ClaudeDocModel` / `$ClaudePrivateModel` / `$ClaudeFallbackModels` を更新する。intent 割当てマップ(SourceVaultModelIntentMap)を読み SourceVaultResolve でモデル ID に解決、ローカルサーバの URL は NBResolveLocalServer で安全に解決して実変数へ代入。SourceVault 未ロードなら何もしない。SourceVault ロード時に自動実行。
-Options: "Verbose" -> False
+SourceVault にキャッシュされているモデルで ClaudeCode の `$ClaudeModel` / `$ClaudeDocModel` / `$ClaudeAdvisaryModel` / `$ClaudePrivateModel` / `$ClaudeFallbackModels` を更新する。intent 割当てマップ(SourceVaultModelIntentMap)を読み SourceVaultResolve でモデル ID に解決、ローカルサーバの URL は NBResolveLocalServer で安全に解決して実変数へ代入。具体的なモデル ID または "Automatic" を intent に指定した場合は intent 解決を経ずそのまま採用する。$ClaudeAdvisaryModel は「未設定」を表すパッケージ既定 `{"chatgptcodex", "Automatic"}` からのみ自動上書きし、セッション中に手動設定済みの値は Force -> True を指定しない限り上書きしない(スキップ時は report に "$ClaudeAdvisaryModel_SKIPPED" として理由を記録)。SourceVault 未ロードなら何もしない。SourceVault ロード時に自動実行。
+Options: "Verbose" -> False, "Force" -> False($ClaudeAdvisaryModel のセッション上書きを強制)
 
 ## アクセス可能ディレクトリ
 ### NBSetAccessibleDirs[nb, {dir1, ...}] / NBSetAccessibleDirs[{dir1, ...}]
