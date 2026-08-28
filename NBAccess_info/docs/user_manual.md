@@ -1462,7 +1462,72 @@ NBImport["C:\\secret\\keys.txt"]
 
 ### ローカル LLM API キー (LM Studio 等)
 
-（本セクションは今後追記予定です。）
+ローカル LLM サーバー（LM Studio、FreeToken 等）に接続する際の API キーを一元管理する API 群です。キーは `{provider, url}` のペアを鍵として `SystemCredential` に紐づけられます。
+
+#### 既定の登録済みマッピング
+
+パッケージ初期化時、`$iLocalLLMAPIKeyMap` には以下のマッピングが事前登録されます。
+
+| provider | url | SystemCredential 名 |
+|---|---|---|
+| `"lmstudio"` | `http://127.0.0.1:1234` | `"LMSTUDIO_API_KEY"` |
+| `"freetoken"` | `http://127.0.0.1:1919` | `"FREETOKEN_API_KEY"` |
+
+`"freetoken"` は FreeToken（VRAM 容量を超える MoE モデルを扱うためのローカル推論サーバ、`http://127.0.0.1:1919` で待ち受け）用のエントリです。`lmstudio` と同様にローカル実行のプロバイダーとして扱われ、対応する `$iProviderMaxAccessLevel["freetoken"]` も 1.0 で事前登録されます（[フォールバックモデル / プロバイダーアクセスレベル](#フォールバックモデル--プロバイダーアクセスレベル)を参照）。
+
+これらのデフォルトは、既に `$iLocalLLMAPIKeyMap` / `$iProviderMaxAccessLevel` が定義済みの環境（旧バージョンからのアップグレード等）に対しても、該当キーが存在しなければ自動的に backfill されます。ユーザーが `NBSetLocalLLMAPIKey` 等で明示的に上書き済みのエントリは保持されます。
+
+#### NBGetLocalLLMAPIKey
+
+ローカル LLM サーバーの API キーを `SystemCredential` から取得します。`{provider, url}` のペアで照合します。AccessLevel >= 1.0 が必須で、呼び出し側で `PrivacySpec -> <|"AccessLevel" -> 1.0|>` を明示指定する必要があります。
+
+```mathematica
+NBGetLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234",
+  PrivacySpec -> <|"AccessLevel" -> 1.0|>]
+
+NBGetLocalLLMAPIKey["freetoken", "http://127.0.0.1:1919",
+  PrivacySpec -> <|"AccessLevel" -> 1.0|>]
+```
+
+解決優先度は以下のとおりです。
+
+1. 完全一致（`{provider, url}` がそのままマップに存在する）
+2. `localhost` ⇔ `127.0.0.1` 置換版での一致
+3. `{provider, "*"}` ワイルドカード
+4. フォールバック名 `ToUpperCase[provider] <> "_API_KEY"`
+
+#### NBSetLocalLLMAPIKey
+
+`{provider, url} -> credentialName` のマッピングを登録します。`SystemCredential` の実値自体は書き込まれません（名前の紐付けのみ）。
+
+```mathematica
+NBSetLocalLLMAPIKey["lmstudio", "http://192.168.1.10:1234", "LMSTUDIO_STUDY_KEY"]
+(* {"lmstudio", "http://192.168.1.10:1234"} -> "LMSTUDIO_STUDY_KEY" *)
+```
+
+#### NBStoreLocalLLMAPIKey
+
+`NBSetLocalLLMAPIKey` のマッピング登録に加え、`SystemCredential[credentialName] = key` も同時に設定します。初回セットアップ用の便利関数です。
+
+```mathematica
+NBStoreLocalLLMAPIKey["freetoken", "http://127.0.0.1:1919", "FREETOKEN_API_KEY", "sk-..."]
+```
+
+#### NBRemoveLocalLLMAPIKey
+
+`{provider, url}` のマッピングエントリを削除します。`SystemCredential` 本体は変更しません。
+
+```mathematica
+NBRemoveLocalLLMAPIKey["lmstudio", "http://192.168.1.10:1234"]
+```
+
+#### NBLocalLLMAPIKeyMap
+
+現在登録されているローカル LLM サーバー → API キー名マッピングを Dataset で返します。`Configured` 列は対応する `SystemCredential` が実際に設定済みかどうかを示します。
+
+```mathematica
+NBLocalLLMAPIKeyMap[]
+```
 
 ---
 
@@ -1511,6 +1576,20 @@ NBSetProviderMaxAccessLevel["lmstudio", 1.0]    (* ローカル LLM: 全デー�
 NBGetProviderMaxAccessLevel["anthropic"]   (* 0.5 *)
 NBGetProviderMaxAccessLevel["openai"]      (* 未登録プロバイダーは 0.5 を返す *)
 ```
+
+パッケージ初期化時、`$iProviderMaxAccessLevel` には以下のデフォルト値が事前登録されます。ユーザーが `NBSetProviderMaxAccessLevel` で既に該当プロバイダーを設定済みの場合はそちらが優先され、backfill は行われません。
+
+| プロバイダー | デフォルト MaxAccessLevel |
+|---|---|
+| `"claudecode"` | 0.5 |
+| `"anthropic"` | 0.5 |
+| `"openai"` | 0.5 |
+| `"zai"` | 0.25 |
+| `"kimi"` | 0.25 |
+| `"lmstudio"` | 1.0（ローカル実行） |
+| `"freetoken"` | 1.0（ローカル実行、VRAM 超え MoE 用推論サーバ） |
+
+`"freetoken"` は `lmstudio` と同様のローカル実行プロバイダーとして扱われるため、MaxAccessLevel は 1.0 です。対応する API キーマッピングについては[ローカル LLM API キー (LM Studio 等)](#ローカル-llm-api-キー-lm-studio-等)を参照してください。
 
 ### NBGetAvailableFallbackModels
 

@@ -12,7 +12,7 @@ NBAccess は、Mathematica ノートブックを「セルの配列」として�
 
 本パッケージの最大の特徴は、すべてのセル読み取り操作に **プライバシーフィルタリング** が組み込まれている点です。各セルには 0.0（非機密）〜 1.0（機密）のプライバシーレベルが付与され、`PrivacySpec` オプションの `AccessLevel` と比較することでアクセス制御を行います。デフォルトの `AccessLevel` は 0.5 で、これはクラウド LLM に送信しても安全なデータのみを許可する設定です。ローカル LLM 環境では 1.0 に変更することで全データにアクセスできます。
 
-この仕組みにより、API キーやパスワードなどの機密情報が意図せず LLM のプロンプトに含まれることを防ぎます。機密セルには赤背景（直接機密）や橙背景（依存機密）の視覚的マークが付与され、ユーザーが一目で安全性を確認できます。
+この仕組みにより、API キーやパスワードなどの機密情報が意図せず LLM のプロンプトに含まれることを防ぎます。機密セルには赤背景（直接機密）や橙背景（依存機密）の視覚的マークが付与され、ユーザーが一目で安全性を確認できます。プライバシーレベルの判定は `NBCellPrivacyLevel[nb, idx]` を基本としつつ、CellObject を直接持つ場合や FrontEnd を介さずセル単位で判定したい場合（Cell 式のみが手元にあるフォルダ一括処理など）向けに、共通の判定規則を再利用するオーバーロード（`NBCellExprPrivacyLevel` / `NBCellObjectPrivacyLevel`）も用意されています。
 
 `NBGetContext` はセルレベルのプライバシーチェックを行い、機密マーク済みセルはその内容を完全に非表示にし、対応する Output セルも自動的に除外します。変数名ベースのリダクションに加え、セル全体の機密レベルを先にチェックすることで、より確実なプライバシー保護を実現しています。
 
@@ -392,6 +392,8 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 #### プライバシー制御
 
 - **`NBCellPrivacyLevel[nb, idx]`** — セルのプライバシーレベル（0.0〜1.0）を返します
+- **`NBCellExprPrivacyLevel[cellExpr]`**（新機能） — CellObject を持たない Cell 式（`Import[path, "Notebook"]` 経由など）からプライバシーレベルを判定します。判定規則は `NBCellPrivacyLevel` と共通ですが FrontEnd を必要とせず、フォルダ一括処理などに使えます
+- **`NBCellObjectPrivacyLevel[cell]`**（新機能） — CellObject から直接プライバシーレベルを判定します。`EvaluationCell[]` など cellIdx を持たないセルの判定に使用します
 - **`NBIsAccessible[nb, idx, PrivacySpec -> ps]`** — セルがアクセス可能か判定します
 - **`NBFilterCellIndices[nb, indices, PrivacySpec -> ps]`** — インデックスリストをフィルタリングします
 - **`NBGetCells[nb, PrivacySpec -> ps]`** — 全セルをフィルタリングして返します

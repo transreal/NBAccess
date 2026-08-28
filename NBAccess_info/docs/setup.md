@@ -179,6 +179,8 @@ NBAccess`NBGetAvailableFallbackModels[0.8]
 
 これにより、`Private` 宣言（`CloudPublishable -> False`）されたノートブックのデータが誤ってクラウドLLM（anthropic / openai などの MaxAccessLevel = 0.5 プロバイダー）に送信されることを防ぎ、ローカル LLM（lmstudio 等の MaxAccessLevel = 1.0 プロバイダー）のみを経由するよう強制できます。ノートブックが要求するアクセスレベルは `NBAccess`NBNotebookRequiredAccessLevel[nb]` で確認でき、Private 宣言時は 1.0、それ以外は 0.0 を返します。
 
+既定では `"lmstudio"` に加えて `"freetoken"`（`http://127.0.0.1:1919` で待ち受ける、VRAM 超えの MoE モデル向けローカル推論サーバー）も MaxAccessLevel = 1.0 のローカル LLM プロバイダーとして自動 backfill されます（2026-08-24 追加）。対応する API キーは lmstudio と同様に `SystemCredential["FREETOKEN_API_KEY"]` に保存し、`NBGetLocalLLMAPIKey["freetoken", "http://127.0.0.1:1919"]` で取得できます。
+
 ### 分離原則の除外設定
 
 NBAccess 分離原則チェックから除外するパッケージの設定：
@@ -296,6 +298,7 @@ NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存の�
 - **`NBJobMoveToAnchor` の戻り値変更**（2026-06-24 修正）: アンカーセルの直後にカーソルを移動する関数が True/False を返すようになりました。位置を確定できた場合（アンカーが消失している場合のノートブック末尾退避を含む）は True、jobId が `$NBJobTable` に存在しない場合のみ False を返します。従来は戻り値を使用していないコードには影響ありません。
 - **機密識別子マッチングの改善**: `$NBConfidentialSymbols` に登録された名前による機密漏洩チェック（`NBFilterHistoryEntry` 等が内部で使用）において、ASCII 識別子はトークン境界マッチング（完全一致）に変更されました。これにより、`"v"` のような短い変数名が `"SourceVaultExamOverviewView"` などの長い識別子に部分一致して式全体が誤って拒否される問題（Module の局所変数名 `v`、`rows`、`keys`、`sel` 等が機密リストに含まれる場合に発生）が解消されます。非 ASCII の値（日本語の値など）は従来どおり部分文字列一致で漏洩を検出します。既存の動作に影響するのは ASCII の短い変数名が機密シンボル名として登録されている場合のみであり、それ以外の既存コードへの影響はありません。
 - **デフォルトフォールバックモデルの更新**: 組み込みのデフォルトフォールバックモデルリスト（`NBSetFallbackModels` でカスタム設定していない場合に使用される内部デフォルト）において、Anthropic のモデルが `claude-opus-5` に更新されました。`NBSetFallbackModels` でカスタム設定済みの環境には影響しません。現在のフォールバックモデルリストは `NBAccess`NBGetFallbackModels[]` で確認できます。
+- **既定ローカル LLM プロバイダーの追加**（2026-08-24 追加）: 組み込みのローカル LLM プロバイダー backfill（`NBSetLocalLLMAPIKey`／`NBGetLocalLLMAPIKey` が未設定の場合の既定マッピング）に `"lmstudio"` と並んで `"freetoken"`（`http://127.0.0.1:1919`、VRAM 超えの MoE モデル向けローカル推論サーバー）が追加されました。`"freetoken"` は `"lmstudio"` と同様にローカル実行のため MaxAccessLevel は既定で 1.0 として backfill され、対応する API キーは `SystemCredential["FREETOKEN_API_KEY"]` に保存します。既存の `"lmstudio"` 設定・カスタム `NBSetLocalLLMAPIKey`／`NBSetProviderMaxAccessLevel` 設定には影響しません。
 - **カレンダー access API（`NBCalendarEvents`／`NBCalendarFreeBusy`／`NBCalendarBusyQ`／`NBICSParseEvents`／`NBICSEventOccurrences`）と `$onWork` タスク管理 API（`NBOnWorkTasks`／`NBOnWorkTaskSafeExtract`）**（新規追加）: いずれも新規 API であり、既存 API・グローバル変数には影響しません。カレンダー API はアクセスレベル 0.5 未満では `Failure["NBCalendarAccessDenied"]`（`NBCalendarBusyQ` のみ `False`、または `"Detailed" -> True` 指定時は `<|"Busy" -> False, ...|>`）を返すため、既定の `$NBPrivacySpec`（AccessLevel 0.5）のままでも free/busy 用途には利用できます。
 
 ### ClaudeRuntime 導入時の注意点
@@ -467,6 +470,21 @@ githubKey = NBAccess`NBGetAPIKey["github"]
 
 API キーは Wolfram Language の `SystemCredential` 機能を通じて安全に管理されます。`"kimi"`（Moonshot AI）は既定で国際版エンドポイント `api.moonshot.ai` を使用します。
 
+### ローカル LLM サーバーの API キー設定
+
+LM Studio や FreeToken のようなローカル推論サーバーは `{provider, url}` のペアで API キーを管理します：
+
+```mathematica
+(* 登録済みの {provider, url} -> credentialName マッピングを Dataset で確認する *)
+NBAccess`NBLocalLLMAPIKeyMap[]
+
+(* ローカル LLM の API キーを取得する（AccessLevel >= 1.0 が必須） *)
+NBAccess`NBGetLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234"]
+NBAccess`NBGetLocalLLMAPIKey["freetoken", "http://127.0.0.1:1919"]
+```
+
+`"lmstudio"`（`http://127.0.0.1:1234`）と `"freetoken"`（`http://127.0.0.1:1919`、VRAM 超えの MoE モデル用ローカル推論サーバー）は、いずれもローカル実行であるため既定で MaxAccessLevel = 1.0 として backfill され、対応する API キーはそれぞれ `SystemCredential["LMSTUDIO_API_KEY"]`／`SystemCredential["FREETOKEN_API_KEY"]` に保存されます（2026-08-24 時点）。独自のローカルサーバーを追加する場合は `NBSetLocalLLMAPIKey`／`NBStoreLocalLLMAPIKey` を使用してください。
+
 ## トラブルシューティング
 
 ### エンコーディング問題
@@ -555,6 +573,10 @@ NBAccess`NBGetProviderMaxAccessLevel["lmstudio"]
 
 `EventId` が呼び出しのたびに変わって見える場合は、`$NBCalendarIdentityKeyRef` に登録した SystemCredential キーが変更・ローテーションされていないかを確認してください。鍵をローテーションすると `EventId` に埋め込まれる KeyId が変わるため、保存済みの EventId マッピングは移行が必要です（未設定のままだと `EventId` は `"unkeyed:<digest>"` 形式になります）。
 
+### ローカル LLM の API キーが見つからない場合
+
+`NBGetLocalLLMAPIKey[provider, url]` が期待どおりのキーを返さない場合、解決優先度は (1) `{provider, url}` の完全一致 (2) `localhost`⇔`127.0.0.1` 置換版の一致 (3) `{provider, "*"}` ワイルドカード (4) フォールバック名 `ToUpperCase[provider]<>"_API_KEY"` の順です。`"lmstudio"`／`"freetoken"` は既定でそれぞれ `LMSTUDIO_API_KEY`／`FREETOKEN_API_KEY` に backfill されているため、これらの SystemCredential にキーを設定していないと未設定として扱われます。独自の URL・credential 名を使う場合は `NBSetLocalLLMAPIKey` で明示的にマッピングを登録してください。登録状況は `NBLocalLLMAPIKeyMap[]` の `Configured` 列で確認できます。
+
 ### 依存関係問題
 
 分離原則違反が報告される場合：
@@ -588,3 +610,13 @@ NBAccess`NBFileSpecCacheClear[]
 
 問題が発生した場合は、GitHub リポジトリにてイシューを報告してください：  
 https://github.com/transreal/NBAccess
+
+---
+
+The change: the source diff adds `"freetoken"` (a local inference server at `http://127.0.0.1:1919`, used for MoE models exceeding VRAM) as a default-registered local LLM provider alongside the existing `"lmstudio"` entry, with automatic backfill of `MaxAccessLevel -> 1.0` and the `FREETOKEN_API_KEY` credential mapping. I reflected this by:
+- Adding a note in "プロバイダー別アクセスレベル設定" about the new default backfill.
+- Adding an equivalent bullet under "後方互換性について".
+- Adding a new "ローカル LLM サーバーの API キー設定" subsection under "API キー設定" with concrete `NBGetLocalLLMAPIKey` examples for both providers.
+- Adding a troubleshooting entry explaining the key-resolution priority and where freetoken/lmstudio keys are backfilled.
+
+No public functions or options were removed in this diff (the removed lines were just the old lmstudio-only code being restructured to add freetoken alongside it), so no deletions were needed elsewhere in the document.

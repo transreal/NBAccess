@@ -1,4 +1,4 @@
-## 概要
+# 概要
 
 NBAccess はノートブックアクセスユーティリティパッケージです。セルインデックスベースでノートブックの読み書きとプライバシーフィルタリングを提供し、クラウド LLM とローカル LLM の双方に安全にアクセスできるようにします。
 
@@ -360,9 +360,12 @@ NBListProviderModels["anthropic"]
 
 ## ローカル LLM サーバーの API キーアクセサ
 
+既定で登録済みのローカル LLM プロバイダーは `"lmstudio"`（`http://127.0.0.1:1234`）と `"freetoken"`（`http://127.0.0.1:1919`、VRAM 超えの MoE 用ローカル推論サーバ FreeToken）の2つで、いずれも MaxAccessLevel 1.0（ローカル実行のためクラウドへは送信しない）で `$iProviderMaxAccessLevel` / `$iLocalLLMAPIKeyMap` に初期登録されます。`freetoken` の APIキー名は既定で `"FREETOKEN_API_KEY"` です。パッケージ更新後にすでにロード済みのカーネルに対しては、既存の生きたマップへ `freetoken` エントリを backfill する処理が自動的に働きます（未登録の場合のみ）。
+
 ```
 NBGetLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
-(* ローカルLLMサーバー (LM Studio等) のAPIキーをSystemCredentialから返す。照合は{provider, url}ペア。
+NBGetLocalLLMAPIKey["freetoken", "http://127.0.0.1:1919", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
+(* ローカルLLMサーバー (LM Studio・FreeToken等) のAPIキーをSystemCredentialから返す。照合は{provider, url}ペア。
    AccessLevel >= 1.0 が必須。
    解決優先度: (1)完全一致 (2)localhost⇔127.0.0.1置換版 (3){provider,"*"}ワイルドカード (4)フォールバック名 ToUpperCase[provider]<>"_API_KEY" *)
 
@@ -419,7 +422,9 @@ NBSyncClaudeModelVars[Verbose -> False]
 NBSetProviderMaxAccessLevel["anthropic", 0.5]
 NBSetProviderMaxAccessLevel["lmstudio", 1.0]
 (* プロバイダーの最大アクセスレベルを設定する。level: 0.0〜1.0。
-   このレベルを超えるアクセスレベルのリクエストにはフォールバックしない。 *)
+   このレベルを超えるアクセスレベルのリクエストにはフォールバックしない。
+   既定では "lmstudio" と "freetoken" が MaxAccessLevel 1.0 で初期登録されている
+   (どちらもローカル実行のプロバイダーのため)。 *)
 
 NBGetProviderMaxAccessLevel["anthropic"]    (* 未登録プロバイダーは0.5を返す *)
 
@@ -603,4 +608,4 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 今回のドキュメント更新での変更点:
 
-1. **`NBCellUsesConfidentialSymbol` / `NBFilterHistoryEntry` の照合ロジック改善**。ASCII 識別子（英数字・`$`・`` ` `` のみで構成される名前）はセル式をトークン分割してトークン境界での完全一致で判定するように変更されました（従来は部分文字列一致）。非 ASCII の値（日本語文字列等）は従来どおり部分一致のままです。これにより、`v` や `rows` のような短い Module 局所変数名が `SourceVaultExamOverviewView` 等の長い識別子に誤ってマッチするフォールスポジティブが実機で発生していた問題が解消されました。コンテキスト付き短縮名（例: `` MyPkg`v ``）は末尾セグメントでの照合も行います。
+1. **ローカル LLM プロバイダー `"freetoken"` の既定登録（2026-08-24）**。VRAM 超えの MoE モデル用ローカル推論サーバ FreeToken（`http://127.0.0.1:1919`）が、`"lmstudio"` と同様にプロバイダー既定マップ（`$iProviderMaxAccessLevel`、`$iLocalLLMAPIKeyMap`）へ MaxAccessLevel 1.0・APIキー名 `"FREETOKEN_API_KEY"` で初期登録されるようになりました。すでにロード済みのカーネルに対しては、既存の生きたマップへ未登録分のみを backfill する処理が働きます。これに伴い「ローカル LLM サーバーの API キーアクセサ」節と「フォールバックモデル / プロバイダーアクセスレベル API」節の `NBSetProviderMaxAccessLevel`/`NBGetLocalLLMAPIKey` 関連の説明に `freetoken` の既定登録に関する記述を追加しました。公開関数・オプションの追加や削除はありません（既定データの初期化ロジックの変更です）。

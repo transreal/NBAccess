@@ -1559,7 +1559,8 @@ If[!AssociationQ[$iProviderMaxAccessLevel],
     "openai"     -> 0.5,
     "zai"        -> 0.25,
     "kimi"       -> 0.25,
-    "lmstudio"   -> 1.0
+    "lmstudio"   -> 1.0,
+    "freetoken"  -> 1.0
   |>];
 
 (* ============================================================
@@ -4119,9 +4120,15 @@ NBAccess`NBListProviderModels[___] :=
 (* ---- \:65e2\:5b9a\:30de\:30c3\:30d4\:30f3\:30b0 ---- *)
 If[!AssociationQ[$iLocalLLMAPIKeyMap],
   $iLocalLLMAPIKeyMap = <|
-    {"lmstudio", "http://127.0.0.1:1234"} -> "LMSTUDIO_API_KEY"
+    {"lmstudio", "http://127.0.0.1:1234"} -> "LMSTUDIO_API_KEY",
+    {"freetoken", "http://127.0.0.1:1919"} -> "FREETOKEN_API_KEY"
   |>
 ];
+(* freetoken (2026-08-24) \:3092\:65e2\:5b58\:30ab\:30fc\:30cd\:30eb\:306e\:751f\:304d\:305f\:30de\:30c3\:30d7\:3078 backfill *)
+If[AssociationQ[$iLocalLLMAPIKeyMap] &&
+   !KeyExistsQ[$iLocalLLMAPIKeyMap, {"freetoken", "http://127.0.0.1:1919"}],
+  $iLocalLLMAPIKeyMap[{"freetoken", "http://127.0.0.1:1919"}] =
+    "FREETOKEN_API_KEY"];
 
 (* ---- URL \:6b63\:898f\:5316 ----
    \:7565: \:672b\:5c3e\:30b9\:30e9\:30c3\:30b7\:30e5\:9664\:53bb, \:30d1\:30b9\:9664\:53bb (scheme://host[:port] \:306e\:307f\:6b8b\:3059)\:3002
@@ -11704,6 +11711,13 @@ If[AssociationQ[$iProviderMaxAccessLevel],
 If[AssociationQ[$iProviderMaxAccessLevel],
   If[!KeyExistsQ[$iProviderMaxAccessLevel, "kimi"],
     $iProviderMaxAccessLevel["kimi"] = 0.25]];
+
+(* FreeToken (localhost:1919, VRAM 超え MoE 用ローカル推論サーバ) は
+   lmstudio と同じくローカル実行なので MaxAccessLevel = 1.0 で backfill
+   (2026-08-24)。 *)
+If[AssociationQ[$iProviderMaxAccessLevel],
+  If[!KeyExistsQ[$iProviderMaxAccessLevel, "freetoken"],
+    $iProviderMaxAccessLevel["freetoken"] = 1.0]];
 
 (* ---- spec 10.3: accessible-dirs audit ---- *)
 
