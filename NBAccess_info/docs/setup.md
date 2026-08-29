@@ -181,6 +181,38 @@ NBAccess`NBGetAvailableFallbackModels[0.8]
 
 既定では `"lmstudio"` に加えて `"freetoken"`（`http://127.0.0.1:1919` で待ち受ける、VRAM 超えの MoE モデル向けローカル推論サーバー）も MaxAccessLevel = 1.0 のローカル LLM プロバイダーとして自動 backfill されます（2026-08-24 追加）。対応する API キーは lmstudio と同様に `SystemCredential["FREETOKEN_API_KEY"]` に保存し、`NBGetLocalLLMAPIKey["freetoken", "http://127.0.0.1:1919"]` で取得できます。
 
+同様に `"llamacpp"`（llama.cpp の `llama-server`）も MaxAccessLevel = 1.0 のローカル LLM プロバイダーとして自動 backfill されます（2026-08-29 追加）。これは、未登録のまま使うと既定値 0.5 に丸められ、SourceVault 側の TrustCeiling も 0.5 に丸められて秘密データが載らなくなっていた問題への対応です（LAN 上の別ホストであっても自宅内の信頼機器として運用する想定）。ただし `"llamacpp"` には `"lmstudio"`／`"freetoken"` のような API キーの自動 backfill（`SystemCredential` への既定マッピング）は用意されていないため、利用する場合は [ローカル LLM サーバーの API キー設定](#api-キー設定オプション) の節に従って `NBSetLocalLLMAPIKey` で明示的に登録してください。
+
+#### ローカル LLM への距離ベースアクセス制限（rule 107、新規追加）
+
+`"lmstudio"`／`"freetoken"`／`"llamacpp"` などのローカル LLM プロバイダーに MaxAccessLevel = 1.0 を許しているのは、「localhost か、信頼できるサブネットでしか使わない」という前提があるからです。ノート PC を別のネットワークへ持ち出した状態や、判定できないホスト名・別サブネットの接続先に対してまで 1.0 を適用すると、この前提が崩れて機密データが意図しない相手に渡ってしまいます。この前提が成立しない接続先については、登録済みの上限に関係なく強制的にアクセスレベルを引き下げる仕組みが追加されました（2026-08-29 追加）。
+
+```mathematica
+(* 接続先ホストの「距離」を判定する *)
+NBAccess`NBLocalLLMURLProximity["http://127.0.0.1:1234"]      (* "Localhost" *)
+NBAccess`NBLocalLLMURLProximity["http://192.168.1.50:1234"]   (* 自機と同一サブネットなら "SameSubnet" *)
+NBAccess`NBLocalLLMURLProximity["http://10.0.9.9:1234"]       (* 別サブネットなら "Remote" *)
+NBAccess`NBLocalLLMURLProximity["http://my-llm-host:1234"]    (* ホスト名は判定不能 = "Unknown"（安全側で Remote 扱い） *)
+
+(* 距離を加味した実効アクセスレベル上限を取得する *)
+NBAccess`NBLocalLLMEffectiveMaxAccessLevel["lmstudio", "http://127.0.0.1:1234"]
+(* Localhost なら登録済み上限（既定 1.0）をそのまま返す *)
+
+NBAccess`NBLocalLLMEffectiveMaxAccessLevel["lmstudio", "http://203.0.113.5:1234"]
+(* Remote / Unknown なら $NBRemoteLocalLLMAccessCeiling（既定 0.25）へ強制的に引き下げられる *)
+
+(* 同一サブネット接続を「今このセッションに限り」信用する *)
+NBAccess`NBSetSubnetTrust[True]
+NBAccess`NBSubnetTrustActive[]   (* True（自機 IP が変わっていなければ） *)
+```
+
+- **`NBLocalLLMURLProximity[url]`** — 接続先ホストの距離を `"Localhost"`／`"SameSubnet"`／`"Remote"`／`"Unknown"` で返します。サブネット判定は第 3 オクテットまで（/24 相当）の一致、ホスト名や IPv6 など判定できないものは `"Unknown"`（安全側で Remote 扱い）です。
+- **`NBLocalLLMEffectiveMaxAccessLevel[provider, url]`** — 距離を加味した実効アクセスレベル上限を返します。`"Localhost"` は登録済み上限をそのまま使い、`"SameSubnet"` は `NBSubnetTrustActive[]` が True の場合のみ登録済み上限を使い、それ以外（`"Remote"`／`"Unknown"`）は登録上限に関係なく `$NBRemoteLocalLLMAccessCeiling`（既定 0.25）まで強制的に引き下げられます。クラウド provider（anthropic/openai 等）には適用されません。`NBModelCanHandleAccessLevel[{provider, model, url}, accessLevel]` は内部でこの関数を使うため、`{provider, model, url}` 形式の modelSpec を渡す既存コードにも自動的に適用されます。
+- **`NBSetSubnetTrust[True|False]`** — 「同一サブネットの接続先を信用するか」を切り替える唯一の正規口です。True にした瞬間の自機 IP 集合を記録し、以後 IP が変わると自動的に失効します。**この値をノートブックの TaggingRules や設定ファイルに永続化してはいけません** — 保存すると、そのノートを別のネットワークで開いた瞬間に「信用する」が黙って復活し、このトグルが防ごうとしている攻撃を素通りさせてしまいます。既定は False で、セッション（カーネル）限りの値として扱われ、Mathematica を再起動すれば False に戻ります。
+- **`NBSubnetTrustActive[]`** — 「今この瞬間、同一サブネット信用が有効か」を返します。信用を与えた時点から自機 IP 集合が変わっていた場合は、別のネットワークへ移動したとみなして自動的に False へ失効させ、`NBSubnetTrustActive::revoked` メッセージを出します。
+- **`$NBTrustCurrentSubnet`**（既定 `False`）— 上記トグルの実体となるグローバル変数です。通常は `NBSetSubnetTrust` 経由で操作してください。
+- **`$NBRemoteLocalLLMAccessCeiling`**（既定 `0.25`）— localhost でも信用済み同一サブネットでもないローカル LLM 接続に強制適用されるアクセスレベル上限です。
+
 ### 分離原則の除外設定
 
 NBAccess 分離原則チェックから除外するパッケージの設定：
@@ -299,6 +331,8 @@ NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存の�
 - **機密識別子マッチングの改善**: `$NBConfidentialSymbols` に登録された名前による機密漏洩チェック（`NBFilterHistoryEntry` 等が内部で使用）において、ASCII 識別子はトークン境界マッチング（完全一致）に変更されました。これにより、`"v"` のような短い変数名が `"SourceVaultExamOverviewView"` などの長い識別子に部分一致して式全体が誤って拒否される問題（Module の局所変数名 `v`、`rows`、`keys`、`sel` 等が機密リストに含まれる場合に発生）が解消されます。非 ASCII の値（日本語の値など）は従来どおり部分文字列一致で漏洩を検出します。既存の動作に影響するのは ASCII の短い変数名が機密シンボル名として登録されている場合のみであり、それ以外の既存コードへの影響はありません。
 - **デフォルトフォールバックモデルの更新**: 組み込みのデフォルトフォールバックモデルリスト（`NBSetFallbackModels` でカスタム設定していない場合に使用される内部デフォルト）において、Anthropic のモデルが `claude-opus-5` に更新されました。`NBSetFallbackModels` でカスタム設定済みの環境には影響しません。現在のフォールバックモデルリストは `NBAccess`NBGetFallbackModels[]` で確認できます。
 - **既定ローカル LLM プロバイダーの追加**（2026-08-24 追加）: 組み込みのローカル LLM プロバイダー backfill（`NBSetLocalLLMAPIKey`／`NBGetLocalLLMAPIKey` が未設定の場合の既定マッピング）に `"lmstudio"` と並んで `"freetoken"`（`http://127.0.0.1:1919`、VRAM 超えの MoE モデル向けローカル推論サーバー）が追加されました。`"freetoken"` は `"lmstudio"` と同様にローカル実行のため MaxAccessLevel は既定で 1.0 として backfill され、対応する API キーは `SystemCredential["FREETOKEN_API_KEY"]` に保存します。既存の `"lmstudio"` 設定・カスタム `NBSetLocalLLMAPIKey`／`NBSetProviderMaxAccessLevel` 設定には影響しません。
+- **既定 `$iProviderMaxAccessLevel` への `"llamacpp"` 追加**（2026-08-29 追加）: 組み込みのプロバイダー別アクセスレベル既定マップに `"llamacpp"`（llama.cpp の `llama-server`）が MaxAccessLevel = 1.0 として追加されました。未登録のままだと既定値 0.5 に丸められ、SourceVault 側の TrustCeiling も 0.5 に丸められて秘密データが載らなくなる問題への対応です。`"lmstudio"`／`"freetoken"` と異なり API キーの `SystemCredential` 自動 backfill は行われないため、必要な場合は `NBSetLocalLLMAPIKey` で明示登録してください。既に `NBSetProviderMaxAccessLevel["llamacpp", ...]` でカスタム設定している環境には影響しません。
+- **ローカル LLM への距離ベースアクセス制限の追加（rule 107）**（2026-08-29 追加）: `NBModelCanHandleAccessLevel[{provider, model, url}, accessLevel]` の判定に、接続先の距離（`NBLocalLLMURLProximity`）に基づく強制上限（`NBLocalLLMEffectiveMaxAccessLevel`、既定 `$NBRemoteLocalLLMAccessCeiling` = 0.25）が追加されました。これは動作変更です — 従来は `{provider, model, url}` 形式の modelSpec は URL を見ずに `NBGetProviderMaxAccessLevel` の登録値のみで判定していましたが、現在は localhost でも信用済み同一サブネットでもない接続先に対しては登録値（例: lmstudio の 1.0）を無視して 0.25 まで強制的に引き下げられます。ローカル LLM を LAN 経由のリモートホストで運用しており、そのホストに機密データレベルでアクセスさせたい場合は、そのセッションで `NBSetSubnetTrust[True]` を明示的に呼び出す必要があります（永続化不可）。クラウド provider には影響しません。
 - **カレンダー access API（`NBCalendarEvents`／`NBCalendarFreeBusy`／`NBCalendarBusyQ`／`NBICSParseEvents`／`NBICSEventOccurrences`）と `$onWork` タスク管理 API（`NBOnWorkTasks`／`NBOnWorkTaskSafeExtract`）**（新規追加）: いずれも新規 API であり、既存 API・グローバル変数には影響しません。カレンダー API はアクセスレベル 0.5 未満では `Failure["NBCalendarAccessDenied"]`（`NBCalendarBusyQ` のみ `False`、または `"Detailed" -> True` 指定時は `<|"Busy" -> False, ...|>`）を返すため、既定の `$NBPrivacySpec`（AccessLevel 0.5）のままでも free/busy 用途には利用できます。
 
 ### ClaudeRuntime 導入時の注意点
@@ -485,6 +519,8 @@ NBAccess`NBGetLocalLLMAPIKey["freetoken", "http://127.0.0.1:1919"]
 
 `"lmstudio"`（`http://127.0.0.1:1234`）と `"freetoken"`（`http://127.0.0.1:1919`、VRAM 超えの MoE モデル用ローカル推論サーバー）は、いずれもローカル実行であるため既定で MaxAccessLevel = 1.0 として backfill され、対応する API キーはそれぞれ `SystemCredential["LMSTUDIO_API_KEY"]`／`SystemCredential["FREETOKEN_API_KEY"]` に保存されます（2026-08-24 時点）。独自のローカルサーバーを追加する場合は `NBSetLocalLLMAPIKey`／`NBStoreLocalLLMAPIKey` を使用してください。
 
+`"llamacpp"`（llama.cpp の `llama-server`）も MaxAccessLevel = 1.0 のローカル LLM プロバイダーとして認識されますが（2026-08-29 追加）、`"lmstudio"`／`"freetoken"` とは異なり API キーの `SystemCredential` 自動 backfill は用意されていません。`NBGetLocalLLMAPIKey["llamacpp", url]` は、明示登録がなければフォールバック名 `SystemCredential["LLAMACPP_API_KEY"]` を参照します。特定の URL に紐付けて管理したい場合は `NBSetLocalLLMAPIKey["llamacpp", url, credentialName]` で明示登録してください。なお、API キーの取得可否とは別に、接続先が localhost／信用済み同一サブネットでない場合はアクセスレベルが強制的に引き下げられます（[ローカル LLM への距離ベースアクセス制限（rule 107）](#ローカル-llm-への距離ベースアクセス制限rule-107新規追加)を参照）。
+
 ## トラブルシューティング
 
 ### エンコーディング問題
@@ -561,6 +597,18 @@ NBAccess`NBGetProviderMaxAccessLevel["lmstudio"]
 
 `PathRef` が別 PC のエイリアスにしか一致しない、またはルート未定義の場合、`NBResolvePathRef` は `Missing[...]` を返し実パスへの解決を行いません（rule 104）。プロバイダー側は `MaxAccessLevel` を超えるアクセスレベルのリクエストにはフォールバックしないため、Private 宣言されたノートブックのデータがクラウドLLMに送られることはありません。
 
+### ローカル LLM 経由の実行が想定より低いアクセスレベルに制限される場合（rule 107）
+
+`{provider, model, url}` 形式で modelSpec を指定しているのに、`NBModelCanHandleAccessLevel` や実際のルーティングが機密データ（AccessLevel 1.0）を許可しない場合は、接続先が localhost でも信用済み同一サブネットでもないと判定されている可能性があります。`NBLocalLLMURLProximity[url]` で `"Remote"` または `"Unknown"` が返る接続先は、`NBSetProviderMaxAccessLevel` で登録済みの値に関係なく `$NBRemoteLocalLLMAccessCeiling`（既定 0.25）まで強制的に引き下げられます（rule 107）。
+
+同一サブネット上のホストであることが確実な場合は、そのセッションで明示的に信用を与えてください：
+
+```mathematica
+NBAccess`NBSetSubnetTrust[True]
+```
+
+この設定はセッション（カーネル）限りで、ノートブックや設定ファイルに保存されることはなく、Mathematica を再起動すると False に戻ります（意図的に永続化不可としています）。`NBSubnetTrustActive[]` が予期せず `False` を返す場合は、信用を与えた後に自機の IP アドレスが変わっていないか（別のネットワークへ移動していないか）を確認してください。IP が変わっていると `NBSubnetTrustActive::revoked` メッセージとともに自動的に信用が失効します。
+
 ### カレンダーアクセスが失敗・拒否される場合
 
 `NBCalendarEvents` が `Failure["NBCalendarAccessDenied"]` を返す場合は、`PrivacySpec`（既定 `$NBPrivacySpec`）の `AccessLevel` が 0.5 未満になっていないか確認してください。free/busy のみで良い場合は `NBCalendarFreeBusy` や `NBCalendarBusyQ` を使うと AccessLevel 0.5 のまま利用できます。
@@ -610,13 +658,3 @@ NBAccess`NBFileSpecCacheClear[]
 
 問題が発生した場合は、GitHub リポジトリにてイシューを報告してください：  
 https://github.com/transreal/NBAccess
-
----
-
-The change: the source diff adds `"freetoken"` (a local inference server at `http://127.0.0.1:1919`, used for MoE models exceeding VRAM) as a default-registered local LLM provider alongside the existing `"lmstudio"` entry, with automatic backfill of `MaxAccessLevel -> 1.0` and the `FREETOKEN_API_KEY` credential mapping. I reflected this by:
-- Adding a note in "プロバイダー別アクセスレベル設定" about the new default backfill.
-- Adding an equivalent bullet under "後方互換性について".
-- Adding a new "ローカル LLM サーバーの API キー設定" subsection under "API キー設定" with concrete `NBGetLocalLLMAPIKey` examples for both providers.
-- Adding a troubleshooting entry explaining the key-resolution priority and where freetoken/lmstudio keys are backfilled.
-
-No public functions or options were removed in this diff (the removed lines were just the old lmstudio-only code being restructured to add freetoken alongside it), so no deletions were needed elsewhere in the document.

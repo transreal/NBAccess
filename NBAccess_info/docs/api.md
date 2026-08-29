@@ -2,7 +2,7 @@
 NBAccess 関数のプライバシーフィルタリングオプション。値は `<|"AccessLevel" -> level|>`。AccessLevel ≤ セルのプライバシーレベルのセルのみアクセス可能。0.5=クラウドLLM安全データのみ(既定)、1.0=ローカルLLM環境など全データ。
 
 ### Decompress
-NBAccess 履歴関数のオプション。True(既定)=Diff差分を復元して平文で返す、False=Diffオブジェクトのまま返す(差分検査用)。System`Decompress をオプションラベルとして使用。
+NBHistoryData/NBHistoryEntries/NBHistoryEntriesWithInherit が受け付けるオプション(独立シンボルではなく System`Decompress をそのままオプション名に流用)。True(既定)=Diff差分を復元して平文で返す、False=Diffオブジェクトのまま返す(差分検査用)。
 
 ## グローバル変数
 ### $NBPrivacySpec
@@ -635,6 +635,26 @@ NBCellTransformWithLLM が使う非同期 LLM コールバックを登録する�
 ### NBGetAvailableFallbackModels[accessLevel] → List
 指定アクセスレベルで利用可能なフォールバックモデルのリストを返す。プロバイダーの MaxAccessLevel >= accessLevel のモデルのみ。
 例: `NBGetAvailableFallbackModels[0.8]` → lmstudio のみ
+
+### NBLocalLLMURLProximity[url] → "Localhost"|"SameSubnet"|"Remote"|"Unknown"
+接続先の距離を判定する(rule 107)。サブネット判定は第3オクテットまで(/24 相当)の一致。ホスト名・IPv6 など判定できないものは "Unknown"(安全側で Remote 扱い)。
+
+### NBLocalLLMEffectiveMaxAccessLevel[provider, url] → Real
+接続先の距離を勘案した実効最大アクセスレベルを返す(rule 107)。ローカル LLM(lmstudio/llamacpp/freetoken 等)が localhost も同一サブネットも指さない場合、登録上限に関係なく $NBRemoteLocalLLMAccessCeiling(既定 0.25)へ強制的に下げる。クラウド provider には適用しない。url 未指定時は距離を判定せず登録値をそのまま返す。
+
+### NBSetSubnetTrust[True|False]
+サブネット信用を設定する正規口(rule 107)。True のとき現在の自機 IP 集合を控える。以後 IP が変わると NBSubnetTrustActive[] が自動的に信用を失効させる。
+
+### NBSubnetTrustActive[] → Boolean
+「今この瞬間サブネット信用が有効か」を返す。信用を与えた時点から自機 IP 集合が変わっていたら別のネットワークへ移動したとみなしその場で信用を失効させ False を返す(ノート PC を Mathematica 起動したまま別のサブネットへ持ち出す運用への対応)。比較対象は loopback / link-local を除いた IPv4 集合。
+
+### $NBTrustCurrentSubnet
+型: Boolean, 初期値: False
+現在の同一サブネットを信用するか(rule 107)。False の間は、localhost 以外のローカル LLM は同一サブネットであっても $NBRemoteLocalLLMAccessCeiling(0.25)へ強制限定される。サブネット一致は信用の根拠にならない(別 LAN で同じ IP を名乗るサーバがあり得る)ため、人間がその場で判断して明示的に True にする。永続化禁止: セッション(カーネル)限りの値。ノートブックの TaggingRules や設定ファイルに書かないこと(保存すると別のネットワークでそのノートを開いた瞬間に「信用する」が黙って復活し、防ごうとしている攻撃そのものを通してしまう)。
+
+### $NBRemoteLocalLLMAccessCeiling
+型: Number, 初期値: 0.25
+localhost / 同一サブネット外のローカル LLM への強制アクセスレベル上限(rule 107)。
 
 ### NBProviderCanAccess[provider, accessLevel] → Boolean
 プロバイダーが指定アクセスレベルのデータにアクセス可能かを返す。MaxAccessLevel >= accessLevel なら True。

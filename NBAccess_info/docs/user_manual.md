@@ -942,6 +942,8 @@ NBSetAccessiblePathRefs[nb,
 NBSetAccessibleDirs[nb, {"/home/user/project", "/data"}]
 ```
 
+**注意（rule 107 との関係）**: ローカル LLM への一時的な「サブネット信用」トグル (`NBSetSubnetTrust` / `$NBTrustCurrentSubnet`、後述の[フォールバックモデル / プロバイダーアクセスレベル](#フォールバックモデル--プロバイダーアクセスレベル)参照) はセッション（カーネル）限りの値であり、意図的に TaggingRules やノートブック設定ファイルには**永続化されません**。ノート PC を持ち出して別のサブネットへ接続した瞬間に「信用する」が黙って復活し、防ごうとしている攻撃そのものを通してしまうためです。
+
 #### 3. 履歴データベース
 
 NBAccess の最も重要な TaggingRules 活用例が**履歴データベース**です。ClaudeQuery / ClaudeEval の会話履歴・プロンプト・レスポンス・コードを、差分圧縮形式でノートブックの TaggingRules に永続保存します。
@@ -1475,6 +1477,8 @@ NBImport["C:\\secret\\keys.txt"]
 
 `"freetoken"` は FreeToken（VRAM 容量を超える MoE モデルを扱うためのローカル推論サーバ、`http://127.0.0.1:1919` で待ち受け）用のエントリです。`lmstudio` と同様にローカル実行のプロバイダーとして扱われ、対応する `$iProviderMaxAccessLevel["freetoken"]` も 1.0 で事前登録されます（[フォールバックモデル / プロバイダーアクセスレベル](#フォールバックモデル--プロバイダーアクセスレベル)を参照）。
 
+`"llamacpp"`（llama.cpp の `llama-server`）についても `$iProviderMaxAccessLevel["llamacpp"]` は 1.0 で事前登録されますが（後述）、`$iLocalLLMAPIKeyMap` には既定のポート・SystemCredential 名の事前登録はありません。llama-server は認証キーなしで運用されることが多いためです。API キーで保護する構成を使う場合は `NBSetLocalLLMAPIKey["llamacpp", url, credentialName]` を明示的に呼んでください。
+
 これらのデフォルトは、既に `$iLocalLLMAPIKeyMap` / `$iProviderMaxAccessLevel` が定義済みの環境（旧バージョンからのアップグレード等）に対しても、該当キーが存在しなければ自動的に backfill されます。ユーザーが `NBSetLocalLLMAPIKey` 等で明示的に上書き済みのエントリは保持されます。
 
 #### NBGetLocalLLMAPIKey
@@ -1588,8 +1592,11 @@ NBGetProviderMaxAccessLevel["openai"]      (* 未登録プロバイダーは 0.5
 | `"kimi"` | 0.25 |
 | `"lmstudio"` | 1.0（ローカル実行） |
 | `"freetoken"` | 1.0（ローカル実行、VRAM 超え MoE 用推論サーバ） |
+| `"llamacpp"` | 1.0（ローカル実行、llama.cpp `llama-server`） |
 
-`"freetoken"` は `lmstudio` と同様のローカル実行プロバイダーとして扱われるため、MaxAccessLevel は 1.0 です。対応する API キーマッピングについては[ローカル LLM API キー (LM Studio 等)](#ローカル-llm-api-キー-lm-studio-等)を参照してください。
+`"freetoken"` と `"llamacpp"` はいずれも `lmstudio` と同様のローカル実行プロバイダーとして扱われるため、MaxAccessLevel は 1.0 です。対応する API キーマッピングについては[ローカル LLM API キー (LM Studio 等)](#ローカル-llm-api-キー-lm-studio-等)を参照してください。
+
+`"llamacpp"` は 2026-08-29 に追加されました。未登録のまま放置すると `NBGetProviderMaxAccessLevel` の既定値 0.5 に落ちてしまい、SourceVault 側の TrustCeiling も 0.5 に丸められて秘密データを渡せなくなる不具合があったため、`lmstudio` / `freetoken` と同じ 1.0 で事前登録されるようになりました（LAN 上の別ホストであっても、自宅内の信頼機器として運用する前提です）。
 
 ### NBGetAvailableFallbackModels
 
@@ -1609,12 +1616,12 @@ NBProviderCanAccess["anthropic", 0.5]   (* True *)
 NBProviderCanAccess["anthropic", 1.0]   (* False — MaxAccessLevel 0.5 のため *)
 
 NBModelCanHandleAccessLevel[{"lmstudio", "qwen3-30b", "http://127.0.0.1:1234"}, 1.0]
-(* True *)
+(* True (localhost のため base=1.0 がそのまま適用される) *)
 NBModelCanHandleAccessLevel[{"anthropic", "claude-opus-5"}, 1.0]
 (* False *)
 ```
 
-`modelSpec` には `{provider, model}`、`{provider, model, url}`、文字列、または `Automatic`（常に `True`）を指定できます。
+`modelSpec` には `{provider, model}`、`{provider, model, url}`、文字列、または `Automatic`（常に `True`）を指定できます。`{provider, model, url}` 形式で `provider` がローカル LLM プロバイダー（後述）かつ `url` が localhost 以外を指す場合、実際に使われる上限は下記の「ローカル LLM の接続距離によるアクセスレベル強制制限 (rule 107)」で計算される実効値（`NBLocalLLMEffectiveMaxAccessLevel`）に置き換わります。単なる `{provider, model}`（url なしの2要素形式）は従来どおり登録された MaxAccessLevel でのみ判定されるため、この距離制限は適用されません。
 
 ### NBModelProviderName
 
@@ -1624,6 +1631,94 @@ modelSpec からプロバイダー文字列を取り出します。
 NBModelProviderName[{"anthropic", "claude-opus-5"}]   (* "anthropic" *)
 NBModelProviderName["claude-opus-5"]                  (* "claude-opus-5" — 文字列はそのまま *)
 ```
+
+### ローカル LLM の接続距離によるアクセスレベル強制制限 (rule 107)
+
+2026-08-29 に追加された機能です。`lmstudio` / `freetoken` / `llamacpp` のようなローカル LLM プロバイダーに PrivacyLevel 1.0（機密データ含む）を渡してよいのは、「その LLM が本当に自機（localhost）で動いている」という前提があるからです。この前提が成立しない接続先（別サブネット・判定不能なホスト名など）に対して、`provider` に登録された MaxAccessLevel（通常 1.0）をそのまま適用してしまうと、実際には信頼できない別ホストに秘密データが流出しかねません。rule 107 はこの穴を塞ぐために、接続先 URL の「距離」を判定し、必要に応じてアクセスレベルの上限を機械的に引き下げます。
+
+判定対象となるローカル LLM プロバイダーの既定集合は `lmstudio` / `freetoken` / `llamacpp` / `ollama` / `localai` / `koboldcpp` / `textgenwebui` / `local` です（内部変数 `$iLocalLLMProviders`）。クラウドプロバイダー（`anthropic` / `openai` 等）にはこの制限は適用されません。クラウドプロバイダーは別途 0.5 や 0.25 という MaxAccessLevel の上限を持っており、rule 107 でそれをさらに下げると既存の挙動を壊してしまうためです。
+
+#### NBLocalLLMURLProximity
+
+接続先 URL のホスト部分を判定し、`"Localhost"` | `"SameSubnet"` | `"Remote"` | `"Unknown"` のいずれかを返します。
+
+```mathematica
+NBLocalLLMURLProximity["http://127.0.0.1:1234"]      (* "Localhost" *)
+NBLocalLLMURLProximity["http://localhost:1234"]      (* "Localhost" *)
+NBLocalLLMURLProximity["http://[::1]:8080"]          (* "Localhost" *)
+NBLocalLLMURLProximity["http://192.168.1.50:1234"]   (* "SameSubnet" — 自機の IP と第3オクテットまで一致する場合 *)
+NBLocalLLMURLProximity["http://203.0.113.9:1234"]    (* "Remote" *)
+NBLocalLLMURLProximity["http://my-llm-box:1234"]     (* "Unknown" — ホスト名や IPv6 は判定不能 *)
+```
+
+- 判定は `127.*` / `localhost` / `::1` / `0.0.0.0` を `"Localhost"` とみなします。
+- サブネット判定は自機の全 IPv4 アドレス（loopback・link-local を除く）と接続先ホストの、第3オクテットまで（`/24` 相当）の一致で行います。
+- ホスト名・IPv6 アドレスなど IPv4 リテラルとして判定できないものはすべて `"Unknown"` として扱われ、安全側（後述の Remote 相当の扱い）に倒れます。
+
+#### NBLocalLLMEffectiveMaxAccessLevel
+
+`provider` と接続先 `url` から、距離を勘案した実効的な最大アクセスレベルを返します。
+
+```mathematica
+NBLocalLLMEffectiveMaxAccessLevel["lmstudio", "http://127.0.0.1:1234"]
+(* 1.0 — localhost なので登録値 (base) がそのまま適用される *)
+
+NBLocalLLMEffectiveMaxAccessLevel["lmstudio", "http://192.168.1.50:1234"]
+(* NBSubnetTrustActive[] が False なら 0.25（$NBRemoteLocalLLMAccessCeiling）に強制限定される *)
+
+NBLocalLLMEffectiveMaxAccessLevel["lmstudio", "http://192.168.1.50:1234"]
+(* NBSetSubnetTrust[True] 済みで、かつ IP が変化していなければ base (1.0) がそのまま返る *)
+
+NBLocalLLMEffectiveMaxAccessLevel["anthropic", "http://203.0.113.9"]
+(* 1.0 を渡しても anthropic はローカル LLM プロバイダーではないため base (0.5) がそのまま返る（距離制限は適用されない） *)
+```
+
+判定ロジックは以下のとおりです。
+
+1. `provider` がローカル LLM プロバイダー（`$iLocalLLMProviders`）でなければ、そのまま `NBGetProviderMaxAccessLevel[provider]`（base）を返します。
+2. `url` が未指定・空文字列の場合も距離を語れないため base をそのまま返します（`url` を渡す責任は呼び出し側にあります）。
+3. `NBLocalLLMURLProximity[url]` が `"Localhost"` なら base をそのまま返します（localhost はそもそもサブネットの問題ではないため、後述の `NBSetSubnetTrust[False]` にしてもここは変わりません）。
+4. `"SameSubnet"` かつ `NBSubnetTrustActive[]` が `True` の場合のみ base を返します。
+5. それ以外（`"Remote"` / `"Unknown"`、または `"SameSubnet"` だが未信用）の場合は `Min[base, $NBRemoteLocalLLMAccessCeiling]`（既定 0.25）に強制的に引き下げます。
+
+引数の型が不正な場合は保守的に `0.25` を返します。
+
+#### $NBRemoteLocalLLMAccessCeiling
+
+localhost・信用済み同一サブネット以外のローカル LLM に対する、強制アクセスレベル上限です。既定値は `0.25`。rule 107 の中核となる定数です。
+
+```mathematica
+$NBRemoteLocalLLMAccessCeiling
+(* 0.25 *)
+
+(* 上限をさらに厳しくする場合 *)
+$NBRemoteLocalLLMAccessCeiling = 0.1;
+```
+
+#### NBSetSubnetTrust / NBSubnetTrustActive / $NBTrustCurrentSubnet
+
+同一サブネット上のローカル LLM を「今この場で人間が判断して」信用するための、セッション限定のトグル API 群です。
+
+```mathematica
+(* このセッション（カーネル）に限り、現在のサブネットを信用する *)
+NBSetSubnetTrust[True]
+
+(* 信用が今も有効かを確認する *)
+NBSubnetTrustActive[]
+(* True — 前回 NBSetSubnetTrust[True] 時点の自機 IP 集合と現在の IP 集合が一致している場合 *)
+
+(* 信用を取り消す *)
+NBSetSubnetTrust[False]
+```
+
+- **既定値は `False`**（同一サブネット一致だけでは信用しない）。同一サブネットに接続先の LLM がいるという事実だけでは信頼の根拠にならないためです（別 LAN や悪意ある機器が同じ IP を名乗るサーバがあり得る）。よって既定では `NBLocalLLMEffectiveMaxAccessLevel` は同一サブネットでも `$NBRemoteLocalLLMAccessCeiling` に落ちます。人間がその場で判断して明示的に `NBSetSubnetTrust[True]` にする必要があります。
+- **クラウド provider には適用されない**: `anthropic` / `openai` 等はそもそもこの距離判定の対象外です。サブネットトグルを「信用しない」にしてもここは不変です。
+- **自動失効（IP 変化検知）**: `NBSetSubnetTrust[True]` を呼んだ時点の自機 IP 集合（loopback・link-local を除く IPv4 集合）を記録し、`NBSubnetTrustActive[]` を呼ぶたびに現在の IP 集合と比較します。IP 集合が変化していたら、別のネットワークへ移動したとみなして自動的に信用を失効させ `False` を返し、`NBSubnetTrustActive::revoked` メッセージを発行します。ノート PC を Mathematica を起動したまま別のサブネットへ持ち出す運用に対応するための保険です。
+- **永続化禁止（最重要）**: `$NBTrustCurrentSubnet` はセッション（カーネル）限りの値であり、ノートブックの TaggingRules や設定ファイルに保存してはいけません。保存すると、そのノートブックを別のネットワークで開いた瞬間に「信用する」が黙って復活してしまい、この仕組みが防ごうとしている攻撃そのものを通してしまいます。カーネル起動のたびに `$NBTrustCurrentSubnet` は `False` に戻ります。
+
+#### NBModelCanHandleAccessLevel との統合
+
+`NBModelCanHandleAccessLevel[modelSpec, accessLevel]` は、`modelSpec` が `{provider, model, url}` の3要素形式（url 付き）の場合、内部で `NBLocalLLMEffectiveMaxAccessLevel[provider, url] >= accessLevel` を評価します。呼び出し側（claudecode 等）が解決済みの URL を渡す責任を負います。`{provider, model}` の2要素形式では従来どおり `NBProviderCanAccess` による登録値ベースの判定のみが行われ、rule 107 の距離制限は適用されません。
 
 ---
 

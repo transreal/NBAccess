@@ -679,6 +679,48 @@ NBGetAvailableFallbackModels::usage =
   "\:4f8b: NBGetAvailableFallbackModels[0.8] \[RightArrow] lmstudio \:306e\:307f\n" <>
   "    NBGetAvailableFallbackModels[0.5] \[RightArrow] \:5168\:30d7\:30ed\:30d0\:30a4\:30c0\:30fc";
 
+NBLocalLLMURLProximity::usage =
+  "NBLocalLLMURLProximity[url] \:306f\:63a5\:7d9a\:5148\:306e\:8ddd\:96e2\:3092\n" <>
+  "\"Localhost\" | \"SameSubnet\" | \"Remote\" | \"Unknown\" \:3067\:8fd4\:3059\:3002\n" <>
+  "\:30b5\:30d6\:30cd\:30c3\:30c8\:5224\:5b9a\:306f\:7b2c 3 \:30aa\:30af\:30c6\:30c3\:30c8\:307e\:3067 (/24 \:76f8\:5f53) \:306e\:4e00\:81f4\:3002\n" <>
+  "\:30db\:30b9\:30c8\:540d\:30fb IPv6 \:306a\:3069\:5224\:5b9a\:3067\:304d\:306a\:3044\:3082\:306e\:306f \"Unknown\" (= \:5b89\:5168\:5074\:3067 Remote \:6271\:3044)\:3002";
+
+NBLocalLLMEffectiveMaxAccessLevel::usage =
+  "NBLocalLLMEffectiveMaxAccessLevel[provider, url] \:306f\:63a5\:7d9a\:5148\:306e\:8ddd\:96e2\:3092\:52d8\:6848\:3057\:305f\n" <>
+  "\:5b9f\:52b9\:6700\:5927\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:3092\:8fd4\:3059 (rule 107)\:3002\n" <>
+  "\:30ed\:30fc\:30ab\:30eb LLM (lmstudio / llamacpp / freetoken \:7b49) \:304c localhost \:3082\:540c\:4e00\:30b5\:30d6\:30cd\:30c3\:30c8\:3082\n" <>
+  "\:6307\:3055\:306a\:3044\:5834\:5408\:3001\:767b\:9332\:4e0a\:9650\:306b\:95a2\:4fc2\:306a\:304f $NBRemoteLocalLLMAccessCeiling (\:65e2\:5b9a 0.25)\:3078\n" <>
+  "\:5f37\:5236\:7684\:306b\:4e0b\:3052\:308b\:3002\:30af\:30e9\:30a6\:30c9 provider \:306b\:306f\:9069\:7528\:3057\:306a\:3044\:3002\n" <>
+  "url \:672a\:6307\:5b9a\:6642\:306f\:8ddd\:96e2\:3092\:8a9e\:308c\:306a\:3044\:306e\:3067\:767b\:9332\:5024\:3092\:305d\:306e\:307e\:307e\:8fd4\:3059\:3002";
+
+NBSetSubnetTrust::usage =
+  "NBSetSubnetTrust[True|False] \:306f\:30b5\:30d6\:30cd\:30c3\:30c8\:4fe1\:7528\:3092\:8a2d\:5b9a\:3059\:308b\:6b63\:898f\:53e3 (rule 107)\:3002\n" <>
+  "True \:306e\:3068\:304d\:73fe\:5728\:306e\:81ea\:6a5f IP \:96c6\:5408\:3092\:63a7\:3048\:308b\:3002\:4ee5\:5f8c IP \:304c\:5909\:308f\:308b\:3068\n" <>
+  "NBSubnetTrustActive[] \:304c\:81ea\:52d5\:7684\:306b\:4fe1\:7528\:3092\:5931\:52b9\:3055\:305b\:308b\:3002";
+
+NBSubnetTrustActive::usage =
+  "NBSubnetTrustActive[] \:306f\:300c\:4eca\:3053\:306e\:77ac\:9593\:30b5\:30d6\:30cd\:30c3\:30c8\:4fe1\:7528\:304c\:6709\:52b9\:304b\:300d\:3092\:8fd4\:3059\:3002\n" <>
+  "\:4fe1\:7528\:3092\:4e0e\:3048\:305f\:6642\:70b9\:304b\:3089\:81ea\:6a5f IP \:96c6\:5408\:304c\:5909\:308f\:3063\:3066\:3044\:305f\:3089\:3001\:5225\:306e\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:3078\n" <>
+  "\:79fb\:52d5\:3057\:305f\:3068\:307f\:306a\:3057\:3066 **\:305d\:306e\:5834\:3067\:4fe1\:7528\:3092\:5931\:52b9\:3055\:305b** False \:3092\:8fd4\:3059\:3002\n" <>
+  "\:30ce\:30fc\:30c8 PC \:3092 Mathematica \:8d77\:52d5\:3057\:305f\:307e\:307e\:5225\:306e\:30b5\:30d6\:30cd\:30c3\:30c8\:3078\:6301\:3061\:51fa\:3059\:904b\:7528\:3078\:306e\:5bfe\:5fdc\:3002\n" <>
+  "\:6bd4\:8f03\:5bfe\:8c61\:306f loopback / link-local \:3092\:9664\:3044\:305f IPv4 \:96c6\:5408\:3002";
+
+$NBTrustCurrentSubnet::usage =
+  "$NBTrustCurrentSubnet \[LongDash] \:73fe\:5728\:306e\:540c\:4e00\:30b5\:30d6\:30cd\:30c3\:30c8\:3092\:4fe1\:7528\:3059\:308b\:304b (\:65e2\:5b9a False)\:3002rule 107\:3002\n" <>
+  "False \:306e\:9593\:306f\:3001localhost \:4ee5\:5916\:306e\:30ed\:30fc\:30ab\:30eb LLM \:306f\:540c\:4e00\:30b5\:30d6\:30cd\:30c3\:30c8\:3067\:3042\:3063\:3066\:3082\n" <>
+  "$NBRemoteLocalLLMAccessCeiling (0.25) \:3078\:5f37\:5236\:9650\:5b9a\:3055\:308c\:308b\:3002\n" <>
+  "\:30b5\:30d6\:30cd\:30c3\:30c8\:4e00\:81f4\:306f\:4fe1\:983c\:306e\:6839\:62e0\:306b\:306a\:3089\:306a\:3044 (\:5225 LAN \:3067\:540c\:3058 IP \:3092\:540d\:4e57\:308b\n" <>
+  "\:30b5\:30fc\:30d0\:304c\:3042\:308a\:3046\:308b) \:305f\:3081\:3001\:4eba\:9593\:304c\:305d\:306e\:5834\:3067\:5224\:65ad\:3057\:3066\:660e\:793a\:7684\:306b True \:306b\:3059\:308b\:3002\n" <>
+  "\n" <>
+  "**\:6c38\:7d9a\:5316\:7981\:6b62**: \:30bb\:30c3\:30b7\:30e7\:30f3 (\:30ab\:30fc\:30cd\:30eb) \:9650\:308a\:306e\:5024\:3002\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e\n" <>
+  "TaggingRules \:3084\:8a2d\:5b9a\:30d5\:30a1\:30a4\:30eb\:306b\:66f8\:304b\:306a\:3044\:3053\:3068\:3002\:4fdd\:5b58\:3059\:308b\:3068\:5225\:306e\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:3067\n" <>
+  "\:305d\:306e\:30ce\:30fc\:30c8\:3092\:958b\:3044\:305f\:77ac\:9593\:306b\:300c\:4fe1\:7528\:3059\:308b\:300d\:304c\:9ed9\:3063\:3066\:5fa9\:6d3b\:3057\:3001\:9632\:3054\:3046\:3068\:3057\:3066\:3044\:308b\n" <>
+  "\:653b\:6483\:305d\:306e\:3082\:306e\:3092\:901a\:3057\:3066\:3057\:307e\:3046\:3002";
+
+$NBRemoteLocalLLMAccessCeiling::usage =
+  "$NBRemoteLocalLLMAccessCeiling \[LongDash] localhost / \:540c\:4e00\:30b5\:30d6\:30cd\:30c3\:30c8\:5916\:306e\n" <>
+  "\:30ed\:30fc\:30ab\:30eb LLM \:3078\:306e\:5f37\:5236\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:4e0a\:9650 (\:65e2\:5b9a 0.25)\:3002rule 107\:3002";
+
 NBProviderCanAccess::usage =
   "NBProviderCanAccess[provider, accessLevel] \:306f\:30d7\:30ed\:30d0\:30a4\:30c0\:30fc\:304c\:6307\:5b9a\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:306e\n" <>
   "\:30c7\:30fc\:30bf\:306b\:30a2\:30af\:30bb\:30b9\:53ef\:80fd\:304b\:3092\:8fd4\:3059 (True/False)\:3002\n" <>
@@ -1560,7 +1602,11 @@ If[!AssociationQ[$iProviderMaxAccessLevel],
     "zai"        -> 0.25,
     "kimi"       -> 0.25,
     "lmstudio"   -> 1.0,
-    "freetoken"  -> 1.0
+    "freetoken"  -> 1.0,
+    (* 2026-08-29: llamacpp (llama.cpp llama-server)。未登録だと既定 0.5 に落ち、
+       SourceVault の TrustCeiling も 0.5 に丸められて秘密データが載らなかった。
+       LAN 上の別ホストだが自宅内の信頼機器という運用判断で lmstudio と同等。 *)
+    "llamacpp"   -> 1.0
   |>];
 
 (* ============================================================
@@ -5841,6 +5887,139 @@ NBAccess`NBGetProviderMaxAccessLevel[provider_String] :=
 NBAccess`NBProviderCanAccess[provider_String, accessLevel_?NumericQ] :=
   Lookup[$iProviderMaxAccessLevel, ToLowerCase[provider], 0.5] >= accessLevel;
 
+(* ============================================================
+   \:30ed\:30fc\:30ab\:30eb LLM \:306e\:8ddd\:96e2\:306b\:3088\:308b\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:5f37\:5236\:9650\:5b9a (2026-08-29, rule 107)
+
+   lmstudio / llamacpp / freetoken \:306b PL 1.0 \:3092\:8a31\:3057\:3066\:3044\:308b\:306e\:306f
+   「localhost \:304b\:4fe1\:983c\:3067\:304d\:308b\:30b5\:30d6\:30cd\:30c3\:30c8\:3067\:3057\:304b\:4f7f\:308f\:306a\:3044」\:524d\:63d0\:304c\:3042\:308b\:304b\:3089\:3002
+   \:305d\:306e\:524d\:63d0\:304c\:6210\:7acb\:3057\:306a\:3044\:63a5\:7d9a\:5148 (\:5225\:30b5\:30d6\:30cd\:30c3\:30c8 / \:5224\:5b9a\:4e0d\:80fd\:306a\:30db\:30b9\:30c8\:540d) \:3078\:306f
+   provider \:306b\:767b\:9332\:3055\:308c\:305f\:4e0a\:9650\:306b\:95a2\:4fc2\:306a\:304f 0.25 \:3078\:5f37\:5236\:7684\:306b\:4e0b\:3052\:308b\:3002
+   \:5224\:5b9a\:3067\:304d\:306a\:3044\:3082\:306e\:306f\:5b89\:5168\:5074 (Remote \:6271\:3044)\:3002
+
+   \:6ce8: \:30b5\:30d6\:30cd\:30c3\:30c8\:5224\:5b9a\:306f\:65e2\:5b58\:306e NBRegisterTrustedLocalServer \:3068\:540c\:3058\:304f
+   \:7b2c 3 \:30aa\:30af\:30c6\:30c3\:30c8\:307e\:3067 (= /24 \:76f8\:5f53) \:306e\:4e00\:81f4\:3092\:898b\:308b\:3002
+   \:30af\:30e9\:30a6\:30c9 provider (anthropic/openai \:7b49) \:306b\:306f\:9069\:7528\:3057\:306a\:3044 \[LongDash]
+   \:305d\:308c\:3089\:306f\:5225\:9014 0.49/0.25 \:306e\:4e0a\:9650\:304c\:3042\:308a\:3001\:3053\:3053\:3067\:4e0b\:3052\:308b\:3068\:65e2\:5b58\:6319\:52d5\:3092\:58ca\:3059\:3002
+   ============================================================ *)
+
+If[! ListQ[$iLocalLLMProviders],
+  $iLocalLLMProviders = {"lmstudio", "freetoken", "llamacpp", "ollama",
+    "localai", "koboldcpp", "textgenwebui", "local"}];
+If[! NumericQ[$NBRemoteLocalLLMAccessCeiling],
+  $NBRemoteLocalLLMAccessCeiling = 0.25];
+
+(* \:540c\:4e00\:30b5\:30d6\:30cd\:30c3\:30c8\:3092\:4fe1\:7528\:3059\:308b\:304b (\:65e2\:5b9a False = \:4fe1\:7528\:3057\:306a\:3044)\:3002
+
+   \:30b5\:30d6\:30cd\:30c3\:30c8\:304c\:4e00\:81f4\:3059\:308b\:3053\:3068\:81ea\:4f53\:306f\:4fe1\:983c\:306e\:6839\:62e0\:306b\:306a\:3089\:306a\:3044\:3002
+   \:5225\:306e LAN \:3067\:305f\:307e\:305f\:307e (\:307e\:305f\:306f\:60aa\:610f\:3067) \:540c\:3058 IP \:3092\:540d\:4e57\:308b
+   llama-server \:304c\:3044\:308c\:3070\:3001\:79d8\:5bc6\:30c7\:30fc\:30bf\:304c\:305d\:3061\:3089\:3078\:6d41\:308c\:308b\:3002
+   \:3088\:3063\:3066\:65e2\:5b9a\:306f False \:3067\:3001\:4eba\:9593\:304c\:305d\:306e\:5834\:3067\:5224\:65ad\:3057\:3066\:660e\:793a\:7684\:306b True \:306b\:3059\:308b\:3002
+
+   *** \:3053\:306e\:5024\:3092\:6c38\:7d9a\:5316\:3057\:3066\:306f\:3044\:3051\:306a\:3044 (\:6700\:91cd\:8981) ***
+   \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:306e TaggingRules \:3084\:8a2d\:5b9a\:30d5\:30a1\:30a4\:30eb\:306b\:4fdd\:5b58\:3059\:308b\:3068\:3001\:305d\:306e\:30ce\:30fc\:30c8\:3092
+   \:5225\:306e\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:3067\:958b\:3044\:305f\:77ac\:9593\:306b\:300c\:4fe1\:7528\:3059\:308b\:300d\:304c\:9ed9\:3063\:3066\:5fa9\:6d3b\:3057\:3001
+   \:3053\:306e\:30c8\:30b0\:30eb\:304c\:9632\:3054\:3046\:3068\:3057\:3066\:3044\:308b\:653b\:6483\:305d\:306e\:3082\:306e\:3092\:901a\:3057\:3066\:3057\:307e\:3046\:3002
+   \:30bb\:30c3\:30b7\:30e7\:30f3 (\:30ab\:30fc\:30cd\:30eb) \:9650\:308a\:306e\:5024\:3068\:3057\:3001\:8d77\:52d5\:306e\:305f\:3073\:306b False \:3078\:623b\:308b\:3053\:3068\:3002 *)
+If[! ValueQ[$NBTrustCurrentSubnet], $NBTrustCurrentSubnet = False];
+
+(* \:4fe1\:7528\:3092\:4e0e\:3048\:305f\:6642\:70b9\:306e\:81ea\:6a5f IP \:96c6\:5408\:3002\:3053\:308c\:304c\:5909\:308f\:3063\:305f\:3089 = \:5225\:306e\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:3078
+   \:79fb\:52d5\:3057\:305f\:3068\:307f\:306a\:3057\:3001\:4fe1\:7528\:3092\:5931\:52b9\:3055\:305b\:308b (\:30ce\:30fc\:30c8 PC \:3092 Mathematica \:8d77\:52d5\:3057\:305f\:307e\:307e
+   \:6301\:3061\:51fa\:3059\:904b\:7528\:304c\:3042\:308b\:305f\:3081\:5fc5\:9808)\:3002Missing = \:672a\:53d6\:5f97\:3002 *)
+If[! ValueQ[$iNBTrustGrantedIPs], $iNBTrustGrantedIPs = Missing["NotGranted"]];
+
+(* \:6bd4\:8f03\:5bfe\:8c61\:306e IP \:96c6\:5408\:3002loopback \:3068 link-local (169.254) \:306f\:9664\:304f \[LongDash]
+   \:524d\:8005\:306f\:5e38\:306b\:5b58\:5728\:3057\:3001\:5f8c\:8005\:306f DHCP \:5931\:6557\:6642\:306b\:73fe\:308c\:3066\:6d88\:3048\:308b\:305f\:3081\:3001
+   \:3069\:3061\:3089\:3082\:300c\:3069\:306e\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:306b\:3044\:308b\:304b\:300d\:3092\:8868\:3055\:306a\:3044\:3002
+   \:4eee\:60f3\:30a2\:30c0\:30d7\:30bf (172.x \:7b49) \:306f\:542b\:3081\:308b: \:305d\:308c\:3082\:7d4c\:8def\:306e\:5909\:5316\:3067\:3042\:308a\:3001
+   \:4f59\:5206\:306b\:5931\:52b9\:3059\:308b\:5206\:306b\:306f\:5b89\:5168\:5074\:306b\:5012\:308c\:308b\:3002 *)
+iNBTrustRelevantIPs[] :=
+  Sort @ DeleteDuplicates @ Select[iNBMachineIPAddresses[],
+    StringQ[#] &&
+      StringMatchQ[#, DigitCharacter .. ~~ "." ~~ DigitCharacter .. ~~ "." ~~
+        DigitCharacter .. ~~ "." ~~ DigitCharacter ..] &&
+      ! StringStartsQ[#, "127."] && ! StringStartsQ[#, "169.254."] &];
+
+NBSubnetTrustActive::revoked =
+  "\:81ea\:6a5f\:306e IP \:304c\:5909\:308f\:3063\:305f\:305f\:3081 (`1` \[Rule] `2`)\:3001\:30b5\:30d6\:30cd\:30c3\:30c8\:306e\:4fe1\:7528\:3092\:5931\:52b9\:3055\:305b\:307e\:3057\:305f\:3002" <>
+  "\:5225\:306e\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:306b\:3044\:308b\:53ef\:80fd\:6027\:304c\:3042\:308a\:307e\:3059\:3002\:5fc5\:8981\:306a\:3089\:30d1\:30ec\:30c3\:30c8\:306e Subnet \:30c8\:30b0\:30eb\:3067\:518d\:5ea6\:8a31\:53ef\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+
+(* \:4fe1\:7528\:3092\:4e0e\:3048\:308b / \:53d6\:308a\:6d88\:3059\:6b63\:898f\:53e3\:3002True \:306b\:3059\:308b\:3068\:304d\:73fe\:5728\:306e IP \:3092\:63a7\:3048\:308b\:3002 *)
+NBAccess`NBSetSubnetTrust[val_] :=
+  ($NBTrustCurrentSubnet = TrueQ[val];
+   $iNBTrustGrantedIPs = If[TrueQ[val], iNBTrustRelevantIPs[], Missing["NotGranted"]];
+   $NBTrustCurrentSubnet);
+
+(* \:4eca\:3053\:306e\:77ac\:9593\:4fe1\:7528\:304c\:6709\:52b9\:304b\:3002IP \:304c\:5909\:308f\:3063\:3066\:3044\:305f\:3089\:3053\:3053\:3067\:5931\:52b9\:3055\:305b\:308b\:3002
+   \:8aad\:307f\:53d6\:308a\:6642\:306b\:5224\:5b9a\:3059\:308b\:306e\:304c\:8981\:70b9 \[LongDash] $NBTrustCurrentSubnet \:3078\:76f4\:63a5\:4ee3\:5165\:3055\:308c\:3066\:3082
+   (\:30d1\:30ec\:30c3\:30c8\:4ee5\:5916\:304b\:3089\:3067\:3082) \:5fc5\:305a\:3053\:306e\:30c1\:30a7\:30c3\:30af\:3092\:901a\:308b\:3002 *)
+NBAccess`NBSubnetTrustActive[] :=
+  Module[{cur},
+    If[! TrueQ[$NBTrustCurrentSubnet], Return[False]];
+    cur = iNBTrustRelevantIPs[];
+    (* \:76f4\:63a5\:4ee3\:5165\:3055\:308c\:305f\:5834\:5408\:306e\:4fdd\:967a: \:521d\:56de\:8aad\:307f\:53d6\:308a\:3067\:57fa\:6e96\:3092\:6355\:6349\:3059\:308b *)
+    If[! ListQ[$iNBTrustGrantedIPs],
+      $iNBTrustGrantedIPs = cur; Return[True]];
+    If[cur === $iNBTrustGrantedIPs, Return[True]];
+    Message[NBSubnetTrustActive::revoked,
+      StringRiffle[$iNBTrustGrantedIPs, ", "], StringRiffle[cur, ", "]];
+    $NBTrustCurrentSubnet = False;
+    $iNBTrustGrantedIPs = Missing["NotGranted"];
+    False];
+
+(* URL \:306e\:30db\:30b9\:30c8\:90e8\:5206\:3092\:53d6\:308a\:51fa\:3059 (scheme / port / path \:3092\:843d\:3068\:3059) *)
+iNBURLHost[url_String] :=
+  Module[{s = StringTrim[url], inner},
+    s = StringReplace[s, StartOfString ~~ (WordCharacter ..) ~~ "://" -> ""];
+    s = First[StringSplit[s, "/"], s];
+    (* [::1]:8080 \:5f62\:5f0f: \:89d2\:62ec\:5f27\:306e\:4e2d\:8eab\:3092\:305d\:306e\:307e\:307e\:8fd4\:3059 *)
+    inner = StringCases[s, "[" ~~ h : Except["]"] .. ~~ "]" :> h];
+    If[inner =!= {}, Return[StringTrim[First[inner]]]];
+    s = First[StringSplit[s, ":"], s];
+    StringTrim[s]];
+iNBURLHost[_] := "";
+
+NBAccess`NBLocalLLMURLProximity[url_String] :=
+  Module[{host, ips, octets, prefix},
+    host = ToLowerCase @ iNBURLHost[url];
+    If[host === "", Return["Unknown"]];
+    If[MemberQ[{"localhost", "127.0.0.1", "::1", "0.0.0.0"}, host] ||
+       StringStartsQ[host, "127."],
+      Return["Localhost"]];
+    (* IPv4 \:30ea\:30c6\:30e9\:30eb\:4ee5\:5916 (\:30db\:30b9\:30c8\:540d / IPv6) \:306f\:5224\:5b9a\:4e0d\:80fd = \:5b89\:5168\:5074 *)
+    If[! StringMatchQ[host,
+        DigitCharacter .. ~~ "." ~~ DigitCharacter .. ~~ "." ~~
+        DigitCharacter .. ~~ "." ~~ DigitCharacter ..],
+      Return["Unknown"]];
+    octets = StringSplit[host, "."];
+    If[Length[octets] =!= 4, Return["Unknown"]];
+    prefix = StringRiffle[Take[octets, 3], "."];
+    ips = iNBMachineIPAddresses[];
+    If[! ListQ[ips] || ips === {}, Return["Unknown"]];
+    If[AnyTrue[ips, StringQ[#] && StringStartsQ[#, prefix <> "."] &],
+      "SameSubnet", "Remote"]];
+NBAccess`NBLocalLLMURLProximity[_] := "Unknown";
+
+(* provider \:306e\:767b\:9332\:4e0a\:9650\:3068\:8ddd\:96e2\:5236\:9650\:306e Min\:3002url \:672a\:6307\:5b9a\:6642\:306f
+   \:8ddd\:96e2\:3092\:8a9e\:308c\:306a\:3044\:306e\:3067\:767b\:9332\:5024\:3092\:305d\:306e\:307e\:307e\:8fd4\:3059 (\:547c\:3073\:51fa\:3057\:5074\:304c URL \:3092\:6e21\:3059\:8cac\:4efb\:3092\:6301\:3064)\:3002 *)
+NBAccess`NBLocalLLMEffectiveMaxAccessLevel[provider_String, url_] :=
+  Module[{p = ToLowerCase[provider], base, prox},
+    base = NBAccess`NBGetProviderMaxAccessLevel[p];
+    If[! MemberQ[$iLocalLLMProviders, p], Return[base]];
+    If[! StringQ[url] || StringTrim[url] === "", Return[base]];
+    prox = NBAccess`NBLocalLLMURLProximity[url];
+    Which[
+      (* \:81ea\:6a5f\:5185\:3002\:30cd\:30c3\:30c8\:30ef\:30fc\:30af\:306b\:4e00\:5207\:51fa\:306a\:3044\:306e\:3067\:5e38\:306b\:4fe1\:7528\:3059\:308b\:3002
+         \:30b5\:30d6\:30cd\:30c3\:30c8\:30c8\:30b0\:30eb\:3092\:300c\:4fe1\:7528\:3057\:306a\:3044\:300d\:306b\:3057\:3066\:3082\:3053\:3053\:306f\:4e0d\:5909 \[LongDash]
+         localhost \:306f\:305d\:3082\:305d\:3082\:30b5\:30d6\:30cd\:30c3\:30c8\:306e\:554f\:984c\:3067\:306f\:306a\:3044\:3002
+         (base \:306f provider \:767b\:9332\:5024\:3002lmstudio / llamacpp / freetoken = 1.0\:3002
+          \:660e\:793a\:7684\:306b NBSetProviderMaxAccessLevel \:3067\:4e0b\:3052\:305f\:5834\:5408\:306f\:305d\:308c\:304c\:512a\:5148\:3055\:308c\:308b) *)
+      prox === "Localhost", base,
+      (* \:540c\:4e00\:30b5\:30d6\:30cd\:30c3\:30c8\:306f\:300c\:4eba\:9593\:304c\:305d\:306e\:5834\:3067\:4fe1\:7528\:3059\:308b\:300d\:3068\:5ba3\:8a00\:3057\:305f\:3068\:304d\:3060\:3051\:3002
+         NBSubnetTrustActive[] \:7d4c\:7531\:306a\:306e\:3067\:3001IP \:304c\:5909\:308f\:3063\:3066\:3044\:305f\:3089\:3053\:3053\:3067\:5931\:52b9\:3059\:308b\:3002 *)
+      prox === "SameSubnet" && TrueQ[NBAccess`NBSubnetTrustActive[]], base,
+      True, Min[base, $NBRemoteLocalLLMAccessCeiling]]];
+NBAccess`NBLocalLLMEffectiveMaxAccessLevel[___] := 0.25;
+
 (* Stage 9 P1.5: \:30e2\:30c7\:30eb\:6307\:5b9a (modelSpec) \:304c\:6307\:5b9a\:30a2\:30af\:30bb\:30b9\:30ec\:30d9\:30eb\:306e
    \:30c7\:30fc\:30bf\:3092\:6271\:3048\:308b\:304b\:5224\:5b9a\:3059\:308b\:3002Private \:30ce\:30fc\:30c8 (\:30ec\:30d9\:30eb 1.0) \:3067
    \:30af\:30e9\:30a6\:30c9\:30e2\:30c7\:30eb (claudecode/anthropic/openai = 0.5) \:3092\:62d2\:5426\:3057\:3001
@@ -5860,6 +6039,14 @@ NBAccess`NBModelCanHandleAccessLevel[modelSpec_, accessLevel_?NumericQ] :=
       StringQ[modelSpec], "claudecode",
       True, Missing["BadModelSpec"]];
     If[!StringQ[provider], Return[False]];
+    (* 2026-08-29 (rule 107): modelSpec \:304c URL \:3092\:6301\:3064\:30ed\:30fc\:30ab\:30eb LLM \:306a\:3089\:3001
+       \:63a5\:7d9a\:5148\:306e\:8ddd\:96e2\:3067\:4e0a\:9650\:3092\:5f37\:5236\:9650\:5b9a\:3059\:308b (\:5225\:30b5\:30d6\:30cd\:30c3\:30c8 \[Rule] 0.25)\:3002
+       URL \:7121\:3057\:306e 2 \:8981\:7d20 tuple \:306f\:5f93\:6765\:3069\:304a\:308a\:767b\:9332\:5024\:3067\:5224\:5b9a\:3059\:308b\:306e\:3067\:3001
+       \:547c\:3073\:51fa\:3057\:5074 (claudecode) \:304c\:89e3\:6c7a\:6e08\:307f URL \:3092\:8a70\:3081\:3066\:6e21\:3059\:3053\:3068\:3002 *)
+    If[ListQ[modelSpec] && Length[modelSpec] >= 3 && StringQ[modelSpec[[3]]],
+      Return[
+        NBAccess`NBLocalLLMEffectiveMaxAccessLevel[provider, modelSpec[[3]]] >=
+          accessLevel]];
     NBAccess`NBProviderCanAccess[provider, accessLevel]
   ];
 NBAccess`NBModelCanHandleAccessLevel[___] := False;

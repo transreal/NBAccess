@@ -52,7 +52,7 @@ NBAccess は Input セルの代入文を静的に解析し、変数間の依存�
 
 汎用履歴データベース API は、ノートブックの TaggingRules にチャットセッションなどの履歴を保存します。連続するエントリ間の差分を自動圧縮することで、ノートブックファイルの肥大化を抑えつつ、完全な履歴を保持します。親セッションの継承機能により、セッションのフォークや分岐にも対応しています。
 
-履歴データの読み取りにはインメモリキャッシュが組み込まれており、同一セッション内で同じ履歴を繰り返し参照する際の FrontEnd 通信を大幅に削減します。書き込み操作はキャッシュと自動的に同期されるため、整合性は常に保たれます。`NBHistoryCacheClear[]` でキャッシュの手動クリアも可能です。履歴が不要になった場合は `NBHistoryDelete[nb, tag]` でデータベースごと削除できます。
+履歴データの読み取りにはインメモリキャッシュが組み込まれており、同一セッション内で同じ履歴を繰り返し参照する際の FrontEnd 通信を大幅に削減します。書き込み操作はキャッシュと自動的に同期されるため、整合性は常に保たれます。`NBHistoryCacheClear[]` でキャッシュの手動クリアも可能です。履歴が不要になった場合は `NBHistoryDelete[nb, tag]` でデータベースごと削除できます。`NBHistoryEntries` / `NBHistoryEntriesWithInherit` は `Decompress` オプション（既定 `True`）を受け付け、`False` を指定すると差分（Diff）を復元せず圧縮状態のオブジェクトのまま返すため、差分内容自体を検査したい場合に利用できます。
 
 ### SourceVault との統合とパス・値オブジェクトの正規化
 
@@ -130,6 +130,7 @@ ClaudeRuntime は NBAccess を依存パッケージとしてロードし、こ�
 - `Module` / `Block` / `With` のスコープ局所変数や、`Set` / `SetDelayed` で定義したローカル関数名は承認対象から除外され、過剰な承認要求を抑制します。
 - ユーザーが承認 UI で明示承認した場合（UserApproved）や、directLLM rescue などの自動 commit 互換経路（CommitterAutoApprove）では、検証済みパスに対して実行が許可されます。
 - 式中の head が `System` 系の純粋関数か否かを文字列パースに頼らずに判定できるよう改善され、`NotebookWrite[nb, Cell[...]]` のように未知 head（`Cell` 等）を含む式が誤って NeedsApproval 扱いされる過剰判定が抑制されています。
+- `SourceVault` 系など信頼済みパッケージ由来の head については、同一種別の承認要求が繰り返し発火しないよう抑制するガードが追加されています。
 - `"Evaluate"` は Deny 対象から除去されており、`ParametricPlot[Evaluate[...]]` のように `Evaluate` を含む一般的なプロット・計算式が不必要に拒否・承認待ちになることがなくなっています。
 - 生の `Import` の呼び出しは恒久的に Deny のままです。式中でファイルを読み込みたい場合は、代わりに `NBImport` を使用してください。
 
@@ -398,7 +399,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBFilterCellIndices[nb, indices, PrivacySpec -> ps]`** — インデックスリストをフィルタリングします
 - **`NBGetCells[nb, PrivacySpec -> ps]`** — 全セルをフィルタリングして返します
 - **`NBGetPrivacySpec[]`** — 現在の `$NBPrivacySpec` を返します
-- **`NBConfidentialHandlingAllowedQ[mode, permissionMode]`** — ConfidentialHandling モード（EncryptedBundle / ReferenceOnly / Redacted / PlaintextDebug）が permissionMode で許容されるか返します（PlaintextDebug ゲート）
+- **`NBConfidentialHandlingAllowedQ[mode, permissionMode]`** — ConfidentialHandling モード（EncryptedBundle / ReferenceOnly / Redacted / PlaintextDebug）が permissionMode で許容されるか返す（PlaintextDebug ゲート）
 - **`NBGetContext[nb, afterIdx, PrivacySpec -> ps]`** — LLM プロンプト用コンテキスト文字列を構築します（2段階の Input フィルタリング + 3段階の Output 処理：スマート要約・スキーマ情報送信・完全スキップ）
 
 #### 機密マーク管理
@@ -514,9 +515,9 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 
 - **`NBHistoryCreate[nb, tag, diffFields]`** — 新しい履歴データベースを作成します（冪等）
 - **`NBHistoryAppend[nb, tag, entry]`** — エントリを差分圧縮して追加します
-- **`NBHistoryEntries[nb, tag]`** — 全エントリを復元して返します
+- **`NBHistoryEntries[nb, tag, opts]`** — 全エントリを復元して返します（`Decompress -> False` を指定すると Diff オブジェクトのまま返します。既定は `True`）
 - **`NBHistoryUpdateLast[nb, tag, updates]`** — 最後のエントリを更新します
-- **`NBHistoryEntriesWithInherit[nb, tag]`** — 親チェーンを含む全履歴を返します
+- **`NBHistoryEntriesWithInherit[nb, tag, opts]`** — 親チェーンを含む全履歴を返します（`Decompress` オプション対応）
 - **`NBHistoryListTags[nb, prefix]`** — タグ一覧を返します
 - **`NBHistoryAddAttachment[nb, tag, path]`** — セッションにファイルをアタッチします
 - **`NBHistoryRawData[nb, tag]`** — 圧縮状態のまま履歴データを返します（キャッシュ付き）
@@ -637,6 +638,9 @@ globalDeps = NBBuildGlobalVarDependencies[];
 (* 差分圧縮付き履歴保存 *)
 NBHistoryCreate[nb, "chat-session-1", {"prompt", "response"}];
 NBHistoryAppend[nb, "chat-session-1", <|"prompt" -> "Hello", "response" -> "Hi!"|>];
+
+(* 差分を復元せず、Diff オブジェクトのまま取得（差分検査用） *)
+rawEntries = NBHistoryEntries[nb, "chat-session-1", Decompress -> False];
 
 (* 履歴の削除 *)
 NBHistoryDelete[nb, "chat-session-1"];

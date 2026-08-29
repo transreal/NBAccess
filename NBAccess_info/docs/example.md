@@ -360,7 +360,7 @@ NBListProviderModels["anthropic"]
 
 ## ローカル LLM サーバーの API キーアクセサ
 
-既定で登録済みのローカル LLM プロバイダーは `"lmstudio"`（`http://127.0.0.1:1234`）と `"freetoken"`（`http://127.0.0.1:1919`、VRAM 超えの MoE 用ローカル推論サーバ FreeToken）の2つで、いずれも MaxAccessLevel 1.0（ローカル実行のためクラウドへは送信しない）で `$iProviderMaxAccessLevel` / `$iLocalLLMAPIKeyMap` に初期登録されます。`freetoken` の APIキー名は既定で `"FREETOKEN_API_KEY"` です。パッケージ更新後にすでにロード済みのカーネルに対しては、既存の生きたマップへ `freetoken` エントリを backfill する処理が自動的に働きます（未登録の場合のみ）。
+既定で登録済みのローカル LLM プロバイダーは `"lmstudio"`（`http://127.0.0.1:1234`）、`"freetoken"`（`http://127.0.0.1:1919`、VRAM 超えの MoE 用ローカル推論サーバ FreeToken）、`"llamacpp"`（llama.cpp の llama-server、2026-08-29 追加）の3つで、いずれも MaxAccessLevel 1.0（ローカル実行のためクラウドへは送信しない）で `$iProviderMaxAccessLevel` に初期登録されます。`llamacpp` は `$iLocalLLMAPIKeyMap` には既定エントリを持たず、API キー名は下記のフォールバック規則により `"LLAMACPP_API_KEY"` に解決されます。`lmstudio`/`freetoken` は `$iLocalLLMAPIKeyMap` にも初期登録されており、`freetoken` の APIキー名は既定で `"FREETOKEN_API_KEY"` です。パッケージ更新後にすでにロード済みのカーネルに対しては、既存の生きたマップへ `freetoken` エントリを backfill する処理が自動的に働きます（未登録の場合のみ）。ローカル LLM への MaxAccessLevel 1.0 付与は「localhost または信用済み同一サブネットからのみ使う」という前提の上に成り立っており、その前提が崩れる接続には後述の rule 107 によりアクセスレベル上限が自動的に強制されます。
 
 ```
 NBGetLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
@@ -423,8 +423,8 @@ NBSetProviderMaxAccessLevel["anthropic", 0.5]
 NBSetProviderMaxAccessLevel["lmstudio", 1.0]
 (* プロバイダーの最大アクセスレベルを設定する。level: 0.0〜1.0。
    このレベルを超えるアクセスレベルのリクエストにはフォールバックしない。
-   既定では "lmstudio" と "freetoken" が MaxAccessLevel 1.0 で初期登録されている
-   (どちらもローカル実行のプロバイダーのため)。 *)
+   既定では "lmstudio"・"freetoken"・"llamacpp" が MaxAccessLevel 1.0 で初期登録されている
+   (いずれもローカル実行のプロバイダーのため)。 *)
 
 NBGetProviderMaxAccessLevel["anthropic"]    (* 未登録プロバイダーは0.5を返す *)
 
@@ -441,7 +441,9 @@ NBProviderCanAccess["lmstudio", 1.0]
 NBModelCanHandleAccessLevel[{"anthropic", "claude-opus-4-8"}, 1.0]
 (* モデル指定がそのアクセスレベルのデータを扱えるかを返す(True/False)。Privateノート(レベル1.0)で
    クラウドモデル(claudecode/anthropic/openai = 0.5)を拒否し、ローカルLLM(lmstudio = 1.0)のみを通すために使う。
-   modelSpec: {provider, model} | {provider, model, url} | "model" | Automatic (未指定はTrue)。 *)
+   modelSpec: {provider, model} | {provider, model, url} | "model" | Automatic (未指定はTrue)。
+   {provider, model, url} 形式でローカルLLMプロバイダーを指す場合、rule 107 の距離判定
+   (下記 NBLocalLLMEffectiveMaxAccessLevel) を経由して上限が動的に下がることがある。 *)
 
 NBModelProviderName[{"anthropic", "claude-opus-4-8"}]   (* modelSpecからprovider文字列を取り出す *)
 
@@ -449,6 +451,46 @@ NBNotebookRequiredAccessLevel[nb]
 (* ノートブックが要求するアクセスレベルを返す。
    Private宣言 (CloudPublishable -> False) なら1.0 (クラウド禁止)、それ以外は0.0。 *)
 ```
+
+## ローカル LLM の距離によるアクセス制限 (rule 107)
+
+`"lmstudio"`/`"freetoken"`/`"llamacpp"` に許可された MaxAccessLevel 1.0 は「localhost または人間が明示的に信用した同一サブネットからのみ使う」という前提の上に成り立っています。この前提が崩れる接続先（別サブネット・判定不能なホスト名や IPv6）を自動検出し、アクセスレベル上限を強制的に引き下げる API 群です（2026-08-29 追加）。クラウド provider（anthropic/openai 等）には適用されません。サブネットが一致すること自体は信頼の根拠にならない（別 LAN で同じ IP を名乗るサーバがありうる）ため、既定は「信用しない」であり、人間がその場で判断して明示的に `NBSetSubnetTrust[True]` にする必要があります。
+
+```
+NBLocalLLMURLProximity["http://192.168.1.10:1234"]
+(* 接続先URLの距離を "Localhost" | "SameSubnet" | "Remote" | "Unknown" で返す。
+   サブネット判定は第3オクテットまで(/24相当)の一致 (NBRegisterTrustedLocalServerと同じ基準)。
+   ホスト名・IPv6など判定できないものは "Unknown" (= 安全側でRemote扱い)。 *)
+
+NBLocalLLMEffectiveMaxAccessLevel["lmstudio", "http://192.168.1.10:1234"]
+(* 接続先の距離を勘案した実効MaxAccessLevelを返す。
+   localhostなら登録上限(base)をそのまま返す。同一サブネットはNBSubnetTrustActive[]が
+   Trueのときのみbaseを返し、それ以外(別サブネット・判定不能)はbaseに関係なく
+   $NBRemoteLocalLLMAccessCeiling (既定0.25) へ強制的に下げる。
+   provider がローカルLLMプロバイダー (lmstudio/freetoken/llamacpp/ollama/localai/koboldcpp/
+   textgenwebui/local) に含まれない場合や url 未指定の場合は登録値(base)をそのまま返す。 *)
+
+NBSetSubnetTrust[True]
+NBSetSubnetTrust[False]
+(* 同一サブネットの信用を与える/取り消す正規口。Trueにすると現在の自機IP集合(loopback・
+   link-local除くIPv4。仮想アダプタは含む)を記録する。
+   *** この値をノートブックのTaggingRulesや設定ファイルに永続化してはいけない (最重要) ***
+   永続化すると、そのノートを別ネットワークで開いた瞬間に「信用する」が黙って復活し、
+   このトグルが防ごうとしている攻撃そのものを通してしまう。セッション(カーネル)限りの値とし、
+   起動のたびにFalseへ戻ること。 *)
+
+NBSubnetTrustActive[]
+(* 今この瞬間サブネット信用が有効かを返す。信用を与えた時点から自機IP集合が変わっていたら、
+   別のネットワークへ移動したとみなして信用を失効させ (Message NBSubnetTrustActive::revoked)、
+   Falseを返す。 *)
+```
+
+グローバル変数:
+
+- `$NBTrustCurrentSubnet` — 現在の同一サブネット信用フラグ（既定 `False`）。`NBSetSubnetTrust` 経由でのみ変更すること。
+- `$NBRemoteLocalLLMAccessCeiling` — localhost でも信用済み同一サブネットでもないローカル LLM 接続への強制アクセスレベル上限（既定 `0.25`）。
+
+`NBModelCanHandleAccessLevel[{provider, model, url}, accessLevel]` は url 付き 3 要素 modelSpec が渡されたとき、この距離判定を経由して上限を評価します。
 
 ## アクセス可能ディレクトリ API
 
@@ -608,4 +650,6 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 今回のドキュメント更新での変更点:
 
-1. **ローカル LLM プロバイダー `"freetoken"` の既定登録（2026-08-24）**。VRAM 超えの MoE モデル用ローカル推論サーバ FreeToken（`http://127.0.0.1:1919`）が、`"lmstudio"` と同様にプロバイダー既定マップ（`$iProviderMaxAccessLevel`、`$iLocalLLMAPIKeyMap`）へ MaxAccessLevel 1.0・APIキー名 `"FREETOKEN_API_KEY"` で初期登録されるようになりました。すでにロード済みのカーネルに対しては、既存の生きたマップへ未登録分のみを backfill する処理が働きます。これに伴い「ローカル LLM サーバーの API キーアクセサ」節と「フォールバックモデル / プロバイダーアクセスレベル API」節の `NBSetProviderMaxAccessLevel`/`NBGetLocalLLMAPIKey` 関連の説明に `freetoken` の既定登録に関する記述を追加しました。公開関数・オプションの追加や削除はありません（既定データの初期化ロジックの変更です）。
+1. **ローカル LLM プロバイダー `"llamacpp"` の既定登録（2026-08-29）**。llama.cpp の llama-server 用に、`"lmstudio"`/`"freetoken"` と同様 MaxAccessLevel 1.0 で `$iProviderMaxAccessLevel` へ初期登録されるようになりました。`$iLocalLLMAPIKeyMap` には既定エントリを持たず、API キー名は `NBGetLocalLLMAPIKey` のフォールバック規則により `"LLAMACPP_API_KEY"` に解決されます。「ローカル LLM サーバーの API キーアクセサ」節と「フォールバックモデル / プロバイダーアクセスレベル API」節の該当箇所に追記しました。
+
+2. **ローカル LLM の距離によるアクセスレベル強制制限 rule 107 を新設（2026-08-29）**。`"lmstudio"`/`"freetoken"`/`"llamacpp"` に許可されている MaxAccessLevel 1.0 は「localhost または信用済み同一サブネットからのみ使う」という前提の上に成り立っていましたが、その前提が崩れる接続（別サブネット・判定不能なホスト名や IPv6）を自動検出してアクセスレベル上限を強制的に引き下げる仕組みを追加しました。新しい公開関数 `NBLocalLLMURLProximity`、`NBLocalLLMEffectiveMaxAccessLevel`、`NBSetSubnetTrust`、`NBSubnetTrustActive` と、新しいグローバル変数 `$NBTrustCurrentSubnet`（既定 `False`。セッション限りの値であり永続化禁止）、`$NBRemoteLocalLLMAccessCeiling`（既定 `0.25`）を追加しました。`NBModelCanHandleAccessLevel` は url 付き modelSpec に対してこの距離判定を経由するようになりました。これらを新設の「ローカル LLM の距離によるアクセス制限 (rule 107)」節にまとめ、「フォールバックモデル / プロバイダーアクセスレベル API」節の関連する説明にも参照を追記しました。削除された公開関数・オプションはありません。
