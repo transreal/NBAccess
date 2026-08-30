@@ -7179,12 +7179,19 @@ iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]
       If[Length[setHeadsInExpr] > 0,
         globalSets = iExtractGlobalSets[heldExpr];
         If[Length[globalSets] > 0,
-          Return[<|"Decision" -> "NeedsApproval",
-            "ReasonClass" -> "GlobalSetRequiresApproval",
-            "VisibleExplanation" ->
-              "Global-scope " <> StringRiffle[DeleteDuplicates[globalSets], "/"] <>
-              " detected. Only Set/SetDelayed inside Module/With/Block is auto-permitted.",
-            "SanitizedExpr" -> heldExpr|>]]]];
+          Module[{gsyms = Quiet @ Check[
+              iExtractGlobalSetSymbols[heldExpr], {}]},
+            Return[<|"Decision" -> "NeedsApproval",
+              "ReasonClass" -> "GlobalSetRequiresApproval",
+              "VisibleExplanation" ->
+                "Global-scope " <> StringRiffle[DeleteDuplicates[globalSets], "/"] <>
+                If[ListQ[gsyms] && gsyms =!= {},
+                  " on " <> StringRiffle[Take[gsyms, UpTo[6]], ", "] <>
+                  If[Length[gsyms] > 6,
+                    " (+" <> ToString[Length[gsyms] - 6] <> " more)", ""], ""] <>
+                " detected. Only Set/SetDelayed inside Module/With/Block is auto-permitted.",
+              "GlobalSetSymbols" -> gsyms,
+              "SanitizedExpr" -> heldExpr|>]]]]];
     
     (* \:904e\:5270\:53cd\:5fa9\:30ac\:30fc\:30c9 (2026-06-29): trusted package head (SourceVault* \:7b49) \:3092
        \:5927\:304d\:306a literal \:53cd\:5fa9\:3067\:56de\:3059\:751f\:6210\:30b3\:30fc\:30c9 (\:4f8b: Do[SourceVaultIngest[..], {10000}])
@@ -7524,7 +7531,30 @@ $iNBSideEffectStemExceptions = {
   "ConnectedMoleculeComponents", "KEdgeConnectedComponents",
   "KVertexConnectedComponents", "VertexConnectivity", "EdgeConnectivity",
   (* "Open" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a UI \:69cb\:7bc9\:5b50 *)
-  "OpenerView"
+  "OpenerView",
+  (* 2026-08-30: LLM \:751f\:6210\:30b3\:30fc\:30c9\:304c\:5e38\:7528\:3059\:308b\:7d14\:7c8b\:95a2\:6570\:304c\:5927\:91cf\:306b
+     \:8aa4\:5224\:5b9a\:3055\:308c\:3066\:3044\:305f (\:5019\:88dc 25 \:4e2d 22)\:3002\:5b9f\:6a5f\:3067 Directory[] \:3060\:3051\:3067
+     \:30bb\:30eb\:5168\:4f53\:304c UnknownHeadRequiresApproval \:3067\:6b62\:307e\:3063\:305f\:3002
+     \:3044\:305a\:308c\:3082\:5f15\:6570\:3092\:8aad\:3080\:3060\:3051\:3067\:5916\:754c\:3092\:5909\:3048\:306a\:3044\:3002
+     \:6ce8: SetDirectory / ResetDirectory / DeleteFile \:7b49\:306e\:771f\:306e\:526f\:4f5c\:7528\:95a2\:6570\:306f
+     \:3053\:3053\:306b\:5165\:308c\:306a\:3044 (\:5f15\:3055\:305a\:526f\:4f5c\:7528\:6271\:3044\:306e\:307e\:307e)\:3002 *)
+  (* "Directory" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b (\:53c2\:7167 / \:6587\:5b57\:5217\:64cd\:4f5c\:306e\:307f) *)
+  "Directory", "DirectoryName", "ParentDirectory",
+  (* "File" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:30d1\:30b9\:6587\:5b57\:5217\:64cd\:4f5c *)
+  "FileNameJoin", "FileNameSplit", "FileNameTake", "FileNameDrop",
+  "FileBaseName", "FileExtension", "FileNameDepth",
+  (* "Delete" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:6587\:5b57\:5217\:64cd\:4f5c *)
+  "StringDelete",
+  (* "Start" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:6587\:5b57\:5217\:30d1\:30bf\:30fc\:30f3 *)
+  "StartOfString", "StartOfLine",
+  (* "Stream" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:30b0\:30e9\:30d5\:30a3\:30c3\:30af\:30b9 *)
+  "StreamPlot", "ListStreamPlot",
+  (* "Kernel" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:7d71\:8a08 *)
+  "SmoothKernelDistribution",
+  (* "URL" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:6587\:5b57\:5217\:64cd\:4f5c (\:901a\:4fe1\:3057\:306a\:3044) *)
+  "URLParse", "URLBuild", "URLEncode", "URLDecode",
+  (* "Print" \:8a9e\:5e79\:3060\:304c\:51fa\:529b\:3057\:306a\:3044 / "Remove" \:8a9e\:5e79\:3060\:304c\:30de\:30fc\:30ab *)
+  "PrintPrecision", "Removed"
 };
 
 (* head \:540d\:304c\:526f\:4f5c\:7528\:8a9e\:5e79\:3092\:542b\:3080\:304b (\:9664\:5916\:30ea\:30b9\:30c8\:306b\:3042\:308b\:7d14\:7c8b\:95a2\:6570\:306f False) *)
@@ -8084,6 +8114,30 @@ iExtractGlobalSets[held_HoldComplete] :=
   ];
 
 iExtractGlobalSets[_] := {};
+
+(* \:30b0\:30ed\:30fc\:30d0\:30eb\:4ee3\:5165\:306e\:5de6\:8fba\:30b7\:30f3\:30dc\:30eb\:540d (2026-08-30)\:3002
+   \:901a\:77e5\:304c\:300cGlobal-scope Set detected\:300d\:3060\:3051\:3060\:3068\:3001\:627f\:8a8d\:30d7\:30ec\:30d3\:30e5\:30fc\:304c
+   \:5148\:982d\:3067\:5207\:308a\:8a70\:3081\:3089\:308c\:3066\:3044\:308b\:5834\:5408\:306b\:300c\:898b\:3048\:3066\:3044\:308b\:306e\:306f Module \:3060\:3051\:306a\:306e\:306b
+   \:306a\:305c\:30b0\:30ed\:30fc\:30d0\:30eb\:4ee3\:5165\:6271\:3044\:306a\:306e\:304b\:300d\:304c\:5206\:304b\:3089\:306a\:3044 (\:5b9f\:6a5f\:3067\:6df7\:4e71\:3057\:305f)\:3002
+   \:4f55\:3092\:66f8\:304d\:63db\:3048\:3088\:3046\:3068\:3057\:3066\:3044\:308b\:304b\:3092\:540d\:524d\:3067\:793a\:3059\:3002 *)
+iExtractGlobalSetSymbols[held_HoldComplete] :=
+  Module[{stripped, lhs},
+    stripped = held /. {
+      HoldPattern[(Module | With | Block)[_, _]] :> Null,
+      HoldPattern[Function[_]] :> Null,
+      HoldPattern[Function[_, _]] :> Null,
+      HoldPattern[Function[_, _, _]] :> Null
+    };
+    lhs = Cases[stripped,
+      HoldPattern[(Set | SetDelayed)[l_, _]] :>
+        Quiet @ Check[
+          Switch[Head[Unevaluated[l]],
+            Symbol, SymbolName[Unevaluated[l]],
+            _, ToString[Head[Unevaluated[l]]]],
+          "?"],
+      Infinity];
+    DeleteDuplicates @ Select[Flatten[{lhs}], StringQ]];
+iExtractGlobalSetSymbols[_] := {};
 
 (* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: NBExecuteHeldExpr

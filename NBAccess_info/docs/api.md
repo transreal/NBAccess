@@ -1,6 +1,3 @@
-### PrivacySpec
-NBAccess 関数のプライバシーフィルタリングオプション。値は `<|"AccessLevel" -> level|>`。AccessLevel ≤ セルのプライバシーレベルのセルのみアクセス可能。0.5=クラウドLLM安全データのみ(既定)、1.0=ローカルLLM環境など全データ。
-
 ### Decompress
 NBHistoryData/NBHistoryEntries/NBHistoryEntriesWithInherit が受け付けるオプション(独立シンボルではなく System`Decompress をそのままオプション名に流用)。True(既定)=Diff差分を復元して平文で返す、False=Diffオブジェクトのまま返す(差分検査用)。
 
