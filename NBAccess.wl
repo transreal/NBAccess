@@ -48,6 +48,9 @@ $NBVerbose::usage =
   "True: NBAccess \:5185\:90e8\:306e\:8a73\:7d30\:30ed\:30b0\:3092 Messages \:306b\:51fa\:529b\:3059\:308b\:3002\n" <>
   "False (\:30c7\:30a3\:30d5\:30a9\:30eb\:30c8): \:91cd\:5927\:30a8\:30e9\:30fc\:4ee5\:5916\:306e NBAccess \:30ed\:30b0\:3092\:6291\:5236\:3059\:308b\:3002";
 
+$NBRedactedResultMaxLength::usage =
+  "$NBRedactedResultMaxLength \:306f NBRedactExecutionResult / NBReleaseResult \:304c\:8fd4\:3059 RedactedResult (LLM \:306b\:623b\:308b\:8a55\:4fa1\:7d50\:679c\:672c\:6587) \:306e\:6700\:5927\:6587\:5b57\:6570 (\:65e2\:5b9a 6000)\:3002Summary \:306f\:5f93\:6765\:3069\:304a\:308a 200 \:5b57\:3002\:6587\:5b57\:5217\:306e\:7d50\:679c\:306f Short \:3067\:7701\:7565\:305b\:305a\:3053\:306e\:9577\:3055\:307e\:3067\:305d\:306e\:307e\:307e\:8fd4\:3059\:3002\:9577\:3044\:672c\:6587\:3092\:8aad\:3080\:9053\:5177 (SlideGraphSectionText / SlideNotebookText \:306a\:3069) \:306e 1 \:30da\:30fc\:30b8\:306f\:3053\:308c\:3088\:308a\:5c0f\:3055\:304f\:3059\:308b\:3002";
+
 $NBAutoEvalProhibitedPatterns::usage =
   "$NBAutoEvalProhibitedPatterns \:306f NBEvaluatePreviousCell \:3067\:81ea\:52d5\:5b9f\:884c\:3092\:30d6\:30ed\:30c3\:30af\:3059\:308b\:30d1\:30bf\:30fc\:30f3\:306e\:30ea\:30b9\:30c8\:3002\n" <>
   "RegularExpression \:307e\:305f\:306f StringExpression \:306e\:30ea\:30b9\:30c8\:3002\n" <>
@@ -127,6 +130,10 @@ $NBLLMQueryFunc::usage =
   "callback \:306f\:5fdc\:7b54\:6587\:5b57\:5217\:3092\:53d7\:3051\:53d6\:308b\:95a2\:6570\:3002nb \:306f\:51fa\:529b\:5148 NotebookObject\:3002\n" <>
   "Integrations \:306f LM Studio MCP \:7528 (lmstudio \:30e2\:30c7\:30eb\:6642\:306e\:307f\:6709\:52b9\:3001Automatic \:306a\:3089\:7121\:8996)\:3002\n" <>
   "\:30ab\:30fc\:30cd\:30eb\:3092\:30d6\:30ed\:30c3\:30af\:3057\:306a\:3044\:3002";
+
+$NBLLMLastError::usage =
+  "$NBLLMLastError は NBCellTransformWithLLM が最後に受け取った LLM エラー文字列 (\"Error: ...\" / [ERROR]: 本文 / Failure の Message)。\n" <>
+  "成功時は \"\" に戻る。completionFn には $Failed しか渡らないため、呼び出し側 (documentation 等) がユーザーへ実エラーを示すのに使う。";
 
 NBCellGetText::usage =
   "NBCellGetText[nb, cellIdx] \:306f\:30bb\:30eb\:304b\:3089\:30c6\:30ad\:30b9\:30c8\:3092\:5805\:7262\:306b\:53d6\:5f97\:3059\:308b\:3002\n" <>
@@ -291,8 +298,9 @@ NBValueSpec::usage =
 
 NBPrivacyLevelToRoutes::usage =
   "NBPrivacyLevelToRoutes[privacyLevel] \:306f\:5fc5\:8981\:306a\:30e2\:30c7\:30eb\:30eb\:30fc\:30c8\:30ea\:30b9\:30c8\:3092\:8fd4\:3059\:3002\n" <>
-  "0.5 -> {\"cloud\"}, 1.0 -> {\"local\"}, {0.5,1.0} -> {\"cloud\",\"local\"}\n" <>
-  "\:4f8b: NBPrivacyLevelToRoutes[{0.5, 1.0}]";
+  "PL < 0.5 -> {\"cloud\"}, PL >= 0.5 -> {\"local\"} (0.5 \:306f local)\:3002\n" <>
+  "\:4f8b: 0.4 -> {\"cloud\"}, 0.5 -> {\"local\"}, {0.4,1.0} -> {\"cloud\",\"local\"}\n" <>
+  "\:4f8b: NBPrivacyLevelToRoutes[{0.4, 1.0}]";
 
 NBFileReadCellsInRange::usage =
   "NBFileReadCellsInRange[nb, lo, hi] \:306f PrivacyLevel \:304c lo\:301chi \:306e\:30bb\:30eb\:306e\:307f\:8fd4\:3059\:3002\n" <>
@@ -605,7 +613,7 @@ NBCredentialConfiguredQ::usage =
    $NBLLMQueryFunc / $NBAutoEvalProhibitedPatterns \:3092\:76f4\:63a5\:66f8\:304d\:63db\:3048\:3066\:3044\:305f\:306e\:3092\:7f6e\:304d\:63db\:3048\:308b\:3002
    \:5024\:306e\:6b63\:898f\:5316\:30fb\:91cd\:8907\:6392\:9664\:30fb\:578b\:691c\:67fb\:306f\:3053\:3053\:3067\:4e00\:5143\:7684\:306b\:884c\:3046\:3002 *)
 NBRegisterAllowedHeads::usage =
-  "NBRegisterAllowedHeads[heads] \:306f head \:540d (String \:307e\:305f\:306f\:305d\:306e List) \:3092 $NBAllowedHeads \:3078\:8ffd\:52a0\:3059\:308b\:3002\:8ffd\:52a0\:5f8c\:306e\:4ef6\:6570\:3092\:8fd4\:3059\:3002";
+  "NBRegisterAllowedHeads[heads] \:306f head \:540d (String \:307e\:305f\:306f\:305d\:306e List) \:3092\:8a31\:53ef head \:3078\:8ffd\:52a0\:3059\:308b\:3002\:8ffd\:52a0\:5148\:306f $NBAllowedHeadsByCategory[\"Registered\"] \:3067\:3001$NBAllowedHeads \:306f\:305d\:3053\:304b\:3089\:518d\:8a08\:7b97\:3055\:308c\:308b ($NBAllowedHeads \:3092\:76f4\:63a5\:66f8\:304d\:63db\:3048\:3066\:306f\:306a\:3089\:306a\:3044 \:2014 NBValidateHeldExpr \:304c\:5224\:5b9a\:306e\:305f\:3073\:306b\:30ab\:30c6\:30b4\:30ea\:8868\:304b\:3089\:4f5c\:308a\:76f4\:3059\:306e\:3067\:6d88\:3048\:308b)\:3002\:8ffd\:52a0\:5f8c\:306e\:4ef6\:6570\:3092\:8fd4\:3059\:3002";
 
 NBRegisterApprovalHeads::usage =
   "NBRegisterApprovalHeads[heads] \:306f head \:540d\:3092 $NBApprovalHeads \:3078\:8ffd\:52a0\:3059\:308b (\:627f\:8a8d\:30b2\:30fc\:30c8\:5bfe\:8c61\:5316)\:3002";
@@ -1588,6 +1596,7 @@ If[!ListQ[NBAccess`$NBSeparationIgnoreList],
 (* LLM \:30b3\:30fc\:30eb\:30d0\:30c3\:30af: ClaudeCode \:304c\:30ed\:30fc\:30c9\:6642\:306b\:767b\:9332\:3059\:308b\:3002\:672a\:767b\:9332\:6642\:306f None\:3002 *)
 If[!MatchQ[NBAccess`$NBLLMQueryFunc, _Function | _Symbol],
   NBAccess`$NBLLMQueryFunc = None];
+If[!StringQ[NBAccess`$NBLLMLastError], NBAccess`$NBLLMLastError = ""];
 
 (* \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:30e2\:30c7\:30eb\:30ea\:30b9\:30c8: {{provider, model}, {provider, model, url}, ...} *)
 If[!ListQ[$iFallbackModels],
@@ -2198,11 +2207,12 @@ NBAccess`NBCellGetText[nb_NotebookObject, cellIdx_Integer] :=
    $NBLLMQueryFunc \:306f ClaudeCode \:304c\:30ed\:30fc\:30c9\:6642\:306b\:767b\:9332\:3059\:308b\:30b3\:30fc\:30eb\:30d0\:30c3\:30af\:3002
    ============================================================ *)
 
-Options[NBAccess`NBCellTransformWithLLM] = {Fallback -> False, InputText -> Automatic, Integrations -> Automatic};
+Options[NBAccess`NBCellTransformWithLLM] = {Fallback -> False, InputText -> Automatic, Integrations -> Automatic,
+  "ResponseFormat" -> Automatic (* 2026-09-02: 応答型契約 ("PlainText" 等)。ClaudeQueryAsync へ透過 *)};
 
 NBAccess`NBCellTransformWithLLM[nb_NotebookObject, cellIdx_Integer,
     promptFn_, completionFn_, opts:OptionsPattern[]] :=
-  Module[{text, inputOverride, privLevel, useFallback, integ, prompt, cellTag},
+  Module[{text, inputOverride, privLevel, useFallback, integ, rfmt, prompt, cellTag},
     NBAccess`NBInvalidateCellsCache[nb];
 
     (* \:30b3\:30fc\:30eb\:30d0\:30c3\:30af\:672a\:767b\:9332\:30c1\:30a7\:30c3\:30af *)
@@ -2221,6 +2231,7 @@ NBAccess`NBCellTransformWithLLM[nb_NotebookObject, cellIdx_Integer,
     privLevel = NBAccess`NBCellPrivacyLevel[nb, cellIdx];
     useFallback = TrueQ[OptionValue[Fallback]];
     integ = OptionValue[Integrations];
+    rfmt = OptionValue["ResponseFormat"];
 
     (* \:30d7\:30ed\:30f3\:30d7\:30c8\:69cb\:7bc9 *)
     prompt = promptFn[text];
@@ -2235,7 +2246,7 @@ NBAccess`NBCellTransformWithLLM[nb_NotebookObject, cellIdx_Integer,
 
     (* \:975e\:540c\:671f LLM \:547c\:3073\:51fa\:3057 *)
     With[{nb2 = nb, origIdx = cellIdx, origText = text, pl = privLevel,
-          doneFn = completionFn, tag = cellTag, ig = integ},
+          doneFn = completionFn, tag = cellTag, ig = integ, rf = rfmt},
       NBAccess`$NBLLMQueryFunc[prompt,
         Function[response,
           Module[{idx},
@@ -2245,12 +2256,21 @@ NBAccess`NBCellTransformWithLLM[nb_NotebookObject, cellIdx_Integer,
             If[idx === 0, idx = origIdx]; (* \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af: \:30bf\:30b0\:691c\:7d22\:5931\:6557\:6642\:306f\:5143\:306e\:30a4\:30f3\:30c7\:30c3\:30af\:30b9 *)
             (* \:30bf\:30b0\:3092\:9664\:53bb *)
             NBAccess`NBCellSetTaggingRule[nb2, idx, {"documentation", "transformTag"}, Inherited];
+            (* 2026-09-02: 実エラー文を残す。completionFn には $Failed しか渡らず、
+               documentation 側が「LLM 応答を取得できませんでした」しか出せなかった
+               (LM Studio の plugin 拒否 400 が原因不明のまま見えていた)。 *)
+            NBAccess`$NBLLMLastError = Which[
+              StringQ[response] && StringStartsQ[response, "Error"], response,
+              MatchQ[response, _Failure],
+                Quiet @ Check[ToString[response["Message"]], ToString[response]],
+              True, ""];
             If[StringQ[response] && !StringStartsQ[response, "Error"],
               Module[{trimmed = StringTrim[response]},
                 If[StringStartsQ[trimmed, "[ERROR]:"] ||
                    StringStartsQ[trimmed, "[ERROR]\:ff1a"],
                   Module[{errMsg = StringTrim[
                       StringReplace[trimmed, StartOfString ~~ "[ERROR]" ~~ (":" | "\:ff1a") -> ""]]},
+                    NBAccess`$NBLLMLastError = "[ERROR]: " <> errMsg;
                     NBAccess`NBMoveAfterCell[nb2, idx];
                     NBAccess`NBWriteCell[nb2,
                       Cell[errMsg, "Text",
@@ -2272,7 +2292,8 @@ NBAccess`NBCellTransformWithLLM[nb_NotebookObject, cellIdx_Integer,
         nb,
         PrivacyLevel -> privLevel,
         Fallback -> useFallback,
-        Integrations -> ig]
+        Integrations -> ig,
+        "ResponseFormat" -> rf]
     ];
   ];
 
@@ -4365,13 +4386,24 @@ iNBNormalizeHeadArg[h_Symbol] := {SymbolName[h]};
 iNBNormalizeHeadArg[l_List] := Flatten[iNBNormalizeHeadArg /@ l];
 iNBNormalizeHeadArg[_] := {};
 
+(* 2026-09-12: \:767b\:9332\:5148\:306f $NBAllowedHeadsByCategory \:3067\:3042\:3063\:3066 $NBAllowedHeads \:3067\:306f\:306a\:3044\:3002
+   $NBAllowedHeads \:306f NBValidateHeldExpr \:304c\:5224\:5b9a\:306e\:305f\:3073\:306b iRecomputeAllowedHeads[] \:3067
+   \:30ab\:30c6\:30b4\:30ea\:8868\:304b\:3089\:4f5c\:308a\:76f4\:3059\:306e\:3067\:3001\:305d\:3053\:3078 Append \:3059\:308b\:3060\:3051\:306e\:5b9f\:88c5\:3067\:306f **\:6b21\:306e\:691c\:8a3c\:3067\:6d88\:3048\:3066
+   \:3044\:305f**\:3002\:5b9f\:5bb3: SlideWorkflow \:304c\:767b\:9332\:3057\:3066\:3044\:305f SlidePDFFigure / SlideApplyScenario /
+   SlideSourceFile \:7b49\:304c\:3059\:3079\:3066 UnknownHeadRequiresApproval \:306b\:306a\:308a\:3001\:5c55\:958b\:30a8\:30fc\:30b8\:30a7\:30f3\:30c8\:304c
+   \:6bce\:56de\:627f\:8a8d\:5f85\:3061\:3067\:6b62\:307e\:3063\:3066\:3044\:305f (\:7b2c33\:56de\:30c7\:30c3\:30ad\:3067\:767a\:899a)\:3002\:30ab\:30c6\:30b4\:30ea\:3078\:5165\:308c\:3066\:304b\:3089\:518d\:8a08\:7b97\:3059\:308b\:3002 *)
+$iNBRegisteredHeadCategory = "Registered";
+
 NBAccess`NBRegisterAllowedHeads[heads_] :=
-  Module[{add = iNBNormalizeHeadArg[heads]},
+  Module[{add = iNBNormalizeHeadArg[heads], cat = $iNBRegisteredHeadCategory, cur},
     If[add === {}, Return[Length[Replace[NBAccess`$NBAllowedHeads,
       Except[_List] -> {}]], Module]];
-    If[! ListQ[NBAccess`$NBAllowedHeads], NBAccess`$NBAllowedHeads = {}];
-    NBAccess`$NBAllowedHeads =
-      DeleteDuplicates[Join[NBAccess`$NBAllowedHeads, add]];
+    If[! AssociationQ[$NBAllowedHeadsByCategory],
+      $NBAllowedHeadsByCategory = <||>];
+    cur = Replace[Lookup[$NBAllowedHeadsByCategory, cat, {}], Except[_List] -> {}];
+    $NBAllowedHeadsByCategory[cat] = DeleteDuplicates[Join[cur, add]];
+    (* \:30ab\:30c6\:30b4\:30ea\:8868\:304b\:3089\:4f5c\:308a\:76f4\:3057\:3066\:5373\:5ea7\:306b\:6709\:52b9\:5316\:3059\:308b (\:5224\:5b9a\:6642\:306e\:518d\:8a08\:7b97\:3068\:3082\:4e00\:81f4\:3059\:308b) *)
+    iRecomputeAllowedHeads[];
     Length[NBAccess`$NBAllowedHeads]];
 
 NBAccess`NBRegisterApprovalHeads[heads_] :=
@@ -9591,7 +9623,12 @@ NBFinalActionQueueSnapshot[] :=
    Phase 7: NBRedactExecutionResult
    \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
 
-Options[NBRedactExecutionResult] = {"MaxSummaryLength" -> 500};
+If[! IntegerQ[$NBRedactedResultMaxLength] || $NBRedactedResultMaxLength <= 0, $NBRedactedResultMaxLength = 6000];
+
+(* "MaxSummaryLength" -> Automatic = $NBRedactedResultMaxLength (旧既定 500)。2026-09-15: 500 字 + Short[raw, 10] では
+   SlideGraphSectionText / SlideNotebookText のような長文の読み取りが毎回途中で切れ、エージェントが本文を読めずに
+   迷走した (WikiSkill の KG 推敲)。redact (機密シンボル置換・schema-only 縮退) は長さと無関係にそのまま効く。 *)
+Options[NBRedactExecutionResult] = {"MaxSummaryLength" -> Automatic};
 
 NBRedactExecutionResult[result_Association, accessSpec_Association,
     opts:OptionsPattern[]] :=
@@ -9599,6 +9636,8 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
           refsConfidential = False, schemaInfo, confOutLines},
     raw = Lookup[result, "RawResult", None];
     maxLen = OptionValue["MaxSummaryLength"];
+    If[! IntegerQ[maxLen] || maxLen <= 0,
+      maxLen = If[IntegerQ[$NBRedactedResultMaxLength] && $NBRedactedResultMaxLength > 0, $NBRedactedResultMaxLength, 6000]];
     
     (* \:6a5f\:5bc6\:5909\:6570\:30ea\:30b9\:30c8\:3092\:7d71\:5408 *)
     confVarNames = Lookup[accessSpec, "ConfidentialSymbols",
@@ -9690,7 +9729,8 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
         "Summary" -> schemaInfo,
         "ConfidentialDependent" -> True|>,
       (* \[HorizontalLine]\[HorizontalLine] \:975e\:6a5f\:5bc6: \:5f93\:6765\:901a\:308a\:306e redaction \[HorizontalLine]\[HorizontalLine] *)
-      redacted = ToString[Short[raw, 10]];
+      (* 文字列はそのまま (Short[raw, 10] は約 10 行で <<n>> に省略するので長文が読めない)。他は従来どおり *)
+      redacted = If[StringQ[raw], raw, ToString[Short[raw, 10]]];
       (* \:5909\:6570\:540d\:3068 Secrets \:306e\:4e21\:65b9\:3092\:6587\:5b57\:5217\:7f6e\:63db *)
       Do[redacted = StringReplace[redacted,
           RegularExpression["(?<![\\p{L}\\p{N}$])" <> s <>
@@ -9973,7 +10013,7 @@ NBInferExprRequirements[heldExpr_, accessSpec_Association,
 
 Options[NBReleaseResult] = {
   "Sink" -> "CloudLLM",
-  "MaxSummaryLength" -> 500
+  "MaxSummaryLength" -> Automatic
 };
 
 NBReleaseResult[result_Association, accessSpec_Association,

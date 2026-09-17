@@ -33,6 +33,10 @@ ClaudeCheckSeparation の分離検査で無視するファイル名・パッケ�
 シグネチャ: `$NBLLMQueryFunc[prompt, callback, nb, Model -> spec, Fallback -> bool, Integrations -> {...}]`
 callback は応答文字列を受け取る関数、nb は出力先 NotebookObject、Integrations は LM Studio MCP 用(lmstudio モデル時のみ有効、Automatic なら無視)。カーネルをブロックしない。
 
+### $NBLLMLastError
+型: String, 初期値: `""`
+NBCellTransformWithLLM が最後に受け取った LLM エラー文字列("Error: ..." / [ERROR]: 本文 / Failure の Message)。成功時は "" に戻る。completionFn には $Failed しか渡らないため、呼び出し側(documentation 等)がユーザーへ実エラーを示すのに使う。
+
 ## セルユーティリティ
 ### NBCellCount[nb] → Integer
 ノートブックの全セル数を返す。
@@ -122,7 +126,7 @@ EvaluationCell の親ノートブックを返す。
 セルからテキストを堅牢に取得。FrontEnd InputText → NBCellToText → NBCellExprToText の順でフォールバック。取得不可なら ""。
 
 ### NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]
-非同期でセルを LLM 変換する。promptFn はセルテキストを受け取りプロンプト文字列を返す関数。completionFn は結果 Association を受け取るコールバック(エラー時は $Failed)。カーネルをブロックしない。セルのプライバシーレベルに応じ適切な LLM を自動選択。
+非同期でセルを LLM 変換する。promptFn はセルテキストを受け取りプロンプト文字列を返す関数。completionFn は結果 Association を受け取るコールバック(エラー時は $Failed、詳細は $NBLLMLastError に記録される)。カーネルをブロックしない。セルのプライバシーレベルに応じ適切な LLM を自動選択。
 → Null(非同期)
 Options: Fallback -> False, InputText -> Automatic (セルテキストの代わりに使う入力テキスト), Integrations -> Automatic (LM Studio MCP サーバーリスト、lmstudio モデル時のみ)
 completionFn が受け取る Association: `<|"Response" -> text, "OriginalText" -> orig, "PrivacyLevel" -> pl|>`
@@ -620,14 +624,14 @@ NBCellTransformWithLLM が使う非同期 LLM コールバックを登録する�
 例: `NBSetFallbackModels[{{"anthropic","claude-opus-4-6"},{"lmstudio","gpt-oss-20b","http://127.0.0.1:1234"}}]`
 
 ### NBGetFallbackModels[] → List
-フォールバックモデルリスト全体を返す。
+フォールバックモデルリスト全体を返す。既定値: `{{"anthropic","claude-opus-5"}, {"openai","gpt-5.5"}}`。
 
 ### NBSetProviderMaxAccessLevel[provider, level]
 プロバイダーの最大アクセスレベル(0.0〜1.0)を設定する。このレベルを超えるアクセスレベルのリクエストにはフォールバックしない。
 例: `NBSetProviderMaxAccessLevel["anthropic", 0.5]`
 
 ### NBGetProviderMaxAccessLevel[provider] → Real
-プロバイダーの最大アクセスレベルを返す。未登録プロバイダーは 0.5。既定プリセット: claudecode/anthropic/openai/chatgptcodex/codex = 0.5、zai/kimi = 0.25(外部クラウド課金APIのため低信頼扱い)、lmstudio = 1.0。ユーザーが NBSetProviderMaxAccessLevel で変更済みの値は上書きされない。
+プロバイダーの最大アクセスレベルを返す。未登録プロバイダーは 0.5。既定プリセット: claudecode/anthropic/openai/chatgptcodex/codex = 0.5、zai/kimi = 0.25(外部クラウド課金APIのため低信頼扱い)、lmstudio/freetoken/llamacpp = 1.0(自宅内・信頼機器扱いのローカル LLM)。ユーザーが NBSetProviderMaxAccessLevel で変更済みの値は上書きされない。
 
 ### NBGetAvailableFallbackModels[accessLevel] → List
 指定アクセスレベルで利用可能なフォールバックモデルのリストを返す。プロバイダーの MaxAccessLevel >= accessLevel のモデルのみ。
@@ -858,10 +862,14 @@ PreExecutionNotebookActions のリストを検証し、許可された action �
 → `<|"ReadCells", "WriteCells", "RequiredAccessLevel", "HasSideEffects" -> True|False, ...|>`
 Options: "Depth" -> Infinity
 
+### $NBRedactedResultMaxLength
+型: Integer, 初期値: 6000
+NBRedactExecutionResult / NBReleaseResult が返す RedactedResult(LLM に戻る評価結果本文)の最大文字数。Summary は従来どおり 200 字。文字列の結果は Short で省略せずこの長さまでそのまま返す。長い本文を読む道具(SlideGraphSectionText / SlideNotebookText など)の1ページはこれより小さくする。
+
 ### NBRedactExecutionResult[result, accessSpec, opts] → Association
 実行結果を redact し安全な形で返す。accessSpec に "ConfidentialLineNumbers" があれば機密依存も検出しスキーマ化する。
 戻り値: `<|"RedactedResult", "Summary" -> String|>`
-Options: "MaxSummaryLength" -> 500
+Options: "MaxSummaryLength" -> Automatic (= $NBRedactedResultMaxLength、既定 6000。旧既定 500)。文字列の結果は Short で省略せずその長さまでそのまま返し、Summary は 200 字。
 
 ### NBMakeContextPacket[nb, accessSpec, opts] → Association
 notebook から安全な context packet を構築する。
@@ -869,7 +877,7 @@ Options: "CellRange" -> All, "IncludeSelection" -> True, "MaxCells" -> 50 (走�
 
 ### NBReleaseResult[result, accessSpec, opts] → Association
 実行結果を指定 sink に安全に release する。redaction + routing check を行う。
-Options: "Sink" -> "CloudLLM", "MaxSummaryLength" -> 500
+Options: "Sink" -> "CloudLLM", "MaxSummaryLength" -> Automatic (= $NBRedactedResultMaxLength)
 
 ### NBMakeRetryPacket[failureAssoc, accessSpec] → Association
 失敗情報から秘密を含まない安全な retry packet を構築する。

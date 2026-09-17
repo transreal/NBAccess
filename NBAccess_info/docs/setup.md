@@ -62,6 +62,22 @@ Block[{$CharacterEncoding = "UTF-8"}, Get["ClaudeRuntime.wl"]]
 
 これに伴い、旧来の `NBExecuteHeldExpr` の `"TimeConstraint"` オプションおよび `NBValidateHeldExpr` の `"AllowedHeads"`／`"ApprovalHeads"`／`"DenyHeads"`／`"LabelCheck"` をオプション引数で逐一指定する方式は廃止され、グローバル変数（`$NBAllowedHeads` 等）と上記の EffectClass ベース判定に統合されています。式中の head から「全 head が承認可能 head か」を文字列パースせずに判定できるようになっています。
 
+#### 許可 head のカテゴリ管理（`$NBAllowedHeadsByCategory`）
+
+許可 head（`$NBAllowedHeads`）は、カテゴリ別の登録表 **`$NBAllowedHeadsByCategory`** から毎回再計算される導出値になりました（2026-09-12 変更）。`NBValidateHeldExpr` は判定のたびにカテゴリ表から `$NBAllowedHeads` を作り直すため、**`$NBAllowedHeads` を直接書き換えてはいけません**（次の検証で消えてしまいます）。
+
+```mathematica
+(* 正しい登録方法: カテゴリ表 "Registered" へ追加され、$NBAllowedHeads が再計算される *)
+NBAccess`NBRegisterAllowedHeads["MyPackageFunc"]
+NBAccess`NBRegisterAllowedHeads[{"MyPackageFuncA", "MyPackageFuncB"}]
+(* 追加後の件数が返ります *)
+
+(* カテゴリ別の登録内容を確認する *)
+NBAccess`$NBAllowedHeadsByCategory
+```
+
+`NBRegisterAllowedHeads` は head 名（String またはその List）を `$NBAllowedHeadsByCategory["Registered"]` へ追加し、そこから `$NBAllowedHeads` を即座に再計算します。以前の実装では `$NBAllowedHeads` へ直接 `Append` していたため、`SlideWorkflow` などが登録した `SlidePDFFigure`／`SlideApplyScenario`／`SlideSourceFile` といった head が次の検証時に消えてしまい、すべて `UnknownHeadRequiresApproval` になって毎回承認待ちで止まるという不具合がありました。外部パッケージから許可 head を登録する場合は、必ず `NBRegisterAllowedHeads` を使用してください。
+
 #### 出力モードと遅延バッファ
 
 ClaudeRuntime 経由の式実行では、出力の扱い方を 2 つのモードから選べます（2026-06-03 追加）：
@@ -124,6 +140,56 @@ $NBVerbose = True
 $NBVerbose = False
 ```
 
+### 評価結果の縮退長設定（`$NBRedactedResultMaxLength`、新規追加）
+
+`NBRedactExecutionResult`／`NBReleaseResult` が LLM へ返す評価結果本文（RedactedResult）の最大文字数を制御するグローバル変数 **`$NBRedactedResultMaxLength`** が追加されました（既定 6000、2026-09-15 追加）。
+
+```mathematica
+(* 既定値: 6000 文字 *)
+$NBRedactedResultMaxLength
+
+(* 長文を読むエージェント用にさらに広げる場合 *)
+NBAccess`$NBRedactedResultMaxLength = 12000
+```
+
+- 結果が文字列の場合は `Short` による省略を行わず、この長さまでそのまま返します。従来は `Short[raw, 10]` により約 10 行で `<<n>>` に省略されていたため、`SlideGraphSectionText`／`SlideNotebookText` のような長文を読み取る道具の出力が毎回途中で切れ、エージェントが本文を読めないまま迷走する問題がありました。
+- Summary（要約）は従来どおり 200 字です。
+- redact 処理（機密シンボルの置換・schema-only への縮退）は長さとは無関係にそのまま効きます。長さを広げても機密データの扱いは変わりません。
+- `NBRedactExecutionResult` のオプション `"MaxSummaryLength"` の既定値は `Automatic`（= `$NBRedactedResultMaxLength`）に変更されました（旧既定は 500）。個別の呼び出しで明示的に長さを指定することもできます。
+
+```mathematica
+(* 明示指定する場合 *)
+NBAccess`NBRedactExecutionResult[result, "MaxSummaryLength" -> 2000]
+```
+
+長文を読み取る道具（`SlideGraphSectionText`／`SlideNotebookText` など）の 1 ページ分は、この値より小さくなるように設計してください。
+
+### LLM 変換の応答フォーマットとエラー参照（新規追加）
+
+`NBCellTransformWithLLM` に、応答型の契約を指定する **`"ResponseFormat"`** オプションが追加されました（既定 `Automatic`、2026-09-02 追加）。指定した値は `ClaudeQueryAsync` へ透過的に渡されます。
+
+```mathematica
+(* 現在のオプション一覧 *)
+Options[NBAccess`NBCellTransformWithLLM]
+(* {Fallback -> False, InputText -> Automatic, Integrations -> Automatic,
+    "ResponseFormat" -> Automatic} *)
+
+(* プレーンテキスト応答を要求する *)
+NBAccess`NBCellTransformWithLLM[nb, 3, promptFn, Print,
+  "ResponseFormat" -> "PlainText"]
+```
+
+また、最後に受け取った LLM エラー文字列を保持するグローバル変数 **`$NBLLMLastError`** が追加されました（2026-09-02 追加）。
+
+```mathematica
+(* 直近の LLM エラー本文を確認する *)
+NBAccess`$NBLLMLastError
+(* 例: "[ERROR]: plugin ... 400" / "Error: ..." / Failure の Message *)
+(* 成功時は "" に戻ります *)
+```
+
+`NBCellTransformWithLLM` の `completionFn` にはエラー時に `$Failed` しか渡らないため、呼び出し側（documentation パッケージ等）がユーザーへ実際のエラー内容を提示する用途に使用します。従来は「LLM 応答を取得できませんでした」としか表示できず、LM Studio の plugin 拒否 400 などが原因不明のまま放置されていました。値は `"Error: ..."` 形式の文字列応答、`[ERROR]:` プレフィックス付きのエラー本文、`Failure` オブジェクトの `"Message"` のいずれかです。
+
 ### アクセス可能ディレクトリ・パス参照設定
 
 Claude Code が参照可能なディレクトリは、ノートブック単位で TaggingRules に永続化されます。従来は絶対パス文字列のリスト（`claudeAccessibleDirs`）で管理していましたが、複数 PC 間で安定したシンボリックパスを扱える **AccessPathRef** 形式（`claudeAccessiblePathRefs`）が正本（canonical）になりました。
@@ -156,7 +222,7 @@ NBAccess`NBImport["C:\\path\\to\\dir\\data.csv", "CSV"]
 
 - 読み込み対象パスが `NBSetAccessiblePathRefs`（または後方互換の `NBSetAccessibleDirs`）で宣言済みのアクセス可能ディレクトリの外にある場合は拒否され、「アクセス可能ディレクトリを宣言してください」という主旨のメッセージとともにエラーになります。
 - アクセス許可の判定（accessSpec）は関数の引数として渡すのではなく、`NBExecuteHeldExpr` が式の実行時にアンビエントな評価コンテキストへ束縛する仕組みになっています。accessSpec を引数として渡せる設計にすると、LLM が生成したコード自身がチェックをすり抜けられてしまうため、あえて引数化していません。
-- 読み込んだファイルの PrivacyLevel は評価コンテキストの内部変数 `$iNBEvaluationPrivacy` に反映され、機密度の高いデータを含む評価結果は `NBRedactExecutionResult` によってスキーマのみに縮退されます（値の本文は返らず、型・サイズ等のメタ情報のみが返ります）。
+- 読み込んだファイルの PrivacyLevel は評価コンテキストの内部変数 `$iNBEvaluationPrivacy` に反映され、機密度の高いデータを含む評価結果は `NBRedactExecutionResult` によってスキーマのみに縮退されます（値の本文は返らず、型・サイズ等のメタ情報のみが返ります）。返る本文の長さは `$NBRedactedResultMaxLength`（既定 6000）で制御します。
 - 旧来の `NBCheckedImport[path, fmt, accessSpec]`（accessSpec を明示引数として渡す方式）は廃止されました。同等の用途には `NBImport` を使用してください。
 
 ### プロバイダー別アクセスレベル設定
@@ -182,6 +248,18 @@ NBAccess`NBGetAvailableFallbackModels[0.8]
 既定では `"lmstudio"` に加えて `"freetoken"`（`http://127.0.0.1:1919` で待ち受ける、VRAM 超えの MoE モデル向けローカル推論サーバー）も MaxAccessLevel = 1.0 のローカル LLM プロバイダーとして自動 backfill されます（2026-08-24 追加）。対応する API キーは lmstudio と同様に `SystemCredential["FREETOKEN_API_KEY"]` に保存し、`NBGetLocalLLMAPIKey["freetoken", "http://127.0.0.1:1919"]` で取得できます。
 
 同様に `"llamacpp"`（llama.cpp の `llama-server`）も MaxAccessLevel = 1.0 のローカル LLM プロバイダーとして自動 backfill されます（2026-08-29 追加）。これは、未登録のまま使うと既定値 0.5 に丸められ、SourceVault 側の TrustCeiling も 0.5 に丸められて秘密データが載らなくなっていた問題への対応です（LAN 上の別ホストであっても自宅内の信頼機器として運用する想定）。ただし `"llamacpp"` には `"lmstudio"`／`"freetoken"` のような API キーの自動 backfill（`SystemCredential` への既定マッピング）は用意されていないため、利用する場合は [ローカル LLM サーバーの API キー設定](#api-キー設定オプション) の節に従って `NBSetLocalLLMAPIKey` で明示的に登録してください。
+
+#### PrivacyLevel からのルート判定（`NBPrivacyLevelToRoutes`）
+
+データの PrivacyLevel から、必要なモデルルート（`"cloud"`／`"local"`）のリストを求めるには `NBPrivacyLevelToRoutes` を使用します。判定の境界は **PL < 0.5 → `{"cloud"}`、PL >= 0.5 → `{"local"}`（0.5 は local 側）** です（2026-09 に境界を変更）。
+
+```mathematica
+NBAccess`NBPrivacyLevelToRoutes[0.4]          (* {"cloud"} *)
+NBAccess`NBPrivacyLevelToRoutes[0.5]          (* {"local"}  — 0.5 は local 扱い *)
+NBAccess`NBPrivacyLevelToRoutes[{0.4, 1.0}]   (* {"cloud", "local"} — 混在 *)
+```
+
+PrivacyLevel が範囲（`.nb` ファイルのように公開セルと機密セルが混在する場合の `{lo, hi}`）で与えられた場合は、必要なルートをすべて含むリストが返ります。
 
 #### ローカル LLM への距離ベースアクセス制限（rule 107、新規追加）
 
@@ -325,6 +403,11 @@ NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存の�
 - **セル操作 API（`NBCellRead`、`NBCellWriteText`、`NBGetCells` 等）**: 変更なく利用可能です。
 - **`$NBPrivacySpec`・`$NBConfidentialSymbols`・`$NBSendDataSchema`** 等のグローバル変数: 初期値・動作に変更はありません。
 - **`$NBConfidentialHeads`**（新規追加）: 「返り値が機密たり得る関数ヘッド」の登録レジストリ（`<|name -> level|>` 形式）です。`$NBConfidentialSymbols`（秘密変数レジストリ）のヘッド版にあたります。SourceVault 等のデータ層パッケージがロード時に `NBRegisterConfidentialHead` で自動登録し、claudecode が LLM 生成コード書き込みセルの自動機密マーク判定と CellEpilog の依存秘密判定に使用します。ユーザーが手動で設定する必要はありません。関連 API として `NBGetConfidentialHeads`（テーブル取得）、`NBRegisterConfidentialHead`（登録）、`NBUnregisterConfidentialHead`（登録解除）、`NBTextUsesConfidentialHead`（テキスト内参照判定）が追加されています。
+- **`$NBLLMLastError` の追加**（2026-09-02 追加）: `NBCellTransformWithLLM` が最後に受け取った LLM エラー文字列を保持する読み取り用グローバル変数が追加されました（成功時は `""`）。既存 API のシグネチャ・戻り値は変わらず、`completionFn` には従来どおりエラー時に `$Failed` が渡されます。従来はエラー本文が失われ、呼び出し側が「LLM 応答を取得できませんでした」としか表示できなかったため、実エラー（LM Studio の plugin 拒否 400 など）を提示できるようになりました。
+- **`NBCellTransformWithLLM` への `"ResponseFormat"` オプション追加**（2026-09-02 追加）: 応答型の契約（`"PlainText"` 等）を `ClaudeQueryAsync` へ透過的に渡すオプションが追加されました。既定は `Automatic` で、指定しない場合の挙動は従来と同じです。`Fallback`／`InputText`／`Integrations` の各オプションは変更ありません。
+- **`$NBRedactedResultMaxLength` の追加と `"MaxSummaryLength"` 既定値の変更**（2026-09-15 変更）: `NBRedactExecutionResult` のオプション `"MaxSummaryLength"` の既定値が `500` から `Automatic`（= `$NBRedactedResultMaxLength`、既定 6000）に変更されました。これは動作変更です — 従来は 500 字 + `Short[raw, 10]` により長文の評価結果が途中で切れていましたが、現在は文字列の結果を `Short` で省略せず `$NBRedactedResultMaxLength` の長さまでそのまま返します。Summary は従来どおり 200 字です。redact（機密シンボル置換・schema-only への縮退）の挙動は長さと無関係に従来どおり効きます。`"MaxSummaryLength"` を明示指定していたコードは、その指定がそのまま優先されます。
+- **`NBRegisterAllowedHeads` の登録先変更**（2026-09-12 変更）: 許可 head の追加先が `$NBAllowedHeads` から `$NBAllowedHeadsByCategory["Registered"]` に変更され、`$NBAllowedHeads` はカテゴリ表から再計算される導出値になりました。`NBRegisterAllowedHeads` を使って登録している既存コードは変更不要です（追加後の件数を返す戻り値も同じ）。一方、**`$NBAllowedHeads` を直接書き換えていたコードは動作しません** — `NBValidateHeldExpr` が判定のたびにカテゴリ表から作り直すため、直接の追加は次の検証で消えます。この変更は、`SlideWorkflow` が登録した `SlidePDFFigure`／`SlideApplyScenario`／`SlideSourceFile` 等がすべて `UnknownHeadRequiresApproval` になり、展開エージェントが毎回承認待ちで止まっていた不具合への対応です。
+- **`NBPrivacyLevelToRoutes` の境界変更**（2026-09 変更）: ルート判定の境界が「PL < 0.5 → `{"cloud"}`、PL >= 0.5 → `{"local"}`」に変更されました（0.5 は local 側）。従来は 0.5 が cloud 側に含まれていたため、PrivacyLevel がちょうど 0.5 のデータは cloud ルートとして扱われていました。これは動作変更です — PrivacyLevel 0.5 のデータを cloud ルートで扱うことを前提にしていたコードがある場合は、判定結果を確認してください。範囲指定（例 `{0.4, 1.0}` → `{"cloud", "local"}`）の扱いは従来どおりです。
 - **アクセス可能ディレクトリの正本形式変更**（Stage 9 拡張）: 旧 `NBSetAccessibleDirs`／`NBGetAccessibleDirs`（絶対パス文字列リスト）はそのまま後方互換 API として動作しますが、内部的な正本は AccessPathRef 形式（`NBSetAccessiblePathRefs`／`NBGetAccessiblePathRefs`）に移行しました。既存コードは変更なく動作します。
 - **`NBImport` の追加と `NBCheckedImport` の廃止**（新規変更）: ClaudeRuntime 経由で実行される式の中では生の `Import` は恒久的に Deny されるため、代わりに NBAccess 仲介の `NBImport`（[NBAccess 経由のファイルインポート](#nbaccess-経由のファイルインポートnbimport新規追加)を参照）を使用してください。旧来の `NBCheckedImport[path, fmt, accessSpec]`（アクセス判定を引数で渡す方式）は廃止されました。accessSpec を引数として渡せる設計は LLM 生成コードによるチェックのすり抜けを許してしまうため、`NBImport` では実行時にアンビエントな評価コンテキストへ accessSpec を束縛する方式に統合されています。`NBCheckedImport` を直接呼び出していたコードは `NBImport` へ移行してください。
 - **`NBJobMoveToAnchor` の戻り値変更**（2026-06-24 修正）: アンカーセルの直後にカーソルを移動する関数が True/False を返すようになりました。位置を確定できた場合（アンカーが消失している場合のノートブック末尾退避を含む）は True、jobId が `$NBJobTable` に存在しない場合のみ False を返します。従来は戻り値を使用していないコードには影響ありません。
@@ -337,7 +420,9 @@ NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存の�
 
 ### ClaudeRuntime 導入時の注意点
 
-ClaudeRuntime を導入すると、`$NBAllowedHeads`・`$NBApprovalHeads`・`$NBDenyHeads` などのグローバル変数が追加されます。既存コードがこれらのシンボル名を独自に使用している場合は、名前の衝突を確認してください。
+ClaudeRuntime を導入すると、`$NBAllowedHeads`・`$NBAllowedHeadsByCategory`・`$NBApprovalHeads`・`$NBDenyHeads` などのグローバル変数が追加されます。既存コードがこれらのシンボル名を独自に使用している場合は、名前の衝突を確認してください。
+
+許可 head を追加する場合は、`$NBAllowedHeads` を直接書き換えるのではなく、必ず `NBRegisterAllowedHeads` を使用してください（`$NBAllowedHeads` はカテゴリ表 `$NBAllowedHeadsByCategory` から毎回再計算される導出値のため、直接の追加は次の検証で消えます）。
 
 ラベル代数 API（`NBLabelQ`、`NBLabelJoin`、`NBLabelMeet` 等）および関数セキュリティ API（`NBRegisterFunctionSecurity`、`GuardedApply`、`Declassify` 等）は ClaudeRuntime と同時に導入されたものですが、既存の API とは完全に独立しており、既存の動作に影響しません。
 
@@ -405,6 +490,15 @@ accessibleCells = NBAccess`NBGetCells[nb, PrivacySpec -> $NBPrivacySpec]
 isAccessible = NBAccess`NBIsAccessible[nb, 1, PrivacySpec -> $NBPrivacySpec]
 ```
 
+### ルート判定テスト
+
+```mathematica
+(* PrivacyLevel から必要なモデルルートを確認する *)
+NBAccess`NBPrivacyLevelToRoutes[0.4]          (* {"cloud"} *)
+NBAccess`NBPrivacyLevelToRoutes[0.5]          (* {"local"} *)
+NBAccess`NBPrivacyLevelToRoutes[{0.4, 1.0}]   (* {"cloud", "local"} *)
+```
+
 ### アクセス可能ディレクトリテスト
 
 ```mathematica
@@ -442,6 +536,19 @@ NBAccess`NBGetConfidentialHeads[]
 (* テキストが機密生成ヘッドを参照しているか確認する *)
 NBAccess`NBTextUsesConfidentialHead["result = SourceVaultSearch[query]"]
 (* True が返れば、そのテキストを含むセルは機密扱い候補となる *)
+```
+
+### 許可 head 登録テスト
+
+```mathematica
+(* head を許可リストへ登録する（追加後の件数が返る） *)
+NBAccess`NBRegisterAllowedHeads["MyPackageFunc"]
+
+(* カテゴリ表に入っていることを確認する *)
+NBAccess`$NBAllowedHeadsByCategory["Registered"]
+
+(* 再計算された $NBAllowedHeads にも含まれることを確認する *)
+MemberQ[NBAccess`$NBAllowedHeads, "MyPackageFunc"]
 ```
 
 ### カレンダーアクセステスト
@@ -544,9 +651,46 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>
 NBAccess`NBGetCells[nb, PrivacySpec -> <|"AccessLevel" -> 1.0|>]
 ```
 
+### LLM 変換が失敗し「LLM 応答を取得できませんでした」としか表示されない場合
+
+`NBCellTransformWithLLM` の `completionFn` にはエラー時に `$Failed` しか渡らないため、呼び出し側が表示できるメッセージは一般的なものになります。実際のエラー本文は `$NBLLMLastError` に残っているため、こちらを確認してください：
+
+```mathematica
+NBAccess`$NBLLMLastError
+```
+
+`"Error: ..."` 形式の文字列応答、`[ERROR]:` プレフィックス付きの本文、`Failure` オブジェクトの `"Message"` のいずれかが入ります（成功時は `""`）。たとえば LM Studio の plugin 拒否（HTTP 400）はここに残ります。応答型の契約が問題になっている場合は、`"ResponseFormat" -> "PlainText"` のように明示指定して再試行してください。
+
+### 評価結果の本文が途中で切れて読めない場合
+
+`NBRedactExecutionResult`／`NBReleaseResult` が返す RedactedResult の長さは `$NBRedactedResultMaxLength`（既定 6000）で決まります。長文を読み取る道具（`SlideGraphSectionText`／`SlideNotebookText` など）の出力が途中で切れる場合は、この値を引き上げるか、道具側の 1 ページ分の長さを小さくしてください：
+
+```mathematica
+NBAccess`$NBRedactedResultMaxLength = 12000
+
+(* 個別の呼び出しで長さを指定することもできます *)
+NBAccess`NBRedactExecutionResult[result, "MaxSummaryLength" -> 12000]
+```
+
+文字列の結果は `Short` で省略されず、この長さまでそのまま返ります（旧版は 500 字 + `Short[raw, 10]` で約 10 行に省略されていました）。なお、機密シンボルの置換や schema-only への縮退は長さと無関係にそのまま適用されるため、値を大きくしても機密データの扱いは変わりません。
+
 ### 式の実行が不必要に承認待ちになる場合
 
 `NBValidateHeldExpr`／`NBExecuteHeldExpr` が、本来は安全なローカル定義や純粋な数学関数を承認対象としてしまう場合は、検証エンジンの EffectClass ベース判定が想定どおり機能しているかを確認してください。`Module`／`Block`／`With` のスコープ局所変数や `Set`／`SetDelayed` で定義したローカル関数名は承認対象から除外されます。`Total` や `IntegerPart`、`Round`、`Floor`、`Ceiling` などの純粋な数学関数も `PureComputation` として扱われ、ブロックされにくくなっています。`Evaluate` は Deny 対象から除去済みのため、`ParametricPlot[Evaluate[...]]` のような式が不必要に拒否・承認待ちになることもありません。信頼パッケージ由来の head（`SourceVault*` 等）についても過剰反復ガードにより承認要求が繰り返し発火しないようになっています。意図せず承認が要求される場合は、式が副作用のある head（ノートブック書き込みやファイル操作など）を含んでいないかを確認してください。
+
+### 登録したはずの head が `UnknownHeadRequiresApproval` になる場合
+
+外部パッケージが提供する head（`SlidePDFFigure`／`SlideApplyScenario`／`SlideSourceFile` 等）が毎回承認待ちになる場合は、その head が `$NBAllowedHeadsByCategory` に登録されているかを確認してください：
+
+```mathematica
+NBAccess`$NBAllowedHeadsByCategory["Registered"]
+```
+
+`$NBAllowedHeads` は `NBValidateHeldExpr` が判定のたびにカテゴリ表から作り直す導出値です。`AppendTo[$NBAllowedHeads, ...]` のように直接書き換えていると、次の検証で消えてしまいます。必ず `NBRegisterAllowedHeads` 経由で登録してください：
+
+```mathematica
+NBAccess`NBRegisterAllowedHeads[{"SlidePDFFigure", "SlideApplyScenario", "SlideSourceFile"}]
+```
 
 ### 機密変数の短い名前が無関係な識別子に誤マッチする場合
 
@@ -596,6 +740,8 @@ NBAccess`NBGetProviderMaxAccessLevel["lmstudio"]
 ```
 
 `PathRef` が別 PC のエイリアスにしか一致しない、またはルート未定義の場合、`NBResolvePathRef` は `Missing[...]` を返し実パスへの解決を行いません（rule 104）。プロバイダー側は `MaxAccessLevel` を超えるアクセスレベルのリクエストにはフォールバックしないため、Private 宣言されたノートブックのデータがクラウドLLMに送られることはありません。
+
+PrivacyLevel からルートが想定と違う側に振り分けられている場合は、`NBPrivacyLevelToRoutes` の境界が「PL < 0.5 → cloud、PL >= 0.5 → local（0.5 は local）」であることを確認してください。
 
 ### ローカル LLM 経由の実行が想定より低いアクセスレベルに制限される場合（rule 107）
 

@@ -72,6 +72,22 @@ NBAccess パッケージの詳細ログ出力を制御するフラグです。
 $NBVerbose = True
 ```
 
+### $NBRedactedResultMaxLength
+
+`NBRedactExecutionResult` / `NBReleaseResult` が返す RedactedResult（実行検証結果として LLM に戻される評価結果本文）の最大文字数です。初期値は `6000`（旧既定は `500`）です。
+
+Summary フィールドは従来どおり 200 字に制限されますが、文字列型の実行結果はこれまで一律 `Short[raw, 10]`（約10行）で省略されていたため、`SlideGraphSectionText` / `SlideNotebookText` のような長文を読み取る道具の結果が毎回途中で切れてしまい、エージェントが本文を最後まで読めずに迷走する（KG 推敲作業等での）問題がありました。この変更以降、**文字列**の結果は `Short` で省略せず、`$NBRedactedResultMaxLength` の文字数に達するまではそのまま返されます（文字列以外の結果は従来どおりの整形が適用されます）。長文を読む道具の1ページの分量は、この長さ以下に収めるようにしてください。
+
+```mathematica
+(* 既定の 6000 字より小さく制限したい場合 *)
+$NBRedactedResultMaxLength = 3000;
+
+(* 型・値が不正な場合は自動的に既定 6000 にフォールバックする *)
+$NBRedactedResultMaxLength = -1;  (* -> 内部的に 6000 として扱われる *)
+```
+
+`Options[NBRedactExecutionResult] = {"MaxSummaryLength" -> Automatic}` の `Automatic` は、この `$NBRedactedResultMaxLength` の値に解決されます（旧デフォルトはハードコードされた `500` でした）。
+
 ### $NBAutoEvalProhibitedPatterns
 
 `NBEvaluatePreviousCell` で自動実行をブロックするパターンのリストです。RegularExpression または StringExpression のリストを指定します。セル内容がいずれかのパターンにマッチする場合、評価をスキップして警告を表示します。[claudecode](https://github.com/transreal/claudecode) パッケージがロード時にパターンを登録します。デフォルトは空リストです。
@@ -871,8 +887,28 @@ NBCellTransformWithLLM[nb, 3,
 - `Fallback -> False`: フォールバックモデルの使用可否です。
 - `InputText -> Automatic`: セルテキストの代わりに使用する入力テキストを明示指定します。
 - `Integrations -> Automatic`: LM Studio MCP のサーバーリストです（`lmstudio` モデル使用時のみ有効、`Automatic` の場合は無視されます）。
+- `"ResponseFormat" -> Automatic`: 応答型契約（`"PlainText"` 等）を指定します。`$NBLLMQueryFunc`（通常は `ClaudeQueryAsync`）へそのまま透過されます。
 
 `completionFn` が受け取る Association は `<|"Response" -> 応答, "OriginalText" -> 元のセルテキスト, "PrivacyLevel" -> 0.0|1.0|>` の形式です。エラー時は `$Failed` が渡されます。
+
+### $NBLLMLastError
+
+`NBCellTransformWithLLM` はエラー時に `completionFn` へ `$Failed` しか渡しません。そのため呼び出し側（documentation 生成処理等）は、以前は「LLM 応答を取得できませんでした」としか利用者に示せず、実際のエラー内容（クォータ超過・接続拒否・未対応モデル指定など）を伝えられないという問題がありました。`$NBLLMLastError` は `NBCellTransformWithLLM` が最後に受け取った LLM エラー文字列を保持するグローバル変数で、この問題を解消するために追加されました。
+
+```mathematica
+NBCellTransformWithLLM[nb, 3, promptFn,
+  Function[res,
+    If[res === $Failed,
+      Print["LLM 呼び出しに失敗しました: ", $NBLLMLastError],
+      Print[res["Response"]]]]]
+```
+
+- **成功時**: `""`（空文字列）にリセットされます。
+- **失敗時**: 以下のいずれかが格納されます。
+  - `Failure` オブジェクトを受け取った場合: その `"Message"` フィールド（取得できなければ `Failure` 自体の文字列表現）。
+  - 応答文字列が `"Error"` で始まる場合: その応答文字列そのもの（`"[ERROR]: "` を前置した本文を含む）。
+  - 上記のいずれでもない場合: `""`。
+- 初期値は `""` です。
 
 ---
 

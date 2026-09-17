@@ -32,6 +32,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;  (* ローカルLLM環境から利用
 - `$NBSendDataSchema` — 秘密依存データのスキーマ情報（型・サイズ・キー等）をクラウド LLM に送信するかを制御します。`True`（デフォルト）で送信、`False` で抑制します。非秘密 Output は常にスマート要約付きで送信されます。
 - `$NBVerbose` — NBAccess 内部の詳細ログ出力を制御します。`True` で `Messages` に詳細ログを出力、`False`（デフォルト）で重大エラー以外を抑制します。
 - `$NBAutoEvalProhibitedPatterns` — `NBEvaluatePreviousCell` で自動実行をブロックするパターン（`RegularExpression` または `StringExpression`）のリストです。セル内容がいずれかのパターンにマッチする場合、評価をスキップして警告を表示します。ClaudeCode パッケージがロード時にパターンを登録し、デフォルトは空リストです。
+- `$NBRedactedResultMaxLength` — `NBRedactExecutionResult` / `NBReleaseResult` が返す `RedactedResult`（LLM に戻る評価結果の本文）の最大文字数です。既定は 6000 文字で、Summary は従来どおり 200 文字です。文字列の結果は `Short` で省略されず、この長さまでそのまま返されます。長い本文を読む道具（`SlideGraphSectionText` / `SlideNotebookText` など）の 1 ページはこの値より小さくしてください。
 
 ## セルユーティリティ API
 
@@ -93,8 +94,20 @@ NBCellTransformWithLLM[nb, 3, promptFn, Print, Fallback -> True]
 - `Fallback -> False`
 - `InputText -> Automatic` — セルテキストの代わりに使用する入力テキスト。
 - `Integrations -> Automatic` — LM Studio MCP サーバーリスト（`lmstudio` モデル時のみ）。
+- `"ResponseFormat" -> Automatic` — 応答型の契約（`"PlainText"` 等）。値はそのまま `ClaudeQueryAsync` へ透過されます。
 
 `completionFn` が受け取る Association: `<|"Response" -> text, "OriginalText" -> orig, "PrivacyLevel" -> pl|>`
+
+### LLM エラーの取得 (`$NBLLMLastError`)
+
+`completionFn` には失敗時に `$Failed` しか渡らないため、実際のエラー文面は別経路で保持されます。
+
+```
+$NBLLMLastError
+(* 例: "[ERROR]: ..." / "Error: ..." / Failure の Message 本文 *)
+```
+
+`$NBLLMLastError` は `NBCellTransformWithLLM` が最後に受け取った LLM エラー文字列（`"Error: ..."` 形式の応答、`[ERROR]: 本文`、`Failure` オブジェクトの `"Message"`）を保持します。成功時は `""` に戻ります。呼び出し側（documentation パッケージ等）はこの変数を読むことで、「LLM 応答を取得できませんでした」という一般的な文言ではなく実際の失敗理由（LM Studio の plugin 拒否 400 など）をユーザーへ提示できます。
 
 ## プライバシー API
 
@@ -162,7 +175,9 @@ NBNormalizePath["C:\\path\\to\\file"]
    戻り値は同一性判定用の情報でありアクセス権限そのものではない。
    権限判定は必ず PhysicalPath を現PCで解決・実在確認した上で access mode と privacy を見ること。 *)
 
-NBPrivacyLevelToRoutes[{0.5, 1.0}]   (* 0.5->{"cloud"}, 1.0->{"local"}, {0.5,1.0}->{"cloud","local"} *)
+NBPrivacyLevelToRoutes[{0.4, 1.0}]
+(* PL < 0.5 -> {"cloud"}, PL >= 0.5 -> {"local"} (0.5 は local)。
+   例: 0.4 -> {"cloud"}, 0.5 -> {"local"}, {0.4,1.0} -> {"cloud","local"} *)
 
 NBFileReadCellsInRange[nb2, 0.5, 0.5]  (* 公開セルのみ *)
 NBFileReadCellsInRange[nb2, 0.9, 1.0]  (* 秘匿セルのみ *)
@@ -173,6 +188,8 @@ NBFileReadCellsInRange[nb2, 0.9, 1.0]  (* 秘匿セルのみ *)
 NBAccess`NBMergeNotebookCells[src, dst, pubResults, privResults]
 (* 2つの <|cellIdx->newText|> を元セル順にマージして outputPath に保存 *)
 ```
+
+`NBPrivacyLevelToRoutes` の境界は「0.5 は local 側」です。すなわち PrivacyLevel が 0.5 未満のときだけ `{"cloud"}` となり、0.5 ちょうどを含む 0.5 以上は `{"local"}` になります。
 
 ## セルマーク API
 
@@ -212,6 +229,37 @@ NBIsClaudeFunctionCell[nb, 3]           (* Claude関数呼び出しセルか *)
 ```
 
 `NBCellUsesConfidentialSymbol` は機密変数リストの各エントリについて、ASCII 識別子（英数字・`$`・`` ` `` のみで構成される名前）はセル式をトークン分割してトークン境界での完全一致で判定します。非 ASCII の値（日本語文字列等）は従来どおり部分一致で判定します。これにより、`v` や `rows` のような短い Module 局所変数名が `SourceVaultExamOverviewView` 等の長い識別子に誤ってマッチするフォールスポジティブを防ぎます。コンテキスト付き短縮名（例: `` MyPkg`v ``）は末尾セグメントでも照合されます。
+
+## 許可 head の登録
+
+LLM 生成コードの検証（`NBValidateHeldExpr`）で使われる許可 head は、カテゴリ別の表 `$NBAllowedHeadsByCategory` を正本として管理されます。
+
+```
+NBRegisterAllowedHeads[{"SlidePDFFigure", "SlideApplyScenario", "SlideSourceFile"}]
+(* 追加後の許可 head 件数を返す *)
+```
+
+`NBRegisterAllowedHeads[heads]` は head 名（String またはその List）を許可 head へ追加します。追加先は `$NBAllowedHeadsByCategory["Registered"]` で、`$NBAllowedHeads` はそのカテゴリ表から再計算されます。
+
+重要: `$NBAllowedHeads` を直接書き換えてはいけません。`NBValidateHeldExpr` は判定のたびにカテゴリ表から `$NBAllowedHeads` を作り直すため、直接追加した head は次の検証で消えてしまいます（`SlideWorkflow` が登録していた `SlidePDFFigure` / `SlideApplyScenario` / `SlideSourceFile` などがすべて `UnknownHeadRequiresApproval` になり、展開エージェントが毎回承認待ちで止まる、という不具合の原因でした）。`NBRegisterAllowedHeads` はカテゴリ表へ追加したうえで再計算するので、登録は即座に有効化され、判定時の再計算とも一致します。
+
+関連する登録 API:
+
+- `NBRegisterApprovalHeads[heads]` — `$NBApprovalHeads`（承認ゲート対象）へ head 名を追加します。
+- `NBRegisterTrustedPackageHeads[context, patterns]` — package 文脈の信頼 head パターンを登録します。`$NBDenyHeads` / `$NBApprovalHeads` の明示登録はこの信頼より優先されます。
+- `NBRegisterLLMQueryFunc[f]` — `NBCellTransformWithLLM` が使う非同期 LLM コールバック（`f[prompt, callback, nb, opts]`）を登録します。`None` で解除します。
+- `NBRegisterAutoEvalProhibitedPatterns[patterns]` — 自動評価禁止パターンを登録します。
+
+## 評価結果の redact
+
+```
+NBRedactExecutionResult[result]
+NBRedactExecutionResult[result, "MaxSummaryLength" -> 2000]
+```
+
+`NBRedactExecutionResult` は評価結果を LLM へ戻す前に機密シンボルの置換・schema-only 縮退を行います。オプション `"MaxSummaryLength"` の既定は `Automatic`（= `$NBRedactedResultMaxLength`、既定 6000 文字）です。
+
+文字列の結果はそのまま（`Short` で省略せずに）この長さまで返され、文字列以外は従来どおり `Short[raw, 10]` 相当で縮約されます。以前は上限 500 文字 + `Short[raw, 10]` だったため、`SlideGraphSectionText` / `SlideNotebookText` のような長文を読む道具の出力が毎回途中で切れ、エージェントが本文を読めないまま迷走する問題がありました。なお、redact（機密シンボル置換・schema-only 縮退）は長さとは無関係にそのまま効きます。
 
 ## 依存グラフ API
 
@@ -650,6 +698,14 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 今回のドキュメント更新での変更点:
 
-1. **ローカル LLM プロバイダー `"llamacpp"` の既定登録（2026-08-29）**。llama.cpp の llama-server 用に、`"lmstudio"`/`"freetoken"` と同様 MaxAccessLevel 1.0 で `$iProviderMaxAccessLevel` へ初期登録されるようになりました。`$iLocalLLMAPIKeyMap` には既定エントリを持たず、API キー名は `NBGetLocalLLMAPIKey` のフォールバック規則により `"LLAMACPP_API_KEY"` に解決されます。「ローカル LLM サーバーの API キーアクセサ」節と「フォールバックモデル / プロバイダーアクセスレベル API」節の該当箇所に追記しました。
+1. **LLM エラー文字列を保持するグローバル変数 `$NBLLMLastError` を追加（2026-09-02）**。`NBCellTransformWithLLM` の `completionFn` には失敗時に `$Failed` しか渡らず、呼び出し側（documentation 等）が「LLM 応答を取得できませんでした」としか出せない問題がありました。最後に受け取った実エラー文（`"Error: ..."` 応答・`[ERROR]: 本文`・`Failure` の `"Message"`）を保持し、成功時は `""` に戻る変数として公開されます。「LLM 連携 API」節に説明を追加しました。
 
-2. **ローカル LLM の距離によるアクセスレベル強制制限 rule 107 を新設（2026-08-29）**。`"lmstudio"`/`"freetoken"`/`"llamacpp"` に許可されている MaxAccessLevel 1.0 は「localhost または信用済み同一サブネットからのみ使う」という前提の上に成り立っていましたが、その前提が崩れる接続（別サブネット・判定不能なホスト名や IPv6）を自動検出してアクセスレベル上限を強制的に引き下げる仕組みを追加しました。新しい公開関数 `NBLocalLLMURLProximity`、`NBLocalLLMEffectiveMaxAccessLevel`、`NBSetSubnetTrust`、`NBSubnetTrustActive` と、新しいグローバル変数 `$NBTrustCurrentSubnet`（既定 `False`。セッション限りの値であり永続化禁止）、`$NBRemoteLocalLLMAccessCeiling`（既定 `0.25`）を追加しました。`NBModelCanHandleAccessLevel` は url 付き modelSpec に対してこの距離判定を経由するようになりました。これらを新設の「ローカル LLM の距離によるアクセス制限 (rule 107)」節にまとめ、「フォールバックモデル / プロバイダーアクセスレベル API」節の関連する説明にも参照を追記しました。削除された公開関数・オプションはありません。
+2. **`NBCellTransformWithLLM` にオプション `"ResponseFormat" -> Automatic` を追加（2026-09-02）**。応答型の契約（`"PlainText"` 等）を指定でき、値は `ClaudeQueryAsync` へ透過されます。同節のオプション一覧に追記しました。
+
+3. **`NBRegisterAllowedHeads` の登録先をカテゴリ表に変更（2026-09-12）**。追加先が `$NBAllowedHeadsByCategory["Registered"]` になり、`$NBAllowedHeads` はそこから再計算されるようになりました。`$NBAllowedHeads` を直接書き換えると `NBValidateHeldExpr` の判定時に消えてしまう（`SlideWorkflow` の `SlidePDFFigure` / `SlideApplyScenario` / `SlideSourceFile` などが `UnknownHeadRequiresApproval` になり承認待ちで止まる）ため、この注意点とあわせて新設の「許可 head の登録」節にまとめ、`NBRegisterApprovalHeads` / `NBRegisterTrustedPackageHeads` / `NBRegisterLLMQueryFunc` / `NBRegisterAutoEvalProhibitedPatterns` の説明も同節に追加しました。
+
+4. **`$NBRedactedResultMaxLength` と `NBRedactExecutionResult` の `"MaxSummaryLength" -> Automatic` 化（2026-09-15）**。RedactedResult の最大文字数を制御する新しいグローバル変数（既定 6000）を追加し、`"MaxSummaryLength"` の既定値が `500` から `Automatic`（= `$NBRedactedResultMaxLength`）に変わりました。文字列の結果は `Short` で省略せずこの長さまでそのまま返します。新設の「評価結果の redact」節と「プライバシー仕様」節のグローバル変数一覧に追加しました。
+
+5. **`NBPrivacyLevelToRoutes` の境界の明確化**。`{"cloud"}` になるのは PrivacyLevel が 0.5 **未満**のときのみで、0.5 ちょうどは `{"local"}` 側です（例: `0.4 -> {"cloud"}`、`0.5 -> {"local"}`、`{0.4, 1.0} -> {"cloud", "local"}`）。「ObjectSpec API」節の例と説明を更新しました。
+
+削除された公開関数・オプションはありません。
