@@ -966,6 +966,15 @@ NBRedactExecutionResult::usage =
   "Out[n] / In[n] / InString[n] / % \:7b49\:3067\:6a5f\:5bc6\:30bb\:30eb\:3092\:53c2\:7167\:3057\:305f\:5834\:5408\:3082\:6a5f\:5bc6\:4f9d\:5b58\:3068\:3057\:3066\:30b9\:30ad\:30fc\:30de\:5316\:3059\:308b\:3002\n" <>
   "\:8fd4\:308a\:5024: <|\"RedactedResult\" -> ..., \"Summary\" -> String|>";
 
+NBNoteEvaluationPrivacy::usage =
+  "NBNoteEvaluationPrivacy[pl] は現在の評価スコープ透かし (NBExecuteHeldExpr が評価ごとに\n" <>
+  "0.0 から Block 束縛し、結果の \"EvaluationPrivacy\" として返す値) を pl まで引き上げる\n" <>
+  "(Max のみ、下げない)。NBAccess の外にあるデータ層 (SourceVault 等) が私的データを\n" <>
+  "読んだことを NBRedactExecutionResult の判定 (EvaluationPrivacy > AccessLevel なら\n" <>
+  "スキーマのみ) に伝えるための入口。NBAccess はデータ層に依存せず、データ層が\n" <>
+  "ここへ押し込む。NBExecuteHeldExpr の外で呼んでも影響は無い。数値でない pl は 1.0\n" <>
+  "(fail-closed)。戻り値は引き上げ後の値。";
+
 NBConfidentialLineNumbers::usage =
   "NBConfidentialLineNumbers[nb, accessSpec] \:306f\:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5185\:306e\:6a5f\:5bc6\:30fb\:6a5f\:5bc6\:4f9d\:5b58\n" <>
   "Input/Code/Output \:30bb\:30eb\:306e\:8a55\:4fa1\:884c\:756a\:53f7 (\:6574\:6570 n; In[n] \:3068 Out[n] \:306f\:540c\:4e00 n) \:306e\:30ea\:30b9\:30c8\:3092\:8fd4\:3059\:3002\n" <>
@@ -1564,6 +1573,24 @@ Default Missing[\"None\"]: when unset, EventId degrades to a non-keyed \
 \"unkeyed:<digest>\" form and NBCalendarEvents \"Wrap\"->True reports \
 \"IdentityKeyed\"->False. Rotating the key changes the embedded KeyId, so \
 callers must migrate their stored EventId mappings (routine spec P0-1).";
+
+(* ---- \:3053\:3053\:304b\:3089 Private \:90e8 (2026-09-30 \:5fa9\:5143) ----
+   BeginPackage \:76f4\:5f8c\:306e\:516c\:958b\:90e8 (::usage) \:306f\:3053\:3053\:307e\:3067\:30022026-03 \:7248\:307e\:3067\:306f\:3053\:3053\:306b
+   Begin["`Private`"] \:304c\:3042\:3063\:305f\:304c\:3001\:3044\:3064\:3057\:304b\:5931\:308f\:308c\:3001\:672c\:4f53\:306e\:5185\:90e8\:95a2\:6570\:30fb\:5c40\:6240\:5909\:6570
+   \:7d04 1,700 \:500b\:304c\:516c\:958b\:6587\:8108 NBAccess` \:306b\:4f5c\:3089\:308c\:3066\:3044\:305f\:3002NBAccess` \:306f $ContextPath \:3067
+   Global` \:3088\:308a\:524d\:306b\:4e26\:3076\:306e\:3067\:3001\:5229\:7528\:8005\:3084\:30c6\:30b9\:30c8\:306e x / r / root / check \:7b49\:304c
+   NBAccess` \:5074\:3078\:89e3\:6c7a\:3055\:308c\:3001\:672c\:4f53\:3084\:30c6\:30b9\:30c8\:306e NBAccess`Private`... \:53c2\:7167\:3082\:7a7a\:632f\:308a\:3057\:3066\:3044\:305f\:3002
+
+   usage \:306f\:7121\:3044\:304c\:516c\:958b\:6587\:8108\:306b\:6b8b\:3059\:540d\:524d\:3092\:5148\:306b\:4f5c\:3063\:3066\:304a\:304f (\:8a55\:4fa1\:306f\:3057\:306a\:3044):
+   - Fallback / PrivacyLevel / Integrations / InputText / Decompress \:306f
+     claudecode / github / SourceVault \:7b49\:3068\:30aa\:30d7\:30b7\:30e7\:30f3\:540d\:3068\:3057\:3066\:5171\:6709\:3057\:3066\:3044\:308b\:3002
+   - $ClaudeAllowPlaintextExternalJobDebug / $NBAccessPolicyVersion \:306f\:5229\:7528\:8005\:304c\:8a2d\:5b9a\:3059\:308b\:3002
+   \:672c\:4f53\:3067 NBAccess`X \:3068\:5b8c\:5168\:4fee\:98fe\:3057\:3066\:3044\:308b\:540d\:524d ($NBConfidentialCellOpts \:7b49) \:306f
+   \:6700\:521d\:306e\:51fa\:73fe\:304c\:5b8c\:5168\:4fee\:98fe\:306a\:306e\:3067\:3001\:3053\:3053\:306b\:4e26\:3079\:306a\:304f\:3066\:3082\:516c\:958b\:6587\:8108\:306b\:6b8b\:308b\:3002 *)
+Hold[Fallback, PrivacyLevel, Integrations, InputText, Decompress,
+  $ClaudeAllowPlaintextExternalJobDebug, $NBAccessPolicyVersion];
+
+Begin["`Private`"];
 
 (* ============================================================
    \:30c7\:30a3\:30d5\:30a9\:30eb\:30c8\:5024
@@ -8401,6 +8428,11 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
           Quiet[TimeConstrained[ReleaseHold[heldExpr], timeout, $TimedOut]]];
         {r, $iNBEvaluationPrivacy}]];
     If[!NumericQ[evalPriv], evalPriv = 0.0];
+    (* 2026-09-18: 入れ子の NBExecuteHeldExpr (提案コードが内部で NBAccess 経由の
+       実行を呼ぶ場合) で、内側の読み取りが外側の透かしから消えないよう Max で
+       外へ伝搬する (SourceVaultWithPrivacyScope と同じ非降下の規則)。最外周では
+       この値を読む者はいない (次の実行で 0.0 に Block される) ので影響は無い。 *)
+    iNBRaiseEvaluationPrivacy[evalPriv];
 
     If[result === $TimedOut,
       <|"Success" -> False,
@@ -9208,6 +9240,16 @@ iNBRaiseEvaluationPrivacy[level_?NumericQ] :=
      If[NumericQ[$iNBEvaluationPrivacy], $iNBEvaluationPrivacy, 0.0],
      N[level]]);
 iNBRaiseEvaluationPrivacy[_] := $iNBEvaluationPrivacy;
+
+(* 公開入口 (2026-09-18)。データ層からの合流用。上の設計メモどおり NBAccess は
+   SourceVault に依存しない: SourceVault_privacy.wl の SourceVaultNotePrivacy が
+   (NBAccess がロードされていれば) ここを呼ぶ。これが無いと SourceVault の
+   View / record を読んだ提案コードの結果が EvaluationPrivacy 0 のまま
+   NBRedactExecutionResult を素通りし、ToString[Short[raw, 10]] がクラウド LLM へ
+   渡っていた (2026-09-18 調査、PL 0.85 の SourceVaultSummariesView)。 *)
+NBAccess`NBNoteEvaluationPrivacy[pl_?NumericQ] :=
+  iNBRaiseEvaluationPrivacy[N[Clip[pl, {0., 1.}]]];
+NBAccess`NBNoteEvaluationPrivacy[___] := iNBRaiseEvaluationPrivacy[1.0];
 
 (* \:30d5\:30a1\:30a4\:30eb\:306e PrivacyLevel \:3092 1 \:3064\:306e\:6570\:5024\:306b\:3059\:308b (.nb \:306e\:6df7\:5728\:30ec\:30f3\:30b8\:306f\:6700\:5927\:5024)\:3002
    file_read \:3068\:5b8c\:5168\:306b\:540c\:3058\:5024\:3092\:4f7f\:3046\:305f\:3081 NBFileSpec (\:30ad\:30e3\:30c3\:30b7\:30e5\:6e08\:307f) \:7d4c\:7531\:3002
@@ -10781,6 +10823,12 @@ iNBFileLoadAsExprPlain[path_String] :=
 
 NBAccess`NBFileLoadSlim[path_String] := iNBFileLoadAsExpr[path];
 
+(* 2026-10-02: \:66f8\:304d\:8fbc\:307f\:7528\:306e\:8aad\:307f\:8fbc\:307f\:3002\:8aad\:3093\:3067\:76f4\:3057\:3066\:4fdd\:5b58\:3059\:308b\:95a2\:6570 (NBWriteHeader / NBClearCloudPublishable / \:30bb\:30eb\:30fb todo \:306e\:66f8\:304d\:8fbc\:307f) \:306f
+   \:30b0\:30e9\:30d5\:30a3\:30c3\:30af\:3092\:5265\:96e2\:3057\:306a\:3044\:3067\:4e38\:3054\:3068\:8aad\:3080\:3002\:5265\:96e2\:3057\:305f\:5f0f (<<SVAsset:id>>) \:3092\:4fdd\:5b58\:3059\:308b\:3068\:56f3\:306e\:30c7\:30fc\:30bf\:304c\:6d88\:3048\:308b
+   (\:5b9f\:4f8b: 9.2 MB \:306e\:8a08\:7b97\:30ce\:30fc\:30c8\:304c NBSetCloudPublishable \:3067 322 KB \:306b\:306a\:3063\:305f) *)
+iNBFileLoadAsExprForWrite[path_String] := iNBFileLoadAsExprPlain[path];
+iNBSlimmedExprQ[expr_] := ! FreeQ[expr, s_String /; StringStartsQ[s, "<<SVAsset:"]];
+
 (* Notebook[...] \:304b\:3089\:5168\:30bb\:30eb\:30ea\:30b9\:30c8\:3092\:53d6\:5f97\:3002\:7f60 #23 \:6e96\:62e0\:3067 SymbolName[Head[]] \:6bd4\:8f03\:3002 *)
 iNBNotebookCells[nbExpr_] :=
   If[Length[nbExpr] >= 1 && ListQ[nbExpr[[1]]],
@@ -11244,6 +11292,10 @@ iNBCheckWriteAccess[accessSpec_Association] :=
 iNBFileSaveExpr[path_String, nbExpr_] :=
   Module[{abs, tmpPath, result, renameOk, directOk, writeMode},
     abs = ExpandFileName[path];
+    (* 2026-10-02: \:5265\:96e2\:3057\:305f\:5f0f\:306f\:4fdd\:5b58\:3057\:306a\:3044 (\:66f8\:304d\:623b\:3059\:3068\:56f3\:306e\:30c7\:30fc\:30bf\:304c <<SVAsset:id>> \:306b\:7f6e\:304d\:63db\:308f\:3063\:305f\:307e\:307e\:6d88\:3048\:308b) *)
+    If[iNBSlimmedExprQ[nbExpr],
+      Return[<|"Status" -> "Failed", "Reason" -> "SlimmedExpression", "Path" -> abs,
+        "Message" -> "refusing to save a notebook whose graphics payloads were stripped (<<SVAsset:...>>); load it in full before writing"|>]];
     tmpPath = abs <> ".tmp-" <> ToString[$ProcessID] <> "-" <>
       ToString[Hash[SessionTime[]]];
     result = Quiet @ Check[
@@ -11400,7 +11452,7 @@ NBSetCellOptionsByPredicate[path_String, predicate_, optionRules_List,
         "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
         accessCheck]]];
 
-    loaded = iNBFileLoadAsExpr[path];
+    loaded = iNBFileLoadAsExprForWrite[path];
     If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
     nbExpr = Lookup[loaded, "NotebookExpr"];
     cells = iNBNotebookCells[nbExpr];
@@ -11477,7 +11529,7 @@ NBSetCellTaggingRuleByPredicate[path_String, predicate_,
         "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
         accessCheck]]];
 
-    loaded = iNBFileLoadAsExpr[path];
+    loaded = iNBFileLoadAsExprForWrite[path];
     If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
     nbExpr = Lookup[loaded, "NotebookExpr"];
     cells = iNBNotebookCells[nbExpr];
@@ -11539,7 +11591,7 @@ NBWriteHeader[path_String, key_String, value_, opts:OptionsPattern[]] :=
         "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
         accessCheck]]];
 
-    loaded = iNBFileLoadAsExpr[path];
+    loaded = iNBFileLoadAsExprForWrite[path];
     If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
     nbExpr = Lookup[loaded, "NotebookExpr"];
 
@@ -11633,7 +11685,7 @@ NBClearCloudPublishable[path_String, opts:OptionsPattern[]] :=
         "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
         accessCheck]]];
 
-    loaded = iNBFileLoadAsExpr[path];
+    loaded = iNBFileLoadAsExprForWrite[path];
     If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
     nbExpr = Lookup[loaded, "NotebookExpr"];
 
@@ -11879,7 +11931,7 @@ NBWriteTodoStatus[path_String, todoKey_Association, newStatus_String,
     idxKey = Lookup[todoKey, "Index", Missing["NotPresent"]];
     textKey = Lookup[todoKey, "Text", Missing["NotPresent"]];
 
-    loaded = iNBFileLoadAsExpr[path];
+    loaded = iNBFileLoadAsExprForWrite[path];
     If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
     nbExpr = Lookup[loaded, "NotebookExpr"];
     cells = iNBNotebookCells[nbExpr];
@@ -12447,6 +12499,8 @@ NBAccess`NBToolCallPermits[] := NBAccess`Private`$iNBToolCallPermits;
 NBAccess`NBToolCallPermitReset[] := (
   NBAccess`Private`$iNBToolCallPermits = <||>;
   <|"Status" -> "Reset"|>);
+
+End[]; (* NBAccess`Private` \:672c\:4f53 (\:300c\:3053\:3053\:304b\:3089 Private \:90e8\:300d\:306e Begin \:3068\:5bfe) *)
 
 (* ============================================================
    Calendar access (iCal/ICS): access-level gated read.

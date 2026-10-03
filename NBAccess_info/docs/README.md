@@ -26,7 +26,7 @@ NBAccess は、Mathematica ノートブックを「セルの配列」として�
 
 ### セルの非同期 LLM 変換
 
-`NBCellTransformWithLLM` は、セルのプライバシーレベルに応じて適切な LLM を自動選択し、非同期でセルを変換します。カーネルをブロックせず、完了コールバックで結果を受け取ります。これにより、機密データは自動的にローカル LLM のみに送信され、クラウド LLM への漏洩が防止されます。エラー発生時、`completionFn` には `$Failed` のみが渡されますが、実際の失敗理由は `$NBLLMLastError`（新機能）に記録されるため、呼び出し側は「LLM 応答を取得できませんでした」といった一般的な文言ではなく具体的なエラー内容をユーザーに提示できます。
+`NBCellTransformWithLLM` は、セルのプライバシーレベルに応じて適切な LLM を自動選択し、非同期でセルを変換します。カーネルをブロックせず、完了コールバックで結果を受け取ります。これにより、機密データは自動的にローカル LLM のみに送信され、クラウド LLM への漏洩が防止されます。エラー発生時、`completionFn` には `$Failed` のみが渡されますが、実際の失敗理由は `$NBLLMLastError` に記録されるため、呼び出し側は「LLM 応答を取得できませんでした」といった一般的な文言ではなく具体的なエラー内容をユーザーに提示できます。応答型の契約を指定する `"ResponseFormat"` オプション（既定 `Automatic`、値はそのまま `ClaudeQueryAsync` へ透過）も利用できます。
 
 ### フォールバックモデルとプロバイダーアクセスレベル
 
@@ -37,6 +37,8 @@ API キー管理では、クラウド LLM（Anthropic、OpenAI）だけでなく
 **クラウド公開宣言（CloudPublishable）**: ノートブックに `CloudPublishable -> False` を宣言することで、そのノートブックが機密データを含みクラウド LLM への送信を拒否することを明示できます。`NBNotebookRequiredAccessLevel[nb]` はこの宣言を読み取り、Private 宣言済みのノートブックでは 1.0（ローカル LLM のみ）、それ以外では 0.0 を返します。この値は `NBGetAvailableFallbackModels` と組み合わせてプロバイダールーティング判定に利用できます。
 
 **ノートブックキャッシュ修復**: 外部ツール（エディタ・バージョン管理のマージ等）で Wolfram System の外側から直接編集された `.nb` ファイルは、ヘッダ内のバイト位置キャッシュ（NotebookDataLength / OutlinePosition / CellTagsIndexPosition 等）が実体とずれ、開くたびにクリーンアップダイアログが繰り返し出るなどの症状を起こします。`NBRepairNotebookCache[path]` は該当ファイルを FrontEnd 経由で一度開いて `NotebookSave` することでこのバイト位置キャッシュを再生成します（Notebook 式の内容自体は変更しません）。フォルダ配下を一括修復する `NBRepairNotebookCacheFolder[dir, opts]`、通常修復では効果がない場合の強力版フォールバック `NBRepairNotebookCacheStrict[path]`（`NotebookImport` で読み込み、`CreateDocument` で新規ノートブックを作成し直して元パスに上書き保存）、および修復作業で残る `.nb.tmp-*` の残骸を削除する `NBCleanupTmpFiles[dir, opts]` も提供されます。
+
+**大きなノートブックの読み込み**: `NBFileLoadSlim` は、ファイルサイズが `$NBSlimNotebookThresholdMB`（既定 5 MB）を超えるノートブックについて、グラフィックスの payload を剥離して軽量に読み込みます。テキスト中心の処理で巨大な画像データを扱わずに済みます。
 
 ### 変数依存グラフによる自動検出
 
@@ -73,7 +75,7 @@ NBAccess は、Claude Code が参照可能なディレクトリを **AccessPathR
 
 NBAccess は、ノートブック単位でどの LLM モデルを優先的に使用するかを設定し、信頼できるローカル LLM サーバーを管理する仕組みを提供します。これにより、ノートブックごとに異なるモデルやサーバーエンドポイントを割り当て、実行環境に応じた柔軟なルーティングが可能になります。詳細は [ユーザーマニュアル](docs/user_manual.md) のノートブックモデル選択セクションを参照してください。
 
-### カレンダーアクセスと $onWork タスクメタデータ（アクセスレベル制御・新機能）
+### カレンダーアクセスと $onWork タスクメタデータ（アクセスレベル制御）
 
 NBAccess は、プライバシーファーストの設計をノートブック外部の情報源にも拡張し、ユーザーの iCal/ICS カレンダーおよび `$onWork` ディレクトリ配下のタスク管理ノートブック群を、アクセスレベルに応じて安全に読み取る API を提供します。
 
@@ -90,7 +92,7 @@ NBAccess は、`NBAccess_crypto.wl`（本体とは別ファイルだが同じ `N
 
 主な特徴は以下のとおりです。
 
-- **2 種類のバックエンド** — `$NBCredentialBackend` で `"Memory"`（既定。カーネル内・揮発性・開発/テスト用、同期も永続化もされない）と `"SystemCredential"`（OS の資格情報ストア = Windows Credential Manager/DPAPI による永続化。本番想定）を切り替えます。鍵を生成・使用する **前に** 設定してください。永続データには必ず `"SystemCredential"` を選びます（`"Memory"` 鍵はカーネルごとにランダムで、終了時に失われ、暗号化したデータは後で復号できません）。
+- **2 種類のバックエンド** — `$NBCredentialBackend` で `"Memory"`（既定。カーネル内・揮発性・開発/テスト用、同期も永続化もされない）と `"SystemCredential"`（OS の資格情報ストア = Windows Credential Manager/DPAPI による永続化。本番想定）を切り替えます。鍵を生成・使用する **前に** 設定してください。永続データには必ず `"SystemCredential"` を選びます（`"Memory"` 鍵はカーネルごとにランダムで、終了時に失われ、暗号化したデータは後で復号できません）。`"SystemCredential"` の鍵 index は永続時に既存の index と merge されるため、他カーネルが発行した keyRef を消すことはありません（自カーネルで削除した keyRef は除外されます）。
 - **鍵生成と管理** — `NBGenerateSymmetricKeyRef`（AES256）/ `NBGenerateMacKeyRef`（HMAC 鍵）/ `NBGenerateAsymmetricKeyRefPair`（RSA）でランダム鍵を生成し、`NBKeyStatus` / `NBListCredentialKeyRefs` / `NBDeleteCredentialKey` で管理します。`NBKeyStatus` は鍵材料を含まない metadata のみを返します。`NBKeyMaterialExistsQ` は index に依存せず、鍵材料そのものが backend に存在するかを直接判定します（crypto-shredding 済みかどうかの確認等に使用）。`NBRebuildKeyIndexFromCredentials` は鍵 index blob のサイズ超過等による silent 失敗が発生した場合に、鍵材料 credential から失われた index entry を再構築します（復旧用）。
 - **KeyRef による暗号操作** — `NBEncryptWithKeyRef` / `NBDecryptWithKeyRef` / `NBMacWithKeyRef`（HMAC-SHA256）/ `NBVerifyMacWithKeyRef`（constant-time 比較）/ `NBGetPublicKeyForKeyRef`。WL 14.3 には AEAD/GCM がないため、at-rest の完全性は **encrypt-then-MAC** で確保します。
 - **可搬鍵バンドル** — `NBExportWrappedKeys` / `NBImportWrappedKeys` は、SourceVault のパスフレーズ鍵バンドル向けに、鍵を `wrapKey` で暗号化した状態でのみ取り出し / 書き戻します（出力は暗号文のみ）。
@@ -117,7 +119,7 @@ NBAccess は、ノートブック内での安全な式実行・検証・ルー�
 - **`NBExecuteHeldExpr`** — 検証済み式をポリシーに従って安全に実行します
 - **`NBAuthorize`** — PolicyGate・ScoreGate・EnvironmentGate を統合したアクセス制御判定を行います
 - **`NBRouteDecision`** — コンテキストのリスクスコアに基づき、CloudLLM / PrivateLLM / LocalOnly へのルーティング推奨を返します
-- **`NBImport`**（新機能） — アクセス可能ディレクトリの制限を統合した安全な Import ラッパーです。ClaudeRuntime 経由で LLM 生成コードを実行する評価コンテキストでは、生の `Import` の呼び出しが恒久的に Deny されるため、ファイルを読み込みたい場合は必ずこちらを使用します
+- **`NBImport`** — アクセス可能ディレクトリの制限を統合した安全な Import ラッパーです。ClaudeRuntime 経由で LLM 生成コードを実行する評価コンテキストでは、生の `Import` の呼び出しが恒久的に Deny されるため、ファイルを読み込みたい場合は必ずこちらを使用します
 - **`GuardedApply`** / **`Declassify`** — 関数単位のセキュリティポリシー適用と情報ラベルの引き下げ
 
 ClaudeRuntime は NBAccess を依存パッケージとしてロードし、これらの API を Expression-Proposal ループの各フェーズ(Validate / Execute / Route)から呼び出します。SourceVault 経由で取得した ObjectSpec を `NBValidateHeldExpr` / `NBAuthorize` に渡すことで、ファイル・値レベルのプライバシー情報を式検証ロジックに統合できます。NBAccess 単体でも全 API がそのまま利用できます(後方互換性については「後方互換性について」の節を参照してください)。
@@ -133,7 +135,7 @@ ClaudeRuntime は NBAccess を依存パッケージとしてロードし、こ�
 - `SourceVault` 系など信頼済みパッケージ由来の head については、同一種別の承認要求が繰り返し発火しないよう抑制するガードが追加されています。
 - `"Evaluate"` は Deny 対象から除去されており、`ParametricPlot[Evaluate[...]]` のように `Evaluate` を含む一般的なプロット・計算式が不必要に拒否・承認待ちになることがなくなっています。
 - 生の `Import` の呼び出しは恒久的に Deny のままです。式中でファイルを読み込みたい場合は、代わりに `NBImport` を使用してください。
-- 許可 head（`$NBAllowedHeads`）は、カテゴリ別の登録表 **`$NBAllowedHeadsByCategory`** から検証のたびに再計算される導出値になりました（新機能）。外部パッケージが許可 head を追加登録する場合は `$NBAllowedHeads` を直接書き換えず、**`NBRegisterAllowedHeads[headNameOrList]`** を使用してください。直接書き換えは次回の検証時に上書きされ消えてしまいます。
+- 許可 head（`$NBAllowedHeads`）は、カテゴリ別の登録表 **`$NBAllowedHeadsByCategory`** から検証のたびに再計算される導出値になりました。外部パッケージが許可 head を追加登録する場合は `$NBAllowedHeads` を直接書き換えず、**`NBRegisterAllowedHeads[headNameOrList]`** を使用してください。直接書き換えは次回の検証時に上書きされ消えてしまいます。
 
 これに伴い、旧来の `NBExecuteHeldExpr` の `"TimeConstraint"` オプションおよび `NBValidateHeldExpr` の `"AllowedHeads"` / `"ApprovalHeads"` / `"DenyHeads"` / `"LabelCheck"` をオプション引数で逐一指定する方式は **廃止** され、グローバル変数（`$NBAllowedHeads` / `$NBApprovalHeads` / `$NBDenyHeads` 等）と EffectClass ベース判定に統合されています。API のシグネチャ（`HoldComplete[...]` と PrivacySpec を渡す形）は変わっていません。
 
@@ -150,13 +152,13 @@ ClaudeRuntime 経由の式実行では、出力の扱い方を 2 つのモード
 
 ### claudecode との連携
 
-NBAccess は [claudecode](https://github.com/transreal/claudecode) パッケージの基盤として設計されています。claudecode は NBAccess を内部的に利用し、Claude AI とのインタラクティブなノートブック操作を実現します。エンコーディング処理や `$Path` の設定は claudecode 経由で自動化されるため、通常は claudecode を通じて利用することを推奨します。
+NBAccess は [claudecode](https://github.com/transreal/claudecode) パッケージの基盤として設計されています。claudecode は NBAccess を内部的に利用し、Claude AI とのインタラクティブなノートブック操作を実現します。エンコーディング処理や `$Path` の設定は claudecode 経由で自動化されるため、通常は claudecode を通じて利用することを推奨します。claudecode はロード時に、非同期 LLM コールバック（`$NBLLMQueryFunc`、登録は `NBRegisterLLMQueryFunc` 経由）や自動実行禁止パターン（`$NBAutoEvalProhibitedPatterns`、外部パッケージは `NBRegisterAutoEvalProhibitedPatterns` で登録）を登録します。また、`$ClaudeAllowPlaintextExternalJobDebug` / `$NBAccessPolicyVersion` のように利用者側（上位パッケージ・設定ファイル）が設定する変数は NBAccess の公開文脈に事前宣言されており、`Global`` に誤って作られることはありません。
 
 ### [実験的] ノートブックファイルのプライバシー分割処理
 
 NBAccess は claudecode パッケージの `ClaudeProcessFile` 機能に対して、ノートブックファイル（.nb）のセル単位のプライバシーレベル判定とマージ処理を提供します。各セルのプライバシーレベルは 3 段階（0.0: 公開、0.75: 秘匿依存、1.0: 秘匿）で判定され、claudecode 側でクラウド LLM とプライベート LLM への自動振り分けに使用されます。
 
-ファイル型ノートブックの操作には専用の API 群（`NBFileOpen` / `NBFileClose` / `NBFileSave` / `NBFileReadCells` / `NBFileReadAllCells` / `NBFileWriteCell` / `NBFileWriteAllCells`）を **必ず経由する** 設計になっており、`NotebookOpen` / `NotebookGet` を直接使用してはいけません。これにより、ファイル単位の `NBFileSpec` によるプライバシー判定と整合的な読み書きが保証されます。処理結果は `NBMergeNotebookCells` により元のセル構造を保ったままマージされます。
+ファイル型ノートブックの操作には専用の API 群（`NBFileOpen` / `NBFileClose` / `NBFileSave` / `NBFileReadCells` / `NBFileReadAllCells` / `NBFileWriteCell` / `NBFileWriteAllCells`）を **必ず経由する** 設計になっており、`NotebookOpen` / `NotebookGet` を直接使用してはいけません。これにより、ファイル単位の `NBFileSpec` によるプライバシー判定と整合的な読み書きが保証されます。処理結果は `NBMergeNotebookCells` により元のセル構造を保ったままマージされます。巨大なノートブックには `NBFileLoadSlim` による軽量読み込みも利用できます。
 
 ### Job 管理による非同期出力
 
@@ -178,6 +180,7 @@ NBAccess は ClaudeRuntime・ClaudeTestKit・SourceVault の導入後も、既�
 - **検証・実行 API のオプション**: `NBValidateHeldExpr` / `NBExecuteHeldExpr` のシグネチャは不変ですが、旧来の `"TimeConstraint"` / `"AllowedHeads"` / `"ApprovalHeads"` / `"DenyHeads"` / `"LabelCheck"` オプションは削除されています。これらを明示指定していたコードのみ、グローバル変数による設定へ置き換えてください（明示指定しても効果はありません）。
 - **`$NBRedactedResultMaxLength`（新規追加）**: `NBRedactExecutionResult` / `NBReleaseResult` が LLM に返す実行結果本文の最大文字数を制御するグローバル変数です（既定 6000）。文字列型の結果はこれまで一律 `Short[raw, 10]`（約10行）で省略されていましたが、この変更以降は本変数の文字数に達するまでそのまま返されます。既存コードに影響しませんが、長文レスポンスの切れ方に依存していた処理がある場合は挙動が変わります。
 - **許可 head 登録 API（`NBRegisterAllowedHeads` / `$NBAllowedHeadsByCategory`、新規追加）**: `$NBAllowedHeads` はカテゴリ登録表 `$NBAllowedHeadsByCategory` から検証のたびに再計算される派生値に変わりました。外部パッケージから `$NBAllowedHeads` へ直接 `Append` していたコードは、次回の検証時に登録内容が消えてしまうため、`NBRegisterAllowedHeads` への置き換えが必要です。
+- **`NBFileLoadSlim` / `$NBSlimNotebookThresholdMB`、`NBCellTransformWithLLM` の `"ResponseFormat"` オプション（新規追加）**: いずれも追加のみで、既存コードへの影響はありません。
 
 ClaudeRuntime / SourceVault 導入前に作成したノートブックはそのまま使い続けることができます。新機能を利用したい場合は、個別の関数呼び出し時に `NBAuthorize` や `NBFileSpec` を任意で追加するだけで構いません。強制的な移行作業は不要です。
 
@@ -332,19 +335,22 @@ path   = NBNormalizePath["C:/Data/secret.csv"]; (* SymbolicPath 情報 *)
 | `$NBVerbose` | 内部詳細ログ出力フラグ | `False` |
 | `$NBAutoEvalProhibitedPatterns` | 自動実行ブロックパターンリスト | `{}` |
 | `$NBLLMQueryFunc` | 非同期 LLM 呼び出し用コールバック関数 | `None` |
-| `$NBLLMLastError` | NBCellTransformWithLLM が最後に受け取った LLM エラー文字列（新機能） | `""` |
-| `$NBRedactedResultMaxLength` | 実行結果 redaction（NBRedactExecutionResult 等）の本文最大文字数（新機能） | `6000` |
+| `$NBLLMLastError` | NBCellTransformWithLLM が最後に受け取った LLM エラー文字列 | `""` |
+| `$NBRedactedResultMaxLength` | 実行結果 redaction（NBRedactExecutionResult 等）の本文最大文字数 | `6000` |
+| `$NBSlimNotebookThresholdMB` | `NBFileLoadSlim` がグラフィックス payload を剥離するファイルサイズ閾値（MB）（新機能） | `5` |
 | `$NBSeparationIgnoreList` | 分離検査で無視するパッケージ名 | `{"NBAccess", "NotebookExtensions"}` |
 | `$NBConfidentialCellOpts` | 機密マーク（直接）のセル表示オプション | 赤背景 + WarningSign |
 | `$NBDependentCellOpts` | 依存機密マークのセル表示オプション | 橙背景 + LockIcon |
 | `$NBCredentialBackend` | 暗号鍵ストアのバックエンド | `"Memory"` |
-| `$NBAllowedHeadsByCategory` | 許可 head のカテゴリ別登録表（`$NBAllowedHeads` はここから再計算される派生値、新機能・要 ClaudeRuntime） | カテゴリ別 Association |
+| `$NBAllowedHeadsByCategory` | 許可 head のカテゴリ別登録表（`$NBAllowedHeads` はここから再計算される派生値・要 ClaudeRuntime） | カテゴリ別 Association |
 | `$NBCalendarMandatoryPatterns` | 出席必須イベントを判定する文字列パターンリスト | `{}` |
 | `$NBCalendarCacheSeconds` | カレンダーソースのインメモリ解析キャッシュ TTL（秒） | `300` |
 | `$NBCalendarCredentialName` | ICS カレンダー所在地（パス/URL）を保持する `SystemCredential` キー名 | `"ics-calendar"` |
 | `$NBCalendarIdentityKeyRef` | イベント安定 ID 生成用 HMAC 鍵の KeyRef | `Missing["None"]` |
 
 > ClaudeRuntime を導入すると、式検証用に `$NBAllowedHeads` / `$NBApprovalHeads` / `$NBDenyHeads` などのグローバル変数が追加されます。既存コードがこれらのシンボル名を独自に使用している場合は名前の衝突を確認してください。`$NBAllowedHeads` は直接編集するのではなく `NBRegisterAllowedHeads` で登録してください。
+
+> `$ClaudeAllowPlaintextExternalJobDebug` / `$NBAccessPolicyVersion` は利用者（上位パッケージ・設定ファイル）が設定する変数で、NBAccess の公開文脈に事前宣言されています。
 
 内部状態変数（`Private` スコープ）:
 
@@ -362,6 +368,8 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 ```
 
 ### 主な機能
+
+詳細な使い方・全オプションは [ユーザーマニュアル](docs/user_manual.md) と [API リファレンス](docs/api.md) を参照してください。
 
 #### セルユーティリティ
 
@@ -391,7 +399,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBResolveCell[nb, cellIdx]`** — CellObject を返します（無効インデックスの場合は `$Failed`）
 - **`NBParentNotebookOfCurrentCell[]`** — EvaluationCell の親ノートブックを返します
 - **`NBEvaluatePreviousCell[nb]`** — 直前のセルを選択して評価します
-- **`NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]`** — セルのプライバシーレベルに応じた LLM を自動選択し、非同期でセルを変換します。エラー時は `$NBLLMLastError` に実際の失敗理由が記録されます
+- **`NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]`** — セルのプライバシーレベルに応じた LLM を自動選択し、非同期でセルを変換します。エラー時は `$NBLLMLastError` に実際の失敗理由が記録されます。オプション: `Fallback` / `InputText` / `Integrations` / `"ResponseFormat"`
 - **`NBInvalidateCellsCache[]`** / **`NBInvalidateCellsCache[nb]`** — 内部セルキャッシュをクリアします（`nb` 省略時は全ノートブック分）
 - **`NBUserNotebooks[]`** — WindowFrame が通常のユーザーノートブックのみを返します（パレット・ダイアログ等を除外）
 - **`NBRefreshCellsCache[]`** — ユーザーノートブックのセルキャッシュをスマートに再検証し、変更があったノートブックのリストを返します
@@ -399,8 +407,8 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 #### プライバシー制御
 
 - **`NBCellPrivacyLevel[nb, idx]`** — セルのプライバシーレベル（0.0〜1.0）を返します
-- **`NBCellExprPrivacyLevel[cellExpr]`**（新機能） — CellObject を持たない Cell 式（`Import[path, "Notebook"]` 経由など）からプライバシーレベルを判定します。判定規則は `NBCellPrivacyLevel` と共通ですが FrontEnd を必要とせず、フォルダ一括処理などに使えます
-- **`NBCellObjectPrivacyLevel[cell]`**（新機能） — CellObject から直接プライバシーレベルを判定します。`EvaluationCell[]` など cellIdx を持たないセルの判定に使用します
+- **`NBCellExprPrivacyLevel[cellExpr]`** — CellObject を持たない Cell 式（`Import[path, "Notebook"]` 経由など）からプライバシーレベルを判定します。判定規則は `NBCellPrivacyLevel` と共通ですが FrontEnd を必要とせず、フォルダ一括処理などに使えます
+- **`NBCellObjectPrivacyLevel[cell]`** — CellObject から直接プライバシーレベルを判定します。`EvaluationCell[]` など cellIdx を持たないセルの判定に使用します
 - **`NBIsAccessible[nb, idx, PrivacySpec -> ps]`** — セルがアクセス可能か判定します
 - **`NBFilterCellIndices[nb, indices, PrivacySpec -> ps]`** — インデックスリストをフィルタリングします
 - **`NBGetCells[nb, PrivacySpec -> ps]`** — 全セルをフィルタリングして返します
@@ -439,7 +447,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBProviderCanAccess[provider, accessLevel]`** — プロバイダーが指定アクセスレベルのデータにアクセス可能か判定します
 - **`NBNotebookRequiredAccessLevel[nb]`** — ノートブックが要求するアクセスレベルを返します（`CloudPublishable -> False` の Private 宣言時は 1.0、それ以外は 0.0）
 
-#### ノートブックキャッシュ修復（新機能）
+#### ノートブックキャッシュ修復
 
 外部ツールで直接編集された `.nb` ファイルのバイト位置キャッシュを正規化し、開くたびのダイアログ再表示や読み込み失敗を解消します。
 
@@ -448,7 +456,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBRepairNotebookCacheStrict[path]`** — 通常修復が効かない場合の強力版フォールバック。`NotebookImport` で読み込み、`CreateDocument` で新規ノートブックを作成し直して元パスへ上書き保存します（TaggingRules 等の帯同オプションも引き継ぎます）
 - **`NBCleanupTmpFiles[dir, opts]`** — 修復処理で残る `.nb.tmp-*` 残骸ファイルを削除します
 
-#### カレンダーアクセス (iCal/ICS)（新機能）
+#### カレンダーアクセス (iCal/ICS)
 
 ユーザーの iCal/ICS カレンダーをアクセスレベルに応じて安全に読み取ります。
 
@@ -458,7 +466,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBICSParseEvents[icsText]`** — 生の ICS テキストをイベント Association のリストへパースします（アクセス制御なしの純粋パーサ）
 - **`NBICSEventOccurrences[event, from, to]`** — パース済みイベントを期間内のオカレンスへ展開します
 
-#### $onWork タスクメタデータ（新機能）
+#### $onWork タスクメタデータ
 
 `$onWork` ディレクトリ配下のタスク管理ノートブックを、本文を読まずにメタデータのみアクセスレベルに応じて列挙します。
 
@@ -490,8 +498,8 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 
 - **`NBValidateHeldExpr[heldExpr, privacySpec]`** — LLM が生成した式を Allowed Expression Surface に照合し、実行前に安全性を検証します
 - **`NBExecuteHeldExpr[heldExpr, opts]`** — 検証済み式をポリシーに従って安全に実行します
-- **`NBRegisterAllowedHeads[headOrHeads]`**（新機能） — 許可 head をカテゴリ登録表 `$NBAllowedHeadsByCategory["Registered"]` に追加し、`$NBAllowedHeads` を再計算します。外部パッケージが許可 head を登録する正規の方法です（`$NBAllowedHeads` への直接書き換えは次回検証時に失われます）
-- **`NBImport[file, opts]`**（新機能） — アクセス可能ディレクトリの制限を統合した安全な Import ラッパーです。ClaudeRuntime 経由の式実行では生の `Import` が恒久的に Deny されるため、ファイル読み込みには必ずこちらを使用します
+- **`NBRegisterAllowedHeads[headOrHeads]`** — 許可 head をカテゴリ登録表 `$NBAllowedHeadsByCategory["Registered"]` に追加し、`$NBAllowedHeads` を再計算します。外部パッケージが許可 head を登録する正規の方法です（`$NBAllowedHeads` への直接書き換えは次回検証時に失われます）
+- **`NBImport[file, opts]`** — アクセス可能ディレクトリの制限を統合した安全な Import ラッパーです。ClaudeRuntime 経由の式実行では生の `Import` が恒久的に Deny されるため、ファイル読み込みには必ずこちらを使用します
 - **`NBFlushDeferredOutput[]`** — Batch 出力モードで遅延バッファに溜めた出力を一括フラッシュします
 - **`NBRedactExecutionResult[result, accessSpec, opts]`** — 実行結果を redact し、安全な形で返します（本文の最大長は `$NBRedactedResultMaxLength` で制御）
 - **`NBMakeContextPacket[nb, accessSpec, opts]`** — ノートブックから安全な context packet を構築します
@@ -550,8 +558,8 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBGenerateSymmetricKeyRef[keyRef, metadata]`** — AES256 対称鍵を生成して保存します
 - **`NBGenerateMacKeyRef[keyRef, metadata]`** — 256bit HMAC 鍵を生成して保存します
 - **`NBGenerateAsymmetricKeyRefPair[keyRef, metadata]`** — RSA 鍵対を生成し、秘密鍵を保存・公開鍵を index に保持します
-- **`NBStoreCredentialKey` / `NBKeyStatus` / `NBListCredentialKeyRefs` / `NBDeleteCredentialKey`** — 鍵の保存・状態確認（metadata のみ）・一覧・削除
-- **`NBKeyMaterialExistsQ[keyRef]`**（新機能） — index に依存せず、鍵材料が backend に実在するかを直接判定します（crypto-shredding 済み判定など）
+- **`NBStoreCredentialKey` / `NBKeyStatus` / `NBListCredentialKeyRefs` / `NBDeleteCredentialKey`** — 鍵の保存・状態確認（metadata のみ）・一覧・削除。削除した keyRef は同一カーネルの index merge で復活しないよう記録されます
+- **`NBKeyMaterialExistsQ[keyRef]`** — index に依存せず、鍵材料が backend に実在するかを直接判定します（crypto-shredding 済み判定など）
 - **`NBRebuildKeyIndexFromCredentials[keyRefs]`** — index に無いが鍵材料 credential が存在する keyRef の index entry を材料から再構築します（index blob のサイズ超過による silent 失敗からの復旧用）
 - **`NBEncryptWithKeyRef` / `NBDecryptWithKeyRef`** — KeyRef による対称暗号化・復号（暗号文は Base64、鍵材料は返しません）
 - **`NBMacWithKeyRef` / `NBVerifyMacWithKeyRef`** — HMAC-SHA256 の生成と constant-time 検証
@@ -564,6 +572,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 閉じた .nb ファイルを対象とする操作は、必ず以下の API を経由してください。`NotebookOpen` / `NotebookGet` を直接使用してはいけません。
 
 - **`NBFileOpen[path]`** — .nb ファイルを invisible モード (Visible -> False) で開き、NotebookObject を返します
+- **`NBFileLoadSlim[path]`** — ファイルサイズが `$NBSlimNotebookThresholdMB`（既定 5 MB）を超える大きなノートブックについて、グラフィックス payload を剥離して軽量に読み込みます
 - **`NBFileClose[nb]`** — NBFileOpen で開いたノートブックを閉じます
 - **`NBFileSave[nb, path]`** — ノートブックを指定パスに保存します（path が None なら上書き保存）
 - **`NBFileReadCells[nb, opts]`** — 全セルを PrivacySpec でフィルタリングし `{<|cellIdx, style, text, privacyLevel|>, ...}` を返します。秘密セルは `"[CONFIDENTIAL]"` に置換されます

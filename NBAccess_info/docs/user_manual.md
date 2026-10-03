@@ -1772,7 +1772,27 @@ NBSetSubnetTrust[False]
 
 ## その他のユーティリティ
 
-（本セクションは今後追記予定です。）
+### 利用者が設定するグローバル変数
+
+以下の2つは公開文脈 `NBAccess`` に名前だけが宣言されている（usage は無い）変数で、**利用者（または呼び出し側パッケージ）が自分で値を設定する**ものです。
+
+- `$ClaudeAllowPlaintextExternalJobDebug`
+- `$NBAccessPolicyVersion`
+
+これらは本体や他パッケージ、テストが参照する前に名前を確実に `NBAccess`` に置くために、公開部で先に作成されています（評価はされません）。値の意味・設定方法は、設定する側のパッケージ（[claudecode](https://github.com/transreal/claudecode) 等）の取り決めに従ってください。
+
+```mathematica
+(* 利用者側で値を設定する例（値の意味は呼び出し側パッケージの規約に従う） *)
+$NBAccessPolicyVersion = "2026-10";
+```
+
+### シンボルの文脈 (NBAccess`) に関する注意
+
+2026-09-30 の復元作業で、公開部（`BeginPackage` 直後の `::usage` 宣言部）と `Begin["`Private`"]`、およびそれと対になる `End[]` の構成が整理されました。それ以前の版では本体内部の関数・局所変数（`$NBConfidentialCellOpts` 等、本体で `NBAccess`X` と完全修飾していた名前を含む約 1,700 個）が誤って公開文脈 `NBAccess`` に作られており、`claudecode` / `github` / `SourceVault` 等のオプション名と同名のシンボルを共有してしまう問題がありました。現在は以下のとおりです。
+
+- `Fallback` / `PrivacyLevel` / `Integrations` / `InputText` / `Decompress` といったオプション名は、`Global`` より前に解決されるよう公開部で宣言されています。そのため、利用者やテストコードの `x` / `r` / `root` / `check` 等のローカル名が NBAccess 側のシンボルと衝突することはありません。
+- 本体の内部関数は `NBAccess`Private`` に閉じられ、`NBAccess`` 側から見える名前は公開 API のみになります。
+- `NBAccess`Private`...` を参照する本体・テストの記述も、正しい文脈へ解決されます。
 
 ---
 
@@ -1784,7 +1804,50 @@ NBSetSubnetTrust[False]
 
 ## [実験的] ノートブックファイルのセル操作
 
-（本セクションは今後追記予定です。）
+閉じた `.nb` ファイルを対象に、開いて読み書きして閉じるための API 群です（`NBFileOpen` / `NBFileClose` / `NBFileSave` / `NBFileReadCells` / `NBFileReadAllCells` / `NBFileWriteCell` / `NBFileWriteAllCells` / `NBFileSpec` / `NBFileReadCellsInRange` / `NBSplitNotebookCells` / `NBMergeNotebookCells` 等）。秘匿セルの有無に関わらず、`claudecode.wl` 等の上位層から `.nb` ファイルを直接 `NotebookOpen` / `NotebookGet` などで開いてはならず、必ず `NBFileOpen` を経由します。
+
+```mathematica
+nb2 = NBFileOpen["C:\\path\\to\\file.nb"];     (* 非表示で開く。失敗時は $Failed *)
+cells = NBFileReadCells[nb2, PrivacySpec -> <|"AccessLevel" -> 0.5|>];
+NBFileWriteCell[nb2, 3, "This is a pen."];
+NBFileSave[nb2, "C:\\path\\to\\translated.nb"];
+NBFileClose[nb2];
+```
+
+### NBFileLoadSlim と $NBSlimNotebookThresholdMB
+
+`NBFileLoadSlim[path]` は、`.nb` ファイルを Notebook 式として読む際に、パース前に重いグラフィックスの payload を取り除いて（slim 化して）読み込みます。大きな計算ノート（例: 数 MB〜10 MB 級）をグラフィックスごと丸ごと `Import` すると極端に重くなるため、構造・スタイル・TaggingRules・テキストはそのまま保ち、グラフィックスだけを不活性な文字列に置き換えます。
+
+```mathematica
+r = NBFileLoadSlim["C:\\path\\to\\big.nb"];
+r["Slimmed"]    (* 実際に剥離したか *)
+r["Assets"]     (* {<|"AssetId", "Kind", "Chars"|>, ...} *)
+```
+
+返り値は `<|"Status", "NotebookExpr", "Path", "Slimmed", "Assets", "OriginalChars", "SlimChars"|>` です。
+
+- 剥離された payload は、式の中で `"<<SVAsset:id>>"` という不活性な文字列に置き換わります。
+- `$NBSlimNotebookThresholdMB`（既定 `5`）以下のファイルは剥離せずそのまま読みます（`"Slimmed" -> False`）。`0` にすると全ノートブックを剥離し、`Infinity` にすると剥離を無効化します。
+- 剥離後の式がパースできない場合は、原文のパースにフォールバックします。
+
+```mathematica
+$NBSlimNotebookThresholdMB = 10;       (* 10 MB を超えるものだけ剥離 *)
+$NBSlimNotebookThresholdMB = Infinity; (* 剥離を無効化 *)
+```
+
+### 剥離した式は保存できない（書き込み保護）
+
+**剥離済みの式を保存すると、図のデータが `<<SVAsset:id>>` に置き換わったまま失われます**（実例: 9.2 MB の計算ノートが `NBSetCloudPublishable` で 322 KB になった）。この事故を防ぐため、2026-10-02 に次の保護が入りました。
+
+- **読み込みの分離**: 読んだ式を**書き戻す**用途の関数（`NBWriteHeader` / `NBClearCloudPublishable` / セル・todo の書き込み）は、内部の書き込み用ローダ `iNBFileLoadAsExprForWrite` を経由します。これは slim 化を行わず、常にグラフィックスを含めて丸ごと読み込む平文ローダ（`iNBFileLoadAsExprPlain`）に委譲します。一方、読み取り専用の用途（分類・要約など）は従来どおり `NBFileLoadSlim` を使えます。
+- **書き込み拒否（二重の安全弁）**: 書き込み前に、内部述語 `iNBSlimmedExprQ` が式中に `"<<SVAsset:"` で始まる文字列が残っていないかを検査します。残っている場合は保存せず、次の Association を返します（ファイルは変更されません）。
+
+```mathematica
+<|"Status" -> "Failed", "Reason" -> "SlimmedExpression", "Path" -> abs,
+  "Message" -> "refusing to save a notebook whose graphics payloads were stripped (<<SVAsset:...>>); load it in full before writing"|>
+```
+
+読み取り専用に `NBFileLoadSlim` で得た式を自前で書き戻そうとしない限り通常は発生しませんが、`"Reason" -> "SlimmedExpression"` が返った場合は、ノートブックを剥離なしで読み直してから書き込んでください。
 
 ---
 

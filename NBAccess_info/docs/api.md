@@ -320,7 +320,8 @@ ResolutionStatus: "ResolvedOnThisPC" | "AliasOnly" | "Unrooted"。MatchedBy: "Lo
 例: `NBValueSpec[dataset, 1.0]`
 
 ### NBPrivacyLevelToRoutes[privacyLevel] → List
-必要なモデルルートリストを返す。0.5 -> {"cloud"}, 1.0 -> {"local"}, {0.5,1.0} -> {"cloud","local"}。
+必要なモデルルートリストを返す。PL < 0.5 -> {"cloud"}, PL >= 0.5 -> {"local"}(0.5 は local), {0.4,1.0} -> {"cloud","local"}。
+例: `NBPrivacyLevelToRoutes[{0.4, 1.0}]`
 
 ### NBFileReadCellsInRange[nb, lo, hi] → List
 PrivacyLevel が lo〜hi のセルのみ返す。オプションなし。
@@ -603,7 +604,7 @@ SystemCredential のエントリを削除する。成功で True、失敗・空�
 ## NBAccess 管理変数への登録 API
 外部パッケージは $NBAllowedHeads / $NBApprovalHeads / $NBTrustedPackageHeads / $NBLLMQueryFunc / $NBAutoEvalProhibitedPatterns へ直接代入せず、必ずこれらを通すこと(正規化・重複排除・型検査を一元化)。head 引数は String 単体 / List / Symbol を受け付ける。
 ### NBRegisterAllowedHeads[heads] → Integer
-head 名を $NBAllowedHeads へ追加する(重複排除)。戻り値は追加後の総件数。
+head 名を許可 head へ追加する(重複排除)。追加先は `$NBAllowedHeadsByCategory["Registered"]` で、$NBAllowedHeads はそこから再計算される($NBAllowedHeads を直接書き換えてはならない: NBValidateHeldExpr が判定のたびにカテゴリ表から作り直すので消える)。戻り値は追加後の総件数。
 
 ### NBRegisterApprovalHeads[heads] → Integer
 head 名を $NBApprovalHeads へ追加し承認ゲート対象化する。戻り値は追加後の総件数。
@@ -671,7 +672,7 @@ modelSpec から provider 文字列を取り出す。
 
 ## 信頼ローカルサーバー
 ### NBRegisterTrustedLocalServer[assoc]
-信頼できるローカル LLM サーバを登録する。assoc: `<|"MachineName" -> _, "Subnet" -> _, "Provider" -> _, "URL" -> _|>`。IP/サブネットはセキュリティ境界なので NBAccess が管理。モデル名は含めない(SourceVault が intent 解決で扱う)。
+信頼できるローカル LLM サーバを登録する。assoc: `<|"MachineName" -> _, "Subnet" -> _, "Provider" -> _, "URL" -> _|>`。IP/サブネットはセキュリティ境界なので NBAccess が管理。モデル名は含めない(SourceVault が intent 解決で扱う)。起動ファイルから呼んで信頼リストに追加する。
 例: `NBRegisterTrustedLocalServer[<|"MachineName"->"phoenix", "Subnet"->"192.168.2", "Provider"->"lmstudio", "URL"->"http://192.168.2.110:1234"|>]`
 
 ### NBResolveLocalServer[] → Association
@@ -845,7 +846,11 @@ Options: "AllowedHeads" -> Automatic, "ApprovalHeads" -> Automatic, "DenyHeads" 
 ### NBExecuteHeldExpr[heldExpr, accessSpec, opts] → Association
 検証済み式を安全に実行し結果を返す。
 Options: "TimeConstraint" -> 30, "ScreenMode" -> "Block", "PolicySnapshot" -> Automatic, "PreExecutionNotebookActions" -> {}, "Audit" -> True, "ApprovalMode" -> "None"
-戻り値: `<|"Success" -> True|False, "RawResult", "Error"|>`
+戻り値: `<|"Success" -> True|False, "RawResult", "Error", "EvaluationPrivacy", ...|>`
+"EvaluationPrivacy" は評価スコープ透かし: この評価中に読まれたデータの PrivacyLevel の最大値 (評価ごとに 0.0 から開始)。NBImport 等の NBAccess 仲介 I/O に加え、NBNoteEvaluationPrivacy 経由でデータ層 (SourceVault) の読み取りも載る。入れ子の NBExecuteHeldExpr では内側の値が外側へ Max で伝搬する。
+
+### NBNoteEvaluationPrivacy[pl] → Real
+現在の評価スコープ透かしを pl まで引き上げる (Max のみ、下げない)。NBAccess の外のデータ層が私的データを読んだことを NBRedactExecutionResult に伝える入口で、SourceVault の SourceVaultNotePrivacy が呼ぶ (NBAccess は SourceVault に依存しない)。NBExecuteHeldExpr の外で呼んでも影響は無い。数値でない pl は 1.0 (fail-closed)。
 
 ### NBExecuteHeldExprSubkernelRaw[held, accessSpec, opts]
 subkernel 専用の実行 wrapper。snapshot 検証・NBSubkernelExecutableQ・再検証をすべて通過し Permit のときのみ ReleaseHold する。Screen/NeedsApproval/Deny/RepairNeeded はすべて $Failed。
@@ -867,7 +872,7 @@ Options: "Depth" -> Infinity
 NBRedactExecutionResult / NBReleaseResult が返す RedactedResult(LLM に戻る評価結果本文)の最大文字数。Summary は従来どおり 200 字。文字列の結果は Short で省略せずこの長さまでそのまま返す。長い本文を読む道具(SlideGraphSectionText / SlideNotebookText など)の1ページはこれより小さくする。
 
 ### NBRedactExecutionResult[result, accessSpec, opts] → Association
-実行結果を redact し安全な形で返す。accessSpec に "ConfidentialLineNumbers" があれば機密依存も検出しスキーマ化する。
+実行結果を redact し安全な形で返す。accessSpec に "ConfidentialLineNumbers" があれば機密依存も検出しスキーマ化する。result の "EvaluationPrivacy" が accessSpec の AccessLevel を超える場合もスキーマのみ (型・サイズ・Head) に落とす (クラウド既定 0.5、ローカル 1.0)。
 戻り値: `<|"RedactedResult", "Summary" -> String|>`
 Options: "MaxSummaryLength" -> Automatic (= $NBRedactedResultMaxLength、既定 6000。旧既定 500)。文字列の結果は Short で省略せずその長さまでそのまま返し、Summary は 200 字。
 
@@ -1099,7 +1104,7 @@ permit registry をクリアする(テスト用)。
 ## カテゴリ管理
 ### $NBAllowedHeadsByCategory
 型: Association(`<|カテゴリ名 -> {head, ...}, ...|>`)
-カテゴリ別の許可 head リスト。初期カテゴリ: "NBAccess_ReadOnly", "Control", "Arithmetic", "DataOps", "StringOps", "TypeChecks", "KernelRead", "Formatting", "NotebookData"。"NBAccess_ReadOnly" には NBImport も含まれる。
+カテゴリ別の許可 head リスト。初期カテゴリ: "NBAccess_ReadOnly", "Control", "Arithmetic", "DataOps", "StringOps", "TypeChecks", "KernelRead", "Formatting", "NotebookData"。NBRegisterAllowedHeads の追加先として "Registered" カテゴリも使われる。"NBAccess_ReadOnly" には NBImport も含まれる。
 
 ### $NBDisabledCategories
 型: Association, 初期値: `<||>`

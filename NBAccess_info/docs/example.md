@@ -33,6 +33,8 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;  (* ローカルLLM環境から利用
 - `$NBVerbose` — NBAccess 内部の詳細ログ出力を制御します。`True` で `Messages` に詳細ログを出力、`False`（デフォルト）で重大エラー以外を抑制します。
 - `$NBAutoEvalProhibitedPatterns` — `NBEvaluatePreviousCell` で自動実行をブロックするパターン（`RegularExpression` または `StringExpression`）のリストです。セル内容がいずれかのパターンにマッチする場合、評価をスキップして警告を表示します。ClaudeCode パッケージがロード時にパターンを登録し、デフォルトは空リストです。
 - `$NBRedactedResultMaxLength` — `NBRedactExecutionResult` / `NBReleaseResult` が返す `RedactedResult`（LLM に戻る評価結果の本文）の最大文字数です。既定は 6000 文字で、Summary は従来どおり 200 文字です。文字列の結果は `Short` で省略されず、この長さまでそのまま返されます。長い本文を読む道具（`SlideGraphSectionText` / `SlideNotebookText` など）の 1 ページはこの値より小さくしてください。
+- `$NBSlimNotebookThresholdMB` — `NBFileLoadSlim` が notebook のグラフィックス payload を剥離するファイルサイズ閾値（MB）です。既定 5。詳細は「大きなノートブックの読み込み (NBFileLoadSlim)」を参照してください。
+- `$ClaudeAllowPlaintextExternalJobDebug` / `$NBAccessPolicyVersion` — 利用者（上位パッケージ・設定ファイル）が設定する変数です。NBAccess の公開文脈に事前宣言されており、`Global`` へ誤って作られないようになっています。
 
 ## セルユーティリティ API
 
@@ -113,6 +115,8 @@ $NBLLMLastError
 
 ```
 NBCellPrivacyLevel[nb, 3]     (* 0.0(非秘密) 〜 1.0(秘密: Confidentialマーク or 秘密変数参照) *)
+NBCellExprPrivacyLevel[cellExpr]   (* Cell式から判定 (FrontEnd不要。Import[path,"Notebook"] 経由のセル向け) *)
+NBCellObjectPrivacyLevel[cellObj]  (* CellObject から判定 (EvaluationCell[] 等、cellIdx を持たないセル向け) *)
 NBIsAccessible[nb, 3, PrivacySpec -> <|"AccessLevel" -> 0.5|>]
 NBFilterCellIndices[nb, Range[NBCellCount[nb]], PrivacySpec -> <|"AccessLevel" -> 0.5|>]
 ```
@@ -157,6 +161,20 @@ NBFileWriteCell[nb2, 3, "This is a pen."]
 NBFileWriteAllCells[nb2, <|2 -> "text", 3 -> "[CONFIDENTIAL]"|>]  (* Association/List で複数セル一括置換 *)
 NBFileClose[nb2]
 ```
+
+### 大きなノートブックの読み込み (NBFileLoadSlim)
+
+```
+res = NBFileLoadSlim["C:\\path\\to\\big.nb"]
+(* <|"Status", "NotebookExpr", "Path", "Slimmed", "Assets", "OriginalChars", "SlimChars"|> *)
+res["Assets"]   (* {<|"AssetId", "Kind", "Chars"|>, ...} *)
+
+$NBSlimNotebookThresholdMB = 5;    (* 既定。0 で全 notebook を剥離、Infinity で剥離を無効化 *)
+```
+
+`NBFileLoadSlim` は `.nb` ファイルを、重いグラフィックス payload を parse 前に剥離した Notebook 式として読み込みます。剥離された payload は式の中で `"<<SVAsset:id>>"` という inert な文字列に置き換わり、セル構造・スタイル・TaggingRules・テキストはそのまま保たれます。`$NBSlimNotebookThresholdMB` 以下のファイルは剥離せずそのまま読み（`"Slimmed" -> False`）、剥離後の式が parse できない場合は原文の parse にフォールバックします。
+
+重要: 剥離済みの式（`<<SVAsset:...>>` を含む）を保存すると、図のデータが失われます（実例: 9.2 MB の計算ノートが `NBSetCloudPublishable` で 322 KB になった）。そのため、書き込みを伴う関数（`NBWriteHeader` / `NBClearCloudPublishable` / セル・todo の書き込みなど）は読み込みに剥離版を使わず、完全版を読み直してから保存します。万一剥離済みの式を保存しようとした場合は、`<|"Status" -> "Failed", "Reason" -> "SlimmedExpression", "Path" -> ..., "Message" -> "refusing to save a notebook whose graphics payloads were stripped (<<SVAsset:...>>); load it in full before writing"|>` を返して保存を拒否します。
 
 ## ObjectSpec API
 
@@ -217,6 +235,17 @@ NBUnmarkCell[nb, 3]              (* 機密マーク（視覚・タグ）をす�
 - `"Materialize" -> Automatic`
 
 戻り値: `<|Status, URI, MediaKind, PrivacyLevel, Marked|>`
+
+### 書き込み時マーク (書き込み関所フラグ)
+
+```
+NBSetWriteConfidential[nb, 1.0]     (* 以後このノートブックへ書き込まれるセルは機密 *)
+NBWriteConfidentialLevel[nb]        (* フラグの現在値 (0.0-1.0) *)
+NBSetWriteConfidential[nb, False]   (* 解除 *)
+NBClearWriteConfidential[]          (* 全ノートブックのフラグを解除（安全弁） *)
+```
+
+フラグが立っている間、`NBWriteCell` 系のセル生成は TaggingRules と視覚マークを生成時点で埋め込みます。事後スイープと違い「マークし忘れたセル」が原理的に出ません。
 
 ## セル内容分析 API
 
@@ -405,6 +434,47 @@ NBListProviderModels["anthropic"]
    返すのはモデル名リスト（秘匿性なし）だけなので、PrivacySpec / AccessLevel の指定は不要。
    戻り値: <|"Status" -> _, "Provider" -> _, "Models" -> {_String..}|> *)
 ```
+
+## 汎用 credential アクセス API
+
+API キー以外の資格情報（IMAP パスワード・OAuth トークン・HMAC 鍵等）を扱うための唯一の正規口です。
+
+```
+NBGetCredential["name"]            (* SystemCredential から値を返す。未設定・取得失敗は Missing["NotFound", name]。値はログに残らない *)
+NBSetCredential["name", value]     (* 書き込み。成功で True、失敗で $Failed *)
+NBRemoveCredential["name"]         (* 削除。成功で True、失敗で $Failed *)
+NBCredentialConfiguredQ["name"]    (* 値を返さず、設定済みかどうかだけを返す *)
+```
+
+API キーは `NBGetAPIKey` / `NBGetLocalLLMAPIKey` を優先してください。
+
+## 暗号鍵隔離層 (NBAccess_crypto)
+
+補助モジュール `NBAccess_crypto.wl` が提供する、鍵材料を NBAccess の外へ返さない暗号 API です。`NB*WithKeyRef` は keyRef を受け取り、内部で鍵を解決して暗号操作を行い、結果（暗号文・MAC・真偽）だけを返します。詳細は `api_crypto.md` を参照してください。
+
+```
+NBGenerateSymmetricKeyRef["myKey"]         (* AES256 対称鍵を生成して keyRef に保存 *)
+NBGenerateMacKeyRef["macKey"]              (* 256bit ランダム MAC 鍵 *)
+NBGenerateAsymmetricKeyRefPair["rsaKey"]   (* RSA 鍵対。秘密鍵は keyRef、公開鍵は index に保持 *)
+
+ct = NBEncryptWithKeyRef["myKey", bytes]   (* Base64 化した直列 EncryptedObject を返す *)
+NBDecryptWithKeyRef["myKey", ct]           (* ByteArray。失敗時 $Failed *)
+mac = NBMacWithKeyRef["macKey", bytes]     (* HMAC-SHA256 (hex) *)
+NBVerifyMacWithKeyRef["macKey", bytes, mac]  (* constant-time 比較 *)
+NBGetPublicKeyForKeyRef["rsaKey"]          (* 公開鍵 (秘密でない) *)
+
+NBKeyStatus["myKey"]                       (* 鍵材料を含まない metadata。無ければ Missing *)
+NBListCredentialKeyRefs[]                  (* 登録済み keyRef 一覧 *)
+NBKeyMaterialExistsQ["myKey"]              (* 鍵材料が backend に存在するか (index 非依存) *)
+NBStoreCredentialKey[keyRef, keyObject, metadata]
+NBDeleteCredentialKey["myKey"]
+NBExportWrappedKeys[keyRefs, wrapKey]      (* wrapKey で暗号化した可搬な鍵バンドル。平文鍵は返さない *)
+NBImportWrappedKeys[wrappedAssoc, wrapKey] (* 復号して現 backend へ書き戻し、復元した keyRef を返す *)
+NBRebuildKeyIndexFromCredentials[keyRefs]  (* index 欠落時に材料から index を再構築 *)
+NBCryptoSelfTest[]                         (* 鍵隔離・roundtrip・誤鍵検出の自己検査 *)
+```
+
+`$NBCredentialBackend` は鍵ストア backend（`"Memory"`（既定・テスト/開発用）または `"SystemCredential"`）を指定します。
 
 ## ローカル LLM サーバーの API キーアクセサ
 
@@ -698,14 +768,12 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 今回のドキュメント更新での変更点:
 
-1. **LLM エラー文字列を保持するグローバル変数 `$NBLLMLastError` を追加（2026-09-02）**。`NBCellTransformWithLLM` の `completionFn` には失敗時に `$Failed` しか渡らず、呼び出し側（documentation 等）が「LLM 応答を取得できませんでした」としか出せない問題がありました。最後に受け取った実エラー文（`"Error: ..."` 応答・`[ERROR]: 本文`・`Failure` の `"Message"`）を保持し、成功時は `""` に戻る変数として公開されます。「LLM 連携 API」節に説明を追加しました。
+1. **グラフィックスを剥離した式の保存を拒否（2026-10-02）**。`NBFileLoadSlim` が剥離した式（`<<SVAsset:id>>` を含む）を保存すると図のデータが失われる問題（実例: 9.2 MB の計算ノートが `NBSetCloudPublishable` で 322 KB に縮小）に対し、書き込みを伴う関数（`NBWriteHeader` / `NBClearCloudPublishable` / セル・todo の書き込み）は完全版を読み直してから保存するようになりました。万一剥離済みの式が渡された場合は `"Reason" -> "SlimmedExpression"` の `"Failed"` を返して保存を拒否します。「ファイル型ノートブック操作 API」節に「大きなノートブックの読み込み (NBFileLoadSlim)」を追加し、`$NBSlimNotebookThresholdMB` をグローバル変数一覧に追記しました。
 
-2. **`NBCellTransformWithLLM` にオプション `"ResponseFormat" -> Automatic` を追加（2026-09-02）**。応答型の契約（`"PlainText"` 等）を指定でき、値は `ClaudeQueryAsync` へ透過されます。同節のオプション一覧に追記しました。
+2. **公開文脈の整理（2026-09-30 復元）**。本体で `NBAccess`X` と完全修飾していた名前（`$NBConfidentialCellOpts` 等）が、約 1,700 個も公開文脈 `NBAccess`` に作られていた問題を解消するため、`Begin["`Private`"]` を復元し、`Fallback` / `PrivacyLevel` / `Integrations` / `InputText` / `Decompress` を `Global`` より前に事前宣言しました。`$ClaudeAllowPlaintextExternalJobDebug` / `$NBAccessPolicyVersion` は利用者が設定する変数として事前宣言されています。
 
-3. **`NBRegisterAllowedHeads` の登録先をカテゴリ表に変更（2026-09-12）**。追加先が `$NBAllowedHeadsByCategory["Registered"]` になり、`$NBAllowedHeads` はそこから再計算されるようになりました。`$NBAllowedHeads` を直接書き換えると `NBValidateHeldExpr` の判定時に消えてしまう（`SlideWorkflow` の `SlidePDFFigure` / `SlideApplyScenario` / `SlideSourceFile` などが `UnknownHeadRequiresApproval` になり承認待ちで止まる）ため、この注意点とあわせて新設の「許可 head の登録」節にまとめ、`NBRegisterApprovalHeads` / `NBRegisterTrustedPackageHeads` / `NBRegisterLLMQueryFunc` / `NBRegisterAutoEvalProhibitedPatterns` の説明も同節に追加しました。
+3. **これまで未記載だった公開 API を追記**。書き込み時マーク（`NBSetWriteConfidential` / `NBWriteConfidentialLevel` / `NBClearWriteConfidential`）、セル式・CellObject からのプライバシー判定（`NBCellExprPrivacyLevel` / `NBCellObjectPrivacyLevel`）、汎用 credential アクセス（`NBGetCredential` / `NBSetCredential` / `NBRemoveCredential` / `NBCredentialConfiguredQ`）、補助モジュール `NBAccess_crypto` の鍵隔離層（`NB*WithKeyRef` ほか）を追加しました。
 
-4. **`$NBRedactedResultMaxLength` と `NBRedactExecutionResult` の `"MaxSummaryLength" -> Automatic` 化（2026-09-15）**。RedactedResult の最大文字数を制御する新しいグローバル変数（既定 6000）を追加し、`"MaxSummaryLength"` の既定値が `500` から `Automatic`（= `$NBRedactedResultMaxLength`）に変わりました。文字列の結果は `Short` で省略せずこの長さまでそのまま返します。新設の「評価結果の redact」節と「プライバシー仕様」節のグローバル変数一覧に追加しました。
-
-5. **`NBPrivacyLevelToRoutes` の境界の明確化**。`{"cloud"}` になるのは PrivacyLevel が 0.5 **未満**のときのみで、0.5 ちょうどは `{"local"}` 側です（例: `0.4 -> {"cloud"}`、`0.5 -> {"local"}`、`{0.4, 1.0} -> {"cloud", "local"}`）。「ObjectSpec API」節の例と説明を更新しました。
+4. **（前回までの変更）** `$NBLLMLastError`、`NBCellTransformWithLLM` の `"ResponseFormat"`、`NBRegisterAllowedHeads` のカテゴリ表登録、`$NBRedactedResultMaxLength` / `"MaxSummaryLength" -> Automatic`、`NBPrivacyLevelToRoutes` の境界の明確化は引き続き本文に反映されています。
 
 削除された公開関数・オプションはありません。

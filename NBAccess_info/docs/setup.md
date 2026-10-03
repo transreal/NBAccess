@@ -162,7 +162,34 @@ NBAccess`$NBRedactedResultMaxLength = 12000
 NBAccess`NBRedactExecutionResult[result, "MaxSummaryLength" -> 2000]
 ```
 
-長文を読み取る道具（`SlideGraphSectionText`／`SlideNotebookText` など）の 1 ページ分は、この値より小さくなるように設計してください。
+長文を読み取る道具（`SlideGraphSectionText`／`SlideNotebookText` など）の 1 page 分は、この値より小さくなるように設計してください。
+
+### 大きなノートブックの読み込みとグラフィック剥離（`NBFileLoadSlim`／`$NBSlimNotebookThresholdMB`）
+
+`.nb` ファイルを読み取り専用で解析する際、巨大なグラフィックス payload を parse 前に剥離して軽量に読み込む **`NBFileLoadSlim`** と、その閾値を決めるグローバル変数 **`$NBSlimNotebookThresholdMB`**（既定 5 MB）があります。
+
+```mathematica
+(* グラフィックを剥離して読み込む（読み取り専用の用途向け） *)
+res = NBAccess`NBFileLoadSlim["C:\\path\\to\\big.nb"]
+(* <|"Status", "NotebookExpr", "Path", "Slimmed", "Assets", "OriginalChars", "SlimChars"|> *)
+
+(* 閾値の変更 *)
+NBAccess`$NBSlimNotebookThresholdMB = 0          (* 全 notebook を剥離 *)
+NBAccess`$NBSlimNotebookThresholdMB = Infinity   (* 剥離を無効化 *)
+```
+
+- 閾値以下のサイズのファイルは剥離せずそのまま読み込みます（`"Slimmed" -> False`）。
+- 剥離された payload は、式の中で `"<<SVAsset:id>>"` という inert な文字列に置き換わります。セル構造・スタイル・TaggingRules・テキストはそのまま保たれます。`"Assets"` は `<|"AssetId", "Kind", "Chars"|>` のリストです。
+- 剥離後の式が parse できない場合は、原文の parse にフォールバックします。
+
+**書き込み系は剥離しないで全文を読み込みます**（2026-09-30 復元、2026-10-02 追加の保護あり）。剥離した式（`<<SVAsset:id>>` が埋まったもの）を保存すると図のデータが置き換わったまま消えてしまいます（実例: 9.2 MB の計算ノートが `NBSetCloudPublishable` で 322 KB になった）。このため、読み込んで直して保存する関数（`NBWriteHeader`／`NBClearCloudPublishable`、セル・todo の書き込みなど）は内部で剥離なしの全文読み込みを行います。さらに、保存直前に剥離済みの式（`<<SVAsset:...>>` を含むもの）を検出した場合は、保存を拒否して次のような結果を返します：
+
+```mathematica
+<|"Status" -> "Failed", "Reason" -> "SlimmedExpression", "Path" -> abs,
+  "Message" -> "refusing to save a notebook whose graphics payloads were stripped (<<SVAsset:...>>); load it in full before writing"|>
+```
+
+読み取り専用の用途にのみ `NBFileLoadSlim` を使用し、書き戻す場合は全文を読み込んだ式を使ってください。
 
 ### LLM 変換の応答フォーマットとエラー参照（新規追加）
 
@@ -291,6 +318,18 @@ NBAccess`NBSubnetTrustActive[]   (* True（自機 IP が変わっていなけれ
 - **`$NBTrustCurrentSubnet`**（既定 `False`）— 上記トグルの実体となるグローバル変数です。通常は `NBSetSubnetTrust` 経由で操作してください。
 - **`$NBRemoteLocalLLMAccessCeiling`**（既定 `0.25`）— localhost でも信用済み同一サブネットでもないローカル LLM 接続に強制適用されるアクセスレベル上限です。
 
+### 利用者が設定するポリシー変数
+
+次の 2 つのグローバル変数は NBAccess 側では値を決めず、利用者（または上位パッケージ・起動ファイル）が設定します。NBAccess は参照のみ行います。
+
+- **`$ClaudeAllowPlaintextExternalJobDebug`** — 外部ジョブのデバッグで平文を許すかどうかの利用者設定です。
+- **`$NBAccessPolicyVersion`** — 利用者が設定するポリシーバージョンです。
+
+```mathematica
+(* 例: 利用者側で設定する *)
+NBAccess`$NBAccessPolicyVersion = "2026-10"
+```
+
 ### 分離原則の除外設定
 
 NBAccess 分離原則チェックから除外するパッケージの設定：
@@ -410,6 +449,8 @@ NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存の�
 - **`NBPrivacyLevelToRoutes` の境界変更**（2026-09 変更）: ルート判定の境界が「PL < 0.5 → `{"cloud"}`、PL >= 0.5 → `{"local"}`」に変更されました（0.5 は local 側）。従来は 0.5 が cloud 側に含まれていたため、PrivacyLevel がちょうど 0.5 のデータは cloud ルートとして扱われていました。これは動作変更です — PrivacyLevel 0.5 のデータを cloud ルートで扱うことを前提にしていたコードがある場合は、判定結果を確認してください。範囲指定（例 `{0.4, 1.0}` → `{"cloud", "local"}`）の扱いは従来どおりです。
 - **アクセス可能ディレクトリの正本形式変更**（Stage 9 拡張）: 旧 `NBSetAccessibleDirs`／`NBGetAccessibleDirs`（絶対パス文字列リスト）はそのまま後方互換 API として動作しますが、内部的な正本は AccessPathRef 形式（`NBSetAccessiblePathRefs`／`NBGetAccessiblePathRefs`）に移行しました。既存コードは変更なく動作します。
 - **`NBImport` の追加と `NBCheckedImport` の廃止**（新規変更）: ClaudeRuntime 経由で実行される式の中では生の `Import` は恒久的に Deny されるため、代わりに NBAccess 仲介の `NBImport`（[NBAccess 経由のファイルインポート](#nbaccess-経由のファイルインポートnbimport新規追加)を参照）を使用してください。旧来の `NBCheckedImport[path, fmt, accessSpec]`（アクセス判定を引数で渡す方式）は廃止されました。accessSpec を引数として渡せる設計は LLM 生成コードによるチェックのすり抜けを許してしまうため、`NBImport` では実行時にアンビエントな評価コンテキストへ accessSpec を束縛する方式に統合されています。`NBCheckedImport` を直接呼び出していたコードは `NBImport` へ移行してください。
+- **書き込み系のグラフィック剥離防止**（2026-09-30 復元／2026-10-02 追加）: 読み込んで直して保存する関数（`NBWriteHeader`／`NBClearCloudPublishable`、セル・todo の書き込み等）は、グラフィックを剥離せずに全文を読み込むようになりました。`NBFileLoadSlim` による剥離読み込みは読み取り専用の用途に限られます。さらに、剥離済みの式（`<<SVAsset:id>>` を含むもの）を保存しようとした場合は、`<|"Status" -> "Failed", "Reason" -> "SlimmedExpression", ...|>` を返して保存を拒否します。従来は剥離した式が書き戻され、図のデータが失われる（実例: 9.2 MB → 322 KB）可能性がありました。正常な全文読み込みによる書き込みの挙動は変わりません。
+- **内部関数・局所変数の文脈整理**（2026-09-30 復元）: パッケージ本体の内部関数・局所変数が `NBAccess`Private` に閉じるように戻されました。それ以前は一部が公開文脈 `NBAccess`` に作られ（約 1,700 個）、`NBAccess`X` と完全修飾された名前（`$NBConfidentialCellOpts` 等）が公開文脈へ誤って解決される、または利用者・テストの `x`／`r`／`root`／`check` 等と名前が衝突する恐れがありました。公開 API（`::usage` を持つ名前）は変わりません。`$ClaudeAllowPlaintextExternalJobDebug`／`$NBAccessPolicyVersion` は利用者が設定する変数です。
 - **`NBJobMoveToAnchor` の戻り値変更**（2026-06-24 修正）: アンカーセルの直後にカーソルを移動する関数が True/False を返すようになりました。位置を確定できた場合（アンカーが消失している場合のノートブック末尾退避を含む）は True、jobId が `$NBJobTable` に存在しない場合のみ False を返します。従来は戻り値を使用していないコードには影響ありません。
 - **機密識別子マッチングの改善**: `$NBConfidentialSymbols` に登録された名前による機密漏洩チェック（`NBFilterHistoryEntry` 等が内部で使用）において、ASCII 識別子はトークン境界マッチング（完全一致）に変更されました。これにより、`"v"` のような短い変数名が `"SourceVaultExamOverviewView"` などの長い識別子に部分一致して式全体が誤って拒否される問題（Module の局所変数名 `v`、`rows`、`keys`、`sel` 等が機密リストに含まれる場合に発生）が解消されます。非 ASCII の値（日本語の値など）は従来どおり部分文字列一致で漏洩を検出します。既存の動作に影響するのは ASCII の短い変数名が機密シンボル名として登録されている場合のみであり、それ以外の既存コードへの影響はありません。
 - **デフォルトフォールバックモデルの更新**: 組み込みのデフォルトフォールバックモデルリスト（`NBSetFallbackModels` でカスタム設定していない場合に使用される内部デフォルト）において、Anthropic のモデルが `claude-opus-5` に更新されました。`NBSetFallbackModels` でカスタム設定済みの環境には影響しません。現在のフォールバックモデルリストは `NBAccess`NBGetFallbackModels[]` で確認できます。
@@ -515,6 +556,17 @@ NBAccess`NBImport["C:\\path\\to\\dir\\data.csv", "CSV"]
 
 (* アクセス可能ディレクトリ外を指定すると拒否されることを確認する *)
 NBAccess`NBImport["C:\\other\\unregistered\\data.csv", "CSV"]
+```
+
+### グラフィック剥離読み込みテスト
+
+```mathematica
+(* 大きな .nb を剥離して読み込む（読み取り専用）。Slimmed / Assets / SlimChars を確認する *)
+res = NBAccess`NBFileLoadSlim["C:\\path\\to\\big.nb"];
+{res["Status"], res["Slimmed"], Length[res["Assets"]], res["OriginalChars"], res["SlimChars"]}
+
+(* 現在の閾値を確認する（既定 5 MB） *)
+NBAccess`$NBSlimNotebookThresholdMB
 ```
 
 ### 依存グラフ機能テスト
@@ -674,6 +726,10 @@ NBAccess`NBRedactExecutionResult[result, "MaxSummaryLength" -> 12000]
 
 文字列の結果は `Short` で省略されず、この長さまでそのまま返ります（旧版は 500 字 + `Short[raw, 10]` で約 10 行に省略されていました）。なお、機密シンボルの置換や schema-only への縮退は長さと無関係にそのまま適用されるため、値を大きくしても機密データの扱いは変わりません。
 
+### 書き込みが `"Reason" -> "SlimmedExpression"` で失敗する場合
+
+ノートブックの保存を伴う関数（`NBWriteHeader`／`NBClearCloudPublishable`、セル・todo の書き込みなど）が `<|"Status" -> "Failed", "Reason" -> "SlimmedExpression", ...|>` を返す場合、書き込もうとした式にグラフィックを剥離した `<<SVAsset:...>>` が含まれています。そのまま保存すると図のデータが失われるため、意図的に拒否されています。`NBFileLoadSlim` で得た式を書き戻していないか確認し、書き込み用には剥離なしで全文を読み込んだ式を使用してください。読み取りだけであれば `NBFileLoadSlim` の結果をそのまま使えます。剥離の閾値は `$NBSlimNotebookThresholdMB`（既定 5）で調整できます。
+
 ### 式の実行が不必要に承認待ちになる場合
 
 `NBValidateHeldExpr`／`NBExecuteHeldExpr` が、本来は安全なローカル定義や純粋な数学関数を承認対象としてしまう場合は、検証エンジンの EffectClass ベース判定が想定どおり機能しているかを確認してください。`Module`／`Block`／`With` のスコープ局所変数や `Set`／`SetDelayed` で定義したローカル関数名は承認対象から除外されます。`Total` や `IntegerPart`、`Round`、`Floor`、`Ceiling` などの純粋な数学関数も `PureComputation` として扱われ、ブロックされにくくなっています。`Evaluate` は Deny 対象から除去済みのため、`ParametricPlot[Evaluate[...]]` のような式が不必要に拒否・承認待ちになることもありません。信頼パッケージ由来の head（`SourceVault*` 等）についても過剰反復ガードにより承認要求が繰り返し発火しないようになっています。意図せず承認が要求される場合は、式が副作用のある head（ノートブック書き込みやファイル操作など）を含んでいないかを確認してください。
@@ -786,6 +842,8 @@ ClaudeFixSeparation["YourPackageName"]
 ### パフォーマンス問題
 
 大きなノートブックで動作が遅い場合、NBAccess は自動的にキャッシュ機能を使用してFrontEndアクセスを最適化します。通常は設定不要ですが、問題が発生した場合はノートブックを再起動してください。
+
+巨大な図を含む `.nb` を読み取り専用で解析したい場合は、`NBFileLoadSlim` によるグラフィック剥離読み込み（閾値 `$NBSlimNotebookThresholdMB`、既定 5 MB）を利用できます（[大きなノートブックの読み込みとグラフィック剥離](#大きなノートブックの読み込みとグラフィック剥離nbfileloadslimnbslimnotebookthresholdmb)を参照）。書き込みを伴う処理では剥離されず、全文が読み込まれます。
 
 `NBFileSpec` によるファイルメタ情報・PrivacyLevel 判定にはキャッシュが使用されています（Phase 4.3）。ファイルの内容やアクセス権が変わったにもかかわらず古い判定結果が返り続ける場合は、以下でキャッシュをクリアしてください：
 
