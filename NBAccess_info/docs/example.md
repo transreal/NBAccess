@@ -83,7 +83,11 @@ $NBLLMQueryFunc[prompt, callback, nb, Model -> spec, Fallback -> True, Integrati
 NBCellGetText[nb, 3]
 ```
 
-`NBCellGetText` はセルからテキストを堅牢に取得します。FrontEnd InputText → NBCellToText → NBCellExprToText の順にフォールバックし、取得不可の場合は `""` を返します。
+`NBCellGetText` はセルからテキストを堅牢に取得します。
+
+- セル内容が単純な文字列（`Cell["...", style, ...]` で第 1 引数が文字列、かつ空白除去後に空でない）なら、その文字列をそのまま（前後の空白を除去して）返します（2026-10-07 追加）。FrontEnd の InputText 形式は `≥ ≤ ≠ ×` や曲線引用符を ASCII（`>= <= != * ' "`）へ不可逆に変換してしまうため、プレーンテキストセルでは保存されている文字列が最も忠実なテキストになるからです。
+- それ以外の内容は従来どおり FrontEnd InputText → NBCellToText → NBCellExprToText の順にフォールバックします。
+- 取得不可の場合は `""` を返します。
 
 ```
 NBCellTransformWithLLM[nb, 3, promptFn, Print, Fallback -> True]
@@ -161,6 +165,16 @@ NBFileWriteCell[nb2, 3, "This is a pen."]
 NBFileWriteAllCells[nb2, <|2 -> "text", 3 -> "[CONFIDENTIAL]"|>]  (* Association/List で複数セル一括置換 *)
 NBFileClose[nb2]
 ```
+
+### すでに開いているノートブックの秘匿セル判定（2026-10-10）
+
+ファイル型の秘匿セル判定は、そのノートブックがすでに開かれている場合、従来は常に FrontEnd 経由（セルごとに `iResolveCell` + `NotebookRead` の往復）で行っていました。しかしスライドデッキのような巨大ノート（73MB 級）ではこの経路が FrontEnd を長時間占有し、共有 tick の FE プローブがその最中に割り込んで、FrontEnd と claudecode カーネルが互いに待ち合って固まる問題（パレットのクラウドボタン → `NotebookSave` → `SourceVaultIndexNotebook ForceReindex` → `NBFileSpec` の経路）が起きていました。
+
+現在の挙動は次のとおりです。
+
+- 開いているウィンドウに **未保存の編集がない** 場合は、ファイルを直接読みます（ファイルとウィンドウは同じセルを保持しているため、情報は失われません）。
+- 未保存の編集がある場合、または未保存かどうかを判定できない場合は、従来どおり FrontEnd 経路を使います。未保存の編集を持つウィンドウをファイルで代用すると秘匿セルを過少報告するおそれがあるため、判定不能や失敗は「未保存」として扱う安全側の動作です。
+- 未保存判定には `NotebookInformation[nb]` の `"ModifiedInMemory"` を用います（`CurrentValue[nb, "DocumentModified"]` は 15.0 では常に `$Failed` になるため使いません）。
 
 ### 大きなノートブックの読み込み (NBFileLoadSlim)
 
@@ -768,12 +782,10 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 今回のドキュメント更新での変更点:
 
-1. **グラフィックスを剥離した式の保存を拒否（2026-10-02）**。`NBFileLoadSlim` が剥離した式（`<<SVAsset:id>>` を含む）を保存すると図のデータが失われる問題（実例: 9.2 MB の計算ノートが `NBSetCloudPublishable` で 322 KB に縮小）に対し、書き込みを伴う関数（`NBWriteHeader` / `NBClearCloudPublishable` / セル・todo の書き込み）は完全版を読み直してから保存するようになりました。万一剥離済みの式が渡された場合は `"Reason" -> "SlimmedExpression"` の `"Failed"` を返して保存を拒否します。「ファイル型ノートブック操作 API」節に「大きなノートブックの読み込み (NBFileLoadSlim)」を追加し、`$NBSlimNotebookThresholdMB` をグローバル変数一覧に追記しました。
+1. **`NBCellGetText` がプレーンテキストセルの文字列をそのまま返すように（2026-10-07）**。セル内容が単純な文字列（`Cell["...", style, ...]`）なら、FrontEnd InputText を経由せずその文字列を返します。InputText が `≥ ≤ ≠ ×` や曲線引用符を ASCII に不可逆変換してしまうためです。それ以外の内容は従来どおり FrontEnd InputText → `NBCellToText` → `NBCellExprToText` の順にフォールバックします。「LLM 連携 API」節を更新しました。
 
-2. **公開文脈の整理（2026-09-30 復元）**。本体で `NBAccess`X` と完全修飾していた名前（`$NBConfidentialCellOpts` 等）が、約 1,700 個も公開文脈 `NBAccess`` に作られていた問題を解消するため、`Begin["`Private`"]` を復元し、`Fallback` / `PrivacyLevel` / `Integrations` / `InputText` / `Decompress` を `Global`` より前に事前宣言しました。`$ClaudeAllowPlaintextExternalJobDebug` / `$NBAccessPolicyVersion` は利用者が設定する変数として事前宣言されています。
+2. **開いているノートブックの秘匿セル判定を軽量化（2026-10-10）**。すでに開いているノートブックでも、ウィンドウに未保存の編集がなければファイルを直接読むようにしました。巨大ノート（73MB のスライドデッキ等）で FrontEnd の長時間占有により FrontEnd と claudecode カーネルが相互待ちで固まる問題を避けるためです。未保存の編集がある場合や判定できない場合は、従来どおり FrontEnd 経路を使う安全側の動作です。「ファイル型ノートブック操作 API」節に説明を追加しました。
 
-3. **これまで未記載だった公開 API を追記**。書き込み時マーク（`NBSetWriteConfidential` / `NBWriteConfidentialLevel` / `NBClearWriteConfidential`）、セル式・CellObject からのプライバシー判定（`NBCellExprPrivacyLevel` / `NBCellObjectPrivacyLevel`）、汎用 credential アクセス（`NBGetCredential` / `NBSetCredential` / `NBRemoveCredential` / `NBCredentialConfiguredQ`）、補助モジュール `NBAccess_crypto` の鍵隔離層（`NB*WithKeyRef` ほか）を追加しました。
+3. **（前回までの変更）** グラフィックスを剥離した式の保存拒否（`NBFileLoadSlim` / `"Reason" -> "SlimmedExpression"`、`$NBSlimNotebookThresholdMB`）、公開文脈の整理（`Begin["`Private`"]` の復元とオプション名の事前宣言）、書き込み時マーク・セル式／CellObject からのプライバシー判定・汎用 credential アクセス・`NBAccess_crypto` 鍵隔離層、`$NBLLMLastError`、`NBCellTransformWithLLM` の `"ResponseFormat"`、`NBRegisterAllowedHeads` のカテゴリ表登録、`$NBRedactedResultMaxLength` / `"MaxSummaryLength" -> Automatic`、`NBPrivacyLevelToRoutes` の境界の明確化は引き続き本文に反映されています。
 
-4. **（前回までの変更）** `$NBLLMLastError`、`NBCellTransformWithLLM` の `"ResponseFormat"`、`NBRegisterAllowedHeads` のカテゴリ表登録、`$NBRedactedResultMaxLength` / `"MaxSummaryLength" -> Automatic`、`NBPrivacyLevelToRoutes` の境界の明確化は引き続き本文に反映されています。
-
-削除された公開関数・オプションはありません。
+今回の更新で追加・削除された公開関数・オプションはありません。

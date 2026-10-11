@@ -22,7 +22,7 @@ NBAccess は、Mathematica ノートブックを「セルの配列」として�
 
 秘密依存 Output に対しては、`$NBSendDataSchema` フラグに基づき、値を含まないスキーマ情報（データ型・サイズ・キー名等）のみを送信するか、完全にスキップするかを選択できます。これにより、LLM が秘密データの値を知らなくても適切なコードを生成できるようになります。
 
-セルテキストの取得には `FrontEnd`ExportPacket` 経由の `NBCellReadInputText` を優先し、2D 表示（Sum、Integral 等の数式表記）も正しくテキスト変換できます。失敗時には `NBCellGetText`（FrontEnd InputText → `NBCellToText` → `NBCellExprToText` の順でフォールバック）による堅牢な取得機構を備えています。CellObject を直接受け取る `iCellToInputText` 内部関数も提供されており、より柔軟なテキスト抽出が可能です。
+セルテキストの取得には `FrontEnd`ExportPacket` 経由の `NBCellReadInputText` を優先し、2D 表示（Sum、Integral 等の数式表記）も正しくテキスト変換できます。`NBCellGetText` は、セル内容が単純な文字列（プレーンテキストセル）であれば保存されている文字列をそのまま返します。FrontEnd の InputText 形式は `≥ ≤ ≠ ×` や曲線引用符を ASCII へ不可逆に変換してしまうためです。それ以外の内容では FrontEnd InputText → `NBCellToText` → `NBCellExprToText` の順にフォールバックする堅牢な取得機構を備えています。CellObject を直接受け取る `iCellToInputText` 内部関数も提供されており、より柔軟なテキスト抽出が可能です。
 
 ### セルの非同期 LLM 変換
 
@@ -175,6 +175,7 @@ NBAccess は ClaudeRuntime・ClaudeTestKit・SourceVault の導入後も、既�
 - **既存の PrivacySpec・プライバシーフィルタリング API**: 変更なく利用可能です。
 - **HistoryDB・TaggingRules API**: 変更なく利用可能です。
 - **セル操作 API（`NBCellRead`、`NBCellWriteText`、`NBGetCells` 等）**: 変更なく利用可能です。
+- **`NBCellGetText` の挙動変更**: 単純な文字列セル（プレーンテキストセル）では、FrontEnd InputText を介さず保存済みの文字列をそのまま返すようになりました（`≥ ≤ ≠ ×` や曲線引用符が ASCII に化けません）。それ以外のセルは従来どおりのフォールバック順です。シグネチャは不変です。
 - **グローバル変数（`$NBPrivacySpec`、`$NBConfidentialSymbols`、`$NBSendDataSchema` 等）**: 初期値・動作に変更はありません。
 - **`$NBConfidentialHeads`（新規追加）**: 「返り値が機密たり得る関数ヘッド」の登録レジストリ（`<|name -> level|>` 形式）です。`$NBConfidentialSymbols`（秘密変数レジストリ）のヘッド版にあたります。SourceVault 等のデータ層パッケージがロード時に `NBRegisterConfidentialHead` で自動登録し、claudecode が LLM 生成コード書き込みセルの自動機密マーク判定と CellEpilog の依存秘密判定に使用します。ユーザーが手動で設定する必要はありません。
 - **検証・実行 API のオプション**: `NBValidateHeldExpr` / `NBExecuteHeldExpr` のシグネチャは不変ですが、旧来の `"TimeConstraint"` / `"AllowedHeads"` / `"ApprovalHeads"` / `"DenyHeads"` / `"LabelCheck"` オプションは削除されています。これらを明示指定していたコードのみ、グローバル変数による設定へ置き換えてください（明示指定しても効果はありません）。
@@ -337,7 +338,7 @@ path   = NBNormalizePath["C:/Data/secret.csv"]; (* SymbolicPath 情報 *)
 | `$NBLLMQueryFunc` | 非同期 LLM 呼び出し用コールバック関数 | `None` |
 | `$NBLLMLastError` | NBCellTransformWithLLM が最後に受け取った LLM エラー文字列 | `""` |
 | `$NBRedactedResultMaxLength` | 実行結果 redaction（NBRedactExecutionResult 等）の本文最大文字数 | `6000` |
-| `$NBSlimNotebookThresholdMB` | `NBFileLoadSlim` がグラフィックス payload を剥離するファイルサイズ閾値（MB）（新機能） | `5` |
+| `$NBSlimNotebookThresholdMB` | `NBFileLoadSlim` がグラフィックス payload を剥離するファイルサイズ閾値（MB） | `5` |
 | `$NBSeparationIgnoreList` | 分離検査で無視するパッケージ名 | `{"NBAccess", "NotebookExtensions"}` |
 | `$NBConfidentialCellOpts` | 機密マーク（直接）のセル表示オプション | 赤背景 + WarningSign |
 | `$NBDependentCellOpts` | 依存機密マークのセル表示オプション | 橙背景 + LockIcon |
@@ -383,7 +384,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBCellRead[nb, cellIdx]`** — NotebookRead で Cell 式を返します
 - **`NBCellExprToText[cellExpr]`** — NotebookRead の結果（Cell 式）からテキストを抽出します
 - **`NBCellToText[nb, idx]`** — セルのテキスト内容を取得します（Cases ベース）
-- **`NBCellGetText[nb, cellIdx]`** — FrontEnd InputText → `NBCellToText` → `NBCellExprToText` の順でフォールバックしながら堅牢にテキストを取得します
+- **`NBCellGetText[nb, cellIdx]`** — 単純な文字列セルでは保存済み文字列をそのまま返し（`≥ ≤ ≠ ×` や引用符が ASCII に化けません）、それ以外は FrontEnd InputText → `NBCellToText` → `NBCellExprToText` の順でフォールバックしながら堅牢にテキストを取得します。取得不可なら `""` を返します
 - **`NBCellReadInputText[nb, idx]`** — FrontEnd ExportPacket 経由で堅牢なテキスト取得を行います（2D 表示対応）
 - **`iCellToInputText[cellObj]`** — CellObject から直接 InputText 形式のテキストを取得する内部関数
 - **`NBCellStyle[nb, idx]`** / **`NBCellLabel[nb, idx]`** — セルのスタイル・ラベルを取得します
@@ -594,7 +595,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 |----------|------|
 | `docs/api.md` | API リファレンス（全関数・オプション・グローバル変数・SourceVault 統合 API の詳細仕様） |
 | `docs/api_crypto.md` | 暗号鍵ストア API リファレンス（NBAccess_crypto の鍵生成・暗号/MAC・鍵バンドル・index 復旧仕様） |
-| `docs/setup.md` | セットアップガイド（インストール・設定・AccessPathRef・ClaudeRuntime/SourceVault/ClaudeTestKit 連携・EffectClass 検証モデル・許可 head 登録・NBImport・出力モード・トラブルシューティング） |
+| `docs/setup.md` | セットアップガイド（インストール・設定・AccessPathRef・ClaudeRuntime/SourceVault/ClaudeTestKit 連携・EffectClass 検証モデル・許可 head 登録・NBImport・出力モード・NBCellGetText の挙動・トラブルシューティング） |
 | `docs/user_manual.md` | ユーザーマニュアル（機能カテゴリ別の使い方・AccessPathRef・ノートブックモデル選択・カレンダー/$onWork タスク・NBImport・ノートブックキャッシュ修復・SourceVault 統合・ClaudeRuntime 統合・後方互換性） |
 | `docs/examples/example.md` | 使用例集（実践的なコード例） |
 | `NBAccess_crypto.wl` | 暗号鍵ストア（鍵隔離層。鍵材料を露出せず KeyRef で暗号化/MAC/署名を提供） |
@@ -626,6 +627,9 @@ NBCellWriteCode[nb, 3, "Plot[Sin[x], {x, 0, 2Pi}]"];
 
 (* セルのテキスト内容を置き換える（スタイルは保持） *)
 NBCellWriteText[nb, 5, "新しいテキスト内容"];
+
+(* テキストセルの内容を忠実に取得（≥ ≤ ≠ × や引用符が ASCII に化けない） *)
+NBCellGetText[nb, 5]
 
 (* 非同期でセルを LLM 変換する（プライバシーレベルに応じた LLM を自動選択） *)
 NBCellTransformWithLLM[nb, 3, promptFn, completionFn, Fallback -> True];

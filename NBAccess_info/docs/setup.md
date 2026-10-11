@@ -140,6 +140,17 @@ $NBVerbose = True
 $NBVerbose = False
 ```
 
+### セルテキスト取得の挙動（`NBCellGetText`）
+
+`NBCellGetText[nb, cellIdx]` は、セル内容が単純な文字列（`Cell["...", style, ...]` の形で、前後の空白を除いて空でないもの）であれば、その文字列をそのまま返します（2026-10-07 変更）。FrontEnd の InputText 形式は `≥` `≤` `≠` `×` や引用符（カーリークォート）を ASCII（`>=` `<=` `!=` `*` `'` `"`）へ不可逆に変換してしまうため、テキストセルでは保存されている文字列が最も忠実なテキストになるためです。
+
+```mathematica
+(* テキストセルの記号が ASCII に化けずにそのまま返る *)
+NBAccess`NBCellGetText[nb, 3]
+```
+
+文字列セル以外（`BoxData` などの内容）は従来どおり、FrontEnd InputText → `NBCellToText` → `NBCellExprToText` の順でフォールバックします。取得できない場合は `""` を返します。
+
 ### 評価結果の縮退長設定（`$NBRedactedResultMaxLength`、新規追加）
 
 `NBRedactExecutionResult`／`NBReleaseResult` が LLM へ返す評価結果本文（RedactedResult）の最大文字数を制御するグローバル変数 **`$NBRedactedResultMaxLength`** が追加されました（既定 6000、2026-09-15 追加）。
@@ -190,6 +201,16 @@ NBAccess`$NBSlimNotebookThresholdMB = Infinity   (* 剥離を無効化 *)
 ```
 
 読み取り専用の用途にのみ `NBFileLoadSlim` を使用し、書き戻す場合は全文を読み込んだ式を使ってください。
+
+#### 開いているノートブックのセル単位機密判定（2026-10-10 変更）
+
+すでに開いているノートブックのセル単位の機密判定では、FrontEnd 経由の読み取りはセルごとに `iResolveCell` ＋ `NotebookRead` の往復を必要とします。巨大なノートブック（73 MB のスライドデッキの実例）では FrontEnd を長時間占有し、その間に別の処理（palette のクラウドボタンから `NotebookSave` → `SourceVaultIndexNotebook` の `ForceReindex` → `NBFileSpec` と続く経路）の FrontEnd 問い合わせと claudecode カーネルが互いに待ち合って固まる問題がありました。
+
+これを避けるため、**ウィンドウに未保存の編集がない場合は、FrontEnd ではなくファイルを読んで判定する**ようになりました。保存済みであればファイルとウィンドウの内容は一致するため、判定結果は失われません。一方、**未保存の編集を持つウィンドウは従来どおり FrontEnd 経由**で読みます（ファイルを読むと、未保存の機密セルを見落として過小申告になるため）。
+
+- 保存済みかどうかは内部関数 `iNBFileOpenNotebookSavedQ` が `NotebookInformation` の `"ModifiedInMemory"` で判定します（`CurrentValue[nb, "DocumentModified"]` は 15.0 では常に `$Failed` となるため使用しません）。
+- 状態が不明な場合や取得に失敗した場合は「変更あり」として扱い、FrontEnd 経由の読み取り（厳しい側）にフォールバックします。
+- 利用側のコードの変更は不要です。
 
 ### LLM 変換の応答フォーマットとエラー参照（新規追加）
 
@@ -442,6 +463,8 @@ NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存の�
 - **セル操作 API（`NBCellRead`、`NBCellWriteText`、`NBGetCells` 等）**: 変更なく利用可能です。
 - **`$NBPrivacySpec`・`$NBConfidentialSymbols`・`$NBSendDataSchema`** 等のグローバル変数: 初期値・動作に変更はありません。
 - **`$NBConfidentialHeads`**（新規追加）: 「返り値が機密たり得る関数ヘッド」の登録レジストリ（`<|name -> level|>` 形式）です。`$NBConfidentialSymbols`（秘密変数レジストリ）のヘッド版にあたります。SourceVault 等のデータ層パッケージがロード時に `NBRegisterConfidentialHead` で自動登録し、claudecode が LLM 生成コード書き込みセルの自動機密マーク判定と CellEpilog の依存秘密判定に使用します。ユーザーが手動で設定する必要はありません。関連 API として `NBGetConfidentialHeads`（テーブル取得）、`NBRegisterConfidentialHead`（登録）、`NBUnregisterConfidentialHead`（登録解除）、`NBTextUsesConfidentialHead`（テキスト内参照判定）が追加されています。
+- **`NBCellGetText` の文字列セル直接返却**（2026-10-07 変更）: セル内容が単純な文字列（`Cell["...", style, ...]`、空白除去後に空でないもの）の場合、FrontEnd の InputText を経由せず保存されている文字列をそのまま返すようになりました。InputText は `≥` `≤` `≠` `×` や引用符（カーリークォート）を ASCII（`>=` `<=` `!=` `*` `'` `"`）へ不可逆に変換してしまうためです。これは動作変更です — テキストセルで従来 ASCII 化されていた記号が、そのまま返るようになります。文字列以外のセル内容（`BoxData` 等）の取得順序（InputText → `NBCellToText` → `NBCellExprToText`）は従来どおりで、取得不可時に `""` を返す点も変わりません。
+- **開いているノートブックの機密判定における保存済みウィンドウのファイル読み取り**（2026-10-10 変更）: すでに開いているノートブックのウィンドウに未保存の編集がない場合、セル単位の機密判定は FrontEnd のセルごとの往復ではなくファイルの読み取りで行われるようになりました。巨大なノートブックで FrontEnd を長時間占有し、claudecode の palette 操作（クラウドボタンの `NotebookSave` → `SourceVaultIndexNotebook` の `ForceReindex` → `NBFileSpec`）と相互に待ち合って固まる問題への対応です。保存済みのウィンドウではファイルと内容が一致するため判定結果は変わらず、未保存の編集を持つウィンドウおよび保存状態が不明・取得失敗の場合は、従来どおり FrontEnd 経由（厳しい側）で読みます。公開 API のシグネチャ・戻り値は変わりません。
 - **`$NBLLMLastError` の追加**（2026-09-02 追加）: `NBCellTransformWithLLM` が最後に受け取った LLM エラー文字列を保持する読み取り用グローバル変数が追加されました（成功時は `""`）。既存 API のシグネチャ・戻り値は変わらず、`completionFn` には従来どおりエラー時に `$Failed` が渡されます。従来はエラー本文が失われ、呼び出し側が「LLM 応答を取得できませんでした」としか表示できなかったため、実エラー（LM Studio の plugin 拒否 400 など）を提示できるようになりました。
 - **`NBCellTransformWithLLM` への `"ResponseFormat"` オプション追加**（2026-09-02 追加）: 応答型の契約（`"PlainText"` 等）を `ClaudeQueryAsync` へ透過的に渡すオプションが追加されました。既定は `Automatic` で、指定しない場合の挙動は従来と同じです。`Fallback`／`InputText`／`Integrations` の各オプションは変更ありません。
 - **`$NBRedactedResultMaxLength` の追加と `"MaxSummaryLength"` 既定値の変更**（2026-09-15 変更）: `NBRedactExecutionResult` のオプション `"MaxSummaryLength"` の既定値が `500` から `Automatic`（= `$NBRedactedResultMaxLength`、既定 6000）に変更されました。これは動作変更です — 従来は 500 字 + `Short[raw, 10]` により長文の評価結果が途中で切れていましたが、現在は文字列の結果を `Short` で省略せず `$NBRedactedResultMaxLength` の長さまでそのまま返します。Summary は従来どおり 200 字です。redact（機密シンボル置換・schema-only への縮退）の挙動は長さと無関係に従来どおり効きます。`"MaxSummaryLength"` を明示指定していたコードは、その指定がそのまま優先されます。
@@ -496,6 +519,9 @@ currentIdx = NBAccess`NBCurrentCellIndex[nb]
 
 (* セル内容の読み取り *)
 cellText = NBAccess`NBCellToText[nb, currentIdx]
+
+(* セルからテキストを堅牢に取得する（単純な文字列セルはそのまま返る） *)
+NBAccess`NBCellGetText[nb, currentIdx]
 ```
 
 ### 低レベルセル操作テスト
@@ -726,6 +752,10 @@ NBAccess`NBRedactExecutionResult[result, "MaxSummaryLength" -> 12000]
 
 文字列の結果は `Short` で省略されず、この長さまでそのまま返ります（旧版は 500 字 + `Short[raw, 10]` で約 10 行に省略されていました）。なお、機密シンボルの置換や schema-only への縮退は長さと無関係にそのまま適用されるため、値を大きくしても機密データの扱いは変わりません。
 
+### テキストセルの記号（≥ ≤ ≠ × や引用符）が ASCII に変わって取得される場合
+
+`NBCellGetText` は、単純な文字列セルであれば保存されている文字列をそのまま返します（2026-10-07 以降）。それでも `>=` `<=` `!=` `*` などへ変換されて返る場合は、セル内容が `BoxData` など文字列以外であるか、パッケージが古い可能性があります。文字列以外のセル内容は FrontEnd の InputText 経由で取得されるため、これらの記号は ASCII へ変換されます。最新の NBAccess を読み込み直し、セルの内容が単純な文字列セル（`Cell["...", style]`）かどうかを確認してください。
+
 ### 書き込みが `"Reason" -> "SlimmedExpression"` で失敗する場合
 
 ノートブックの保存を伴う関数（`NBWriteHeader`／`NBClearCloudPublishable`、セル・todo の書き込みなど）が `<|"Status" -> "Failed", "Reason" -> "SlimmedExpression", ...|>` を返す場合、書き込もうとした式にグラフィックを剥離した `<<SVAsset:...>>` が含まれています。そのまま保存すると図のデータが失われるため、意図的に拒否されています。`NBFileLoadSlim` で得た式を書き戻していないか確認し、書き込み用には剥離なしで全文を読み込んだ式を使用してください。読み取りだけであれば `NBFileLoadSlim` の結果をそのまま使えます。剥離の閾値は `$NBSlimNotebookThresholdMB`（既定 5）で調整できます。
@@ -759,6 +789,10 @@ ClaudeRuntime 経由で実行される式（LLM 生成コードなど）の中�
 ### 承認 UI が「フォーマットしています」のまま長時間ブロックする場合
 
 承認ボタン本体はメインカーネル評価コンテキストで動作します。検証済みパスに対する実行はトップレベル評価でのみ効くため、承認 UI が「フォーマットしています」の表示のまま長時間応答しないように見えることがあります（2026-06-06 の修正で改善済み）。最新のパッケージに更新してもこの状態が続く場合は、評価が AsyncActive（非同期処理の進行中）のまま Pending になっていないかを確認してください。
+
+### 巨大なノートブックを開いた状態でクラウド公開ボタンなどが固まる場合
+
+大きなノートブック（数十 MB のスライドデッキなど）が開いている状態で、palette のクラウド公開ボタン（`NotebookSave` → `SourceVaultIndexNotebook` の `ForceReindex` → `NBFileSpec`）を押すと、セル単位の機密判定が FrontEnd を長時間占有し、FrontEnd とカーネルが互いに待ち合って固まることがありました。2026-10-10 以降は、未保存の編集がないウィンドウについてはファイルを読んで判定するため、この問題は発生しにくくなっています。最新のパッケージに更新しても改善しない場合は、対象ノートブックに未保存の編集が残っていないかを確認してください（未保存の編集があるウィンドウ、または保存状態を取得できないウィンドウは、機密セルの見落としを避けるため従来どおり FrontEnd 経由で読まれます）。先に保存してから操作すると、ファイル読み取り経路が使われます。
 
 ### ClaudeRuntime の API が見つからない場合
 
@@ -841,7 +875,7 @@ ClaudeFixSeparation["YourPackageName"]
 
 ### パフォーマンス問題
 
-大きなノートブックで動作が遅い場合、NBAccess は自動的にキャッシュ機能を使用してFrontEndアクセスを最適化します。通常は設定不要ですが、問題が発生した場合はノートブックを再起動してください。
+大きなノートブックで動作が遅い場合、NBAccess は自動的にキャッシュ機能を使用してFrontEndアクセスを最適化します。通常は設定不要ですが、問題が発生した場合はノートブックを再起動してください。開いているノートブックで未保存の編集がない場合は、セル単位の機密判定に FrontEnd ではなくファイル読み取りが使われるため、巨大なノートブックでも FrontEnd を長時間占有しません（2026-10-10 以降）。先に保存しておくとこの経路が使われます。
 
 巨大な図を含む `.nb` を読み取り専用で解析したい場合は、`NBFileLoadSlim` によるグラフィック剥離読み込み（閾値 `$NBSlimNotebookThresholdMB`、既定 5 MB）を利用できます（[大きなノートブックの読み込みとグラフィック剥離](#大きなノートブックの読み込みとグラフィック剥離nbfileloadslimnbslimnotebookthresholdmb)を参照）。書き込みを伴う処理では剥離されず、全文が読み込まれます。
 

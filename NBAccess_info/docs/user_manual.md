@@ -256,10 +256,19 @@ NBCellToText[nb, 3]
 
 ### NBCellGetText
 
-複数の取得経路を組み合わせ、堅牢にセルテキストを取得するヘルパーです。FrontEnd の InputText 取得 → `NBCellToText` → `NBCellExprToText` の順でフォールバックし、最終的にテキストが取得できなければ空文字列を返します。
+複数の取得経路を組み合わせ、堅牢にセルテキストを取得するヘルパーです。
+
+取得順序は次のとおりです。
+
+1. **セル内容が単純な文字列の場合**（`Cell["...", style, ...]` の形で、内容が空白のみでない場合）は、その文字列をそのまま返します。
+2. 上記以外は、FrontEnd の InputText 取得 → `NBCellToText` → `NBCellExprToText` の順でフォールバックします。
+3. 最終的にテキストが取得できなければ空文字列を返します。
+
+1 を先頭に置いているのは、FrontEnd の InputText 形式が名前付き文字（`≥` `≤` `≠` `×` や曲がった引用符など）を ASCII（`>=` `<=` `!=` `*` `'` `"`）へ不可逆に変換してしまうためです。Text セルのように内容が文字列そのものであるセルでは、格納されている文字列が忠実なテキストであり、これを優先することで元の記号が失われません。文字列以外の内容（BoxData 等）は従来どおりの順序で処理されます。
 
 ```mathematica
 NBCellGetText[nb, 3]
+(* Text セルの "x ≥ 1" は "x ≥ 1" のまま返る（InputText 経由の "x >= 1" にはならない） *)
 ```
 
 ### iCellToInputText
@@ -1813,6 +1822,20 @@ NBFileWriteCell[nb2, 3, "This is a pen."];
 NBFileSave[nb2, "C:\\path\\to\\translated.nb"];
 NBFileClose[nb2];
 ```
+
+### 既に開いているノートブックの機密セル判定（2026-10-10）
+
+ファイル単位で機密セルの有無を調べる際（`NBFileSpec` の PrivacyLevel 判定など）、対象ノートブックが**既に FrontEnd で開かれている**場合の読み取り経路が次のように変わりました。
+
+- **未保存の編集がない場合: ファイルを読む。** ウィンドウに未保存の編集が無ければ、保存済みファイルとウィンドウは同じセルを持つため、ファイルを直接読んでも機密セルの見落としは生じません。
+- **未保存の編集がある場合、または状態が不明な場合: 従来どおり FrontEnd 経由で読む。** ファイルを読むとウィンドウ上の未保存の機密セルを過少に報告するおそれがあるため、厳しい側（FE 経路）に倒します。
+
+この変更の理由は次のとおりです。FE 経路はセルごとに `iResolveCell` + `NotebookRead` の往復を行うため、73MB のスライドデッキのような巨大ノートブックでは FrontEnd を長時間占有します。パレットのクラウドボタン（`NotebookSave` → `SourceVaultIndexNotebook` の `ForceReindex` → `NBFileSpec`）の直後には、この共有 tick の FE 問い合わせがその最中に割り込み、FrontEnd と claudecode のカーネルが互いに待ち合って固まる事象が起きていました。保存直後（未保存編集なし）はファイル読み取りに切り替えることでこれを避けています。
+
+未保存かどうかの判定には内部述語 `iNBFileOpenNotebookSavedQ[nb]` を使います。
+
+- `NotebookInformation[nb]` の `"ModifiedInMemory"` が `False` の場合のみ「保存済み」（`True`）とみなします。`CurrentValue[nb, "DocumentModified"]` は常に `$Failed`（15.0）になるため使いません。
+- 取得に失敗した場合・値が不明な場合は「編集済み」として扱い、呼び出し側が FE 経路（厳しい側）を選びます。
 
 ### NBFileLoadSlim と $NBSlimNotebookThresholdMB
 

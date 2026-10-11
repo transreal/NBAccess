@@ -1,6 +1,9 @@
 ### Decompress
 NBHistoryData/NBHistoryEntries/NBHistoryEntriesWithInherit が受け付けるオプション(独立シンボルではなく System`Decompress をそのままオプション名に流用)。True(既定)=Diff差分を復元して平文で返す、False=Diffオブジェクトのまま返す(差分検査用)。
 
+### PrivacySpec
+NBAccess 関数のプライバシーフィルタリングオプション。例: `PrivacySpec -> <|"AccessLevel" -> 0.5|>`。AccessLevel >= セルのプライバシーレベルのセルのみアクセス可能。0.5=クラウドLLM安全なデータのみ(既定)、1.0=ローカルLLM環境などすべてのデータ。
+
 ## グローバル変数
 ### $NBPrivacySpec
 型: Association, 初期値: `<|"AccessLevel" -> 0.5|>`
@@ -123,7 +126,7 @@ EvaluationCell の親ノートブックを返す。
 
 ## LLM 連携
 ### NBCellGetText[nb, cellIdx] → String
-セルからテキストを堅牢に取得。FrontEnd InputText → NBCellToText → NBCellExprToText の順でフォールバック。取得不可なら ""。
+セルからテキストを堅牢に取得。セル内容が単純な文字列ならそのまま返す(InputText は ≥ ≤ ≠ × や引用符を ASCII に変えるため)。それ以外は FrontEnd InputText → NBCellToText → NBCellExprToText の順でフォールバック。取得不可なら ""。
 
 ### NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]
 非同期でセルを LLM 変換する。promptFn はセルテキストを受け取りプロンプト文字列を返す関数。completionFn は結果 Association を受け取るコールバック(エラー時は $Failed、詳細は $NBLLMLastError に記録される)。カーネルをブロックしない。セルのプライバシーレベルに応じ適切な LLM を自動選択。
@@ -986,7 +989,7 @@ snapshot の必須キーと Digest を検証する。`<|"Valid" -> True|False, "
 NBAcceptPolicySnapshot が Valid と判定した最新 snapshot を保持する(主に subkernel 側)。参考情報であり実行判定の正本ではない(正本は各実行の accessSpec["PolicySnapshot"])。ノートブック再ロード時に無条件で None にリセットされる。
 
 ### NBApplyPolicySnapshot[snapshot] → Association
-snapshot の digest を検証し正規化した snapshot を返す(global 復元はせず accessSpec 注入の補助に限定)。`<|"Valid", "Snapshot", "Reason"|>`。
+snapshot の digest を検証し正規化した snapshot を返す(global 復元はせず accessSpec 注入の補助に限定)。`<|"Valid", "Snapshot", "Reason"|>`
 
 ### NBDefaultFilePolicyLabel[spec] → label
 Phase 4 暫定の file policy label を返す(DLM/LabelJoin 完全実装までの最小実装)。DLM ラベル体系は現時点で部分的なスタブであり、全面的に強制されているわけではない。

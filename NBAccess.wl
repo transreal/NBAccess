@@ -137,6 +137,7 @@ $NBLLMLastError::usage =
 
 NBCellGetText::usage =
   "NBCellGetText[nb, cellIdx] \:306f\:30bb\:30eb\:304b\:3089\:30c6\:30ad\:30b9\:30c8\:3092\:5805\:7262\:306b\:53d6\:5f97\:3059\:308b\:3002\n" <>
+  "\:30bb\:30eb\:5185\:5bb9\:304c\:5358\:7d14\:306a\:6587\:5b57\:5217\:306a\:3089\:305d\:308c\:3092\:305d\:306e\:307e\:307e\:8fd4\:3059 (2026-10-07; InputText \:306f \:2265 \:2264 \:2260 \:00d7 \:3084\:5f15\:7528\:7b26\:3092 ASCII \:306b\:5909\:3048\:308b\:305f\:3081)\:3002\:305d\:308c\:4ee5\:5916\:306f\n" <>
   "FrontEnd InputText \[RightArrow] NBCellToText \[RightArrow] NBCellExprToText \:306e\:9806\:3067\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:3002\n" <>
   "\:30c6\:30ad\:30b9\:30c8\:53d6\:5f97\:4e0d\:53ef\:306e\:5834\:5408\:306f \"\" \:3092\:8fd4\:3059\:3002";
 
@@ -2213,6 +2214,13 @@ NBAccess`NBCellToText[nb_NotebookObject, cellIdx_Integer] :=
 
 NBAccess`NBCellGetText[nb_NotebookObject, cellIdx_Integer] :=
   Module[{text, cellExpr},
+    (* 0th (2026-10-07): a plain-string cell (Cell["...", style, ...]) is returned as it is.
+       The FrontEnd InputText form (1st step) escapes named characters and converts
+       >= <= != x and curly quotes irreversibly to ASCII (>= <= != * ' "), so for plain
+       text cells the stored string is the faithful text. Other contents keep the old order. *)
+    cellExpr = Quiet[NBAccess`NBCellRead[nb, cellIdx]];
+    If[MatchQ[cellExpr, Cell[_String, ___]] && StringTrim[First[cellExpr]] =!= "",
+      Return[StringTrim[First[cellExpr]]]];
     (* 1st: FrontEnd \:7d4c\:7531 InputText (\:6700\:3082\:78ba\:5b9f) *)
     text = Quiet[NBAccess`NBCellReadInputText[nb, cellIdx]];
     If[StringQ[text] && StringTrim[text] =!= "", Return[StringTrim[text]]];
@@ -6195,10 +6203,17 @@ iNBFilePrivacyLevel[path_String] :=
    are pure functions of a Cell expression, so the same answer can be
    derived from Import[path, "Notebook"] with no front end involved.
 
-   A notebook that is ALREADY open keeps using the FE path: its window can
-   hold unsaved edits, and reading the file instead would under-report
-   confidential cells. That case is also cheap - the notebook is loaded
-   already, so no NotebookOpen is needed.
+   A notebook that is ALREADY open keeps using the FE path when its window
+   holds unsaved edits: reading the file instead would under-report
+   confidential cells.
+
+   An open window with NO unsaved edits reads the file instead (2026-10-10).
+   The FE path is one iResolveCell + NotebookRead round trip per cell, which
+   for a 73MB slide deck kept the FE busy long enough for the claudecode
+   shared tick's FE probe to land in the middle of it, and the FE and the
+   kernel waited on each other for good (palette cloud button: NotebookSave
+   then SourceVaultIndexNotebook ForceReindex -> NBFileSpec). Right after a
+   save the file and the window hold the same cells, so nothing is lost.
    ------------------------------------------------------------------ *)
 
 (* Already-open window for a path, or None. Never opens anything. *)
@@ -6207,6 +6222,15 @@ iNBFileFindOpenNotebook[abs_String] :=
     Function[w,
       Module[{fn = Quiet @ Check[NotebookFileName[w], $Failed]},
         StringQ[fn] && ExpandFileName[fn] === abs]], None];
+
+(* True only when the FE says the window has nothing unsaved. Read from
+   NotebookInformation (CurrentValue[nb, "DocumentModified"] is always
+   $Failed in 15.0). Unknown or failed counts as modified, so the caller
+   falls back to the FE read - the strict side. *)
+iNBFileOpenNotebookSavedQ[nb_NotebookObject] :=
+  Module[{info = Quiet @ Check[NotebookInformation[nb], $Failed]},
+    ListQ[info] &&
+      Quiet[Lookup[info, "ModifiedInMemory", Missing[]]] === False];
 
 (* Flat list of Cell expressions read from the file. No front end. *)
 iNBFileFlatCellExprs[path_String] :=
@@ -6226,7 +6250,7 @@ iNBFileCellPrivacySummary[path_String] :=
   Module[{abs, open, allCells, cellExprs, nTotal, nConf},
     abs = Quiet @ Check[ExpandFileName[path], path];
     open = iNBFileFindOpenNotebook[abs];
-    If[Head[open] === NotebookObject,
+    If[Head[open] === NotebookObject && ! iNBFileOpenNotebookSavedQ[open],
       allCells = Quiet @ NBAccess`NBFileReadAllCells[open];
       If[!ListQ[allCells], Return[$Failed]];
       nTotal = Length[allCells];
