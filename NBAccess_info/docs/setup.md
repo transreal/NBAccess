@@ -451,6 +451,14 @@ NBAccess`NBOnWorkTasks["Directory" -> "C:\\path\\to\\onWork", "IncludeDone" -> F
 
 フィールドはアクセスレベル別に段階的に増えます：0.5 で `Due`/`DueKind`/`State`/`FileDigest`/`ModificationDate`、0.7 でさらに `Title`/`Keywords`/`TaskId`/`Effort`/`Movable`/`DependsOn`、1.0 で `Path` が加わります。`Due` は `Deadline`（無ければ `NextReview`。`NextReview` が `Quantity` の場合は `ModificationDate` + offset として解決）から、`State` は `Status` から `Done`/`Pass`/`Keep`/`Open` として導出されます。オプションには `"Directory"` -> Automatic（`Global`$onWork`）、`"ModifiedWithinDays"` -> Automatic（全件）、`"IncludeDone"` -> False（`Status` が Done/Pass のものを除外）、PrivacySpec -> Automatic、`"MaxFiles"` -> 2000 などがあります。読み取り不能・メタデータのパース失敗時は `"State"->"Unknown"`, `"ParseFailed"->True` のレコードとなり、スキャン全体は中断しません。低レベルの `NBOnWorkTaskSafeExtract`（HELD 式から一切評価せずに安全抽出）も公開されていますが、通常は `NBOnWorkTasks` 経由で利用すれば十分です。
 
+#### ファイル読み取り・パースの堅牢化（2026-10-13 変更）
+
+`$onWork` のスキャンは、一時的な読み取り失敗や、パース中に副次的に発火したメッセージを理由に、実際には読めているタスクを取りこぼさないよう改善されました。利用側のコードの変更は不要です。
+
+- **成否は「結果」で判定します。** `Import[..., "Notebook"]` や `ToExpression[..., InputForm, HoldComplete]`／`MakeExpression` の成否を、メッセージが出たかどうか（`Quiet@Check`）ではなく、得られた結果（`HoldComplete` 式であるか）で判断します。従来は、ファイルの読み込みでシンボルが生成されて `$NewSymbol` フックが働く場合（Dataset の出力セルなど）や、SourceVault の shadow watch（`sysshadow`）／`MaxItems::shdw` のような副次メッセージが成功したパース中に出ると、成功した読み取りが `$Failed` に変換されていました。その結果、`"20260406-students list.nb"` のようなタスクが mtime 付きでキャッシュされ、次に編集されるまでアジェンダ（スケジュールプロンプトの一覧）から黙って消えることがありました。
+- **`"Unreadable"` の判定はキャッシュから返しません。** 読み取り不能という結果は内容に関する事実ではなく一時的な I/O の結果であるため、キャッシュヒットとして扱わず（`Missing["Unreadable"]` の保持値は再利用されません）、読めるようになるまで毎回のスキャンでファイルを再試行します。過去に保存された古い `"Unreadable"` エントリも、次回のスキャンで再試行されます。
+- キャッシュのバージョン管理により、`"PL"` を持たない旧版エントリや旧バージョンのエントリは一度だけ再読み込みされて更新されます。
+
 ## 後方互換性について
 
 NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存のコードとの後方互換性を維持しています。
@@ -474,6 +482,8 @@ NBAccess は ClaudeRuntime および ClaudeTestKit の導入後も、既存の�
 - **`NBImport` の追加と `NBCheckedImport` の廃止**（新規変更）: ClaudeRuntime 経由で実行される式の中では生の `Import` は恒久的に Deny されるため、代わりに NBAccess 仲介の `NBImport`（[NBAccess 経由のファイルインポート](#nbaccess-経由のファイルインポートnbimport新規追加)を参照）を使用してください。旧来の `NBCheckedImport[path, fmt, accessSpec]`（アクセス判定を引数で渡す方式）は廃止されました。accessSpec を引数として渡せる設計は LLM 生成コードによるチェックのすり抜けを許してしまうため、`NBImport` では実行時にアンビエントな評価コンテキストへ accessSpec を束縛する方式に統合されています。`NBCheckedImport` を直接呼び出していたコードは `NBImport` へ移行してください。
 - **書き込み系のグラフィック剥離防止**（2026-09-30 復元／2026-10-02 追加）: 読み込んで直して保存する関数（`NBWriteHeader`／`NBClearCloudPublishable`、セル・todo の書き込み等）は、グラフィックを剥離せずに全文を読み込むようになりました。`NBFileLoadSlim` による剥離読み込みは読み取り専用の用途に限られます。さらに、剥離済みの式（`<<SVAsset:id>>` を含むもの）を保存しようとした場合は、`<|"Status" -> "Failed", "Reason" -> "SlimmedExpression", ...|>` を返して保存を拒否します。従来は剥離した式が書き戻され、図のデータが失われる（実例: 9.2 MB → 322 KB）可能性がありました。正常な全文読み込みによる書き込みの挙動は変わりません。
 - **内部関数・局所変数の文脈整理**（2026-09-30 復元）: パッケージ本体の内部関数・局所変数が `NBAccess`Private` に閉じるように戻されました。それ以前は一部が公開文脈 `NBAccess`` に作られ（約 1,700 個）、`NBAccess`X` と完全修飾された名前（`$NBConfidentialCellOpts` 等）が公開文脈へ誤って解決される、または利用者・テストの `x`／`r`／`root`／`check` 等と名前が衝突する恐れがありました。公開 API（`::usage` を持つ名前）は変わりません。`$ClaudeAllowPlaintextExternalJobDebug`／`$NBAccessPolicyVersion` は利用者が設定する変数です。
+- **`NBGetAPIKey` への `"elsevier"` プロバイダー追加**（2026-10-13 追加）: `NBGetAPIKey` が受け付けるプロバイダーに `"elsevier"`（Elsevier API。SourceVault_oapdf で ScienceDirect のオープンアクセス PDF を取得する際に使用）が追加されました。対応する SystemCredential 名は `ELSEVIER_API_KEY` です。既存プロバイダー（`"anthropic"`／`"openai"`／`"zai"`／`"kimi"`／`"github"`）の挙動は変わりません。未知のプロバイダーを指定した場合の `NBGetAPIKey::unkn` メッセージの候補一覧に `"elsevier"` が加わりました。
+- **`$onWork` スキャンの読み取り・パース判定の変更**（2026-10-13 変更）: ファイルの読み込みとパースの成否を、メッセージの有無ではなく結果（`HoldComplete` 式であるか）で判定するようになり、成功した読み取りがパース中の副次メッセージで `$Failed` に変換されて、タスクが一覧から消える問題が解消されました。また、`"Unreadable"` の判定はキャッシュから返さず、読めるまで毎回再試行します。公開 API のシグネチャ・戻り値（`NBOnWorkTasks`／`NBOnWorkTaskSafeExtract`）は変わりません。
 - **`NBJobMoveToAnchor` の戻り値変更**（2026-06-24 修正）: アンカーセルの直後にカーソルを移動する関数が True/False を返すようになりました。位置を確定できた場合（アンカーが消失している場合のノートブック末尾退避を含む）は True、jobId が `$NBJobTable` に存在しない場合のみ False を返します。従来は戻り値を使用していないコードには影響ありません。
 - **機密識別子マッチングの改善**: `$NBConfidentialSymbols` に登録された名前による機密漏洩チェック（`NBFilterHistoryEntry` 等が内部で使用）において、ASCII 識別子はトークン境界マッチング（完全一致）に変更されました。これにより、`"v"` のような短い変数名が `"SourceVaultExamOverviewView"` などの長い識別子に部分一致して式全体が誤って拒否される問題（Module の局所変数名 `v`、`rows`、`keys`、`sel` 等が機密リストに含まれる場合に発生）が解消されます。非 ASCII の値（日本語の値など）は従来どおり部分文字列一致で漏洩を検出します。既存の動作に影響するのは ASCII の短い変数名が機密シンボル名として登録されている場合のみであり、それ以外の既存コードへの影響はありません。
 - **デフォルトフォールバックモデルの更新**: 組み込みのデフォルトフォールバックモデルリスト（`NBSetFallbackModels` でカスタム設定していない場合に使用される内部デフォルト）において、Anthropic のモデルが `claude-opus-5` に更新されました。`NBSetFallbackModels` でカスタム設定済みの環境には影響しません。現在のフォールバックモデルリストは `NBAccess`NBGetFallbackModels[]` で確認できます。
@@ -658,6 +668,9 @@ NBAccess`NBOnWorkTasks[]
 
 (* 未完了タスクのみ、最近更新されたものに絞り込む *)
 NBAccess`NBOnWorkTasks["IncludeDone" -> False, "ModifiedWithinDays" -> 7]
+
+(* 読み取りに失敗したファイルがないか確認する（Unknown / ParseFailed は毎回再試行される） *)
+Select[NBAccess`NBOnWorkTasks[], #["State"] === "Unknown" &]
 ```
 
 ### ClaudeRuntime 連携テスト（ClaudeRuntime 導入時のみ）
@@ -685,9 +698,12 @@ openaiKey = NBAccess`NBGetAPIKey["openai"]
 zaiKey = NBAccess`NBGetAPIKey["zai"]
 kimiKey = NBAccess`NBGetAPIKey["kimi"]
 githubKey = NBAccess`NBGetAPIKey["github"]
+elsevierKey = NBAccess`NBGetAPIKey["elsevier"]
 ```
 
 API キーは Wolfram Language の `SystemCredential` 機能を通じて安全に管理されます。`"kimi"`（Moonshot AI）は既定で国際版エンドポイント `api.moonshot.ai` を使用します。
+
+`"github"` は `SystemCredential["GITHUB_TOKEN"]`（GitHub の personal access token）を参照します。`"elsevier"`（2026-10-13 追加）は Elsevier API のキーで、`SystemCredential["ELSEVIER_API_KEY"]` に保存します。これは SourceVault_oapdf が ScienceDirect のオープンアクセス PDF を取得する際に使用するもので、ヘッダ `X-ELS-APIKey` でのみ送信されます。いずれも `NBGetAPIKey` は AccessLevel >= 1.0 が必須です。未知のプロバイダー名を指定すると `NBGetAPIKey::unkn` メッセージが出力され、有効な候補として `"anthropic"`／`"openai"`／`"zai"`／`"kimi"`／`"github"`／`"elsevier"` が示されます。
 
 ### ローカル LLM サーバーの API キー設定
 
@@ -793,6 +809,10 @@ ClaudeRuntime 経由で実行される式（LLM 生成コードなど）の中�
 ### 巨大なノートブックを開いた状態でクラウド公開ボタンなどが固まる場合
 
 大きなノートブック（数十 MB のスライドデッキなど）が開いている状態で、palette のクラウド公開ボタン（`NotebookSave` → `SourceVaultIndexNotebook` の `ForceReindex` → `NBFileSpec`）を押すと、セル単位の機密判定が FrontEnd を長時間占有し、FrontEnd とカーネルが互いに待ち合って固まることがありました。2026-10-10 以降は、未保存の編集がないウィンドウについてはファイルを読んで判定するため、この問題は発生しにくくなっています。最新のパッケージに更新しても改善しない場合は、対象ノートブックに未保存の編集が残っていないかを確認してください（未保存の編集があるウィンドウ、または保存状態を取得できないウィンドウは、機密セルの見落としを避けるため従来どおり FrontEnd 経由で読まれます）。先に保存してから操作すると、ファイル読み取り経路が使われます。
+
+### `$onWork` のタスクが一覧（アジェンダ）から消える場合
+
+`NBOnWorkTasks` の結果や、それを使うスケジュールプロンプトの一覧から特定の `.nb` ファイルのタスクが消えている場合は、2026-10-13 より前のバージョンでは、ファイルの読み取りは成功していたにもかかわらず、パース中に副次的に発火したメッセージ（SourceVault の shadow watch／`MaxItems::shdw`、Dataset 出力セルによる `$NewSymbol` フックなど）で失敗扱いとなり、その結果が mtime 付きでキャッシュされて次に編集されるまで消え続けることがありました。最新の NBAccess を読み込み直してください。現行版では、読み取り・パースの成否を結果で判定し、`"Unreadable"` の判定はキャッシュされず次回のスキャンで再試行されます。それでも `"State" -> "Unknown"`／`"ParseFailed" -> True` のレコードが続く場合は、ファイル自体が壊れていないか、他のプロセスにロックされていないかを確認してください。
 
 ### ClaudeRuntime の API が見つからない場合
 

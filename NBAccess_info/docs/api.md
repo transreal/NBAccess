@@ -563,7 +563,7 @@ prefix で始まる全履歴を削除する。PrivacySpec -> `<|"AccessLevel" ->
 
 ## API キーアクセサ
 ### NBGetAPIKey[provider] → String
-AI プロバイダの API キーを返す。provider: "anthropic" | "openai" | "zai" | "kimi" | "github"。AccessLevel >= 1.0 が必須で、呼び出し側で PrivacySpec -> `<|"AccessLevel" -> 1.0|>` を明示指定すること。SystemCredential へのアクセスを一元管理。
+AI プロバイダの API キーを返す。provider: "anthropic" | "openai" | "zai" | "kimi" | "github" | "elsevier"。AccessLevel >= 1.0 が必須で、呼び出し側で PrivacySpec -> `<|"AccessLevel" -> 1.0|>` を明示指定すること。SystemCredential へのアクセスを一元管理。
 
 ### NBListProviderModels[provider] → Association
 クラウドプロバイダ(anthropic/openai/zai/kimi)の利用可能モデル ID リストを返す。API キーは内部で SystemCredential から読み外部に出さない。PrivacySpec/AccessLevel 指定は不要。

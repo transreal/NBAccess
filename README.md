@@ -395,12 +395,14 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBCellHasImage[cellExpr]`** — Cell 式が画像（RasterBox/GraphicsBox）を含むか判定します
 - **`NBCellRasterize[nb, cellIdx, file, opts]`** — セルをラスタライズしてファイルに保存します
 - **`NBCellGetTaggingRule[nb, cellIdx, path]`** — セルの TaggingRules からネスト値を取得します
-- **`NBCellSetTaggingRule[nb, cellIdx, path, value]`** — セルの TaggingRules にネスト値を設定します
+- **`NBCellSetTaggingRule[nb, cellIdx, path, value]`** — セルの TaggingRules にネスト値を設定します（`Inherited` を渡すとキーを削除）
 - **`NBSelectCell[nb, cellIdx]`** — セルブラケットを選択状態にします
 - **`NBResolveCell[nb, cellIdx]`** — CellObject を返します（無効インデックスの場合は `$Failed`）
 - **`NBParentNotebookOfCurrentCell[]`** — EvaluationCell の親ノートブックを返します
 - **`NBEvaluatePreviousCell[nb]`** — 直前のセルを選択して評価します
 - **`NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]`** — セルのプライバシーレベルに応じた LLM を自動選択し、非同期でセルを変換します。エラー時は `$NBLLMLastError` に実際の失敗理由が記録されます。オプション: `Fallback` / `InputText` / `Integrations` / `"ResponseFormat"`
+- **`NBRegisterLLMQueryFunc[f]`** — 非同期 LLM 呼び出し用コールバック `$NBLLMQueryFunc` を登録します（claudecode がロード時に使用）
+- **`NBRegisterAutoEvalProhibitedPatterns[patterns]`** — 自動実行禁止パターンを `$NBAutoEvalProhibitedPatterns` に登録します（外部パッケージは直接代入せずこちらを使用）
 - **`NBInvalidateCellsCache[]`** / **`NBInvalidateCellsCache[nb]`** — 内部セルキャッシュをクリアします（`nb` 省略時は全ノートブック分）
 - **`NBUserNotebooks[]`** — WindowFrame が通常のユーザーノートブックのみを返します（パレット・ダイアログ等を除外）
 - **`NBRefreshCellsCache[]`** — ユーザーノートブックのセルキャッシュをスマートに再検証し、変更があったノートブックのリストを返します

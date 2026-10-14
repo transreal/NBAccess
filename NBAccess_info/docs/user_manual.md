@@ -1454,6 +1454,23 @@ NBOnWorkTasks["ModifiedWithinDays" -> 7, "IncludeDone" -> False]
 
 読み取り不能なファイル、またはメタデータの安全なパースに失敗したファイルは、スキャン全体を中断させずに `"State" -> "Unknown"`, `"ParseFailed" -> True` のレコードとして扱われます。
 
+#### ファイル読み取りとパースの判定方式（2026-10-13 修正）
+
+`$onWork` のノートブックを読んでメタデータを取り出す内部処理は、「メッセージが出たか」ではなく**結果そのもの**で成否を判定するように改められました。
+
+- **ノートブックの Import**: `Import[path, "Notebook"]` は成功しても、読み込み中に副作用として警告メッセージ（完全修飾シンボルの再作成、autoload の出力など）を発することがあります。以前はこれを `Quiet@Check[...]` で包んでいたため、成功した読み取りが `$Failed` に化けていました。現在は `Quiet[Import[path, "Notebook"]]` とし、結果が正しく得られているかどうかだけを見ます。
+- **パース（`ToExpression` / `MakeExpression`）**: 本文のパースでも同様に `Quiet[...]` のみを用い、結果が `HoldComplete` 式であれば成功とみなします（`MatchQ[r, _HoldComplete]`）。パース成功中に出る警告（`$NewSymbol` フックによるシャドウ監視の `::shdw` メッセージ、たとえば Dataset 出力セルが生成するシンボルが引き金となるもの）が、成功したパースを `$Failed` にしてしまうことはありません。入力が文字列である場合（`StringQ[c]`）や `BoxData[_String]` の場合も、この結果ベースの判定が適用されます。
+- **症状と影響**: 以前の挙動では、たとえば `"20260406-students list.nb"` のような、`$onWork` 内でメタデータを持つ唯一のノートが、読み取り時に偶発的に出たメッセージによって `$Failed` と判定され、その判定がファイルの更新日時（mtime）に紐づけて**キャッシュ**されたために、次に編集されるまでアジェンダ（スケジュールプロンプトのタスク一覧）から静かに消えてしまうという不具合（2026-10-13 に発覚）が起きていました。
+
+#### 読み取り不能の判定はキャッシュされない
+
+内部のスキャン用キャッシュは、ファイル更新日時をキーとして過去の読み取り結果（メタデータ）を保持し、変更のないファイルの再読み込みを避けます。ただし次の規則があります。
+
+- **"Unreadable" の判定はキャッシュから返されません。** 読み取りに失敗したという事実は、ファイル**内容**についての事実ではなく、一時的な I/O の結果にすぎません（過去には誤判定でもありました）。そのため、読み取り不能のファイルは、きれいに読めるようになるまで**毎回のスキャンで再読み込みされます**。キャッシュヒットの判定は、キャッシュ値が `Missing["Unreadable"]` でないことを条件に含みます。
+- **過去に保存された "Unreadable" エントリは自動的に再試行されます。** 古いバージョンが保存した偽の "Unreadable" キャッシュも、上記のキャッシュヒット判定を通らないため、次のスキャンで読み直されます。
+- **キャッシュバージョンの再取り込み**: キャッシュエントリがバージョン 2（`"V" -> 2`）で、かつ `"PL"`（プライバシーレベル）キーを持つ場合だけがキャッシュヒットとして使われます。`"PL"` を持たない古い形式を含む旧バージョンのエントリは、一度だけ再 Import して新形式へアップグレードされます。
+- 読み取りが `$Failed` でなく、かつ `Missing["Unreadable"]` でもない場合にのみ、パース結果が採用されます。
+
 ---
 
 ## NBImport（LLM 生成コード向け仲介 Import）
@@ -1505,7 +1522,49 @@ NBImport["C:\\secret\\keys.txt"]
 
 ### クラウド LLM API キー
 
-（本セクションは今後追記予定です。）
+#### NBGetAPIKey
+
+AI プロバイダーの API キーを `SystemCredential` から取得する正規の取得口です。AccessLevel >= 1.0 が必須で、呼び出し側で `PrivacySpec -> <|"AccessLevel" -> 1.0|>` を明示指定する必要があります。
+
+```mathematica
+NBGetAPIKey["anthropic", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
+NBGetAPIKey["elsevier",  PrivacySpec -> <|"AccessLevel" -> 1.0|>]
+```
+
+指定できる `provider` と、対応する `SystemCredential` 名は次のとおりです。
+
+| provider | SystemCredential 名 | 用途 |
+|---|---|---|
+| `"anthropic"` | 既定の Anthropic キー | Anthropic API |
+| `"openai"` | 既定の OpenAI キー | OpenAI API |
+| `"zai"` | 既定の Z.ai キー | Z.ai API |
+| `"kimi"` | 既定の Kimi キー | Kimi API |
+| `"github"` | `"GITHUB_TOKEN"` | GitHub API（旧マッピング名 `github_pat` も同じ `GITHUB_TOKEN` に対応） |
+| `"elsevier"` | `"ELSEVIER_API_KEY"` | Elsevier API（[SourceVault_oapdf](https://github.com/transreal/SourceVault_oapdf) が ScienceDirect のオープンアクセス PDF を取得する際に使用。ヘッダー `X-ELS-APIKey` でだけ送られ、URL やログには出ません） |
+
+`"elsevier"` は今回追加されたプロバイダーです。未知のプロバイダー名を指定した場合は `NBGetAPIKey::unkn`（`"anthropic"`、`"openai"`、`"zai"`、`"kimi"`、`"github"`、`"elsevier"` のいずれかを指定するよう促すメッセージ）が発行されます。
+
+#### NBListProviderModels
+
+クラウドプロバイダー（`anthropic` / `openai` / `zai` / `kimi`）の利用可能なモデル ID リストを返します。API キーは内部で `SystemCredential` から読み取られ、外部には出ません。返すのはモデル名のリスト（秘匿性なし）だけなので、PrivacySpec / AccessLevel の指定は不要です。SourceVault 等の一般パッケージが API キーを直接読まずにモデル一覧を取得するための公開関数です。
+
+```mathematica
+NBListProviderModels["anthropic"]
+(* <|"Status" -> ..., "Provider" -> "anthropic", "Models" -> {...}|> *)
+```
+
+#### 汎用 credential アクセス
+
+API キー以外の資格情報（IMAP パスワード・OAuth トークン・HMAC 鍵等）を扱うための正規口です。
+
+```mathematica
+NBGetCredential["name"]            (* 値を返す。未設定・失敗は Missing["NotFound", name] *)
+NBSetCredential["name", value]     (* 成功で True、失敗で $Failed *)
+NBRemoveCredential["name"]         (* 成功で True、失敗で $Failed *)
+NBCredentialConfiguredQ["name"]    (* 値を返さず、設定済みかどうかだけを返す *)
+```
+
+値はログに残りません。API キーは `NBGetAPIKey` / `NBGetLocalLLMAPIKey` を優先して使用してください。
 
 ### ローカル LLM API キー (LM Studio 等)
 

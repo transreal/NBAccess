@@ -552,7 +552,7 @@ NBHistoryClearAll::usage =
 (* ---- API \:30ad\:30fc\:30a2\:30af\:30bb\:30b5\:30fc ---- *)
 NBGetAPIKey::usage =
   "NBGetAPIKey[provider] \:306f AI \:30d7\:30ed\:30d0\:30a4\:30c0\:306e API \:30ad\:30fc\:3092\:8fd4\:3059\:3002\n" <>
-  "provider: \"anthropic\" | \"openai\" | \"zai\" | \"kimi\" | \"github\"\n" <>
+  "provider: \"anthropic\" | \"openai\" | \"zai\" | \"kimi\" | \"github\" | \"elsevier\"\n" <>
   "AccessLevel >= 1.0 \:304c\:5fc5\:9808\:3002\:547c\:3073\:51fa\:3057\:5074\:3067 PrivacySpec -> <|\"AccessLevel\" -> 1.0|> \:3092\:660e\:793a\:6307\:5b9a\:3059\:308b\:3053\:3068\:3002\n" <>
   "SystemCredential \:3078\:306e\:30a2\:30af\:30bb\:30b9\:3092\:4e00\:5143\:7ba1\:7406\:3059\:308b\:3002";
 
@@ -4111,7 +4111,9 @@ $iAPIKeyMap = <|
   "kimi"       -> "KIMI_API_KEY",
   "github"     -> "GITHUB_TOKEN",
   "gh"         -> "GITHUB_TOKEN",
-  "github_pat" -> "GITHUB_TOKEN"
+  "github_pat" -> "GITHUB_TOKEN",
+  (* Elsevier API (SourceVault_oapdf.wl: ScienceDirect のオープンアクセス PDF。ヘッダ X-ELS-APIKey でだけ送る) *)
+  "elsevier"   -> "ELSEVIER_API_KEY"
 |>;
 
 Options[NBAccess`NBGetAPIKey] = {PrivacySpec -> Automatic};
@@ -4132,7 +4134,7 @@ NBAccess`NBGetAPIKey[provider_String, opts:OptionsPattern[]] :=
     key
   ];
 
-NBGetAPIKey::unkn = "\:672a\:77e5\:306e\:30d7\:30ed\:30d0\:30a4\:30c0: `1`\:3002\"anthropic\"\:3001\"openai\"\:3001\"zai\"\:3001\"kimi\"\:3001\"github\" \:306e\:3044\:305a\:308c\:304b\:3092\:6307\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
+NBGetAPIKey::unkn = "\:672a\:77e5\:306e\:30d7\:30ed\:30d0\:30a4\:30c0: `1`\:3002\"anthropic\"\:3001\"openai\"\:3001\"zai\"\:3001\"kimi\"\:3001\"github\"\:3001\"elsevier\" \:306e\:3044\:305a\:308c\:304b\:3092\:6307\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
 NBGetAPIKey::nokey = "`1` \:306e API \:30ad\:30fc\:304c\:898b\:3064\:304b\:308a\:307e\:305b\:3093\:3002SystemCredential[\"`2`\"] \:3092\:8a2d\:5b9a\:3057\:3066\:304f\:3060\:3055\:3044\:3002";
 
 
@@ -13302,24 +13304,43 @@ iNBOnwDeclaredPL[___] := Missing["Undeclared"];
    written by SourceVault mail-inherit, or a plain text cell) via
    ToExpression+HoldComplete (third arg wraps the parse result unevaluated);
    box content via MakeExpression. *)
-iNBOnwParseHeld[c_] := Which[
-  MatchQ[c, BoxData[_String]],
-    Quiet@Check[ToExpression[First[c], InputForm, HoldComplete], $Failed],
-  StringQ[c],
-    Quiet@Check[ToExpression[c, InputForm, HoldComplete], $Failed],
-  True,
-    Quiet@Check[MakeExpression[c, StandardForm], $Failed]];
+(* Judged by RESULT (a HoldComplete), never by "did a message fire": a
+   stray message during a SUCCESSFUL parse (shadow-watch / ::shdw when the
+   boxes re-create a fully qualified symbol, autoload chatter, ...) must not
+   turn the parse into $Failed. Same principle as iNBOnwHeldFromFile below. *)
+iNBOnwParseHeld[c_] := With[{r = Which[
+    MatchQ[c, BoxData[_String]],
+      Quiet[ToExpression[First[c], InputForm, HoldComplete]],
+    StringQ[c],
+      Quiet[ToExpression[c, InputForm, HoldComplete]],
+    True,
+      Quiet[MakeExpression[c, StandardForm]]]},
+  If[MatchQ[r, _HoldComplete], r, $Failed]];
 
 iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held, declPL},
   fd = Quiet@Check[AbsoluteTime[FileDate[path]], $Failed];
   cached = $iNBOnwCache[path];
   (* "V" 2 = NotebookStatus-cell-aware parse (2026-07); entries from older
-     versions (incl. legacy ones lacking "PL") re-import once to upgrade *)
+     versions (incl. legacy ones lacking "PL") re-import once to upgrade.
+     An "Unreadable" verdict is NEVER served from the cache: it is a
+     transient I/O outcome (and, before 2026-10-13, a false one -- see
+     below), so the file is re-read on every scan until it reads cleanly. *)
   If[AssociationQ[cached] && fd =!= $Failed && cached["D"] === fd &&
-      KeyExistsQ[cached, "PL"] && Lookup[cached, "V", 1] === 2,
+      KeyExistsQ[cached, "PL"] && Lookup[cached, "V", 1] === 2 &&
+      cached["H"] =!= Missing["Unreadable"],
     Return[cached["H"]]];
   {held, declPL} = Module[{nb0, cands0, h0},
-    nb0 = Quiet@Check[Import[path, "Notebook"], $Failed];
+    (* Judged by RESULT, not by Check. Import[.., "Notebook"] SUCCEEDS but
+       emits a stray message whenever reading the file creates a symbol
+       that trips a $NewSymbol hook -- e.g. a Dataset output cell that
+       persisted the fully qualified token GitHubREST`MaxItems fires the
+       SourceVault shadow watch (sysshadow) and MaxItems::shdw. The former
+       Quiet@Check turned that successful read into $Failed, the verdict
+       was cached under the file's mtime, and the note silently vanished
+       from the agenda until it was next edited (2026-10-13:
+       "20260406-students list.nb" -- the only $onWork note carrying that
+       token -- never appeared in the schedule prompt's list). *)
+    nb0 = Quiet[Import[path, "Notebook"]];
     If[Head[nb0] =!= Notebook, {Missing["Unreadable"], Missing["Undeclared"]},
       (* metadata cell, in preference order: (0) "NotebookStatus" style cell
          (template new-style), (1) InitializationCell, (2) first BoxData
@@ -13334,7 +13355,10 @@ iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held, declPL},
         h0 = iNBOnwParseHeld[First[cands0]];
         {If[MatchQ[h0, _HoldComplete], h0, Missing["ParseFailed"]],
          iNBOnwDeclaredPL[nb0]}]]];
-  If[fd =!= $Failed,
+  (* an unreadable file is not a fact about its CONTENT, so it is never
+     cached: the next scan retries it (a stale "Unreadable" entry from an
+     older version is also bypassed by the cache-hit test above) *)
+  If[fd =!= $Failed && held =!= Missing["Unreadable"],
     $iNBOnwCache[path] = <|"D" -> fd, "H" -> held, "PL" -> declPL, "V" -> 2|>;
     $iNBOnwCacheDirty = True];
   held];

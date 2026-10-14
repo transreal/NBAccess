@@ -437,7 +437,7 @@ NBHistoryClearAll[nb, "myTag", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
 
 ```
 NBGetAPIKey["anthropic", PrivacySpec -> <|"AccessLevel" -> 1.0|>]
-(* provider: "anthropic" | "openai" | "zai" | "kimi" | "github"
+(* provider: "anthropic" | "openai" | "zai" | "kimi" | "github" | "elsevier"
    AccessLevel >= 1.0 が必須。呼び出し側で PrivacySpec -> <|"AccessLevel" -> 1.0|> を明示指定すること。
    SystemCredential へのアクセスを一元管理する。 *)
 
@@ -448,6 +448,8 @@ NBListProviderModels["anthropic"]
    返すのはモデル名リスト（秘匿性なし）だけなので、PrivacySpec / AccessLevel の指定は不要。
    戻り値: <|"Status" -> _, "Provider" -> _, "Models" -> {_String..}|> *)
 ```
+
+`NBGetAPIKey` が受け付ける provider のうち `"github"` は SystemCredential 名 `GITHUB_TOKEN`、`"elsevier"` は `ELSEVIER_API_KEY` に対応します。`"elsevier"` は Elsevier API（SourceVault_oapdf による ScienceDirect のオープンアクセス PDF 取得）用で、キーはヘッダ `X-ELS-APIKey` でのみ送られます。未知の provider を指定した場合は `NBGetAPIKey::unkn` のメッセージで、`"anthropic"` / `"openai"` / `"zai"` / `"kimi"` / `"github"` / `"elsevier"` のいずれかを指定するよう案内されます。
 
 ## 汎用 credential アクセス API
 
@@ -770,6 +772,15 @@ NBOnWorkTasks[]
 
 `NBOnWorkTasks` のオプション: `"Directory" -> Automatic`（`Global`$onWork`）、`"ModifiedWithinDays" -> Automatic`（既定は全件）、`"IncludeDone" -> False`（Status が Done/Pass のものを除外）、`PrivacySpec -> Automatic`、`"MaxFiles" -> 2000`、`"Files" -> Automatic`（テスト用シーム: `{<|"Path"->_, "Held"->HoldComplete[...], ("ModificationDate"->_)|>, ...}` でファイルシステムを迂回）。
 
+### 読み取りの堅牢化（2026-10-13）
+
+`$onWork` のノートを非評価で読む内部処理（ファイル読み込み・セル内容の非評価パース）を、「メッセージが出たか」ではなく「結果が得られたか」で判定するように修正しました。
+
+- 従来は `Quiet@Check[..., $Failed]` で読んでいたため、読み込みやパースの途中で無害なメッセージ（セル式が `$NewSymbol` フックを発火させて出る SourceVault の shadow watch (sysshadow) や `MaxItems::shdw`、完全修飾シンボルの再生成、autoload の出力など）が 1 件でも出ると、成功した読み込みが `$Failed` に化けていました。その結果、あるノート（例: `"20260406-students list.nb"`）が次に編集されるまで予定一覧から黙って消える不具合がありました。現在は `Quiet` のみで読み、結果が `HoldComplete`（パース）や有効な Notebook 式（`Import[path, "Notebook"]`）であるかどうかで成否を判断します。`StringQ`・`BoxData[_String]` といったセル内容の形も、結果に基づいて判定します。
+- 読めなかったファイル（`Missing["Unreadable"]`）は、内容についての事実ではなく一時的な I/O の結果にすぎないため、**キャッシュには保存されません**。次回のスキャンで必ず再読み込みされ、正常に読めるまで再試行が続きます。以前のバージョンが残した古い `"Unreadable"` エントリもキャッシュヒット判定でバイパスされます。
+- パース結果のキャッシュは、バージョン 2 かつ `"PL"` を含むエントリのみをヒットとして扱います。`"PL"` を欠く旧形式のエントリは一度だけ再読み込みされて更新されます。
+- 結果が得られなかった場合の `"State" -> "Unknown"`, `"ParseFailed" -> True` というレコードの仕様は従来どおりです。
+
 ## その他
 
 ```
@@ -782,10 +793,10 @@ NBMoveToEnd[nb]     (* ノートブックの末尾にカーソルを移動 *)
 
 今回のドキュメント更新での変更点:
 
-1. **`NBCellGetText` がプレーンテキストセルの文字列をそのまま返すように（2026-10-07）**。セル内容が単純な文字列（`Cell["...", style, ...]`）なら、FrontEnd InputText を経由せずその文字列を返します。InputText が `≥ ≤ ≠ ×` や曲線引用符を ASCII に不可逆変換してしまうためです。それ以外の内容は従来どおり FrontEnd InputText → `NBCellToText` → `NBCellExprToText` の順にフォールバックします。「LLM 連携 API」節を更新しました。
+1. **`NBGetAPIKey` が `"elsevier"` プロバイダを受け付けるように**。SystemCredential 名 `ELSEVIER_API_KEY` に対応し、SourceVault_oapdf が ScienceDirect のオープンアクセス PDF を取得する際にヘッダ `X-ELS-APIKey` でのみ使います。未知プロバイダ時の `NBGetAPIKey::unkn` メッセージと usage の provider 一覧にも `"elsevier"` が加わりました。「API キーアクセサ」節を更新しました。
 
-2. **開いているノートブックの秘匿セル判定を軽量化（2026-10-10）**。すでに開いているノートブックでも、ウィンドウに未保存の編集がなければファイルを直接読むようにしました。巨大ノート（73MB のスライドデッキ等）で FrontEnd の長時間占有により FrontEnd と claudecode カーネルが相互待ちで固まる問題を避けるためです。未保存の編集がある場合や判定できない場合は、従来どおり FrontEnd 経路を使う安全側の動作です。「ファイル型ノートブック操作 API」節に説明を追加しました。
+2. **`$onWork` タスク読み取りの堅牢化（2026-10-13）**。非評価の読み込み・パースを「メッセージの有無」ではなく「結果」で判定するようにし、無害なメッセージで成功した読み込みが失敗扱いになりノートが一覧から消える不具合を解消しました。読めなかったファイルは「読めなかった」という結果としてキャッシュされず、次回スキャンで再試行されます。「`$onWork` タスクメタデータ API」節に説明を追加しました。
 
-3. **（前回までの変更）** グラフィックスを剥離した式の保存拒否（`NBFileLoadSlim` / `"Reason" -> "SlimmedExpression"`、`$NBSlimNotebookThresholdMB`）、公開文脈の整理（`Begin["`Private`"]` の復元とオプション名の事前宣言）、書き込み時マーク・セル式／CellObject からのプライバシー判定・汎用 credential アクセス・`NBAccess_crypto` 鍵隔離層、`$NBLLMLastError`、`NBCellTransformWithLLM` の `"ResponseFormat"`、`NBRegisterAllowedHeads` のカテゴリ表登録、`$NBRedactedResultMaxLength` / `"MaxSummaryLength" -> Automatic`、`NBPrivacyLevelToRoutes` の境界の明確化は引き続き本文に反映されています。
+3. **（前回までの変更）** `NBCellGetText` のプレーンテキストセル対応（2026-10-07）、開いているノートブックの秘匿セル判定の軽量化（2026-10-10）、グラフィックスを剥離した式の保存拒否（`NBFileLoadSlim` / `"Reason" -> "SlimmedExpression"`、`$NBSlimNotebookThresholdMB`）、公開文脈の整理、書き込み時マーク・セル式／CellObject からのプライバシー判定・汎用 credential アクセス・`NBAccess_crypto` 鍵隔離層、`$NBLLMLastError`、`NBCellTransformWithLLM` の `"ResponseFormat"`、`NBRegisterAllowedHeads` のカテゴリ表登録、`$NBRedactedResultMaxLength` / `"MaxSummaryLength" -> Automatic`、`NBPrivacyLevelToRoutes` の境界の明確化は引き続き本文に反映されています。
 
-今回の更新で追加・削除された公開関数・オプションはありません。
+今回の更新で追加・削除された公開関数はありません（`NBGetAPIKey` の対応プロバイダに `"elsevier"` が追加されました）。
