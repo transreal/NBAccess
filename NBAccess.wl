@@ -943,7 +943,11 @@ $NBDenyHeads::usage =
 NBValidateHeldExpr::usage =
   "NBValidateHeldExpr[heldExpr, accessSpec, opts] \:306f HoldComplete[...] \:5f0f\:3092\n" <>
   "Allowed Expression Surface \:306b\:7167\:5408\:3057 AccessDecision \:3092\:8fd4\:3059\:3002\n" <>
-  "\:8fd4\:308a\:5024: <|\"Decision\" -> \"Permit\"|\"Deny\"|\"NeedsApproval\"|\"RepairNeeded\", ...)|>";
+  "\:8fd4\:308a\:5024: <|\"Decision\" -> \"Permit\"|\"Deny\"|\"NeedsApproval\"|\"RepairNeeded\", ...)|>\n" <>
+  "When the EffectClass layer (not the base head check) raised the decision, " <>
+  "\"ReasonClass\" is \"EffectClassEscalation\" and \"EscalationHeads\" -> {{head, EffectClass}, ...} " <>
+  "names the heads responsible; a change made by the PermissionMode transform alone " <>
+  "is labelled \"PermissionMode<mode>\".";
 
 NBExecuteHeldExpr::usage =
   "NBExecuteHeldExpr[heldExpr, accessSpec, opts] \:306f\:691c\:8a3c\:6e08\:307f\:5f0f\:3092\:5b89\:5168\:306b\:5b9f\:884c\:3057\:7d50\:679c\:3092\:8fd4\:3059\:3002\n" <>
@@ -7417,7 +7421,7 @@ iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]
 NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
   Module[{base, baseDecision, mode, pairs, ecInfos, aggEC, aggPlacement,
           aggBlocking, requiresFinal, baseElig, ecElig, finalElig,
-          transformed, result},
+          transformed, result, escalated, escalationHeads},
     base = iNBValidateHeldExprBase[heldExpr, accessSpec, opts];
     baseDecision = Lookup[base, "Decision", "Deny"];
 
@@ -7512,6 +7516,50 @@ NBValidateHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
     result["MayExecute"] = transformed["MayExecute"];
     result["PermissionMode"] = mode;
     result["ModeTransformApplied"] = True;
+
+    (* 2026-10-15: name the layer that raised the decision.
+       Until now the result kept the base ReasonClass ("None") and empty
+       VisibleExplanation whenever the EffectClass layer, not the base head
+       check, raised the eligibility, so the approval UI printed
+       "Approval required: None" with no hint which head caused the stop
+       (field case: StringStartsQ -> "Start" stem -> DesktopAction).
+       Only an escalation beyond the base eligibility is relabelled; base
+       Deny / NeedsApproval reasons (ForbiddenHead, UnknownHeadRequiresApproval,
+       ...) are kept. EscalationHeads = {{head, EffectClass}, ...} of the heads
+       at the escalated eligibility rank. *)
+    escalated = iNBEligibilityRank[ecElig] > iNBEligibilityRank[baseElig] &&
+      transformed["Decision"] =!= "Permit";
+    escalationHeads = If[escalated,
+      Module[{rank = iNBEligibilityRank[ecElig]},
+        DeleteDuplicates @ MapThread[
+          Function[{pair, info},
+            With[{ec = Lookup[info, "EffectClass", "PureComputation"]},
+              If[iNBEligibilityRank[iNBEffectClassToEligibility[ec]] === rank,
+                {First[pair], ec}, Nothing]]],
+          {pairs, ecInfos}]],
+      {}];
+    Which[
+      escalated,
+        result["ReasonClass"] = "EffectClassEscalation";
+        result["VisibleExplanation"] =
+          "Effect-class escalation (" <> ecElig <> "): " <>
+          StringRiffle[(#[[1]] <> " (" <> #[[2]] <> ")") & /@
+            Take[escalationHeads, UpTo[6]], ", "] <>
+          If[Length[escalationHeads] > 6,
+            " (+" <> ToString[Length[escalationHeads] - 6] <> " more)", ""] <>
+          With[{bx = Lookup[base, "VisibleExplanation", ""]},
+            If[StringQ[bx] && bx =!= "", " | base: " <> bx, ""]];
+        result["EscalationHeads"] = escalationHeads,
+      (* decision changed by the PermissionMode transform alone (ReviewOnly
+         turns AutoPermit into NeedsApproval): label the mode instead of
+         leaving "None". *)
+      transformed["Decision"] =!= baseDecision &&
+      MatchQ[Lookup[result, "ReasonClass", ""], "" | "None"],
+        result["ReasonClass"] = "PermissionMode" <> mode;
+        result["VisibleExplanation"] =
+          "Permission mode " <> mode <> " turned " <> baseDecision <>
+          " into " <> transformed["Decision"] <> "."
+    ];
     result
   ];
 
@@ -7632,6 +7680,11 @@ $iNBSideEffectStemExceptions = {
   "StringDelete",
   (* "Start" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:6587\:5b57\:5217\:30d1\:30bf\:30fc\:30f3 *)
   "StartOfString", "StartOfLine",
+  (* "Start" stem but a pure string predicate. 2026-10-15: a read-only
+     SourceVault listing was stopped with "Approval required: None" because
+     the EffectClass layer (which does not consult the allowed list) mapped
+     StringStartsQ -> "Start" -> DesktopAction -> AskUserAllowed. *)
+  "StringStartsQ",
   (* "Stream" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:30b0\:30e9\:30d5\:30a3\:30c3\:30af\:30b9 *)
   "StreamPlot", "ListStreamPlot",
   (* "Kernel" \:8a9e\:5e79\:3060\:304c\:7d14\:7c8b\:306a\:7d71\:8a08 *)

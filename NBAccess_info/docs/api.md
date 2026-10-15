@@ -126,7 +126,7 @@ EvaluationCell の親ノートブックを返す。
 
 ## LLM 連携
 ### NBCellGetText[nb, cellIdx] → String
-セルからテキストを堅牢に取得。セル内容が単純な文字列ならそのまま返す(InputText は ≥ ≤ ≠ × や引用符を ASCII に変えるため)。それ以外は FrontEnd InputText → NBCellToText → NBCellExprToText の順でフォールバック。取得不可なら ""。
+セルからテキストを堅牢に取得。セル内容が単純な文字列ならそのまま返す(2026-10-07; InputText は ≥ ≤ ≠ × や引用符を ASCII に変えるため)。それ以外は FrontEnd InputText → NBCellToText → NBCellExprToText の順でフォールバック。取得不可なら ""。
 
 ### NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]
 非同期でセルを LLM 変換する。promptFn はセルテキストを受け取りプロンプト文字列を返す関数。completionFn は結果 Association を受け取るコールバック(エラー時は $Failed、詳細は $NBLLMLastError に記録される)。カーネルをブロックしない。セルのプライバシーレベルに応じ適切な LLM を自動選択。
@@ -845,6 +845,7 @@ NBAuthorize の AccessDecision を Boolean に落とす fail-closed helper。Dec
 HoldComplete[...] 式を Allowed Expression Surface に照合し AccessDecision を返す。
 Options: "AllowedHeads" -> Automatic, "ApprovalHeads" -> Automatic, "DenyHeads" -> Automatic, "LabelCheck" -> Automatic, "PolicySnapshot" -> None
 戻り値: `<|"Decision" -> "Permit"|"Deny"|"NeedsApproval"|"RepairNeeded", ...|>`
+EffectClass 層が基礎判定より厳しい適格性を出して Decision を上げたときは `"ReasonClass" -> "EffectClassEscalation"`、"VisibleExplanation" に原因 head と EffectClass、`"EscalationHeads" -> {{head, EffectClass}, ...}` が入る (基礎判定の Deny/NeedsApproval の理由は保持する)。PermissionMode の変換だけで Decision が変わった場合 (ReviewOnly) は `"PermissionMode<mode>"`。従来はこの昇格で ReasonClass "None" のままになり、承認 UI に理由が出なかった (2026-10-15)。
 
 ### NBExecuteHeldExpr[heldExpr, accessSpec, opts] → Association
 検証済み式を安全に実行し結果を返す。
