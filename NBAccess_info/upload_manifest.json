@@ -2,7 +2,8 @@
 	"packageName":"NBAccess",
 	"files":[
 		"NBAccess.wl",
-		"NBAccess_crypto.wl"
+		"NBAccess_crypto.wl",
+		"NBAccess_policylint.wl"
 	],
 	"directories":[
 		"NBAccess_info"

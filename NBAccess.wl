@@ -2919,7 +2919,8 @@ NBAccess`NBInsertArtifactCell[nb_NotebookObject, uri_String,
   If[Length[Names["SourceVault`SourceVaultResolveArtifactContent"]] === 0,
     Return[<|"Status" -> "Error", "Reason" -> "SourceVaultNotLoaded",
       "Detail" -> "SourceVault (SourceVault_core) \:304c\:30ed\:30fc\:30c9\:3055\:308c\:3066\:3044\:307e\:305b\:3093\:3002"|>]];
-  resolveFn = Symbol["SourceVault`SourceVaultResolveArtifactContent"];
+  (* Symbol[Identity[...]], not a literal Symbol["Ctx`name"]: a literal lookup that once came back unevaluated stays unevaluated on every later call (WL 15, 2026-10-30) *)
+  resolveFn = Symbol[Identity["SourceVault`SourceVaultResolveArtifactContent"]];
   content = Quiet @ Check[
     resolveFn[uri, "Materialize" -> OptionValue["Materialize"]], $Failed];
   If[! AssociationQ[content],
@@ -2957,7 +2958,7 @@ NBAccess`NBSetSnapshotPrivacyLevel[snapshotId_String, level_?NumericQ,
     lv = N[Clip[level, {0.0, 1.0}]];
     (* SourceVault \:304c\:30ed\:30fc\:30c9\:3055\:308c\:3066\:3044\:308c\:3070\:59d4\:8b72 *)
     If[Length[Names["SourceVault`SourceVaultSetSnapshotPrivacyLevel"]] > 0,
-      fn = Symbol["SourceVault`SourceVaultSetSnapshotPrivacyLevel"];
+      fn = Symbol[Identity["SourceVault`SourceVaultSetSnapshotPrivacyLevel"]];
       fn[snapshotId, lv],
       <|"Status" -> "Failed",
         "Reason" -> "SourceVaultNotLoaded",
@@ -6182,9 +6183,9 @@ iNBFilePrivacyLevel[path_String] :=
 
     (* (2) \:65e2\:5b58: \:30d1\:30b9\:5e95\:306e\:5b89\:5168\:5224\:5b9a *)
     dir        = DirectoryName[path];
-    pkgDir     = Quiet @ Symbol["Global`$packageDirectory"];
-    accessDirs = Quiet @ If[ListQ[Symbol["Global`$ClaudeAccessibleDirs"]],
-      Symbol["Global`$ClaudeAccessibleDirs"], {}];
+    pkgDir     = Quiet @ Symbol[Identity["Global`$packageDirectory"]];
+    accessDirs = Quiet @ If[ListQ[Symbol[Identity["Global`$ClaudeAccessibleDirs"]]],
+      Symbol[Identity["Global`$ClaudeAccessibleDirs"]], {}];
     isSafe = AnyTrue[
       Select[Flatten[{pkgDir, accessDirs}], StringQ],
       Function[d,
@@ -9555,7 +9556,7 @@ iNBFinalActionAsyncActiveQ[] :=
         (* ClaudeRuntime \:304c\:30ed\:30fc\:30c9\:6e08\:307f\:306a\:3089\:8a3a\:65ad\:3092\:4f7f\:3046\:3002\:672a\:30ed\:30fc\:30c9\:306a\:3089 False\:3002 *)
         If[Length[Names["ClaudeRuntime`ClaudeRuntimeAsyncActiveQ"]] > 0,
           TrueQ @ Quiet @ Check[
-            Symbol["ClaudeRuntime`ClaudeRuntimeAsyncActiveQ"][], False],
+            Symbol[Identity["ClaudeRuntime`ClaudeRuntimeAsyncActiveQ"]][], False],
           False],
       fn === None || fn === False, False,
       True, TrueQ @ Quiet @ Check[fn[], False]
@@ -13543,7 +13544,7 @@ NBAccess`NBOnWorkTasks[OptionsPattern[]] := Module[
         r]], OptionValue["Files"]],
     True,
       dir = OptionValue["Directory"];
-      If[dir === Automatic, dir = Quiet@Check[Symbol["Global`$onWork"], $Failed]];
+      If[dir === Automatic, dir = Quiet@Check[Symbol[Identity["Global`$onWork"]], $Failed]];
       If[!StringQ[dir] || !DirectoryQ[dir],
         Return[Failure["NBOnWorkNoDirectory", <|
           "MessageTemplate" -> "$onWork directory not found."|>]]];
@@ -13575,3 +13576,18 @@ NBAccess`NBOnWorkTasks[___] :=
 End[]; (* NBAccess`Private` for the $onWork block *)
 
 EndPackage[];
+
+(* === NBAccess_policylint.wl (sub-module) autoload (2026-10-31) ===
+   Package-source policy audit: NBAuditPackageSource / NBAuditPackageSourceRules.
+   Loaded from the same folder as this file; a missing or failing sub-module never
+   blocks NBAccess itself. *)
+(* Locals are fully qualified so that loading creates no symbols in the caller's context. *)
+Quiet @ Check[
+  Module[{NBAccess`Private`plDir, NBAccess`Private`plFile},
+    NBAccess`Private`plDir = If[StringQ[$InputFileName] && $InputFileName =!= "",
+      DirectoryName[$InputFileName], Global`$packageDirectory];
+    NBAccess`Private`plFile = If[StringQ[NBAccess`Private`plDir],
+      FileNameJoin[{NBAccess`Private`plDir, "NBAccess_policylint.wl"}], ""];
+    If[StringQ[NBAccess`Private`plFile] && FileExistsQ[NBAccess`Private`plFile],
+      Block[{$CharacterEncoding = "UTF-8"}, Get[NBAccess`Private`plFile]]]],
+  Null];

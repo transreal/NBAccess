@@ -1131,11 +1131,11 @@ Options: PrivacySpec -> Automatic ($NBPrivacySpec)、"Source" -> Automatic (Syst
 
 ### NBCalendarFreeBusy[from, to, opts] → List
 [from, to) の忙しいブロックを(重複するもの同士を統合して)`{<|"Start", "End", "Mandatory", "Count"|>, ...}` で返す。TRANSP:TRANSPARENT のイベントは除外。内容非公開(メタデータのみ)なので AccessLevel 0.5 から利用可。
-Options: PrivacySpec -> Automatic、"Source" -> Automatic、"ICSText" -> Missing["None"]、"MandatoryPatterns" -> Automatic、"Refresh" -> False (PublicPatterns は転送されない)
+Options: PrivacySpec -> Automatic、"Source" -> Automatic、"ICSText" -> Missing["None"]、"MandatoryPatterns" -> Automatic、"Refresh" -> False
 
 ### NBCalendarBusyQ[t, opts] → Boolean
 時刻 t が忙しいカレンダーブロック内(会議進行中)かを返す。"Detailed" -> True で `<|"Busy", "Mandatory", "Block"|>` を返す。ソース取得不可時は Failure ではなく False を返す(通知ゲートは fail-open で「非busy」扱い)。
-Options: PrivacySpec -> Automatic、"Source" -> Automatic、"ICSText" -> Missing["None"]、"MandatoryPatterns" -> Automatic、"Refresh" -> False、"Detailed" -> False (PublicPatterns は転送されない)
+Options: PrivacySpec -> Automatic、"Source" -> Automatic、"ICSText" -> Missing["None"]、"MandatoryPatterns" -> Automatic、"Refresh" -> False、"Detailed" -> False
 
 ### NBICSParseEvents[icsText] → List
 生 iCal/ICS テキストをイベント Association リストへパースする(UID/Summary/Description/Location/Status/Categories/Busy/Start/End/AllDay/RRule/ExDates/RecurrenceId)。純粋パーサ(認証情報・ネットワーク・アクセス制御を一切扱わない)。壊れた VEVENT ブロックはスキップする。folded line・TEXT エスケープ・TZID/UTC/floating 日時・VALUE=DATE(終日)・DURATION に対応。
