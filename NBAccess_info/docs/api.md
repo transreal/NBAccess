@@ -126,7 +126,7 @@ EvaluationCell の親ノートブックを返す。
 
 ## LLM 連携
 ### NBCellGetText[nb, cellIdx] → String
-セルからテキストを堅牢に取得。セル内容が単純な文字列ならそのまま返す(2026-10-07; InputText は ≥ ≤ ≠ × や引用符を ASCII に変えるため)。それ以外は FrontEnd InputText → NBCellToText → NBCellExprToText の順でフォールバック。取得不可なら ""。
+セルからテキストを堅牢に取得。セル内容が単純な文字列ならそのまま返す(2026-10-07; InputText は ≥ ≤ ≠ × や引用符を ASCII に変えるため)。TextData のセルも文字列部分は実文字のまま返し、インライン数式だけ InputText にする(2026-11-05)。それ以外は FrontEnd InputText → NBCellToText → NBCellExprToText の順でフォールバック。取得不可なら ""。
 
 ### NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]
 非同期でセルを LLM 変換する。promptFn はセルテキストを受け取りプロンプト文字列を返す関数。completionFn は結果 Association を受け取るコールバック(エラー時は $Failed、詳細は $NBLLMLastError に記録される)。カーネルをブロックしない。セルのプライバシーレベルに応じ適切な LLM を自動選択。

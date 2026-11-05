@@ -137,7 +137,8 @@ $NBLLMLastError::usage =
 
 NBCellGetText::usage =
   "NBCellGetText[nb, cellIdx] \:306f\:30bb\:30eb\:304b\:3089\:30c6\:30ad\:30b9\:30c8\:3092\:5805\:7262\:306b\:53d6\:5f97\:3059\:308b\:3002\n" <>
-  "\:30bb\:30eb\:5185\:5bb9\:304c\:5358\:7d14\:306a\:6587\:5b57\:5217\:306a\:3089\:305d\:308c\:3092\:305d\:306e\:307e\:307e\:8fd4\:3059 (2026-10-07; InputText \:306f \:2265 \:2264 \:2260 \:00d7 \:3084\:5f15\:7528\:7b26\:3092 ASCII \:306b\:5909\:3048\:308b\:305f\:3081)\:3002\:305d\:308c\:4ee5\:5916\:306f\n" <>
+  "\:30bb\:30eb\:5185\:5bb9\:304c\:5358\:7d14\:306a\:6587\:5b57\:5217\:306a\:3089\:305d\:308c\:3092\:305d\:306e\:307e\:307e\:8fd4\:3059 (2026-10-07; InputText \:306f \:2265 \:2264 \:2260 \:00d7 \:3084\:5f15\:7528\:7b26\:3092 ASCII \:306b\:5909\:3048\:308b\:305f\:3081)\:3002\n" <>
+  "TextData \:306e\:30bb\:30eb\:3082\:6587\:5b57\:5217\:306e\:90e8\:5206\:306f\:5b9f\:6587\:5b57\:306e\:307e\:307e\:8fd4\:3057\:3001\:30a4\:30f3\:30e9\:30a4\:30f3\:6570\:5f0f\:3060\:3051 InputText \:306b\:3059\:308b (2026-11-05)\:3002\:305d\:308c\:4ee5\:5916\:306f\n" <>
   "FrontEnd InputText \[RightArrow] NBCellToText \[RightArrow] NBCellExprToText \:306e\:9806\:3067\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:3002\n" <>
   "\:30c6\:30ad\:30b9\:30c8\:53d6\:5f97\:4e0d\:53ef\:306e\:5834\:5408\:306f \"\" \:3092\:8fd4\:3059\:3002";
 
@@ -2216,6 +2217,56 @@ NBAccess`NBCellToText[nb_NotebookObject, cellIdx_Integer] :=
    \:5805\:7262\:30c6\:30ad\:30b9\:30c8\:53d6\:5f97 (\:8907\:6570\:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af\:4ed8\:304d)
    ============================================================ *)
 
+(* Text of a TextData cell (2026-11-05): styled text and text around inline formulas keep
+   their real characters, for the same reason as the plain-string step in NBCellGetText.
+   Without boxes the strings are simply joined, with no FE call. With inline boxes the
+   cell is exported once with its strings swapped for ASCII marks, so a formula comes out
+   exactly as the whole-cell export writes it, and the strings go back in afterwards.
+   $Failed if a mark did not survive; NBCellGetText then uses the whole-cell export.
+   Control characters, bidi overrides, surrogates, non-characters and private use
+   (\[Rule] and the like) stay written, as the export wrote them: a raw private-use
+   character means nothing to an LLM, and the FE turns the spelling back when it is
+   written into a cell. *)
+iNBTextUnsafeCodeQ[c_Integer] :=
+  (c < 32 && c =!= 9 && c =!= 10) ||
+  127 <= c <= 159 ||
+  16^^202A <= c <= 16^^202E || 16^^2066 <= c <= 16^^2069 ||
+  16^^D800 <= c <= 16^^F8FF ||
+  16^^FDD0 <= c <= 16^^FDEF ||
+  BitAnd[c, 16^^FFFE] === 16^^FFFE ||
+  c >= 16^^F0000;
+
+iNBTextSafe[s_String] :=
+  Module[{t, bad},
+    t = StringReplace[s, {"\r\n" -> "\n", "\r" -> "\n",
+      "\[LineSeparator]" -> "\n", "\[ParagraphSeparator]" -> "\n"}];
+    bad = Select[DeleteDuplicates @ ToCharacterCode[t], iNBTextUnsafeCodeQ];
+    If[bad === {}, t,
+      StringReplace[t, Map[
+        FromCharacterCode[#] -> StringTake[
+          ToString[FromCharacterCode[#], InputForm, CharacterEncoding -> "PrintableASCII"],
+          {2, -2}] &, bad]]]];
+
+iNBTextDataCellText[Cell[td_TextData, rest___]] :=
+  Module[{strs = {}, hasBox = False, walk, marked, out,
+      markRE = RegularExpression["NBTXTq7x(\\d+)x7qTXTNB"]},
+    walk[s_String] := (AppendTo[strs, iNBTextSafe[s]]; "NBTXTq7x" <> ToString[Length[strs]] <> "x7qTXTNB");
+    walk[l_List] := walk /@ l;
+    walk[TextData[x_]] := TextData[walk[x]];
+    walk[(h : StyleBox | ButtonBox)[x_, o___]] := h[walk[x], o];
+    walk[Cell[x : (_String | _TextData), o___]] := Cell[walk[x], o];
+    walk[x_] := (hasBox = True; x);
+    marked = walk[td];
+    If[!hasBox, Return[StringJoin[strs], Module]];
+    out = Quiet[FrontEndExecute[FrontEnd`ExportPacket[Cell[marked, rest], "InputText"]]];
+    If[!MatchQ[out, {_String, ___}], Return[$Failed, Module]];
+    out = First[out];
+    If[StringCases[out, markRE :> ToExpression["$1"]] =!= Range[Length[strs]],
+      Return[$Failed, Module]];
+    StringReplace[out, markRE :> strs[[ToExpression["$1"]]]]
+  ];
+iNBTextDataCellText[_] := $Failed;
+
 NBAccess`NBCellGetText[nb_NotebookObject, cellIdx_Integer] :=
   Module[{text, cellExpr},
     (* 0th (2026-10-07): a plain-string cell (Cell["...", style, ...]) is returned as it is.
@@ -2225,6 +2276,10 @@ NBAccess`NBCellGetText[nb_NotebookObject, cellIdx_Integer] :=
     cellExpr = Quiet[NBAccess`NBCellRead[nb, cellIdx]];
     If[MatchQ[cellExpr, Cell[_String, ___]] && StringTrim[First[cellExpr]] =!= "",
       Return[StringTrim[First[cellExpr]]]];
+    (* 0th, TextData (2026-11-05): styled text and text around inline formulas likewise. *)
+    If[MatchQ[cellExpr, Cell[_TextData, ___]],
+      text = Quiet[iNBTextDataCellText[cellExpr]];
+      If[StringQ[text] && StringTrim[text] =!= "", Return[StringTrim[text]]]];
     (* 1st: FrontEnd \:7d4c\:7531 InputText (\:6700\:3082\:78ba\:5b9f) *)
     text = Quiet[NBAccess`NBCellReadInputText[nb, cellIdx]];
     If[StringQ[text] && StringTrim[text] =!= "", Return[StringTrim[text]]];
