@@ -427,7 +427,11 @@ TaggingRules に `{"claudecode", "declassified"}` タグを持つセルで代入
 セルが Claude 関数呼び出しセルかを返す。
 
 ### NBExtractAssignments[text] → List
-テキストから Set/SetDelayed の LHS 変数名を抽出する。
+テキストから Set/SetDelayed の LHS 変数名を抽出する。変数名は実文字で返す (InputText の `\[Alpha]` は α に戻す。2026-11-07)。
+
+### NBTextMentionsQ[text, names] → Boolean
+コード文字列 text が names (変数名のリスト) のどれかを識別子として含めば True。名前は実文字で渡す。text の側は α と `\[Alpha]` のどちらの綴りでも一致し、`$` で始まる名前もそのまま扱う (2026-11-07)。機密変数を含む行の伏せ字・依存セルの判定・履歴と実行結果の検査はこれを使う。
+例: `NBTextMentionsQ["y = \\[Alpha] + 1", {"α"}]` → True、`NBTextMentionsQ["f[$secret]", {"$secret"}]` → True
 
 ### NBTextUsesConfidentialHead[text] → Boolean
 text が登録済みの機密生成ヘッドを参照していれば True を返す。識別子境界(Unicode)で判定し、Map などへ関数値として渡される形(ブラケットなし)も検出する。

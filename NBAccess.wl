@@ -820,6 +820,10 @@ NBBeginJobAtEvalCell::usage =
 NBExtractAssignments::usage =
   "NBExtractAssignments[text] \:306f\:30c6\:30ad\:30b9\:30c8\:304b\:3089 Set/SetDelayed \:306e LHS \:5909\:6570\:540d\:3092\:62bd\:51fa\:3059\:308b\:3002";
 
+NBTextMentionsQ::usage =
+  "NBTextMentionsQ[text, names] は、コード文字列 text が names (変数名のリスト) のどれかを識別子として含むかを返す。" <>
+  "名前は実文字で渡す (α)。text の側は α と \\[Alpha] のどちらの綴りでも一致し、$ で始まる名前もそのまま扱える。";
+
 NBSetConfidentialVars::usage =
   "NBSetConfidentialVars[assoc] \:306f\:6a5f\:5bc6\:5909\:6570\:30c6\:30fc\:30d6\:30eb\:3092\:4e00\:62ec\:8a2d\:5b9a\:3059\:308b\:3002\n" <>
   "assoc: <|\"varName\" -> True, ...|>";
@@ -1808,14 +1812,55 @@ iGetConfTag[cell_CellObject] :=
    \:5185\:90e8\:30d8\:30eb\:30d1\:30fc: \:79d8\:5bc6\:5909\:6570\:53c2\:7167\:30c1\:30a7\:30c3\:30af (CellObject\:7248\:3001\:5185\:90e8\:7528)
    ============================================================ *)
 
+(* ============================================================
+   コード文字列と変数名の照合 (2026-11-07)
+   FE の InputText 書き出しと ToString[..., InputForm] は α を \[Alpha] と綴る。変数名の
+   取り出しはこの綴りを文字に戻してから行い (α = secret の α を拾えていなかった)、照合は
+   実文字と綴りの両方に一致させる。名前は正規表現に埋め込む前にエスケープする
+   ($secret の $ が行末と解釈され、その名前の行が伏せられていなかった)。
+   ============================================================ *)
+iNBCodeLetter["\\\\"] := "\\\\";
+iNBCodeLetter[esc_String] :=
+  Module[{c = Quiet @ Check[ToExpression["\"" <> esc <> "\""], $Failed]},
+    If[StringQ[c] && StringLength[c] === 1 &&
+        StringMatchQ[c, RegularExpression["\\p{L}"]], c, esc]];
+
+(* 文字を表す綴りだけを文字に戻す (演算子・空白などの綴りはそのまま)。正規表現が中身を
+   英数字に限るので ToExpression は文字列リテラルの読み取りにしかならない。\ の 2 つ組は
+   文字列の中の \ そのものなので組のまま飛ばす。 *)
+iNBCodeLetters[s_String] :=
+  StringReplace[s,
+    RegularExpression["\\\\\\\\|\\\\(?:\\[[A-Za-z0-9]+\\]|:[0-9a-fA-F]{4}|\\|[0-9a-fA-F]{6})"] :>
+      iNBCodeLetter["$0"]];
+iNBCodeLetters[x_] := x;
+
+iNBRegexEscape[s_String] :=
+  StringReplace[s, c : Characters["\\^$.|?*+()[]{}"] :> "\\" <> c];
+
+iNBSpelledName[name_String] :=
+  With[{t = Quiet @ Check[ToString[name, InputForm, CharacterEncoding -> "PrintableASCII"], $Failed]},
+    If[StringQ[t] && StringLength[t] >= 2, StringTake[t, {2, -2}], name]];
+
+(* 名前 1 つを識別子として探す正規表現。前後が文字・数字・$ でないこと。綴りの側は
+   16 進の大小を問わない。 *)
+iNBNameRE[name_String] :=
+  With[{sp = iNBSpelledName[name]},
+    "(?<![\\p{L}\\p{N}$])(?:" <> iNBRegexEscape[name] <>
+      If[sp =!= name, "|(?i:" <> iNBRegexEscape[sp] <> ")", ""] <>
+      ")(?![\\p{L}\\p{N}$])"];
+
+NBAccess`NBTextMentionsQ[text_String, names_List] :=
+  AnyTrue[names, StringQ[#] && # =!= "" &&
+    StringContainsQ[text, RegularExpression[iNBNameRE[#]]] &];
+NBAccess`NBTextMentionsQ[___] := False;
+
 iCellUsesConfSymbol[nb_NotebookObject, cell_CellObject] :=
   Module[{text, names},
     If[Length[NBAccess`$NBConfidentialSymbols] === 0, Return[False]];
     text = Quiet[NBAccess`NBCellExprToText[Quiet[NotebookRead[cell]]]];
     If[!StringQ[text] || StringLength[text] === 0, Return[False]];
     names = Keys[NBAccess`$NBConfidentialSymbols];
-    AnyTrue[names,
-      StringContainsQ[text, RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <> "(?![\\p{L}\\p{N}$])"]] &]
+    NBAccess`NBTextMentionsQ[text, names]
   ];
 
 (* ============================================================
@@ -2423,11 +2468,10 @@ iRedactConfidentialLines[text_String] :=
     redacted = Map[
       Function[line,
         Module[{hasConf, lhsMatch},
-          hasConf = AnyTrue[names,
-            StringMatchQ[line, ___ ~~ RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <> "(?![\\p{L}\\p{N}$])"] ~~ ___] &];
+          hasConf = NBAccess`NBTextMentionsQ[line, names];
           If[!hasConf, line,
             anyRedacted = True;
-            lhsMatch = StringCases[line,
+            lhsMatch = StringCases[iNBCodeLetters[line],
               RegularExpression["^\\s*([\\p{L}$][\\p{L}\\p{N}$]*)\\s*=(?!=)"] -> "$1"];
             If[Length[lhsMatch] > 0,
               First[lhsMatch] <> " = (* [\:6a5f\:5bc6\:5909\:6570\:306b\:4f9d\:5b58: \:5024\:306f\:975e\:8868\:793a] *)",
@@ -3113,7 +3157,7 @@ NBAccess`NBTextScopedVarNames::usage =
 NBAccess`NBTextScopedVarNames[text_String] :=
   Quiet @ Check[
     DeleteDuplicates @ Flatten[
-      {iExtractScopeVars[text], iExtractPatternVars[text]}],
+      {iExtractScopeVars[iNBCodeLetters[text]], iExtractPatternVars[iNBCodeLetters[text]]}],
     {}];
 NBAccess`NBTextScopedVarNames[___] := {};
 
@@ -3132,6 +3176,7 @@ NBAccess`NBCellExtractVarNames[nb_NotebookObject, cellIdx_Integer] :=
     If[!StringQ[text] || StringLength[text] === 0,
       text = NBAccess`NBCellExprToText[Quiet[NotebookRead[cell]]]];
     If[!StringQ[text] || StringLength[text] === 0, Return[{}]];
+    text = iNBCodeLetters[text];
     matches = StringCases[text,
       RegularExpression[
         "(?:^|;|\\n)\\s*((?:[\\p{L}$][\\p{L}\\p{N}$]*))\\s*:?=(?!=)"
@@ -3233,7 +3278,7 @@ iSplitStatements[text_String] :=
 
 iExtractAssignments[text_String] :=
   Module[{stripped, unwrapped, lines, result = {}},
-    stripped = iStripStrings[text];
+    stripped = iStripStrings[iNBCodeLetters[text]];
     (* Confidential[expr] \:30e9\:30c3\:30d1\:30fc\:3092\:9664\:53bb\:3057\:3066\:5185\:90e8\:306e\:4ee3\:5165\:3092\:691c\:51fa *)
     unwrapped = StringReplace[stripped,
       RegularExpression["\\bConfidential\\s*\\["] -> ""];
@@ -3296,7 +3341,7 @@ iExtractAllIdents[rhs_String] :=
 iExtractFuncDefs[text_String] :=
   Module[{stripped, lines, result = {}, trimmed, funcName,
           lhsPart, rhsPart, pos, patVars, scopeVars, allIds, globalDeps},
-    stripped = iStripStrings[text];
+    stripped = iStripStrings[iNBCodeLetters[text]];
     lines = iSplitStatements[stripped];
     Do[
       trimmed = StringTrim[line];
@@ -3589,10 +3634,7 @@ NBAccess`NBScanDependentCells[nb_NotebookObject,
                   AnyTrue[assigns, MemberQ[dependentVars, First[#]] &] ||
                   (* \:6761\:4ef62: \:4ee3\:5165\:306a\:3057\:5f0f\:3067\:6a5f\:5bc6\:5909\:6570\:3092\:53c2\:7167 *)
                   (Length[assigns] === 0 &&
-                   AnyTrue[allDepVars,
-                     StringContainsQ[iStripStrings[text],
-                       RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
-                         "(?![\\p{L}\\p{N}$])"]] &]) ||
+                   NBAccess`NBTextMentionsQ[iStripStrings[text], allDepVars]) ||
                   (* \:6761\:4ef63: RHS \:304c\:6a5f\:5bc6\:5909\:6570\:3092\:53c2\:7167 *)
                   (Length[assigns] > 0 &&
                    AnyTrue[assigns,
@@ -3733,9 +3775,7 @@ NBAccess`NBDebugDependencies[nb_NotebookObject, confVars_List] :=
         Print["  \:4ee3\:5165\:89e3\:6790 : ", assigns];
         isDep = AnyTrue[assigns, MemberQ[dependentVars, First[#]] &] ||
           (Length[assigns] === 0 &&
-           AnyTrue[allDepVars,
-             StringContainsQ[NBAccess`Private`iStripStrings[inputText],
-               RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <> "(?![\\p{L}\\p{N}$])"]] &]) ||
+           NBAccess`NBTextMentionsQ[NBAccess`Private`iStripStrings[inputText], allDepVars]) ||
           (Length[assigns] > 0 &&
            AnyTrue[assigns,
              Function[a,
@@ -5033,10 +5073,7 @@ NBHistoryClearAll::acl =
 
 iHistoryFieldLeaksConfidential[text_String, confVars_List] :=
   If[!StringQ[text] || Length[confVars] === 0, False,
-    AnyTrue[confVars,
-      StringContainsQ[text,
-        RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
-                         "(?![\\p{L}\\p{N}$])"] ] &]
+    NBAccess`NBTextMentionsQ[text, confVars]
   ];
 
 NBAccess`NBFilterHistoryEntry[entry_Association, confVars_List] :=
@@ -5246,10 +5283,7 @@ NBAccess`NBGetConfidentialHeads[] :=
    Map[head, ...] \:306e\:3088\:3046\:306a\:95a2\:6570\:5024\:6e21\:3057\:3082\:691c\:51fa\:3059\:308b\:305f\:3081 "[" \:306f\:8981\:6c42\:3057\:306a\:3044\:3002 *)
 NBAccess`NBTextUsesConfidentialHead[text_String] :=
   Module[{heads = Keys[NBAccess`NBGetConfidentialHeads[]]},
-    heads =!= {} && AnyTrue[heads,
-      StringContainsQ[text,
-        RegularExpression[
-          "(?<![\\p{L}\\p{N}$])" <> # <> "(?![\\p{L}\\p{N}$])"]] &]];
+    heads =!= {} && NBAccess`NBTextMentionsQ[text, heads]];
 NBAccess`NBTextUsesConfidentialHead[_] := False;
 
 NBAccess`NBGetPrivacySpec[] :=
@@ -8257,7 +8291,7 @@ iContainsConfidentialLeak[heldExpr_, accessSpec_Association] :=
     ];
     confNames = DeleteDuplicates @ Select[confNames, StringLength[#] > 0 &];
     If[Length[confNames] === 0, Return[False]];
-    exprStr = ToString[heldExpr, InputForm];
+    exprStr = iNBCodeLetters[ToString[heldExpr, InputForm]];
     toks = iNBExprIdentifierTokens[heldExpr];
     AnyTrue[confNames, Function[c,
       If[iNBAsciiIdentifierQ[c],
@@ -9836,19 +9870,13 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
     heldExpr = Lookup[result, "HeldExpr", None];
     If[MatchQ[heldExpr, HoldComplete[_]] && Length[confVarNames] > 0,
       Module[{exprStr = ToString[heldExpr, InputForm]},
-        refsConfidential = AnyTrue[confVarNames,
-          StringContainsQ[exprStr,
-            RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
-              "(?![\\p{L}\\p{N}$])"]] &]]];
+        refsConfidential = NBAccess`NBTextMentionsQ[exprStr, confVarNames]]];
     
     (* \:30d5\:30a9\:30fc\:30eb\:30d0\:30c3\:30af: HeldExpr \:304c\:306a\:3044\:5834\:5408\:306f\:7d50\:679c\:6587\:5b57\:5217\:30d9\:30fc\:30b9\:3067\:30c1\:30a7\:30c3\:30af
        \:6ce8: confVarNames \:306e\:307f\:4f7f\:7528 (Secrets \:306f StringReplace \:3067\:51e6\:7406) *)
     If[!refsConfidential && Length[confVarNames] > 0,
       Module[{rawStr = ToString[Short[raw, 10]]},
-        refsConfidential = AnyTrue[confVarNames,
-          StringContainsQ[rawStr,
-            RegularExpression["(?<![\\p{L}\\p{N}$])" <> # <>
-              "(?![\\p{L}\\p{N}$])"]] &]]];
+        refsConfidential = NBAccess`NBTextMentionsQ[rawStr, confVarNames]]];
 
     (* \[HorizontalLine]\[HorizontalLine] Out[n] / In[n] / InString[n] / % \:53c2\:7167\:30c1\:30a7\:30c3\:30af (2026-06-06 \:6f0f\:6d29\:4fee\:6b63) \[HorizontalLine]\[HorizontalLine]
        \:5909\:6570\:540d\:30d9\:30fc\:30b9\:306e\:691c\:51fa\:3060\:3051\:3067\:306f\:3001LLM \:304c Out[13] / In[13] / InString[13] / %13 / %
@@ -9909,9 +9937,9 @@ NBRedactExecutionResult[result_Association, accessSpec_Association,
       (* 文字列はそのまま (Short[raw, 10] は約 10 行で <<n>> に省略するので長文が読めない)。他は従来どおり *)
       redacted = If[StringQ[raw], raw, ToString[Short[raw, 10]]];
       (* \:5909\:6570\:540d\:3068 Secrets \:306e\:4e21\:65b9\:3092\:6587\:5b57\:5217\:7f6e\:63db *)
-      Do[redacted = StringReplace[redacted,
-          RegularExpression["(?<![\\p{L}\\p{N}$])" <> s <>
-            "(?![\\p{L}\\p{N}$])"] -> "[REDACTED]"],
+      Do[If[StringQ[s] && s =!= "",
+          redacted = StringReplace[redacted,
+            RegularExpression[iNBNameRE[s]] -> "[REDACTED]"]],
         {s, confSyms}];
       <|"RedactedResult" -> StringTake[redacted, UpTo[maxLen]],
         "Summary" -> StringTake[redacted, UpTo[200]],
@@ -13379,11 +13407,19 @@ iNBOnwCacheFile[] := Module[{base, la = Environment["LOCALAPPDATA"]},
     CreateDirectory[base, CreateIntermediateDirectories -> True]], Null];
   FileNameJoin[{base, "onwork_parse_cache.wxf"}]];
 
+(* Judged by RESULT (AssociationQ), not by Check: deserializing the cache
+   re-creates every symbol stored in the held metadata (user code in some
+   notes), and one stray ::shdw from that must not discard the whole cache --
+   that would turn the first scan of a fresh kernel into a full ~2 min
+   re-import (2026-11-07). The outcome is kept in $iNBOnwCacheLoadNote. *)
 iNBOnwEnsureCacheLoaded[] := If[!TrueQ[$iNBOnwCacheLoaded],
   Module[{f = iNBOnwCacheFile[], loaded},
-    If[FileExistsQ[f],
-      loaded = Quiet@Check[Import[f, "WXF"], $Failed];
-      If[AssociationQ[loaded], $iNBOnwCache = loaded]];
+    $iNBOnwCacheLoadNote = If[FileExistsQ[f],
+      loaded = Quiet[Import[f, "WXF"]];
+      If[AssociationQ[loaded],
+        $iNBOnwCache = loaded; "Loaded " <> ToString[Length[loaded]],
+        "Unreadable " <> ToString[Head[loaded]]],
+      "Absent"];
     $iNBOnwCacheLoaded = True]];
 
 (* write once per scan, only if something was (re)parsed; atomic via temp+rename *)
@@ -13393,6 +13429,31 @@ iNBOnwPersistCache[] := If[TrueQ[$iNBOnwCacheDirty],
     Quiet@Check[Export[tmp, $iNBOnwCache, "WXF"];
       RenameFile[tmp, f, OverwriteTarget -> True], Null];
     $iNBOnwCacheDirty = False]];
+
+(* scan statistics (2026-11-07): how many notes came from the parse cache vs.
+   were re-imported, how long the scan took, and what the cache load did.
+   A cold scan (Misses ~ Files) costs ~2 min over Dropbox, so this is the
+   first thing to read when "the first run is slow". Kept in
+   $iNBOnwLastScan and appended as one line to onwork_scan_log.txt next to
+   the cache (local, non-Dropbox; rotated at 256 KB). Never throws. *)
+If[!StringQ[$iNBOnwCacheLoadNote], $iNBOnwCacheLoadNote = "NotYet"];
+If[!IntegerQ[$iNBOnwScanHits], $iNBOnwScanHits = 0];
+If[!IntegerQ[$iNBOnwScanMisses], $iNBOnwScanMisses = 0];
+iNBOnwNoteScan[n_, secs_] := Module[{log, strm, line},
+  $iNBOnwLastScan = <|"At" -> DateString[{"Year", "-", "Month", "-", "Day", " ",
+      "Hour", ":", "Minute", ":", "Second"}],
+    "Files" -> n, "Hits" -> $iNBOnwScanHits, "Misses" -> $iNBOnwScanMisses,
+    "Seconds" -> Round[secs, 0.01], "CacheLoad" -> $iNBOnwCacheLoadNote,
+    "FrontEnd" -> ($FrontEnd =!= Null), "ProcessID" -> $ProcessID|>;
+  Quiet[
+    log = FileNameJoin[{DirectoryName[iNBOnwCacheFile[]], "onwork_scan_log.txt"}];
+    If[FileExistsQ[log] && FileByteCount[log] > 256*1024,
+      RenameFile[log, log <> ".old", OverwriteTarget -> True]];
+    line = StringRiffle[KeyValueMap[#1 <> "=" <> ToString[#2] &,
+      $iNBOnwLastScan], " "] <> "\n";
+    strm = OpenAppend[log, CharacterEncoding -> "UTF-8"];
+    If[Head[strm] === OutputStream, WriteString[strm, line]; Close[strm]]];
+  $iNBOnwLastScan];
 
 (* the notebook's own cloud-publishability DECLARATION (dashboard "Public"),
    read from the already-imported Notebook expression's options -- zero extra
@@ -13427,7 +13488,8 @@ iNBOnwParseHeld[c_] := With[{r = Which[
   If[MatchQ[r, _HoldComplete], r, $Failed]];
 
 iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held, declPL},
-  fd = Quiet@Check[AbsoluteTime[FileDate[path]], $Failed];
+  fd = Module[{t = Quiet[AbsoluteTime[FileDate[path]]]},
+    If[NumberQ[t], t, $Failed]];
   cached = $iNBOnwCache[path];
   (* "V" 2 = NotebookStatus-cell-aware parse (2026-07); entries from older
      versions (incl. legacy ones lacking "PL") re-import once to upgrade.
@@ -13437,7 +13499,9 @@ iNBOnwHeldFromFile[path_String] := Module[{fd, cached, held, declPL},
   If[AssociationQ[cached] && fd =!= $Failed && cached["D"] === fd &&
       KeyExistsQ[cached, "PL"] && Lookup[cached, "V", 1] === 2 &&
       cached["H"] =!= Missing["Unreadable"],
+    $iNBOnwScanHits++;
     Return[cached["H"]]];
+  $iNBOnwScanMisses++;
   {held, declPL} = Module[{nb0, cands0, h0},
     (* Judged by RESULT, not by Check. Import[.., "Notebook"] SUCCEEDS but
        emits a stray message whenever reading the file creates a symbol
@@ -13598,24 +13662,40 @@ NBAccess`NBOnWorkTasks[OptionsPattern[]] := Module[
           If[NumberQ[pl] || ListQ[pl], r["PrivacyLevel"] = pl]];
         r]], OptionValue["Files"]],
     True,
+      (* every step below is judged by its RESULT, not by Check (2026-11-07) *)
       dir = OptionValue["Directory"];
-      If[dir === Automatic, dir = Quiet@Check[Symbol[Identity["Global`$onWork"]], $Failed]];
+      If[dir === Automatic, dir = Quiet[Symbol[Identity["Global`$onWork"]]]];
       If[!StringQ[dir] || !DirectoryQ[dir],
         Return[Failure["NBOnWorkNoDirectory", <|
           "MessageTemplate" -> "$onWork directory not found."|>]]];
-      files = Quiet@Check[
-        FileNames["*.nb", dir, Infinity], {}];
+      files = Quiet[FileNames["*.nb", dir, Infinity]];
+      If[!ListQ[files], files = {}];
       within = OptionValue["ModifiedWithinDays"];
       If[NumberQ[within],
         cutoff = AbsoluteTime[] - within*86400;
-        files = Select[files,
-          Quiet@Check[AbsoluteTime[FileDate[#]] >= cutoff, True] &]];
+        (* a file whose date cannot be read is kept (as before) *)
+        files = Select[files, Function[f,
+          Module[{t = Quiet[AbsoluteTime[FileDate[f]]]},
+            !NumberQ[t] || t >= cutoff]]]];
       If[IntegerQ[maxF] && maxF > 0 && Length[files] > maxF,
         files = Take[files, maxF]];
       iNBOnwEnsureCacheLoaded[];
-      With[{out = Map[Function[p, iNBOnwRecord[p, iNBOnwHeldFromFile[p],
-          Quiet@Check[FileDate[p], Missing["None"]]]], files]},
-        iNBOnwPersistCache[]; out]];
+      $iNBOnwScanHits = 0; $iNBOnwScanMisses = 0;
+      Module[{t0 = AbsoluteTime[], out},
+        (* Per-file read + record run under Quiet. Parsing a note whose
+           metadata cell holds user code (definitions with Module/With
+           locals) can mint a symbol and emit a harmless ::shdw ONCE per
+           kernel -- e.g. r$::shdw {NBAccess`, Global`} on the first cold
+           scan. Leaking it made callers' Quiet@Check drop the WHOLE list
+           (2026-11-07: the schedule prompt's first run lost every notebook
+           deadline/review). A note's own verdict travels in its record
+           (ParseFailed / State "Unknown"), never as a message. *)
+        out = Map[Function[p, Quiet[iNBOnwRecord[p, iNBOnwHeldFromFile[p],
+            Module[{d = Quiet[FileDate[p]]},
+              If[DateObjectQ[d], d, Missing["None"]]]]]], files];
+        iNBOnwPersistCache[];
+        iNBOnwNoteScan[Length[files], AbsoluteTime[] - t0];
+        out]];
   (* IncludeDone filter *)
   If[!TrueQ[OptionValue["IncludeDone"]],
     recs = Select[recs, !MemberQ[{"Done", "Pass"}, Lookup[#, "State", "Open"]] &]];

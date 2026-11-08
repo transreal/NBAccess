@@ -384,7 +384,7 @@ $NBPrivacySpec = <|"AccessLevel" -> 1.0|>;
 - **`NBCellRead[nb, cellIdx]`** — NotebookRead で Cell 式を返します
 - **`NBCellExprToText[cellExpr]`** — NotebookRead の結果（Cell 式）からテキストを抽出します
 - **`NBCellToText[nb, idx]`** — セルのテキスト内容を取得します（Cases ベース）
-- **`NBCellGetText[nb, cellIdx]`** — 単純な文字列セルでは保存済み文字列をそのまま返し（`≥ ≤ ≠ ×` や引用符が ASCII に化けません）、それ以外は FrontEnd InputText → `NBCellToText` → `NBCellExprToText` の順でフォールバックしながら堅牢にテキストを取得します。取得不可なら `""` を返します
+- **`NBCellGetText[nb, cellIdx]`** — 単純な文字列セルでは保存済み文字列をそのまま返し（`≥ ≤ ≠ ×` や引用符が ASCII に化けません）、TextData のセルも文字列の部分は実文字で返し（インライン数式だけ InputText）、それ以外は FrontEnd InputText → `NBCellToText` → `NBCellExprToText` の順でフォールバックしながら堅牢にテキストを取得します。取得不可なら `""` を返します
 - **`NBCellReadInputText[nb, idx]`** — FrontEnd ExportPacket 経由で堅牢なテキスト取得を行います（2D 表示対応）
 - **`iCellToInputText[cellObj]`** — CellObject から直接 InputText 形式のテキストを取得する内部関数
 - **`NBCellStyle[nb, idx]`** / **`NBCellLabel[nb, idx]`** — セルのスタイル・ラベルを取得します
