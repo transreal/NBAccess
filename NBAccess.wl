@@ -620,6 +620,12 @@ NBRegisterAllowedHeads::usage =
 NBRegisterApprovalHeads::usage =
   "NBRegisterApprovalHeads[heads] \:306f head \:540d\:3092 $NBApprovalHeads \:3078\:8ffd\:52a0\:3059\:308b (\:627f\:8a8d\:30b2\:30fc\:30c8\:5bfe\:8c61\:5316)\:3002";
 
+NBRegisterApprovalSetSymbols::usage =
+  "NBRegisterApprovalSetSymbols[names] は方針変数名 (String / Symbol / その List) を $NBApprovalSetSymbols へ追加する。その変数への代入は Module/With/Block の内側でも承認対象になる (02 v1.2 N10 / A-4、2026-11-09)。";
+
+NBRegisterFileReadHook::usage =
+  "NBRegisterFileReadHook[f] は NBAccess 経由のファイル読取の後に呼ぶフック f[path, pl] を $NBFileReadHooks へ追加する (冪等、戻り値は登録数)。他パッケージは $NBFileReadHooks を直接書き換えずこの関数で登録する (SourceVault_integrity.wl が来歴の供給点を登録、03 SystemDoctor 拡張仕様 v0.4 §6.2、2026-11-10)。提案コードからの呼び出しは承認対象 ($NBApprovalHeads)。";
+
 NBRegisterTrustedPackageHeads::usage =
   "NBRegisterTrustedPackageHeads[context, patterns] \:306f package \:6587\:8108\:306e\:4fe1\:983c head \:30d1\:30bf\:30fc\:30f3\:3092\:767b\:9332\:3059\:308b\:3002\n" <>
   "$NBDenyHeads / $NBApprovalHeads \:306e\:660e\:793a\:767b\:9332\:306f\:3053\:306e\:4fe1\:983c\:3088\:308a\:512a\:5148\:3055\:308c\:308b\:3002";
@@ -939,8 +945,17 @@ NBConfidentialEpilogInstalledQ::usage =
 $NBAllowedHeads::usage =
   "$NBAllowedHeads \:306f LLM \:304c\:81ea\:7531\:306b\:5b9f\:884c\:53ef\:80fd\:306a head \:306e\:30ea\:30b9\:30c8\:3002";
 
+$NBCommitterAutoApprovableHeads::usage =
+  "$NBCommitterAutoApprovableHeads は、ApprovalMode \"CommitterAutoApprove\" (DirectLLMRescue 等の自動 commit) が人間の承認なしに通してよい head のリスト (ノート書込系と NotebookWrite だけ)。$NBApprovalHeads の他の head (TurnWiki の昇格、SourceVault の方針 / 出口 API、所有者 ticket、03 v0.4 §11.5 の関数) は Committer でも承認が要る (02 v1.2 A-4 / B-5、2026-11-09)。";
+
 $NBApprovalHeads::usage =
   "$NBApprovalHeads \:306f\:4eba\:9593\:627f\:8a8d\:3092\:8981\:3059\:308b head \:306e\:30ea\:30b9\:30c8\:3002";
+
+$NBApprovalSetSymbols::usage =
+  "$NBApprovalSetSymbols は、代入 (Set / SetDelayed / AppendTo / AssociateTo 等) が Module/With/Block の内側でも人間承認を要する方針変数の名前のリスト (短い記号名で照合、文脈は問わない)。既定は SourceVault の Web 関所の切替 ($SourceVaultWebGuardPrompter / Enabled / Required / Policy) と、第 2 週で足した主体 ($SourceVaultPrincipal)・security profile・所有者 ticket の鍵 / 店・AutoTrigger permit の鍵 / 強制・要約 LLM の送り先 ($SourceVaultSummaryEndpoint / AllowedEndpoints)。NBRegisterApprovalSetSymbols で追加する (02 v1.2 N10 / A-4、2026-11-09)。Unset / Clear / Remove は $NBDenyHeads。";
+
+$NBFileReadHooks::usage =
+  "$NBFileReadHooks は NBAccess 経由のファイル読取 (NBImport / NBCheckedImport / NBCheckedFileRead、評価スコープ透かしを持ち上げる場所) の後に呼ぶフック f[path, pl] のリスト (既定 {})。SourceVault_integrity.wl が来歴の供給点 SourceVaultProvRecordNBRead を登録する (03 SystemDoctor 拡張仕様 v0.4 §6.2、2026-11-10)。フックの失敗は読取を止めない。代入は承認対象 ($NBApprovalSetSymbols)。";
 
 $NBDenyHeads::usage =
   "$NBDenyHeads \:306f\:5e38\:306b\:62d2\:5426\:3059\:308b head \:306e\:30ea\:30b9\:30c8\:3002";
@@ -1250,6 +1265,26 @@ NBWriteTodoStatus::usage =
   "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\"|\"DryRunOK\",\n" <>
   "  \"MatchedTodo\" -> <|\"Index\" -> ..., \"Text\" -> ...|>,\n" <>
   "  \"OldStatus\" -> _, \"NewStatus\" -> _, \"CellPath\" -> {_Integer...}|>";
+
+
+(* \:2500\:2500 \:30d5\:30a1\:30a4\:30eb\:5358\:4f4d\:306e\:30bb\:30eb\:306e\:8ffd\:8a18\:30fb\:5dee\:3057\:66ff\:3048 (2026-11-18\:3002FrontEnd \:4e0d\:8981) \:2500\:2500 *)
+
+NBFileAppendCells::usage =
+  "NBFileAppendCells[path, cells, opts:OptionsPattern[]] \:306f\:3001FrontEnd \:3067\:958b\:3044\:3066\:3044\:306a\:3044 notebook \:30d5\:30a1\:30a4\:30eb\:306e\:672b\:5c3e\:306b Cell \:306e\:30ea\:30b9\:30c8 cells \:3092\:8db3\:3059\:3002\n" <>
+  "FrontEnd \:3092\:4f7f\:308f\:305a\:306b\:30d5\:30a1\:30a4\:30eb\:3092\:8aad\:307f\:3001\:65e2\:5b58\:306e\:30bb\:30eb\:3068 Notebook \:306e\:30aa\:30d7\:30b7\:30e7\:30f3 (TaggingRules\:30fbStyleDefinitions \:7b49) \:3092\:305d\:306e\:307e\:307e\:6b8b\:3057\:3066\:66f8\:304d\:76f4\:3059\:3002\n" <>
+  "FrontEnd \:3067\:958b\:3044\:3066\:3044\:308b notebook \:306f\:66f8\:304d\:63db\:3048\:306a\:3044 (\"Reason\" -> \"NotebookIsOpen\")\:3002\:958b\:3044\:3066\:3044\:308b\:3082\:306e\:306f NBWriteCell \:306a\:3069\:306e\:30bb\:30eb API \:3067\:66f8\:304f\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3:\n" <>
+  "  \"AccessSpec\" -> <|\"AccessLevel\" -> 0.7, ...|>    - \:66f8\:304d\:8fbc\:307f\:306b\:306f >= 0.7 \:5fc5\:8981\n" <>
+  "  \"DryRun\" -> True|False                            - True \:306f\:30d7\:30ec\:30d3\:30e5\:30fc\:306e\:307f (default True)\n" <>
+  "\:623b\:308a\:5024: <|\"Status\" -> \"OK\"|\"Failed\"|\"DryRunOK\", \"Added\" -> n, \"Removed\" -> 0,\n" <>
+  "  \"DryRun\" -> _Boolean, \"Path\" -> _String|>";
+
+NBFileReplaceTaggedCells::usage =
+  "NBFileReplaceTaggedCells[path, tag, cells, opts:OptionsPattern[]] \:306f\:3001FrontEnd \:3067\:958b\:3044\:3066\:3044\:306a\:3044 notebook \:30d5\:30a1\:30a4\:30eb\:304b\:3089\n" <>
+  "CellTags \:306b tag \:3092\:6301\:3064\:30bb\:30eb\:3092\:53d6\:308a\:9664\:304d\:3001\:672b\:5c3e\:306b cells \:3092\:8db3\:3059\:3002tag \:306f\:6587\:5b57\:5217\:304b\:6587\:5b57\:5217\:306e\:30ea\:30b9\:30c8\:3002\n" <>
+  "\:30bb\:30eb\:30b0\:30eb\:30fc\:30d7\:306e\:4e2d\:306e\:30bb\:30eb\:3082\:53d6\:308a\:9664\:304d\:3001\:7a7a\:306b\:306a\:3063\:305f\:30b0\:30eb\:30fc\:30d7\:306f\:6d88\:3059\:3002\:30bf\:30b0\:306e\:7121\:3044\:30bb\:30eb\:3068 Notebook \:306e\:30aa\:30d7\:30b7\:30e7\:30f3\:306f\:305d\:306e\:307e\:307e\:6b8b\:308b\:3002\n" <>
+  "\:751f\:6210\:3057\:305f\:90e8\:5206\:3092\:66f8\:304d\:76f4\:3059\:7528\:9014\:306b\:4f7f\:3046 (2 \:56de\:547c\:3093\:3067\:3082\:90e8\:5206\:306f 1 \:3064)\:3002cells \:304c {} \:306a\:3089\:53d6\:308a\:9664\:304f\:3060\:3051\:3002\n" <>
+  "\:30aa\:30d7\:30b7\:30e7\:30f3\:3068\:623b\:308a\:5024\:306f NBFileAppendCells \:3068\:540c\:3058 (\"Removed\" \:306f\:53d6\:308a\:9664\:3044\:305f\:30bb\:30eb\:306e\:6570)\:3002";
 
 
 (* \[HorizontalLine]\[HorizontalLine] \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5358\:4f4d\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00 (Stage 9 P1 \:62e1\:5f35) \[HorizontalLine]\[HorizontalLine] *)
@@ -1566,7 +1601,8 @@ Open). Deadline and NextReview are ALSO kept separately as \"DeadlineDue\" and \
 same note: a scheduler must be able to place a review that falls tomorrow even when \
 the deadline is a year out. Fields by access level: 0.5 = \
 Due/DueKind/DeadlineDue/ReviewDue/State/FileDigest/ModificationDate; \
-0.7 adds Title/Keywords/TaskId/Effort/Movable/DependsOn; 1.0 adds Path. Options: \
+0.7 adds Title/Keywords/TaskId/Effort/Movable/DependsOn; 1.0 adds Path and MailRecordId \
+(the mail an inheriting notebook was created from, Missing when there is none). Options: \
 \"Directory\" -> Automatic (Global`$onWork), \"ModifiedWithinDays\" -> Automatic \
 (all), \"IncludeDone\" -> False (drop Status Done/Pass), PrivacySpec -> Automatic, \
 \"MaxFiles\" -> 2000, \"Files\" -> Automatic (test seam: a list of <|\"Path\"->_, \
@@ -4552,6 +4588,15 @@ NBAccess`NBRegisterApprovalHeads[heads_] :=
       DeleteDuplicates[Join[NBAccess`$NBApprovalHeads, add]];
     Length[NBAccess`$NBApprovalHeads]];
 
+(* N10 (02 v1.2 R-03 / A-4, 2026-11-09): 方針変数への代入を承認対象にする名前の登録。 *)
+NBAccess`NBRegisterApprovalSetSymbols[names_] :=
+  Module[{add = iNBNormalizeHeadArg[names]},
+    If[! ListQ[NBAccess`$NBApprovalSetSymbols], NBAccess`$NBApprovalSetSymbols = {}];
+    If[add =!= {},
+      NBAccess`$NBApprovalSetSymbols =
+        DeleteDuplicates[Join[NBAccess`$NBApprovalSetSymbols, add]]];
+    Length[NBAccess`$NBApprovalSetSymbols]];
+
 NBAccess`NBRegisterTrustedPackageHeads[context_String, patterns_] :=
   Module[{add = iNBNormalizeHeadArg[patterns]},
     If[StringTrim[context] === "" || add === {}, Return[$Failed, Module]];
@@ -5580,7 +5625,8 @@ NBAccess`NBFileOpen[path_String] :=
        \:30a6\:30a4\:30f3\:30c9\:30a6\:306b\:306f\:7121\:52b9\:3067\:3001\:305d\:306e\:307e\:307e\:9589\:3058\:308b\:3068\:5229\:7528\:8005\:306e\:30a6\:30a4\:30f3\:30c9\:30a6\:304c\:6d88\:3048\:308b\:305f\:3081\:3002 *)
     already = iNBFileFindOpenNotebook[abs];
     If[Head[already] === NotebookObject, Return[already]];
-    nb = Quiet @ NotebookOpen[path, Visible -> False];
+    (* abs (OS separators), not path: the FE keeps a / path as the window's file name and its menu Save then fails (2026-11-15) *)
+    nb = Quiet @ NotebookOpen[abs, Visible -> False];
     If[Head[nb] =!= NotebookObject,
       Message[NBAccess`NBFileOpen::openfail, path]; Return[$Failed]];
     $iNBFileOpenedByUs = Append[$iNBFileOpenedByUs, nb];
@@ -7195,8 +7241,89 @@ If[!ListQ[$NBApprovalHeads],
        (\:672a\:77e5 head \:6271\:3044 = RepairNeeded \:306b\:306a\:308b)\:3001
        \:30a8\:30fc\:30b8\:30a7\:30f3\:30c8\:7531\:6765\:5f0f\:304c notebook \:3092\:76f4\:63a5\:66f8\:304d\:63db\:3048\:308b\:306e\:3092
        \:627f\:8a8d\:30b2\:30fc\:30c8\:306b\:4e57\:305b\:308b\:305f\:3081 approval head \:306b\:6607\:683c\:3059\:308b\:3002 *)
-    "NotebookWrite"
+    "NotebookWrite",
+    (* A-6 (02 v1.2 / P0-16, 2026-11-09): TurnWiki の昇格は所有者操作。モデル提案コードからの
+       Promote / ApprovePending は承認ゲートに乗せる (ClaudeOrchestrator`TurnWiki` は信頼 package でも
+       ないので unknown head でも止まるが、明示して確実に)。 *)
+    "ClaudeTurnWikiPromote", "ClaudeTurnWikiApprovePending",
+    (* A-4 (02 v1.2 §7.1 / P0-12・P0-13, 2026-11-09): 方針と出口の API を承認 head に。"SourceVault*" の一括信頼
+       ($NBTrustedPackageHeads) より明示登録 (このリスト) が先に評価されるので、提案コードからの呼び出しは
+       NeedsApproval になる。SourceVault_integrity.wl もロード時に同じ一覧を NBRegisterApprovalHeads で登録する
+       (ロード順によらず効くよう既定表にも置く)。 *)
+    "SourceVaultMailSend", "SourceVaultWebGuardResolveRequest",
+    "SourceVaultSetImmutableSnapshotPrivacyLevel", "SourceVaultSetSnapshotPrivacyLevel",
+    "SourceVaultTodoSetPrivacyLevel", "SourceVaultResetEvaluationPrivacy",
+    "SourceVaultExportKeyBundle", "SourceVaultDecryptRecord", "SourceVaultMCPRegisterTools",
+    (* 03 v0.4 §11.5 所有者専用 (ticket 必須)。本体は SourceVault_integrity.wl の stub (NotImplemented) *)
+    "SourceVaultIntegrityRecordOwnerReview", "SourceVaultIntegrityAuthorizeInstruction",
+    "SourceVaultIntegrityRevokeAuthorization", "SourceVaultIntegrityQuarantine", "SourceVaultIntegrityRelease",
+    "SourceVaultIntegrityResolveFinding", "SourceVaultIntegrityAcceptBaseline",
+    "SourceVaultIntegrityRegisterVerifier", "SourceVaultRederiveApprove",
+    (* 所有者 ticket の発行 (I-02) と SecurityProfile 検査の登録 (I-08) *)
+    "SourceVaultOwnerTicketDialog", "SourceVaultOwnerTicketMint", "SourceVaultRegisterSecurityProfileCheck",
+    (* 03 v0.4 Inc1a (2026-11-09 第 3 週): 来歴台帳の状態を変える公開関数 (SourceVault_provenance.wl / integrity.wl)。
+       取込・再構築・checkpoint は service の単一書き手、連鎖の再開・鍵の更新は所有者の操作 *)
+    "SourceVaultProvIngestSpool", "SourceVaultProvIngestAdapters", "SourceVaultProvRebuildIndex", "SourceVaultProvCheckpoint",
+    "SourceVaultProvChainRestart", "SourceVaultProvRotateKey", "SourceVaultProvRegisterAdapter", "SourceVaultIntegrityServiceTick",
+    (* 03 v0.4 Inc2 (2026-11-10 第 4 週): Instruction 基準の初期化・backfill・LLMCall の結合・drift・検証器 (所有者 / service のみ) *)
+    "SourceVaultIntegrityInitializeInstructions", "SourceVaultIntegrityBackfill", "SourceVaultProvJoinLLMCalls",
+    "SourceVaultIntegrityInstructionDrift", "SourceVaultIntegrityVerifiers",
+    (* 読取フックの登録 (読んだパスと PL を受け取る関数を差し込める) は所有者の操作 *)
+    "NBRegisterFileReadHook",
+    (* 03 v0.4 Inc1b (2026-11-10): feeds の書き出しと他機の照合 *)
+    "SourceVaultProvSyncFeeds",
+    (* 03 v0.4 Inc5 (2026-11-10): 所有者操作を 1 回で (主体の束縛と ticket のダイアログ) *)
+    "SourceVaultIntegrityOwnerAction"
   }];
+
+(* Committer (DirectLLMRescue 等の自動 commit) が暗黙承認してよい head = ノート書込系だけ (2026-11-09)。
+   $NBApprovalHeads に後から足した方針 / 出口 / 昇格 / ticket の head はここに入れない (B-5 の前倒し)。 *)
+If[!ListQ[$NBCommitterAutoApprovableHeads],
+  $NBCommitterAutoApprovableHeads = {
+    "NBCellWriteCode", "NBCellWriteText", "NBWriteText", "NBWriteCode",
+    "NBWriteSmartCode", "NBWriteInputCellAndMaybeEvaluate",
+    "NBInsertTextCells", "NBCellSetOptions", "NBCellSetStyle",
+    "NBCellSetTaggingRule", "NBSelectCell",
+    "NBDeleteCellsByTag", "NBMoveAfterCell",
+    "NBMarkCellConfidential", "NBMarkCellDependent", "NBUnmarkCell",
+    "NBSetConfidentialTag", "NBSetTaggingRule", "NBDeleteTaggingRule",
+    "NBSetSnapshotPrivacyLevel",
+    "NBOpenFolderWithApproval", "NBExecuteApprovedAction",
+    "NBFileWriteCell", "NBFileWriteAllCells",
+    "NBMergeNotebookCells",
+    "NBFileOpen", "NBFileClose", "NBFileSave",
+    "NBSplitNotebookCells",
+    "NotebookWrite"}];
+
+(* N10 (02 v1.2 R-03 / A-4, 2026-11-09): 方針変数への代入は Module/With/Block の内側でも承認。
+   Set 系の左辺の基底記号名で照合する (文脈は問わない)。iExtractGlobalSets はスコープ構造を剥がす
+   ので Module 内の `$SourceVaultWebGuardPrompter = f` が素通りしていた (02 付録 A #40)。
+   Unset / Clear / Remove は $NBDenyHeads。 *)
+If[!ListQ[$NBApprovalSetSymbols],
+  $NBApprovalSetSymbols = {
+    "$SourceVaultWebGuardPrompter", "$SourceVaultWebGuardEnabled",
+    "$SourceVaultWebGuardRequired", "$SourceVaultWebGuardPolicy",
+    (* W1 (文書 11 §5.4、2026-11-12): 機密を読んだ後の外向きの絞り込みの切替と、メール・OOPS の放出 PL の下限 *)
+    "$SourceVaultWebGuardPrivateStage", "$SourceVaultMCPToolReadFloorPL",
+    (* W2 (文書 11 §5.2・§5.3、2026-11-12): 会話の状態 (依頼文の URL・ページのリンク・機密の指紋) と、検索結果の URL の出所・公開の語の置き場 *)
+    "$SourceVaultWebGuardSession", "$iWGProvenance", "$iWGPublicCorpus",
+    (* 第 2 週 (I-01 / I-02 / A-4, 2026-11-09): 主体・security profile・所有者 ticket の鍵と店・要約 LLM の送り先 *)
+    "$SourceVaultPrincipal", "$SourceVaultSecurityProfile",
+    "$SourceVaultOwnerTicketKeyRef", "$SourceVaultOwnerTicketDevelopmentKeyRef", "$SourceVaultOwnerTicketStore",
+    "$SourceVaultAutoTriggerPermitKeyRef", "$SourceVaultAutoTriggerEnforcePermit",
+    "$SourceVaultSummaryEndpoint", "$SourceVaultSummaryAllowedEndpoints",
+    (* 第 3 週 (03 v0.4 Inc1a, 2026-11-09): 来歴台帳の鍵と spool の置き場 *)
+    "$SourceVaultProvKeyRefs", "$SourceVaultProvRetiredKeyRefs", "$SourceVaultProvSpoolRoot",
+    (* 第 4 週 (03 v0.4 Inc2, 2026-11-10): Instruction 群の root・LoadVerify の強制・NBAccess の読取フック *)
+    "$SourceVaultInstructionRoots", "$SourceVaultIntegrityLoadVerifyEnforce", "$NBFileReadHooks",
+    (* 03 v0.4 Inc1b (2026-11-10): checkpoint の頻度・feeds の保持・SyncDigest を許す種類 *)
+    "$SourceVaultProvCheckpointLines", "$SourceVaultProvCheckpointIntervalSeconds", "$SourceVaultProvFeedRetentionDays", "$SourceVaultProvSyncDigestKinds",
+    (* 03 v0.4 Inc3 (2026-11-10): 検索フィルタが使えないときの扱い・基準ハッシュを認可の代わりに認める移行期間 *)
+    "$SourceVaultIntegrityFilterFailClosed", "$SourceVaultIntegrityBaselineAsAuthorization",
+    (* 03 v0.4 Inc4 (2026-11-10): 既知の脆弱性表と LM Studio の設定の置き場 *)
+    "$SourceVaultModelRuntimeAdvisories", "$SourceVaultLMStudioRoot", "$SourceVaultLMStudioInstallDir",
+    (* 03 v0.4 Inc5 (2026-11-10): 公開の関所の fail-closed と Issue を閉じるときの検査の一覧 *)
+    "$SourceVaultIntegrityPublishFailClosed", "$SourceVaultIssueResolveGuards"}];
 
 If[!ListQ[$NBDenyHeads],
   $NBDenyHeads = {
@@ -7294,7 +7421,7 @@ Options[iNBValidateHeldExprBase] = Options[NBValidateHeldExpr];
    \:672b\:5c3e\:3067 EffectClass/ApprovalEligibility/PermissionMode \:5909\:63db\:3092
    \:4e00\:5ea6\:3060\:3051\:9069\:7528\:3059\:308b\:8584\:3044\:30e9\:30c3\:30d1\:30fc (\:4e0b\:90e8\:3067\:5b9a\:7fa9)\:3002 *)
 iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
-  Module[{allowed, approval, deny, heads, denied, needsApproval, unknown,
+  Module[{allowed, approval, deny, heads, headsForGates, denied, needsApproval, unknown,
           scopedSyms,
           labelCheck, snapshot, effectiveAccessSpec},
     If[!MatchQ[heldExpr, HoldComplete[_]],
@@ -7330,17 +7457,39 @@ iNBValidateHeldExprBase[heldExpr_, accessSpec_Association, opts:OptionsPattern[]
 
     (* \:5f0f\:4e2d\:306e\:5168 head \:3092\:62bd\:51fa *)
     heads = iExtractAllHeads[heldExpr];
+    (* 2026-11-09 (02 v1.2 A-4 の試験で判明): Deny / 承認 head の照合は head 位置だけだったので、
+       Map[DeleteFile, files]・SourceVaultMailSend @@ {spec}・(f @* g)[x] のように値として渡した記号が素通りした。
+       Deny と承認の照合には値として現れる記号名 (iExtractBareSymbolNames) も含める。未知 head の分類 (unknown)
+       には含めない (ベアの System` 記号や局所変数で過剰に承認を求めないため)。 *)
+    headsForGates = Union[heads, Quiet @ Check[iExtractBareSymbolNames[heldExpr], {}]];
     
     (* \:7981\:6b62 head \:30c1\:30a7\:30c3\:30af *)
-    denied = Select[heads, MemberQ[deny, #] &];
+    denied = Select[headsForGates, MemberQ[deny, #] &];
     If[Length[denied] > 0,
       Return[<|"Decision" -> "Deny",
         "ReasonClass" -> "ForbiddenHead",
         "VisibleExplanation" -> "Forbidden heads: " <> StringRiffle[denied, ", "],
         "SanitizedExpr" -> iSanitizeExpr[heldExpr]|>]];
+
+    (* N10 (2026-11-09): 方針変数への代入はスコープの内外を問わず NeedsApproval。
+       ApprovalHeads に "Set" を入れるのは、Committer の暗黙承認 (iNBCommitterAutoApproveQ) が
+       書込系 head 以外を自動承認しないようにするため。 *)
+    Module[{polNames, polHits},
+      polNames = If[AssociationQ[snapshot],
+        Lookup[snapshot, "ApprovalSetSymbols", $NBApprovalSetSymbols], $NBApprovalSetSymbols];
+      If[! ListQ[polNames], polNames = {}];
+      polHits = Quiet @ Check[iNBExtractPolicySetSymbols[heldExpr, polNames], {}];
+      If[ListQ[polHits] && polHits =!= {},
+        Return[<|"Decision" -> "NeedsApproval",
+          "ReasonClass" -> "PolicyVariableSetRequiresApproval",
+          "VisibleExplanation" ->
+            "Assignment to policy variable(s) requires approval: " <> StringRiffle[polHits, ", "],
+          "ApprovalHeads" -> {"Set"},
+          "PolicySetSymbols" -> polHits,
+          "SanitizedExpr" -> heldExpr|>]]];
     
     (* \:627f\:8a8d\:8981 head \:30c1\:30a7\:30c3\:30af *)
-    needsApproval = Select[heads, MemberQ[approval, #] &];
+    needsApproval = Select[headsForGates, MemberQ[approval, #] &];
     If[Length[needsApproval] > 0,
       Return[<|"Decision" -> "NeedsApproval",
         "ReasonClass" -> "AccessEscalationRequired",
@@ -7662,6 +7811,12 @@ iExtractAllHeads[held_HoldComplete] :=
     {1, Infinity}];
 
 iExtractAllHeads[_] := {};
+
+(* 値として現れる記号名 (head 位置でないもの): Map[DeleteFile, ..] の DeleteFile、f @@ args の f、
+   (f @* g) の f と g など。Deny / 承認 head の照合にだけ使う (2026-11-09)。 *)
+iExtractBareSymbolNames[held_HoldComplete] :=
+  DeleteDuplicates @ Cases[held, s_Symbol :> SymbolName[Unevaluated[s]], {1, Infinity}];
+iExtractBareSymbolNames[_] := {};
 
 (* iNBExtractScopedSymbols: held \:5f0f\:4e2d\:306e Module/Block/With/Function/
    DynamicModule/Manipulate \:7b49\:306e\:30b9\:30b3\:30fc\:30d7\:5c40\:6240\:5909\:6570\:3068\:3001SetDelayed/Function \:306e
@@ -8367,6 +8522,27 @@ iExtractGlobalSetSymbols[held_HoldComplete] :=
     DeleteDuplicates @ Select[Flatten[{lhs}], StringQ]];
 iExtractGlobalSetSymbols[_] := {};
 
+(* N10 (2026-11-09): 式のどこにある代入でも、左辺の基底記号名が names にあれば拾う。
+   左辺は sym | sym[..] | sym[[..]] | OwnValues[sym] 等。スコープ構造は剥がさない (Module 内も対象)。
+   TagSet / TagSetDelayed は第 1 引数 (tag) が変わる記号。 *)
+iNBHeldLHSBaseName[HoldComplete[s_Symbol]] := SymbolName[Unevaluated[s]];
+iNBHeldLHSBaseName[HoldComplete[(OwnValues | DownValues | UpValues | SubValues | Options |
+    Attributes | Messages | Format | DefaultValues | NValues)[s_Symbol, ___]]] :=
+  SymbolName[Unevaluated[s]];
+iNBHeldLHSBaseName[HoldComplete[h_[___]]] := iNBHeldLHSBaseName[HoldComplete[h]];
+iNBHeldLHSBaseName[_] := None;
+
+iNBExtractPolicySetSymbols[held_HoldComplete, names_List] :=
+  Module[{lhs},
+    If[names === {}, Return[{}]];
+    lhs = Cases[held,
+      HoldPattern[(Set | SetDelayed | UpSet | UpSetDelayed | TagSet | TagSetDelayed |
+        AppendTo | PrependTo | AssociateTo | KeyDropFrom | AddTo | SubtractFrom |
+        TimesBy | DivideBy)[l_, ___]] :> iNBHeldLHSBaseName[HoldComplete[l]],
+      {0, Infinity}];
+    DeleteDuplicates @ Select[lhs, StringQ[#] && MemberQ[names, #] &]];
+iNBExtractPolicySetSymbols[___] := {};
+
 (* \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550
    Phase 7: NBExecuteHeldExpr
    \:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550\:2550 *)
@@ -8417,8 +8593,11 @@ iNBCommitterAutoApproveQ[validation_Association, accessSpec_Association,
     If[! ListQ[approvalHeads] || Length[approvalHeads] === 0, Return[False]];
     (* \:5168 head \:304c\:81ea\:52d5\:627f\:8a8d\:53ef\:80fd head \:304b\:3002\:81ea\:52d5\:627f\:8a8d\:53ef\:80fd head \:96c6\:5408\:306f
        \:73fe\:884c\:306e ApprovalHeads (\:66f8\:304d\:8fbc\:307f\:7cfb + NotebookWrite) \:3068\:3059\:308b\:3002 *)
+    (* 2026-11-09 (02 v1.2 A-4 / B-5 の前倒し): 以前は $NBApprovalHeads 全体 (= 書き込み系 + NotebookWrite という
+       前提) だったが、第 1・2 週で TurnWiki の昇格・SourceVault の方針 / 出口 API・所有者 ticket が $NBApprovalHeads
+       に入ったので、Committer の暗黙承認が及ぶ範囲は $NBCommitterAutoApprovableHeads (ノート書込系だけ) に限る。 *)
     AllTrue[approvalHeads,
-      MemberQ[If[ListQ[$NBApprovalHeads], $NBApprovalHeads, {}], #] &]
+      MemberQ[If[ListQ[$NBCommitterAutoApprovableHeads], $NBCommitterAutoApprovableHeads, {}], #] &]
   ];
 
 (* \:5b9f\:884c\:53ef\:5426\:3092\:5224\:5b9a\:3059\:308b\:3002NBValidateHeldExpr \:3092\:547c\:3073\:3001
@@ -8589,8 +8768,14 @@ NBExecuteHeldExpr[heldExpr_, accessSpec_Association, opts:OptionsPattern[]] :=
        \:540c\:6642\:306b $iNBEvaluationPrivacy \:3092 0.0 \:306b Block \:675f\:7e1b\:3057\:3001NBImport \:7b49\:304c
        \:8aad\:3093\:3060\:30c7\:30fc\:30bf\:306e privacy \:900f\:304b\:3057\:3092\:3053\:306e\:8a55\:4fa1\:5185\:3060\:3051\:3067\:96c6\:8a08\:3059\:308b\:3002
        \:900f\:304b\:3057\:306f Block \:5185\:90e8\:3067\:6355\:6349\:3059\:308b (\:5916\:5074\:3067\:306f 0.0 \:306b\:623b\:308b\:305f\:3081)\:3002 *)
+    (* I-01 (03 v0.4 §6.1、2026-11-09): 主体の束縛点 (2) OwnerCode = 所有者のノートで評価する提案コード。
+       SourceVault 未ロードでも記号を Block で束縛するだけで無害 (core がロードされていれば
+       SourceVaultPrincipal[] がこれを読む)。5 つの束縛点以外では束縛しない。 *)
     {result, evalPriv} = Block[
-        {$iNBAmbientAccessSpec = accessSpec, $iNBEvaluationPrivacy = 0.0},
+        {$iNBAmbientAccessSpec = accessSpec, $iNBEvaluationPrivacy = 0.0,
+         SourceVault`$SourceVaultPrincipal = <|"Kind" -> "OwnerCode", "Channel" -> "NBExecuteHeldExpr",
+           "Ticket" -> Missing[], "AccessLevel" -> Lookup[accessSpec, "AccessLevel", Missing[]],
+           "ExecutionRole" -> Lookup[accessSpec, "ExecutionRole", Missing[]]|>},
       Module[{r},
         r = If[timeout === Infinity,
           Quiet[ReleaseHold[heldExpr]],
@@ -9348,13 +9533,13 @@ NBCheckedFileWrite[path_String, content_, accessSpec_Association] :=
 NBCheckedImport[path_String, fmt_String, accessSpec_Association] :=
   Module[{chk}, chk = NBCheckFileRead[path, accessSpec];
     If[TrueQ[chk["Allowed"]],
-      iNBRaiseEvaluationPrivacy[iNBPathPrivacyScore[path]];
+      iNBNoteFileRead[path];
       <|"Status" -> "OK", "Result" -> Quiet @ Import[path, fmt]|>, iNBViolation[chk]]];
 
 NBCheckedFileRead[path_String, accessSpec_Association] :=
   Module[{chk}, chk = NBCheckFileRead[path, accessSpec];
     If[TrueQ[chk["Allowed"]],
-      iNBRaiseEvaluationPrivacy[iNBPathPrivacyScore[path]];
+      iNBNoteFileRead[path];
       <|"Status" -> "OK", "Result" -> Quiet @ ReadString[path]|>, iNBViolation[chk]]];
 
 NBCheckedURLRead[url_String, accessSpec_Association] :=
@@ -9409,6 +9594,24 @@ iNBRaiseEvaluationPrivacy[level_?NumericQ] :=
      If[NumericQ[$iNBEvaluationPrivacy], $iNBEvaluationPrivacy, 0.0],
      N[level]]);
 iNBRaiseEvaluationPrivacy[_] := $iNBEvaluationPrivacy;
+
+(* Inc2 (03 SystemDoctor 拡張仕様 v0.4 §6.2 供給点、2026-11-10 第 4 週): NBAccess 経由でファイルを読んだ場所 (評価スコープ透かしと同じ場所)。
+   透かしを持ち上げた上で、登録された読取フック ($NBFileReadHooks、SourceVault_integrity.wl が SourceVaultProvRecordNBRead を登録) に
+   path と PL を渡す。NBAccess は SourceVault に依存しない (フックの登録は SourceVault 側から)。フックの失敗は読取を止めない。 *)
+If[!ListQ[$NBFileReadHooks], $NBFileReadHooks = {}];
+iNBNoteFileRead[path_String] :=
+  Module[{pl = iNBPathPrivacyScore[path]},
+    iNBRaiseEvaluationPrivacy[pl];
+    If[ListQ[$NBFileReadHooks] && $NBFileReadHooks =!= {},
+      (* フックのメッセージ・Throw (タグつき / タグなし) は読取に波及させない *)
+      Scan[Function[h, Quiet @ Catch[Catch[h[path, pl], _, (Null &)]]], $NBFileReadHooks]];
+    pl];
+iNBNoteFileRead[_] := $iNBEvaluationPrivacy;
+NBAccess`NBRegisterFileReadHook[f_] := (
+  If[!ListQ[NBAccess`$NBFileReadHooks], NBAccess`$NBFileReadHooks = {}];
+  If[!MemberQ[NBAccess`$NBFileReadHooks, f], AppendTo[NBAccess`$NBFileReadHooks, f]];
+  Length[NBAccess`$NBFileReadHooks]);
+NBAccess`NBRegisterFileReadHook[___] := $Failed;
 
 (* 公開入口 (2026-09-18)。データ層からの合流用。上の設計メモどおり NBAccess は
    SourceVault に依存しない: SourceVault_privacy.wl の SourceVaultNotePrivacy が
@@ -9465,7 +9668,7 @@ NBAccess`NBImport[path_String, fmt_] :=
        scope \:5185 (NBCheckFileRead \:901a\:904e) \:3067\:3082 privacy \:304c\:9ad8\:3051\:308c\:3070\:3001\:3053\:306e\:8aad\:307f\:53d6\:308a\:3092
        \:542b\:3080\:8a55\:4fa1\:306e\:51fa\:529b\:306f NBRedactExecutionResult \:3067 schema-only \:306b\:843d\:3061\:308b\:3002
        \:8aad\:307f\:53d6\:308a\:81ea\:4f53\:306f\:8a31\:53ef\:3057\:3001\:300c\:8aad\:3081\:308b\:304c\:6f0f\:308c\:306a\:3044\:300d\:3092\:6210\:7acb\:3055\:305b\:308b\:3002 *)
-    iNBRaiseEvaluationPrivacy[iNBPathPrivacyScore[path]];
+    iNBNoteFileRead[path];
     Quiet @ Check[
       If[fmt === Automatic, Import[path], Import[path, fmt]],
       $Failed]
@@ -11734,6 +11937,83 @@ NBSetCellTaggingRuleByPredicate[path_String, predicate_,
   ];
 
 
+(* ---- file-level cell edits without a front end: NBFileAppendCells / NBFileReplaceTaggedCells (2026-11-18) ----
+   For callers that keep a generated part in a notebook that is not open (the work notebook of a mail task: the
+   related-files part is appended when the notebook is made, and written again later). The notebook is read as an
+   expression, the cells that carry one of the tags are taken out (also inside cell groups; a group left empty is
+   removed), the new cells are added at the end, and the notebook options are kept as they are.
+   Same access rule (AccessLevel >= 0.7) and the same DryRun default (True) as the other file writers.
+   A notebook that is open in the front end is refused: the front end would later save its own copy over the file.
+   Open notebooks are edited through the cell API (NBDeleteCellsByTag / NBMoveToEnd / NBWriteCell). *)
+
+iNBDropTaggedCells[cells_List, tag_String] := DeleteCases[
+  DeleteCases[cells, Cell[___, CellTags -> (tag | {___, tag, ___}), ___], Infinity],
+  Cell[CellGroupData[{}, ___], ___], Infinity];
+iNBDropTaggedCells[cells_List, tags_List] := Fold[iNBDropTaggedCells, cells, Select[tags, StringQ]];
+
+iNBCountTaggedCells[cells_List, tags_List] := Count[cells,
+  Cell[___, CellTags -> ((t_String /; MemberQ[tags, t]) | {___, t_String /; MemberQ[tags, t], ___}), ___], Infinity];
+
+iNBFileOpenInFrontEndQ[abs_String] := With[{l = Quiet @ Check[Notebooks[], {}]},
+  ListQ[l] && AnyTrue[l, Function[w, With[{fn = Quiet @ Check[NotebookFileName[w], $Failed]},
+    StringQ[fn] && ExpandFileName[fn] === abs]]]];
+
+iNBFileEditTaggedCells[path_String, tags_List, newCells_, spec_, dryRun_] :=
+  Module[{accessSpec, accessCheck, loaded, nbExpr, cells, kept, removed, newNbExpr, saveResult, abs},
+    If[! MatchQ[newCells, {___Cell}],
+      Return[<|"Status" -> "Failed", "Reason" -> "CellsExpected", "Path" -> path|>]];
+    accessSpec = iNBNormalizeAccessSpec[spec];
+    accessCheck = iNBCheckWriteAccess[accessSpec];
+    If[Lookup[accessCheck, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed",
+        "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>,
+        accessCheck]]];
+    abs = ExpandFileName[path];
+    If[iNBFileOpenInFrontEndQ[abs],
+      Return[<|"Status" -> "Failed", "Reason" -> "NotebookIsOpen", "Path" -> abs|>]];
+    loaded = iNBFileLoadAsExprForWrite[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
+    nbExpr = Lookup[loaded, "NotebookExpr"];
+    If[! (Length[nbExpr] >= 1 && ListQ[nbExpr[[1]]]),
+      Return[<|"Status" -> "Failed", "Reason" -> "UnexpectedNotebookShape",
+        "Path" -> Lookup[loaded, "Path"]|>]];
+    cells = iNBNotebookCells[nbExpr];
+    removed = If[tags === {}, 0, iNBCountTaggedCells[cells, tags]];
+    kept = If[tags === {}, cells, iNBDropTaggedCells[cells, tags]];
+    If[removed === 0 && newCells === {},
+      Return[<|"Status" -> "OK", "Added" -> 0, "Removed" -> 0, "DryRun" -> dryRun,
+        "Path" -> Lookup[loaded, "Path"], "Note" -> "NoChange"|>]];
+    If[dryRun,
+      Return[<|"Status" -> "DryRunOK", "Added" -> Length[newCells], "Removed" -> removed,
+        "DryRun" -> True, "Path" -> Lookup[loaded, "Path"]|>]];
+    newNbExpr = ReplacePart[nbExpr, 1 -> Join[kept, newCells]];
+    saveResult = iNBFileSaveExpr[Lookup[loaded, "Path"], newNbExpr];
+    If[Lookup[saveResult, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed"|>, saveResult]]];
+    <|"Status" -> "OK", "Added" -> Length[newCells], "Removed" -> removed,
+      "DryRun" -> False, "Path" -> Lookup[loaded, "Path"]|>
+  ];
+
+Options[NBFileAppendCells] = {
+  "AccessSpec" -> Automatic,
+  "DryRun" -> True
+};
+
+NBFileAppendCells[path_String, newCells_List, opts:OptionsPattern[]] :=
+  iNBFileEditTaggedCells[path, {}, newCells,
+    OptionValue["AccessSpec"], TrueQ[OptionValue["DryRun"]]];
+
+Options[NBFileReplaceTaggedCells] = {
+  "AccessSpec" -> Automatic,
+  "DryRun" -> True
+};
+
+NBFileReplaceTaggedCells[path_String, tag : (_String | {___String}), newCells_List,
+    opts:OptionsPattern[]] :=
+  iNBFileEditTaggedCells[path, Flatten[{tag}], newCells,
+    OptionValue["AccessSpec"], TrueQ[OptionValue["DryRun"]]];
+
+
 (* ---- \:9ad8\:30ec\:30d9\:30eb API: NBWriteHeader ---- *)
 
 Options[NBWriteHeader] = {
@@ -12482,6 +12762,9 @@ NBPolicySnapshot[] :=
       "ApprovalHeads"         -> approval,
       "DenyHeads"             -> deny,
       "ConfidentialSymbols"   -> conf,
+      (* N10 (2026-11-09): digest の対象外 (旧 snapshot と digest 互換のまま)。無い snapshot は
+         global の $NBApprovalSetSymbols に fall back する。 *)
+      "ApprovalSetSymbols"    -> If[ListQ[$NBApprovalSetSymbols], $NBApprovalSetSymbols, {}],
       "Digest"                -> digest,
       "Source"                -> "CurrentGlobals"
     |>
@@ -13631,6 +13914,10 @@ iNBOnwRecord[path_, held_, modDate_] := Module[{meta, due, parseFailed, rec},
     "State" -> If[parseFailed, "Unknown", iNBOnwState[meta]],
     "ModificationDate" -> modDate,
     "FileDigest" -> iNBOnwDigest[path],
+    (* the mail an inheriting notebook was created from (SourceVaultMailAgendaInherit writes it into the status
+       cell; whitelisted above). Only the full record carries it: the staged projections below 1.0 take named keys.
+       SourceVault_series.wl uses it as the deterministic notebook <-> mail link (2026-11-16). *)
+    "MailRecordId" -> Lookup[meta, "MailRecordId", Missing["None"]],
     "Path" -> path,
     "ParseFailed" -> parseFailed|>;
   rec];

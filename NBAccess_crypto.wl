@@ -36,7 +36,8 @@ NBStoreCredentialKey::usage = "NBStoreCredentialKey[keyRef, keyObject, metadata]
 NBKeyStatus::usage = "NBKeyStatus[keyRef] は鍵の metadata (鍵材料を含まない) を返す。存在しなければ Missing。";
 NBListCredentialKeyRefs::usage = "NBListCredentialKeyRefs[pattern_:\"*\"] は登録済み keyRef の一覧を返す (鍵材料は含まない)。";
 NBDeleteCredentialKey::usage = "NBDeleteCredentialKey[keyRef] は鍵を削除する。";
-NBKeyMaterialExistsQ::usage = "NBKeyMaterialExistsQ[keyRef] は鍵材料が backend に存在するかを index 非依存で返す(共有 index blob の clobber 耐性チェック用)。";
+NBKeyMaterialFingerprint::usage = "NBKeyMaterialFingerprint[keyRef] は鍵ストアの鍵材料から指紋 (SHA-256 の先頭 16 桁) を計算して返す。index に依存しない。鍵が無ければ Missing[\"NoMaterial\"]。鍵材料は返さない。";
+NBKeyMaterialExistsQ::usage ="NBKeyMaterialExistsQ[keyRef] は鍵材料が backend に存在するかを index 非依存で返す(共有 index blob の clobber 耐性チェック用)。";
 NBGenerateSymmetricKeyRef::usage = "NBGenerateSymmetricKeyRef[keyRef, metadata_:<||>] は AES256 対称鍵を生成して keyRef に保存する。";
 NBGenerateMacKeyRef::usage = "NBGenerateMacKeyRef[keyRef, metadata_:<||>] は 256bit ランダム MAC 鍵を生成して keyRef に保存する。";
 NBGenerateAsymmetricKeyRefPair::usage = "NBGenerateAsymmetricKeyRefPair[keyRef, metadata_:<||>] は RSA 鍵対を生成し、秘密鍵を keyRef に保存する。公開鍵は index に保持する。";
@@ -49,6 +50,9 @@ NBCryptoSelfTest::usage = "NBCryptoSelfTest[] は鍵隔離・暗号/MAC roundtri
 NBExportWrappedKeys::usage = "NBExportWrappedKeys[keyRefs, wrapKey] は各鍵オブジェクトを wrapKey (SymmetricKey) で暗号化した EncryptedObject と非秘密 index meta だけを返す。平文鍵材料は決して返さない (可搬な鍵バンドル用の内部プリミティブ)。";
 NBRebuildKeyIndexFromCredentials::usage = "NBRebuildKeyIndexFromCredentials[keyRefs] は index に無いが鍵材料 credential が存在する keyRef の index entry を材料から再構築する (index blob のサイズ超過 silent 失敗からの復旧用)。鍵材料は返さない。keyRef ごとに Rebuilt | AlreadyIndexed | NoMaterial を返す。";
 NBImportWrappedKeys::usage = "NBImportWrappedKeys[wrappedAssoc, wrapKey] は wrapKey で復号した鍵オブジェクトを現 backend の credential store に書き戻す。BinaryDeserialize のみ (ToExpression 不使用)。復元した keyRef のリストを返す。";
+
+NBWrapKeyRefsForPublicKey::usage = "NBWrapKeyRefsForPublicKey[keyRefs, publicKey] は各鍵オブジェクトを公開鍵 (RSA, OAEP) で包んだ暗号文と、鍵の指紋・種類だけを返す (紙の回復の受取人用)。平文の鍵材料は返さない。<|keyRef -> <|\"Ciphertext\" -> EncryptedObject, \"Fingerprint\", \"Kind\"|>|>。";
+NBUnwrapKeyRefsWithPrivateKey::usage = "NBUnwrapKeyRefsWithPrivateKey[wrapped, privateKey, mode] は NBWrapKeyRefsForPublicKey の結果を秘密鍵でほどく。mode = \"Verify\" (既定) は指紋の照合だけ、\"Import\" はこの機の鍵ストアに書く (既にある鍵は上書きせず、指紋が違えば Conflict)。鍵材料は返さず、keyRef ごとの状態だけを返す。";
 
 $NBCredentialBackend::usage = "$NBCredentialBackend は鍵ストア backend (\"Memory\" | \"SystemCredential\")。既定 \"Memory\"。";
 
@@ -170,10 +174,15 @@ iNBResolveKeyObject[keyRef_String] := Module[{b64, bytes},
   (* BinaryDeserialize のみ。ToExpression は使わない。 *)
   Quiet@Check[BinaryDeserialize[bytes], $Failed]];
 
-(* ---- 公開 API: 鍵保存 / 生成 ---- *)
-NBStoreCredentialKey[keyRef_String, keyObject_, metadata_Association : <||>] :=
+(* ---- 公開 API: 鍵保存 / 生成 ----
+   2026-11-14 (at-rest 暗号化の計画 段 2): "CreateOnly" -> True は、鍵材料が既にあれば上書きせず
+   Status "Exists" を返す。過去の鍵の喪失 2 件は「再生成で上書き」が原因だったため、分類の鍵はこれで作る。 *)
+Options[NBStoreCredentialKey] = {"CreateOnly" -> False};
+NBStoreCredentialKey[keyRef_String, keyObject_, metadata_Association : <||>, OptionsPattern[]] :=
   Module[{b64, kind},
     iNBEnsureIndexLoaded[];
+    If[TrueQ[OptionValue["CreateOnly"]] && NBKeyMaterialExistsQ[keyRef],
+      Return[<|"Status" -> "Exists", "KeyRef" -> keyRef, "KeyMaterialReturned" -> False|>]];
     b64 = BaseEncode[BinarySerialize[keyObject]];
     iNBBackendPut[keyRef, b64];
     kind = Switch[Head[keyObject],
@@ -190,13 +199,19 @@ NBStoreCredentialKey[keyRef_String, keyObject_, metadata_Association : <||>] :=
     iNBPersistIndex[];
     <|"Status" -> "Stored", "KeyRef" -> keyRef, "KeyMaterialReturned" -> False|>];
 
-NBGenerateSymmetricKeyRef[keyRef_String, metadata_Association : <||>] :=
+Options[NBGenerateSymmetricKeyRef] = {"CreateOnly" -> False};
+NBGenerateSymmetricKeyRef[keyRef_String, metadata_Association : <||>, OptionsPattern[]] :=
   NBStoreCredentialKey[keyRef, GenerateSymmetricKey[],
-    Join[<|"Purpose" -> "SymmetricAtRest", "Algorithm" -> "AES256"|>, metadata]];
+    Join[<|"Purpose" -> "SymmetricAtRest", "Algorithm" -> "AES256"|>, metadata],
+    "CreateOnly" -> OptionValue["CreateOnly"]];
 
-NBGenerateMacKeyRef[keyRef_String, metadata_Association : <||>] :=
-  NBStoreCredentialKey[keyRef, ByteArray[RandomInteger[{0, 255}, 32]],
-    Join[<|"Purpose" -> "HMAC", "Algorithm" -> "HMAC-SHA256"|>, metadata]];
+(* 2026-11-14: MAC 鍵は暗号用の乱数 (GenerateSymmetricKey の鍵バイト列 32 バイト) から作る。
+   以前の RandomInteger は暗号用ではない。既存の鍵はそのまま使える。 *)
+Options[NBGenerateMacKeyRef] = {"CreateOnly" -> False};
+NBGenerateMacKeyRef[keyRef_String, metadata_Association : <||>, OptionsPattern[]] :=
+  NBStoreCredentialKey[keyRef, GenerateSymmetricKey[]["Key"],
+    Join[<|"Purpose" -> "HMAC", "Algorithm" -> "HMAC-SHA256"|>, metadata],
+    "CreateOnly" -> OptionValue["CreateOnly"]];
 
 NBGenerateAsymmetricKeyRefPair[keyRef_String, metadata_Association : <||>] :=
   Module[{kp},
@@ -221,6 +236,10 @@ NBDeleteCredentialKey[keyRef_String, opts : OptionsPattern[]] := (
   <|"Status" -> "Deleted", "KeyRef" -> keyRef|>);
 
 NBKeyMaterialExistsQ[keyRef_String] := StringQ[iNBBackendGet[keyRef]];
+
+(* 2026-11-14: 鍵材料から指紋を計算する (index が消えても確かめられるように)。指紋は SHA-256 の先頭 16 桁で、鍵材料は返さない。 *)
+NBKeyMaterialFingerprint[keyRef_String] := Module[{obj = iNBResolveKeyObject[keyRef]},
+  If[obj === $Failed, Missing["NoMaterial"], iNBFingerprint[obj]]];
 
 (* index 復旧: 材料 credential は生きているが index entry が無い keyRef を再構築する。
    Fingerprint は材料から再計算 (元 metadata の Purpose/CreatedAt は復元不能なので明示)。 *)
@@ -342,7 +361,7 @@ NBExportWrappedKeys[keyRefs_List, wrapKey_] :=
         idx = Lookup[$iNBKeyIndex, kr, <||>];
         (* 非秘密 meta のみ (鍵材料・Backend は除外)。復元に要る公開鍵/種別/用途を保持。 *)
         meta = KeyTake[idx, {"Kind", "Purpose", "RotationStable", "Owner",
-            "Algorithm", "PublicKey", "Fingerprint"}];
+            "Algorithm", "PublicKey", "Fingerprint", "KeyGroup", "Tier", "ClassId"}];
         AssociateTo[out, kr -> <|"IndexMeta" -> meta, "Ciphertext" -> ct|>]],
       {kr, keyRefs}];
     out];
@@ -358,11 +377,58 @@ NBImportWrappedKeys[wrapped_Association, wrapKey_] :=
             obj = Quiet@Check[BinaryDeserialize[pt], $Failed];
             If[obj =!= $Failed && Head[obj] =!= Symbol,
               meta = KeyTake[Lookup[rec, "IndexMeta", <||>],
-                 {"Purpose", "RotationStable", "Owner", "Algorithm", "PublicKey"}];
+                 {"Purpose", "RotationStable", "Owner", "Algorithm", "PublicKey", "KeyGroup", "Tier", "ClassId"}];
               NBStoreCredentialKey[kr, obj, meta];
               AppendTo[restored, kr]]]]],
       wrapped];
     restored];
+
+(* ---- 紙の回復の受取人 (2026-11-14、at-rest 暗号化の計画 段 3) ----
+   回復の公開鍵 (RSA-3072) で各鍵オブジェクトを OAEP で包む。回復の秘密鍵は紙の回復キーから導いた鍵で
+   包まれて台帳にあり、回復のときだけ呼び出し側が取り出してここに渡す。鍵材料は戻り値に出さない。 *)
+NBWrapKeyRefsForPublicKey[keyRefs_List, publicKey_PublicKey] :=
+  Module[{out = <||>},
+    iNBEnsureIndexLoaded[];
+    Do[
+      Module[{obj = iNBResolveKeyObject[kr], ct},
+        If[obj === $Failed, Continue[]];
+        ct = Quiet@Check[Encrypt[publicKey, BinarySerialize[obj], Method -> <|"Padding" -> "OAEP"|>], $Failed];
+        If[Head[ct] =!= EncryptedObject, Continue[]];
+        AssociateTo[out, kr -> <|"Ciphertext" -> ct, "Fingerprint" -> iNBFingerprint[obj],
+          "Kind" -> Switch[Head[obj], SymmetricKey, "SymmetricKey", ByteArray, "MacKey", PrivateKey, "PrivateKey", _, "Unknown"]|>]],
+      {kr, keyRefs}];
+    out];
+NBWrapKeyRefsForPublicKey[___] := $Failed;
+
+NBUnwrapKeyRefsWithPrivateKey[wrapped_Association, privateKey_PrivateKey, mode_String : "Verify"] :=
+  Module[{res = <||>},
+    iNBEnsureIndexLoaded[];
+    KeyValueMap[
+      Function[{kr, rec},
+        Module[{ct, pt, obj, fp, recFp, existing, existingFp, status},
+          ct = Lookup[rec, "Ciphertext", $Failed];
+          pt = If[Head[ct] === EncryptedObject, Quiet@Check[Decrypt[privateKey, ct], $Failed], $Failed];
+          obj = If[Head[pt] === ByteArray, Quiet@Check[BinaryDeserialize[pt], $Failed], $Failed];
+          If[obj === $Failed || Head[obj] === Symbol,
+            AssociateTo[res, kr -> <|"Status" -> "DecryptFailed"|>]; Return[Null, Module]];
+          fp = iNBFingerprint[obj];
+          recFp = Lookup[rec, "Fingerprint", Missing[]];
+          existing = iNBResolveKeyObject[kr];
+          existingFp = If[existing === $Failed, Missing["NotInStore"], iNBFingerprint[existing]];
+          status = Which[
+            StringQ[recFp] && recFp =!= fp, "FingerprintMismatch",
+            mode === "Import" && StringQ[existingFp] && existingFp === fp, "AlreadyPresent",
+            mode === "Import" && StringQ[existingFp], "Conflict",
+            mode === "Import",
+              NBStoreCredentialKey[kr, obj,
+                <|"Purpose" -> "RecoveredFromPaper", "Owner" -> "SourceVault"|>, "CreateOnly" -> True];
+              If[NBKeyMaterialExistsQ[kr], "Imported", "ImportFailed"],
+            True, "Verified"];
+          AssociateTo[res, kr -> <|"Status" -> status, "Fingerprint" -> fp,
+            "MatchesStore" -> If[StringQ[existingFp], existingFp === fp, Missing["NotInStore"]]|>]]],
+      wrapped];
+    res];
+NBUnwrapKeyRefsWithPrivateKey[___] := $Failed;
 
 End[];
 EndPackage[];
