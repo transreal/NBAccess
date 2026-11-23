@@ -1286,6 +1286,20 @@ NBFileReplaceTaggedCells::usage =
   "\:751f\:6210\:3057\:305f\:90e8\:5206\:3092\:66f8\:304d\:76f4\:3059\:7528\:9014\:306b\:4f7f\:3046 (2 \:56de\:547c\:3093\:3067\:3082\:90e8\:5206\:306f 1 \:3064)\:3002cells \:304c {} \:306a\:3089\:53d6\:308a\:9664\:304f\:3060\:3051\:3002\n" <>
   "\:30aa\:30d7\:30b7\:30e7\:30f3\:3068\:623b\:308a\:5024\:306f NBFileAppendCells \:3068\:540c\:3058 (\"Removed\" \:306f\:53d6\:308a\:9664\:3044\:305f\:30bb\:30eb\:306e\:6570)\:3002";
 
+NBFileSetStatusFields::usage =
+  "NBFileSetStatusFields[path, fields, opts] sets keys of the status header (the first \"NotebookStatus\" cell) of a \
+notebook FILE that is not open in the front end (2026-11-20: the dates Deadline / Eventdate / NextReview of the work \
+notes). fields is an Association key -> value (DateObject, Quantity, String, list of strings, number, True/False). \
+The header is read WITHOUT evaluation (MakeExpression; the existing rules are kept as written), a given key replaces \
+the rule of that key (a key written twice keeps one rule, at the place of the first: in an Association the later \
+rule wins, which hid an owner's Title added at the top), a new key is inserted in the owner's order (Keywords, \
+Deadline, Eventdate, NextReview, Status, Title). The cell is written back as editable input text. Same access rule (AccessLevel >= 0.7), DryRun default (True) \
+and refusal of an open notebook (\"NotebookIsOpen\") as NBFileAppendCells. A notebook without a status cell, or with a \
+header that is not an Association, is refused (\"NoStatusCell\" / \"StatusNotAssociation\"). \
+Option \"RemoveKeys\" -> {\"key\" | \"key\" -> value, ...} takes rules out (a key: all its rules; key -> value: only \
+the rules of the key written with that value), fields may then be <||>. \
+Returns <|\"Status\" -> \"OK\" | \"DryRunOK\" | \"Failed\", \"Set\" -> keys, \"Removed\" -> n, \"Path\", \"DryRun\"|>.";
+
 
 (* \[HorizontalLine]\[HorizontalLine] \:30ce\:30fc\:30c8\:30d6\:30c3\:30af\:5358\:4f4d\:30af\:30e9\:30a6\:30c9\:516c\:958b\:5ba3\:8a00 (Stage 9 P1 \:62e1\:5f35) \[HorizontalLine]\[HorizontalLine] *)
 
@@ -1584,7 +1598,7 @@ NBOnWorkTaskSafeExtract::usage =
 HELD expression (HoldComplete[...] or Hold[...] wrapping the metadata Association, \
 or a list whose first element is it) WITHOUT EVALUATING ANYTHING (routine spec 3.3 \
 / P1-2 / AC-013). Only whitelisted string keys (Title/Status/Deadline/NextReview/\
-EventDate/Keywords/Effort/Movable/DependsOn/TaskId) with literal values (String, \
+Eventdate/EventDate/Keywords/Effort/Movable/DependsOn/TaskId) with literal values (String, \
 Integer, Real, True/False, DateObject[{ints..},(gran)], Quantity[num,unit], list of \
 strings) are kept; every other key/value is dropped. Side-effect expressions, \
 Notebook boxes, huge expressions and UpValue symbols are never evaluated. The \
@@ -1599,8 +1613,11 @@ offset, matching NotebookExtensions) and \"State\" (Done/Pass/Keep from Status, 
 Open). Deadline and NextReview are ALSO kept separately as \"DeadlineDue\" and \
 \"ReviewDue\" (Missing when absent), because they are independent occurrences of the \
 same note: a scheduler must be able to place a review that falls tomorrow even when \
-the deadline is a year out. Fields by access level: 0.5 = \
-Due/DueKind/DeadlineDue/ReviewDue/State/FileDigest/ModificationDate; \
+the deadline is a year out. \"EventDue\" is the date of the event the note is about \
+(the header key \"Eventdate\", the owner's spelling, or \"EventDate\"; Missing when \
+absent), a third independent occurrence; \"ReviewKind\" tells whether NextReview is \
+a \"Date\" or an \"Offset\" (Quantity). Fields by access level: 0.5 = \
+Due/DueKind/DeadlineDue/ReviewDue/EventDue/ReviewKind/State/FileDigest/ModificationDate; \
 0.7 adds Title/Keywords/TaskId/Effort/Movable/DependsOn; 1.0 adds Path and MailRecordId \
 (the mail an inheriting notebook was created from, Missing when there is none). Options: \
 \"Directory\" -> Automatic (Global`$onWork), \"ModifiedWithinDays\" -> Automatic \
@@ -12013,6 +12030,99 @@ NBFileReplaceTaggedCells[path_String, tag : (_String | {___String}), newCells_Li
   iNBFileEditTaggedCells[path, Flatten[{tag}], newCells,
     OptionValue["AccessSpec"], TrueQ[OptionValue["DryRun"]]];
 
+(* ---- the status header of a notebook file: NBFileSetStatusFields (2026-11-20) ----
+   The owner, 2026-11-20: the dates of a work note (Deadline, Eventdate, NextReview) are what the agenda and the
+   reminders work from; the notes made from mails had NextReview only. SourceVaultTaskDatesBackfill writes the missing
+   dates through this. The header is read WITHOUT evaluation (iNBOnwParseHeld, as NBOnWorkTasks reads it); each existing
+   rule is kept as it was written (its own InputForm text), a given key replaces its rule, a new key goes in the owner's
+   order. The cell is written back as raw input text in BoxData (editable; the convention of the mail-inherit header). *)
+$iNBStatusKeyOrder = {"Keywords", "Deadline", "Eventdate", "EventDate", "NextReview", "Status", "Title"};
+iNBStatusValueString[v_?DateObjectQ] :=
+  "DateObject[{" <> StringRiffle[ToString /@ Round[Take[DateList[v], 3]], ", "] <> "}]";
+iNBStatusValueString[v_] := ToString[v, InputForm];
+iNBStatusValueOKQ[v_] := DateObjectQ[v] ||
+  MatchQ[v, _String | _Integer | _Real | True | False | {___String} | Quantity[_?NumberQ, _String]];
+SetAttributes[iNBHeldRuleText, HoldAllComplete];
+iNBHeldRuleText[Rule[k_String, v_]] :=
+  {k, ToString[Unevaluated[k], InputForm] <> " -> " <> ToString[Unevaluated[v], InputForm]};
+iNBHeldRuleText[RuleDelayed[k_String, v_]] :=
+  {k, ToString[Unevaluated[k], InputForm] <> " :> " <> ToString[Unevaluated[v], InputForm]};
+iNBHeldRuleText[x_] := {None, ToString[Unevaluated[x], InputForm]};
+iNBStatusRank[k_] := With[{p = FirstPosition[$iNBStatusKeyOrder, k, {Infinity}, {1}]}, First[p]];
+
+Options[NBFileSetStatusFields] = {
+  "AccessSpec" -> Automatic,
+  "DryRun" -> True,
+  (* rules taken out of the header: "key" (every rule of the key) or "key" -> value (only the rules of that key whose
+     value is written as that value; 2026-11-20: the automatic "Title" of the mail-inherit notes is removed, an owner's
+     Title of another value is kept) *)
+  "RemoveKeys" -> {}
+};
+
+NBFileSetStatusFields[path_String, fields_Association, opts:OptionsPattern[]] :=
+  Module[{accessSpec, accessCheck, dryRun = TrueQ[OptionValue["DryRun"]], abs, loaded, nbExpr, pos, cell, held,
+      deferQ, items, rank, text, check, saveResult, remove = Flatten[{OptionValue["RemoveKeys"]}], removed = 0, n0},
+    If[! AllTrue[remove, MatchQ[#, _String | (_String -> _?iNBStatusValueOKQ)] &],
+      Return[<|"Status" -> "Failed", "Reason" -> "RemoveKeysExpected", "Path" -> path|>]];
+    If[(fields === <||> && remove === {}) || ! AllTrue[Keys[fields], StringQ] || ! AllTrue[Values[fields], iNBStatusValueOKQ],
+      Return[<|"Status" -> "Failed", "Reason" -> "FieldsExpected", "Path" -> path|>]];
+    accessSpec = iNBNormalizeAccessSpec[OptionValue["AccessSpec"]];
+    accessCheck = iNBCheckWriteAccess[accessSpec];
+    If[Lookup[accessCheck, "Status", ""] =!= "OK",
+      Return[Join[<|"Status" -> "Failed", "Reason" -> Lookup[accessCheck, "Reason", "AccessDenied"]|>, accessCheck]]];
+    abs = ExpandFileName[path];
+    If[iNBFileOpenInFrontEndQ[abs],
+      Return[<|"Status" -> "Failed", "Reason" -> "NotebookIsOpen", "Path" -> abs|>]];
+    loaded = iNBFileLoadAsExprForWrite[path];
+    If[Lookup[loaded, "Status", ""] =!= "OK", Return[loaded]];
+    nbExpr = Lookup[loaded, "NotebookExpr"];
+    pos = FirstPosition[nbExpr, Cell[_, "NotebookStatus", ___], Missing["NoStatusCell"]];
+    If[MissingQ[pos], Return[<|"Status" -> "Failed", "Reason" -> "NoStatusCell", "Path" -> abs|>]];
+    cell = Extract[nbExpr, pos];
+    held = iNBOnwParseHeld[First[cell]];
+    deferQ = MatchQ[held, HoldComplete[Defer[_Association]]];
+    items = Replace[held, {
+      HoldComplete[Association[rs___]] :> (iNBHeldRuleText /@ Unevaluated[{rs}]),
+      HoldComplete[Defer[Association[rs___]]] :> (iNBHeldRuleText /@ Unevaluated[{rs}]),
+      _ -> $Failed}];
+    If[! ListQ[items],
+      Return[<|"Status" -> "Failed", "Reason" -> "StatusNotAssociation", "Path" -> abs|>]];
+    (* the rules to take out: a key, or a key with the value as it is written *)
+    n0 = Length[items];
+    Scan[Function[r, items = If[StringQ[r], DeleteCases[items, {r, _}],
+        DeleteCases[items, {First[r], ToString[First[r], InputForm] <> " -> " <> iNBStatusValueString[Last[r]]}]]], remove];
+    removed = n0 - Length[items];
+    If[fields === <||> && removed === 0,
+      Return[<|"Status" -> "OK", "Set" -> {}, "Removed" -> 0, "Note" -> "NoChange", "DryRun" -> dryRun, "Path" -> abs|>]];
+    (* a given key replaces its rule; a new key goes after the last key that comes before it in the owner's order.
+       A key written twice (2026-11-20: the owner put "Title" -> ... at the top of a header that had a Title already;
+       in an Association the LATER rule wins) keeps one rule: the given value at the place of the first one *)
+    KeyValueMap[Function[{k, v}, Module[{t = ToString[k, InputForm] <> " -> " <> iNBStatusValueString[v], at, all},
+        all = Flatten[Position[items, {k, _}, {1}, Heads -> False]];
+        at = If[all === {}, Missing[], {First[all]}];
+        If[! MissingQ[at],
+          items[[First[at]]] = {k, t};
+          If[Length[all] > 1, items = Delete[items, List /@ Rest[all]]],
+          rank = iNBStatusRank[k];
+          at = Last[Join[{0}, Flatten[Position[items, {kk_String /; iNBStatusRank[kk] < rank, _}, {1}]]]];
+          items = Insert[items, {k, t}, at + 1]]]], fields];
+    text = "<|" <> StringRiffle[items[[All, 2]], ", "] <> "|>";
+    If[deferQ, text = "Defer[" <> text <> "]"];
+    check = Quiet[ToExpression[text, InputForm, HoldComplete]];
+    If[! MatchQ[check, HoldComplete[_Association] | HoldComplete[Defer[_Association]]],
+      Return[<|"Status" -> "Failed", "Reason" -> "HeaderNotParsed", "Path" -> abs|>]];
+    If[dryRun,
+      Return[<|"Status" -> "DryRunOK", "Set" -> Keys[fields], "Removed" -> removed, "Header" -> text, "DryRun" -> True,
+        "Path" -> Lookup[loaded, "Path"]|>]];
+    saveResult = iNBFileSaveExpr[Lookup[loaded, "Path"], ReplacePart[nbExpr, Append[pos, 1] -> BoxData[text]]];
+    If[Lookup[saveResult, "Status", ""] =!= "OK", Return[Join[<|"Status" -> "Failed"|>, saveResult]]];
+    (* the parse cache of NBOnWorkTasks compares the file date in seconds: a header rewritten within the second of the
+       last read would be served stale, so this file's entry is dropped *)
+    If[AssociationQ[$iNBOnwCache],
+      $iNBOnwCache = KeyDrop[$iNBOnwCache, DeleteDuplicates[{path, abs, Lookup[loaded, "Path"]}]]];
+    <|"Status" -> "OK", "Set" -> Keys[fields], "Removed" -> removed, "DryRun" -> False, "Path" -> Lookup[loaded, "Path"]|>];
+NBFileSetStatusFields[___] := <|"Status" -> "Failed", "Reason" -> "expects [path_String, fields_Association, opts]"|>;
+
 
 (* ---- \:9ad8\:30ec\:30d9\:30eb API: NBWriteHeader ---- *)
 
@@ -13620,7 +13730,8 @@ End[]; (* NBAccess`Private` for the calendar block *)
 
 Begin["NBAccess`Private`"];
 
-$iNBOnwWhitelist = {"Title", "Status", "Deadline", "NextReview", "EventDate",
+(* "Eventdate" is the owner's spelling (10 notes in $onWork / $offWork, against 1 "EventDate"; 2026-11-20) *)
+$iNBOnwWhitelist = {"Title", "Status", "Deadline", "NextReview", "EventDate", "Eventdate",
   "Keywords", "Effort", "Movable", "DependsOn", "TaskId", "MailRecordId"};
 
 (* ---- safe value matcher: pattern-match a HELD value, rebuild only literals ---- *)
@@ -13833,9 +13944,13 @@ iNBOnwState[meta_] := Module[{st = Lookup[meta, "Status", Missing["None"]]},
    primary (Deadline wins) for existing consumers, but both normalized dates
    are also exposed so a scheduler can place each on its own day -- otherwise a
    far-future deadline silently hides a review that is due tomorrow. *)
+(* The event the note is about ("Eventdate", 2026-11-20) is a third independent occurrence. It is the primary "Due"
+   only when there is no Deadline (a deadline is what the work must meet). *)
 iNBOnwDue[meta_, modDate_] := Module[{dl = Lookup[meta, "Deadline", Missing["None"]],
-   nr = Lookup[meta, "NextReview", Missing["None"]], dlD, nrD},
+   nr = Lookup[meta, "NextReview", Missing["None"]],
+   ev = Lookup[meta, "Eventdate", Lookup[meta, "EventDate", Missing["None"]]], dlD, nrD, evD},
   dlD = If[DateObjectQ[dl], dl, Missing["None"]];
+  evD = If[DateObjectQ[ev], ev, Missing["None"]];
   nrD = Which[
     DateObjectQ[nr], nr,
     (* NextReview as an offset Quantity resolves against ModificationDate *)
@@ -13844,9 +13959,11 @@ iNBOnwDue[meta_, modDate_] := Module[{dl = Lookup[meta, "Deadline", Missing["Non
   Join[
     Which[
       DateObjectQ[dlD], <|"Due" -> dlD, "DueKind" -> "Deadline"|>,
+      DateObjectQ[evD], <|"Due" -> evD, "DueKind" -> "Eventdate"|>,
       DateObjectQ[nrD], <|"Due" -> nrD, "DueKind" -> "NextReview"|>,
       True, <|"Due" -> Missing["None"], "DueKind" -> Missing["None"]|>],
-    <|"DeadlineDue" -> dlD, "ReviewDue" -> nrD|>]];
+    <|"DeadlineDue" -> dlD, "ReviewDue" -> nrD, "EventDue" -> evD,
+      "ReviewKind" -> Which[DateObjectQ[nr], "Date", MatchQ[nr, _Quantity], "Offset", True, Missing["None"]]|>]];
 
 iNBOnwDigest[s_] := StringTake[
   IntegerString[Hash[If[StringQ[s], s, ToString[s]], "SHA256"], 36] <>
@@ -13885,7 +14002,7 @@ iNBOnwProject[rec_, level_] := Module[{pl = iNBOnwNotePL[rec], base},
      (agenda, plans, views) can propagate max(input PL) into their outputs. *)
   If[level >= 1.0 || pl <= level,
     Return[Append[rec, "PrivacyLevel" -> pl]]];
-  base = KeyTake[rec, {"Due", "DueKind", "DeadlineDue", "ReviewDue", "State",
+  base = KeyTake[rec, {"Due", "DueKind", "DeadlineDue", "ReviewDue", "EventDue", "ReviewKind", "State",
     "FileDigest", "ModificationDate", "ParseFailed"}];
   Append[
     Which[
@@ -13911,6 +14028,7 @@ iNBOnwRecord[path_, held_, modDate_] := Module[{meta, due, parseFailed, rec},
     "DependsOn" -> Lookup[meta, "DependsOn", {}],
     "Due" -> due["Due"], "DueKind" -> due["DueKind"],
     "DeadlineDue" -> due["DeadlineDue"], "ReviewDue" -> due["ReviewDue"],
+    "EventDue" -> due["EventDue"], "ReviewKind" -> due["ReviewKind"],
     "State" -> If[parseFailed, "Unknown", iNBOnwState[meta]],
     "ModificationDate" -> modDate,
     "FileDigest" -> iNBOnwDigest[path],
