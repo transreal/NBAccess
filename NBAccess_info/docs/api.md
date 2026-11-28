@@ -1,7 +1,7 @@
-### Decompress
-NBHistoryData/NBHistoryEntries/NBHistoryEntriesWithInherit が受け付けるオプション(独立シンボルではなく System`Decompress をそのままオプション名に流用)。True(既定)=Diff差分を復元して平文で返す、False=Diffオブジェクトのまま返す(差分検査用)。
 ### PrivacySpec
 NBAccess 関数のプライバシーフィルタリングオプション。例: `PrivacySpec -> <|"AccessLevel" -> 0.5|>`。AccessLevel >= セルのプライバシーレベルのセルのみアクセス可能。0.5=クラウドLLM安全なデータのみ(既定)、1.0=ローカルLLM環境などすべてのデータ。
+### Fallback / PrivacyLevel / Integrations / InputText
+claudecode / github / SourceVault 等とオプション名として共有する NBAccess` 文脈の公開シンボル。値は持たない。
 
 ## グローバル変数
 ### $NBPrivacySpec
@@ -97,7 +97,7 @@ EvaluationCell の親ノートブックを返す。
 ### NBCellTransformWithLLM[nb, cellIdx, promptFn, completionFn, opts]
 非同期でセルを LLM 変換する。promptFn はセルテキストを受け取りプロンプト文字列を返す関数。completionFn は結果 Association を受け取るコールバック(エラー時は $Failed、詳細は $NBLLMLastError に記録される)。カーネルをブロックしない。セルのプライバシーレベルに応じ適切な LLM を自動選択。
 → Null(非同期)
-Options: Fallback -> False, InputText -> Automatic (セルテキストの代わりに使う入力テキスト), Integrations -> Automatic (LM Studio MCP サーバーリスト、lmstudio モデル時のみ)
+Options: Fallback -> False, InputText -> Automatic (セルテキストの代わりに使う入力テキスト), Integrations -> Automatic (LM Studio MCP サーバーリスト、lmstudio モデル時のみ), "ResponseFormat" -> Automatic (応答型契約 "PlainText" 等。ClaudeQueryAsync へ透過)
 completionFn が受け取る Association: `<|"Response" -> text, "OriginalText" -> orig, "PrivacyLevel" -> pl|>`
 例: `NBCellTransformWithLLM[nb, 3, promptFn, Print, Fallback -> True]`
 
@@ -110,12 +110,17 @@ Cell 式(Import[path, "Notebook"] 経由など CellObject を持たない形)か
 CellObject のプライバシーレベル(0.0〜1.0)を返す。評価中セル(EvaluationCell[])など cellIdx を持たないセルの判定に使う。判定規則は NBCellPrivacyLevel と完全に共通。マッチしないセルは 0.0 を返す。
 ### NBIsAccessible[nb, cellIdx, PrivacySpec -> ps] → Boolean
 セルが指定 PrivacySpec でアクセス可能かを返す。
+Options: PrivacySpec -> Automatic
 ### NBFilterCellIndices[nb, indices, PrivacySpec -> ps] → List
 セルインデックスリストを PrivacySpec でフィルタリングして返す。
+Options: PrivacySpec -> Automatic
 ### NBGetPrivacySpec[] → Association
 現在の $NBPrivacySpec を返す。
 ### NBConfidentialHandlingAllowedQ[mode, permissionMode] → Boolean
-ConfidentialHandling mode(EncryptedBundle/ReferenceOnly/Redacted/PlaintextDebug)が permissionMode で許容されるか返す(PlaintextDebug gate)。
+ConfidentialHandling mode(EncryptedBundle/ReferenceOnly/Redacted/PlaintextDebug)が permissionMode で許容されるか返す。EncryptedBundle/ReferenceOnly/Redacted は True。PlaintextDebug は $ClaudeAllowPlaintextExternalJobDebug === True かつ permissionMode が "DangerFullAccess" のときのみ True。未知の mode は False。
+### $ClaudeAllowPlaintextExternalJobDebug
+型: Boolean, 初期値: 未設定(False 扱い)
+利用者が設定する。ConfidentialHandling "PlaintextDebug" を許可するゲート。
 
 ## テキスト抽出
 ### NBCellExprToText[cellExpr] → String
@@ -124,8 +129,10 @@ NotebookRead の結果(Cell式)からテキストを抽出する。
 セルのテキスト内容を返す。
 ### NBGetCells[nb, PrivacySpec -> ps] → List
 ノートブック内の全セルインデックスを PrivacySpec でフィルタリングして返す。
+Options: PrivacySpec -> Automatic
 ### NBGetContext[nb, afterIdx, PrivacySpec -> ps] → String
 afterIdx 番目以降のセルから LLM プロンプト用コンテキスト文字列を構築する。PrivacySpec でフィルタリング。既定 AccessLevel 0.5。
+Options: PrivacySpec -> Automatic
 
 ## 書き込み
 ### NBWriteText[nb, text, style]
@@ -183,6 +190,7 @@ NBFileOpen で開いたノートブックを閉じる。
 開いているノートブックを指定パスに保存する。path が None なら上書き保存。
 ### NBFileReadCells[nb, PrivacySpec -> ps] → List
 全セルを PrivacySpec でフィルタリングし `{<|cellIdx, style, text, privacyLevel|>, ...}` を返す。privacyLevel > PrivacySpec の秘匿セルはテキストを "[CONFIDENTIAL]" に置換。
+Options: PrivacySpec -> Automatic
 例: `cells = NBFileReadCells[nb2, PrivacySpec -> <|"AccessLevel"->0.5|>]`
 ### NBFileReadAllCells[nb] → List
 全セルをアクセスレベル別に分類して返す。秘匿セルも含む全セルを返し PrivacyLevel フィールドで識別できる。ローカルモデル処理時に使用。
@@ -205,37 +213,46 @@ Options: "AccessSpec" -> Automatic (既定で AccessLevel 0.5 相当のフィル
 戻り値: `<|"Status" -> _, "Todos" -> {<|"Index", "Text", "Status" -> "Open"|"Done"|"Pass", "CellPath", "StatusSource", "ExpressionUUID"|>, ...}|>`
 ### NBFindCellByPredicate[path, predicate, opts] → Association
 predicate が True を返すセルを全検索する。predicate は Cell 式を受け取り True/False を返す関数。CellGroupData ネストも再帰展開。
-Options: "AccessSpec" -> Automatic, "MaxResults" -> All|_Integer
+Options: "AccessSpec" -> Automatic, "MaxResults" -> All (または整数)
 戻り値: `<|"Status" -> _, "Matches" -> {<|"CellIndex", "CellPath", "Cell" -> HoldComplete[Cell[...]], "Style", "ExpressionUUID"|>, ...}|>`
 ### NBSetCellOptionsByPredicate[path, predicate, optionRules, opts] → Association
 predicate が True を返すセルの options を optionRules で上書きする。
 Options: "AccessSpec" -> Automatic (既定で AccessLevel 0.7 相当), "DryRun" -> True, "MaxResults" -> All
-戻り値: `<|"Status" -> "OK"|"Failed"|"DryRunOK", "Modified" -> {...}, "DryRun" -> _, "AccessLevel" -> _|>`
+戻り値: `<|"Status" -> "OK"|"Failed"|"DryRunOK", "Modified" -> {<|"CellPath", "Before", "After"|>, ...}, "DryRun" -> _, "AccessLevel" -> _|>`
+例: `NBSetCellOptionsByPredicate[path, pred, {FontColor -> RGBColor[0, 0.5, 0]}, "DryRun" -> False]`
 ### NBSetCellTaggingRuleByPredicate[path, predicate, taggingKeyPath, value, opts] → Association
 predicate が True を返すセルの TaggingRules 内部の key パスを value で設定する。
 例: `NBSetCellTaggingRuleByPredicate[path, pred, {"SourceVault", "TodoStatus"}, "Done"]`
-Options: NBSetCellOptionsByPredicate と同様。
+Options: "AccessSpec" -> Automatic, "DryRun" -> True, "MaxResults" -> All
+戻り値は NBSetCellOptionsByPredicate と同形。
 ### NBWriteHeader[path, key, value, opts] → Association
-notebook の SourceVault ヘッダー 1 フィールドを更新する。key: "Status"/"Keywords"/"Deadline"/"NextReview"/"Owner"/"PathHint" など。
+notebook の SourceVault ヘッダー(Notebook 全体の TaggingRules)の 1 フィールドを更新する。key: "Status"/"Keywords"/"Deadline"/"NextReview"/"Owner"/"PathHint" など。
 Options: "AccessSpec" -> Automatic (既定で AccessLevel 0.7 相当), "DryRun" -> True
 戻り値: `<|"Status" -> "OK"|"Failed"|"DryRunOK", "Before", "After", "DryRun", "Path"|>`
 ### NBWriteTodoStatus[path, todoKey, newStatus, opts] → Association
-todoKey で特定される Todo cell の Status を newStatus に変更する。todoKey: `<|"Index" -> n, "Text" -> ".."|>`。newStatus: "Open"/"Done"/"Pass"。FontVariations/FontColor/TaggingRules を更新する。
+todoKey で特定される Todo cell の Status を newStatus に変更する。todoKey: `<|"Index" -> n, "Text" -> ".."|>`(両方一致するセルのみ編集)。newStatus: "Open"/"Done"/"Pass"。FontVariations/FontColor/TaggingRules を更新する。
 Options: "AccessSpec" -> Automatic (既定で AccessLevel 0.7 相当), "DryRun" -> True
+戻り値: `<|"Status" -> "OK"|"Failed"|"DryRunOK", "MatchedTodo", "OldStatus", "NewStatus", "CellPath"|>`
 ### NBFileAppendCells[path, cells, opts] → Association
 FrontEnd で開いていない notebook ファイルの末尾に、Cell のリスト cells を足す。FrontEnd を使わずにファイルを読み、既存のセルと Notebook のオプション (TaggingRules・StyleDefinitions など) をそのまま残して書き直す。
-FrontEnd で開いている notebook は書き換えない (`"Reason" -> "NotebookIsOpen"`)。開いているものは `NBWriteCell` などのセル API で書く。
+FrontEnd で開いている notebook は書き換えない (`"Reason" -> "NotebookIsOpen"`)。開いているものは `NBWriteCell` などのセル API で書く。cells が Cell のリストでなければ `"Reason" -> "CellsExpected"`。
 Options: "AccessSpec" -> Automatic (書き込みには `<|"AccessLevel" -> 0.7|>` 以上を渡す。渡さないと `"AccessLevelTooLow"`), "DryRun" -> True (プレビューのみ。実際に書くには False)
 戻り値: `<|"Status" -> "OK"|"Failed"|"DryRunOK", "Added" -> n, "Removed" -> 0, "DryRun" -> _, "Path" -> _|>`
 例: `NBFileAppendCells[path, {Cell["メモ", "Text"]}, "AccessSpec" -> <|"AccessLevel" -> 0.7|>, "DryRun" -> False]`
 ### NBFileReplaceTaggedCells[path, tag, cells, opts] → Association
 FrontEnd で開いていない notebook ファイルから、CellTags に tag を持つセルを取り除き、末尾に cells を足す。tag は文字列か文字列のリスト。セルグループの中のセルも取り除き、空になったグループは消す。タグの無いセルと Notebook のオプションはそのまま残る。
 生成した部分を書き直す用途に使う (2 回呼んでも部分は 1 つ)。cells が `{}` なら取り除くだけ。取り除くものも足すものも無ければファイルを書かない (`"Note" -> "NoChange"`)。
-Options と戻り値は NBFileAppendCells と同じ (`"Removed"` は取り除いたセルの数)。
+Options: "AccessSpec" -> Automatic, "DryRun" -> True。戻り値は NBFileAppendCells と同じ (`"Removed"` は取り除いたセルの数)。
 例: `NBFileReplaceTaggedCells[path, "MyPart", newCells, "AccessSpec" -> <|"AccessLevel" -> 0.7|>, "DryRun" -> False]`
+### NBFileSetStatusFields[path, fields, opts] → Association
+FrontEnd で開いていない notebook ファイルのステータスヘッダー(最初の "NotebookStatus" セル)のキーを設定する。fields は `<|key -> value|>`。値は DateObject(年月日のみ書かれる)/Quantity[num, "unit"]/文字列/文字列リスト/数値/True/False。ヘッダーは評価せずに読み、既存ルールは書かれたまま保持する。指定キーはそのルールを置換(重複キーは最初の位置の 1 つに集約)、新規キーは所有者の順序(Keywords, Deadline, Eventdate, NextReview, Status, Title)に挿入する。セルは編集可能な入力テキストとして書き戻す。
+Options: "AccessSpec" -> Automatic (AccessLevel >= 0.7 必須), "DryRun" -> True, "RemoveKeys" -> {} (`"key"` はそのキーの全ルール、`"key" -> value` はその値で書かれたルールのみ削除。この場合 fields は `<||>` 可)
+戻り値: `<|"Status" -> "OK"|"DryRunOK"|"Failed", "Set" -> keys, "Removed" -> n, "Path", "DryRun"|>`(DryRunOK では "Header" -> 書き込み予定テキストも返す。変更が無ければ "Note" -> "NoChange")
+失敗 "Reason": "RemoveKeysExpected"/"FieldsExpected"/"AccessLevelTooLow" 等/"NotebookIsOpen"/"NoStatusCell"/"StatusNotAssociation"/"HeaderNotParsed"。
+例: `NBFileSetStatusFields[path, <|"Deadline" -> DateObject[{2026, 12, 1}]|>, "AccessSpec" -> <|"AccessLevel" -> 0.7|>, "DryRun" -> False]`
 
 ## ObjectSpec / パス正規化
-### NBFileSpec[path] → Association
+### NBFileSpec[path, opts] → Association
 ファイルのメタ情報と PrivacyLevel を Association で返す。PrivacyLevel: `<0.5`=クラウドLLM可、`>=0.5`=ローカルのみ、`{0.5,1.0}`=混在(.nb)。
 Options: PrivacySpec -> Automatic, "IncludeProjections" -> False
 ### NBFileSpecCacheClear[]
@@ -259,7 +276,7 @@ ResolutionStatus: "ResolvedOnThisPC" | "AliasOnly" | "Unrooted"。MatchedBy: "Lo
 例: `NBPrivacyLevelToRoutes[{0.4, 1.0}]`
 ### NBFileReadCellsInRange[nb, lo, hi] → List
 PrivacyLevel が lo〜hi のセルのみ返す。オプションなし。
-例: `NBFileReadCellsInRange[nb2, 0.5, 0.5]`(公開セルのみ)
+例: `NBFileReadCellsInRange[nb2, 0.5, 0.5]`(PrivacyLevel 0.5 のセルのみ)、`NBFileReadCellsInRange[nb2, 0.9, 1.0]`(秘匿セルのみ)
 ### NBSplitNotebookCells[path, threshold] → {publicCells, privateCells}
 .nb ファイルのセルを PrivacyLevel <= threshold(public)と > threshold(private)に2分割する。
 例: `{pub, priv} = NBSplitNotebookCells["file.nb", 0.5]`
@@ -397,7 +414,7 @@ Options: Decompress -> True (False で Diff オブジェクトのまま返す)
 TaggingRules に履歴データを書き込む。data は `<|"header" -> ..., "entries" -> {...}|>`。entries は差分圧縮されていない平文で渡すこと(自動圧縮される)。
 ### NBHistoryAppend[nb, tag, entry, opts]
 エントリを履歴に追加する。差分圧縮: 直前エントリの fullPrompt/response/code を Diff で圧縮。
-Options: PrivacySpec -> ps (privacylevel をエントリに記録)
+Options: PrivacySpec -> Automatic (指定すると privacylevel をエントリに記録)
 ### NBHistoryEntries[nb, tag, opts] → List
 差分圧縮を復元した全エントリリストを返す。
 Options: Decompress -> True (False で Diff オブジェクトのまま返す)
@@ -434,18 +451,21 @@ prefix で始まる履歴タグ一覧を返す。
 セッションの全アタッチメントをクリアする。
 ### NBHistoryClearAll[nb, prefix, PrivacySpec -> ps]
 prefix で始まる全履歴を削除する。PrivacySpec -> `<|"AccessLevel" -> 1.0|>` が必須。セルレベルの機密・機密依存タグは削除しない。ノートブックを他者に渡す際の履歴情報除去用。
+Options: PrivacySpec -> Automatic
 
 ## API キーアクセサ
-### NBGetAPIKey[provider] → String
-AI プロバイダの API キーを返す。provider: "anthropic" | "openai" | "zai" | "kimi" | "github" | "elsevier"。AccessLevel >= 1.0 が必須で、呼び出し側で PrivacySpec -> `<|"AccessLevel" -> 1.0|>` を明示指定すること。SystemCredential へのアクセスを一元管理。
+### NBGetAPIKey[provider, opts] → String
+AI プロバイダの API キーを返す。provider: "anthropic" | "openai" | "zai" | "kimi" | "github" | "elsevier"。AccessLevel >= 1.0 が必須で、呼び出し側で PrivacySpec -> `<|"AccessLevel" -> 1.0|>` を明示指定すること(不足時は $Failed)。SystemCredential へのアクセスを一元管理。
+Options: PrivacySpec -> Automatic
 ### NBListProviderModels[provider] → Association
 クラウドプロバイダ(anthropic/openai/zai/kimi)の利用可能モデル ID リストを返す。API キーは内部で SystemCredential から読み外部に出さない。PrivacySpec/AccessLevel 指定は不要。
 → `<|"Status" -> _, "Provider" -> _, "Models" -> {_String..}|>`
 
 ## ローカル LLM API キーアクセサ
-### NBGetLocalLLMAPIKey[provider, url] → String
+### NBGetLocalLLMAPIKey[provider, url, opts] → String
 ローカル LLM サーバー(LM Studio 等)の API キーを SystemCredential から返す。照合は {provider, url} ペア。AccessLevel >= 1.0 が必須(PrivacySpec -> `<|"AccessLevel"->1.0|>` 明示)。解決優先度: (1)完全一致 (2)localhost⇔127.0.0.1 置換版 (3){provider, "*"} ワイルドカード (4)フォールバック名 `ToUpperCase[provider]<>"_API_KEY"`。
-例: `NBGetLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234"]`
+Options: PrivacySpec -> Automatic
+例: `NBGetLocalLLMAPIKey["lmstudio", "http://127.0.0.1:1234", PrivacySpec -> <|"AccessLevel" -> 1.0|>]`
 ### NBSetLocalLLMAPIKey[provider, url, credentialName] → Rule
 {provider, url} → credentialName のマッピングを登録する。SystemCredential の実値自体は書き込まない(名前の紐付けのみ)。
 → `{provider, normalizedUrl} -> credentialName`
@@ -529,7 +549,7 @@ modelSpec から provider 文字列を取り出す。
 信頼できるローカル LLM サーバを登録する。assoc: `<|"MachineName" -> _, "Subnet" -> _, "Provider" -> _, "URL" -> _|>`。IP/サブネットはセキュリティ境界なので NBAccess が管理。モデル名は含めない(SourceVault が intent 解決で扱う)。起動ファイルから呼んで信頼リストに追加する。
 例: `NBRegisterTrustedLocalServer[<|"MachineName"->"phoenix", "Subnet"->"192.168.2", "Provider"->"lmstudio", "URL"->"http://192.168.2.110:1234"|>]`
 ### NBResolveLocalServer[] → Association
-現在のマシン環境($MachineName と自 IP のサブネット)を信頼リストと照合し、信頼できるローカル LLM サーバ `<|"Provider" -> _, "URL" -> _, "Trusted" -> _, ...|>` を返す。未知のサブネットでは安全側に倒し localhost(127.0.0.1)のローカルサーバのみ返す。モデル名は返さない。
+現在のマシン環境($MachineName と自 IP のサブネット)を信頼リストと照合し、信頼できるローカル LLM サーバ `<|"Provider" -> _, "URL" -> _, "Trusted" -> _, ...|>` を返す。未知のサブネットでは安全側に倒し localhost(127.0.0.1)のローカルサーバのみ返す。リモート IP の LM Studio には信頼サブネット内でのみ接続する。モデル名は返さない。
 ### NBTrustedLocalServers[] → Dataset
 現在登録されている信頼ローカルサーバのリストを返す。
 ### NBSyncClaudeModelVars[opts]
@@ -549,9 +569,9 @@ AccessPathRef のリストを notebook の TaggingRules(claudeAccessiblePathRefs
 notebook に保存された AccessPathRef リストを返す。claudeAccessiblePathRefs が無い旧 notebook では claudeAccessibleDirs を AccessPathRef に変換して返す(read fallback)。実パスへの解決は NBResolvePathRef / NBGetAccessibleDirs で行う。
 ### NBNormalizeAccessPathRef[dirOrRef] → Association
 旧形式の絶対パス文字列または部分的指定を完全な AccessPathRef Association に正規化する。文字列なら NBNormalizePath で PathRef 化し Mode -> "Read"、CloudSend -> "Ask" を既定とする。既に AccessPathRef なら不足キーを既定で補う。
-### NBAuditCodexAccessibleDirs[dirs] → Association
+### NBAuditCodexAccessibleDirs[dirs, opts] → Association
 Codex に公開する前に dirs 配下に Codex の最大アクセスレベルを超えるファイル(.env/*secret*/*credential*/*token*/秘密鍵/API キー類似内容など)がないか検査する必須ゲート。デフォルト動作は fail-stop(危険ファイル発見時は Failure を返し Codex を起動しない)。有限 MaxDepth を指定すると走査未完のためそれ自体がセキュリティ失敗扱いになる。
-Options: "MaxDepth" -> Infinity, "OnDanger" -> "Fail"|"DenyAndContinue", "ScanContents" -> True, "MaxFileScanBytes" -> 262144
+Options: "MaxDepth" -> Infinity, "OnDanger" -> "Fail" (または "DenyAndContinue"), "ScanContents" -> True, "MaxFileScanBytes" -> 262144
 戻り値: `<|"Status", "Gate", "Findings", "AuditedDirs", "FileCount", "Truncated", "SuggestedDenyRules"|>`
 
 ## カーソル移動
@@ -595,15 +615,17 @@ EvaluationCell[] を内部取得してその直後に Job スロットを挿入�
 
 ## クラウド公開設定
 ### NBGetCloudPublishable[path] → True|False|Missing[...]
-ノートブックのクラウド公開宣言を読み取る。True=クラウドLLM可、False=クラウド禁止、Missing["NotDeclared"]=宣言無し(パスベース判定へフォールバック)。
+ノートブックのクラウド公開宣言を読み取る。True=クラウドLLM可、False=クラウド禁止、Missing["NotDeclared"]=宣言無し(パスベース判定へフォールバック)、Missing["NoHeader"] / Missing["NoRawHeader"]=内部エラー。
 ### NBSetCloudPublishable[path, True|False, opts] → Association
-ノートブックのクラウド公開宣言を設定する(TaggingRules > SourceVault > CloudPublishable)。設定後は NBFileSpec の PrivacyLevel が自動決定される。
+ノートブックのクラウド公開宣言を設定する(TaggingRules > SourceVault > CloudPublishable)。設定後は NBFileSpec の PrivacyLevel が自動決定される(0.4 / 0.5 / 1.0 / {0.5, 1.0})。
 Options: "AccessSpec" -> Automatic (既定で AccessLevel 0.7 相当), "DryRun" -> False
+戻り値は NBWriteHeader と同形。
 ### NBClearCloudPublishable[path, opts] → Association
 ノートブックのクラウド公開宣言を「未指定」状態に戻す。SourceVault キーが空になれば削除。
 Options: "AccessSpec" -> Automatic (既定で AccessLevel 0.7 相当), "DryRun" -> False
+戻り値: `<|"Status" -> "OK"|"DryRunOK"|"Failed", "Before", "After", "NoOp", "Path"|>`
 ### NBSetNotebookPrivate[nb] / NBSetNotebookPrivate[nb, False] / NBSetNotebookPrivate[]
-ノートブック全体を Private(CloudPublishable -> False)宣言し全セルの PrivacyLevel を 1.0 にする。NBSetNotebookPrivate[nb, False] で解除。nb 省略時は EvaluationNotebook[]。
+ノートブック全体を Private(CloudPublishable -> False)宣言し全セルの PrivacyLevel を 1.0 にする。ライブの NotebookObject に即時反映し、保存済みならファイルヘッダにも永続化する。NBSetNotebookPrivate[nb, False] で解除。nb 省略時は EvaluationNotebook[]。
 
 ## ノートブック修復・クリーンアップ
 ### NBRepairNotebookCache[path] → Association
@@ -612,12 +634,14 @@ Options: "AccessSpec" -> Automatic (既定で AccessLevel 0.7 相当), "DryRun" 
 ### NBRepairNotebookCacheFolder[dir, opts] → Association
 dir 配下の .nb を全部修復する。
 Options: "Recursive" -> True
+戻り値: `<|"Status", "Directory", "TotalFiles", "Succeeded", "Failed", "Details"|>`
 ### NBRepairNotebookCacheStrict[path] → Association
-NBRepairNotebookCache が効かなかった場合の強力版。NotebookImport → CreateDocument → NotebookSave で再作成する。
+NBRepairNotebookCache が効かなかった場合の強力版。NotebookImport → CreateDocument → NotebookSave で再作成する。実行前に開かれているノートは閉じられる。
 戻り値: `<|"Status" -> "OK"|"Failed", "Path", "Method" -> "RecreateAndSave"|>`
 ### NBCleanupTmpFiles[dir, opts] → Association
 dir 配下の .nb.tmp-* 残骸を削除する。
 Options: "Recursive" -> True
+戻り値: `<|"Status", "Directory", "Deleted", "Files"|>`
 
 ## セキュリティポリシー
 NBAccess のアクセス制御・承認システム。NBAuthorize が PolicyGate + ScoreGate + EnvironmentGate を統合して AccessDecision を返す。
@@ -627,15 +651,18 @@ LLM が自由に実行可能な head のリスト。$NBAllowedHeadsByCategory �
 ### $NBApprovalHeads
 型: List
 人間承認を要する head のリスト。NBMarkCellConfidential・NBSetSnapshotPrivacyLevel・NBRegisterFileReadHook 等がここに登録され、実行時に承認ゲートを発火する。追加は NBRegisterApprovalHeads を使う。
+### $NBCommitterAutoApprovableHeads
+型: List(String)
+ApprovalMode "CommitterAutoApprove"(DirectLLMRescue 等の自動 commit)が人間の承認なしに通してよい head のリスト(ノート書込系と NotebookWrite のみ)。$NBApprovalHeads の他の head(TurnWiki の昇格、SourceVault の方針/出口 API、所有者 ticket 等)は Committer でも承認が要る。
 ### $NBApprovalSetSymbols
-型: List
-その変数への代入が Module/With/Block の内側でも承認対象になる方針変数名のリスト。追加は NBRegisterApprovalSetSymbols を使う。
+型: List(String)
+代入(Set/SetDelayed/AppendTo/AssociateTo 等)が Module/With/Block の内側でも人間承認を要する方針変数の短い記号名のリスト(文脈は問わず照合)。既定は SourceVault の Web 関所切替($SourceVaultWebGuardPrompter/Enabled/Required/Policy 等)、$SourceVaultPrincipal、security profile、所有者 ticket・AutoTrigger permit の鍵、要約 LLM の送り先、来歴台帳・integrity 関連の方針変数、$NBFileReadHooks など。追加は NBRegisterApprovalSetSymbols を使う。Unset/Clear/Remove は $NBDenyHeads。
 ### $NBFileReadHooks
-型: List
-NBAccess 経由のファイル読取後に呼ばれるフック `f[path, pl]` のリスト。追加は NBRegisterFileReadHook を使う(直接書き換えない)。
+型: List, 初期値: `{}`
+NBAccess 経由のファイル読取(NBImport / NBCheckedImport / NBCheckedFileRead、評価スコープ透かしを持ち上げる場所)の後に呼ばれるフック `f[path, pl]` のリスト。フックの失敗は読取を止めない。追加は NBRegisterFileReadHook を使う(直接の代入は承認対象)。
 ### $NBDenyHeads
 型: List
-常に拒否する head のリスト。DeleteFile/RenameFile/CopyFile/SystemOpen/Run/RunProcess/Import/Export/Get/Put/Install/URLExecute/Quit/Remove/ExternalEvaluate 等の破壊的・脱出可能な head を含む恒久禁止リスト。
+常に拒否する head のリスト。DeleteFile/RenameFile/CopyFile/SystemOpen/Run/RunProcess/StartProcess/Import/Export/Get/Put/PutAppend/Save/Install/Uninstall/URLExecute/CreateProcess/KillProcess/FileRemove/DeleteDirectory/SendMail/CloudDeploy/CloudPut/Quit/Exit/Abort/Unset/Clear/Remove/ExternalEvaluate 等の破壊的・脱出可能な head を含む恒久禁止リスト。
 ### $NBEffectClassOverrides
 型: Association(`<|head -> <|"EffectClass", "BlockingRisk", "ExecutionPlacement", "RequiresFinalNode"|>, ...|>`)
 head 名ごとの分類上書きテーブル(spec 5B.5A)。allowlist ではなく分類精度向上用。未登録 head はフォールバック分類(System` 純粋関数 -> PureComputation 等)に進む。既定で NIntegrate/NDSolve/NSolve/FindMinimum 等に LongRunningComputation/PossiblyLong/SubkernelSafe を割り当て済み。
@@ -665,18 +692,19 @@ Options: "AllowedHeads" -> Automatic, "ApprovalHeads" -> Automatic, "DenyHeads" 
 EffectClass 層が基礎判定より厳しい適格性を出して Decision を上げたときは `"ReasonClass" -> "EffectClassEscalation"`、"VisibleExplanation" に原因 head と EffectClass、`"EscalationHeads" -> {{head, EffectClass}, ...}` が入る (基礎判定の Deny/NeedsApproval の理由は保持する)。PermissionMode の変換だけで Decision が変わった場合 (ReviewOnly) は `"PermissionMode<mode>"`。従来はこの昇格で ReasonClass "None" のままになり、承認 UI に理由が出なかった (2026-10-15)。
 ### NBExecuteHeldExpr[heldExpr, accessSpec, opts] → Association
 検証済み式を安全に実行し結果を返す。
-Options: "TimeConstraint" -> 30, "ScreenMode" -> "Block", "PolicySnapshot" -> Automatic, "PreExecutionNotebookActions" -> {}, "Audit" -> True, "ApprovalMode" -> "None"
-戻り値: `<|"Success" -> True|False, "RawResult", "Error", "EvaluationPrivacy", ...|>`
+Options: "TimeConstraint" -> 30, "ScreenMode" -> "Block" ("WarnOnly" で Screen 判定も実行許可), "PolicySnapshot" -> Automatic, "PreExecutionNotebookActions" -> {}, "Audit" -> True, "ApprovalMode" -> "None" ("UserApproved" / "CommitterAutoApprove")
+戻り値: `<|"Success" -> True|False, "RawResult", "Error", "EvaluationPrivacy", "CommitterAutoApproveExecuted", ...|>`
+NeedsApproval が Permit に昇格するのは "UserApproved"(承認 UI で明示承認済み)か "CommitterAutoApprove" のみ。後者は accessSpec の "ExecutionRole" -> "Committer"、"MayWriteNotebook" -> True、"ExecutionKernel" -> "MainOnly"、TargetNotebook 一致、承認対象 head がすべて $NBCommitterAutoApprovableHeads 内であることが条件。
 "EvaluationPrivacy" は評価スコープ透かし: この評価中に読まれたデータの PrivacyLevel の最大値 (評価ごとに 0.0 から開始)。NBImport 等の NBAccess 仲介 I/O に加え、NBNoteEvaluationPrivacy 経由でデータ層 (SourceVault) の読み取りも載る。入れ子の NBExecuteHeldExpr では内側の値が外側へ Max で伝搬する。
 ### NBNoteEvaluationPrivacy[pl] → Real
 現在の評価スコープ透かしを pl まで引き上げる (Max のみ、下げない)。NBAccess の外のデータ層が私的データを読んだことを NBRedactExecutionResult に伝える入口で、SourceVault の SourceVaultNotePrivacy が呼ぶ (NBAccess は SourceVault に依存しない)。NBExecuteHeldExpr の外で呼んでも影響は無い。数値でない pl は 1.0 (fail-closed)。
 ### NBExecuteHeldExprSubkernelRaw[held, accessSpec, opts]
-subkernel 専用の実行 wrapper。snapshot 検証・NBSubkernelExecutableQ・再検証をすべて通過し Permit のときのみ ReleaseHold する。Screen/NeedsApproval/Deny/RepairNeeded はすべて $Failed。
-Options: "TimeConstraint" -> 30
+subkernel 専用の実行 wrapper。snapshot 検証・NBSubkernelExecutableQ・再検証をすべて通過し Permit のときのみ ReleaseHold する。戻り値は生の評価結果 / $TimedOut / $Failed(Association は返さない)。Screen/NeedsApproval/Deny/RepairNeeded はすべて $Failed。
+Options: "TimeConstraint" -> 30 (Infinity なら TimeConstrained を使わない)
 ### NBSubkernelExecutableQ[held, accessSpec] → Boolean
 held が subkernel で安全に実行できるかを返す(iShouldExecuteAsync の正式判定)。FrontEnd 操作・外部プロセス・ネットワーク・機密参照・DenyHeads/ApprovalHeads 該当などは False。
 ### NBValidateNotebookPreActions[actions, accessSpec] → List
-PreExecutionNotebookActions のリストを検証し、許可された action だけを返す。
+PreExecutionNotebookActions のリストを検証し、許可された action だけを返す。必須 action は "MoveSelectionAfterNotebook"。
 ### NBInferExprRequirements[heldExpr, accessSpec, opts] → Association
 式が必要とするアクセスレベル・書き込みターゲット・参照セル等を静的に推定する。
 → `<|"ReadCells", "WriteCells", "RequiredAccessLevel", "HasSideEffects" -> True|False, ...|>`
@@ -700,7 +728,7 @@ Options: "Sink" -> "CloudLLM", "MaxSummaryLength" -> Automatic (= $NBRedactedRes
 file 用の AccessRequest Association を組み立てる helper。operation: "ReadValue"|"WriteCell"|"WriteLog"|"SendExternal" など。
 Options: "Subject" -> "ClaudeAgent", "Module" -> "claudecode", "Sink" -> Automatic, "Networked" -> Automatic, "Route" -> Automatic, "Provider" -> Automatic, "ModelIntent" -> Automatic, "AccessLevel" -> Automatic
 ### NBMakeRuntimeAccessSpec[contextPacket, role] → Association
-Runtime/Orchestrator から NBAccess へ渡す accessSpec を作る。role: "ProposalEval"(既定, SubkernelAllowed)/"Committer"(MainOnly, FE/書込可)/"VisionFallback"/"ManualDispatch"。PolicySnapshot を凍結して埋める。
+Runtime/Orchestrator から NBAccess へ渡す accessSpec を作る。role: "ProposalEval"(既定, SubkernelAllowed)/"Committer"(MainOnly, FE/書込可, MoveSelectionAfterNotebook 許可)/"VisionFallback"/"ManualDispatch"。PolicySnapshot を凍結して埋め、contextPacket から ConfidentialSymbols/Secrets/Caller/WorkflowID/StepID/PermissionMode を取り込む。
 ### $ClaudePermissionMode
 型: String, 初期値: "InteractiveSafe"
 ClaudeEval/NBAccess 共通の権限モード(spec 5B)。値: "ReviewOnly"(提案のみ)|"StrictSafe"(AutoPermit のみ実行)|"InteractiveSafe"(標準、AskUserAllowed は承認 UI)|"WorkflowSafe"(Orchestrator、final node 分離)|"LegacyInteractive"|"DangerFullAccess"。実行中の判定では accessSpec/snapshot に焼き込んだ値を正とし global を読み直さない(I12)。
@@ -759,11 +787,14 @@ f[args] をセキュリティポリシーに従って実行する。ExecPolicy �
 承認 wrapper を head の context に依存せず検出し引数パスを安全評価して OpenDesktopItem action に正規化し NBExecuteApprovedAction 経由で実行する。対象外なら `<|"Handled" -> False|>`。
 Options: "ApprovalMode" -> "UserApproved"
 ### NBPolicySnapshot[] → Association
-現在の NBAccess 動的 policy を凍結した Association を返す。snapshot mode の検証はこの snapshot を判定入力とし global を参照しない。キー: "SnapshotID"/"CreatedAt"/"AllowedHeads"/"ApprovalHeads"/"DenyHeads"/"ConfidentialSymbols"/"Digest"/"Source"。
+現在の NBAccess 動的 policy を凍結した Association を返す。snapshot mode の検証はこの snapshot を判定入力とし global を参照しない。キー: "SnapshotID"/"CreatedAt"/"NBAccessPolicyVersion"/"AllowedHeads"/"ApprovalHeads"/"DenyHeads"/"ConfidentialSymbols"/"Digest"/"Source"。
+### $NBAccessPolicyVersion
+型: 任意, 初期値: 未設定
+利用者が設定する policy 版数。未設定なら snapshot の "NBAccessPolicyVersion" は "unversioned"。
 ### NBAcceptPolicySnapshot[snapshot] → Association
-snapshot の必須キーと Digest を検証する。`<|"Valid" -> True|False, "Digest", "Reason"|>`。Valid のとき subkernel 内 $NBActivePolicySnapshot に保存してよいが、実行判定の正本は accessSpec["PolicySnapshot"]。
+snapshot の必須キーと Digest を検証する。`<|"Valid" -> True|False, "Digest", "Reason"|>`。Valid のとき subkernel 内 $NBActivePolicySnapshot に保存してよいが、実行判定の正本は accessSpec["PolicySnapshot"]。snapshot install を許可拡張に使ってはならない。
 ### $NBActivePolicySnapshot
-型: Association|Missing[]、初期値: None
+型: Association|None、初期値: None
 NBAcceptPolicySnapshot が Valid と判定した最新 snapshot を保持する(主に subkernel 側)。参考情報であり実行判定の正本ではない(正本は各実行の accessSpec["PolicySnapshot"])。ノートブック再ロード時に無条件で None にリセットされる。
 ### NBApplyPolicySnapshot[snapshot] → Association
 snapshot の digest を検証し正規化した snapshot を返す(global 復元はせず accessSpec 注入の補助に限定)。`<|"Valid", "Snapshot", "Reason"|>`

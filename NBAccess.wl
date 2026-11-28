@@ -5608,7 +5608,9 @@ NBAccess`NBInsertTextCells[nbFile_String, name_String, prompt_String] :=
     NotebookWrite[nb, Cell["Package: " <> name, "Subsection"]];
     NotebookWrite[nb, Cell[prompt, "Text"]];
     Quiet @ NotebookSave[nb];
-    Quiet @ NotebookClose[nb]];
+    Quiet @ NotebookClose[nb];
+    (* 2026-11-26: opened hidden and saved so; put right in the file *)
+    Quiet @ iNBFileUnhide[nbFile];];
 
 
 (* ============================================================
@@ -5661,7 +5663,12 @@ NBAccess`NBFileClose[nb_NotebookObject] :=
      \:4e8b\:6545\:3092\:9632\:3050\:3002 *)
   If[MemberQ[$iNBFileOpenedByUs, nb],
     $iNBFileOpenedByUs = DeleteCases[$iNBFileOpenedByUs, nb];
-    Quiet @ NotebookClose[nb],
+    (* 2026-11-26: NBFileOpen opened it hidden; when it was saved meanwhile (NBFileSave) the file says Visible->False
+       and would open hidden the next time. Put right in the file after the close (a file that does not say so is
+       only looked at: its header and its options). *)
+    With[{fn = Quiet @ Check[NotebookFileName[nb], $Failed]},
+      Quiet @ NotebookClose[nb];
+      If[StringQ[fn], Quiet @ iNBFileUnhide[fn]]],
     Null];
 
 (* \[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]\[HorizontalLine]
@@ -11719,6 +11726,95 @@ iNBFileSaveExpr[path_String, nbExpr_] :=
    \:65e2\:306b\:958b\:304b\:308c\:3066\:3044\:308b NotebookObject \:304c\:3042\:308c\:3070\:305d\:308c\:3092\:4f7f\:7528\:3057\:3001
    \:7121\:3051\:308c\:3070 Visible -> False \:3067\:30b5\:30a4\:30ec\:30f3\:30c8\:306b\:958b\:304d\:301c\:9589\:3058\:308b\:3002
    \:5931\:6557\:3057\:3066\:3082\:8b66\:544a\:7b49\:306f\:7121\:3057 (best-effort)\:3002 *)
+(* ---- a notebook file that was saved while it was open hidden (2026-11-26) ----
+   NotebookOpen[path, Visible -> False] sets Visible -> False as an option of the notebook, and NotebookSave writes that
+   option into the file. The notebook then opens hidden the next time: the window is there and nothing is seen (owner,
+   2026-11-26: the task notebook made from a mail "was not created"; 216 of the 629 notebooks of $onWork carried the
+   option). The hidden open-and-save itself is needed (the front end writes the byte positions of its outline cache;
+   without it the file is reported as edited outside the system), so the option is put right in the file afterwards:
+   "Visible->False" becomes "Visible->True " -- the same number of bytes, so every byte position the front end wrote
+   stays right. Only the option of the notebook itself is touched: a line that begins with Visible->False among the
+   options of the notebook, which stand at the end of the notebook expression -- after the line "}," that closes the
+   list of cells and before "(* End of Notebook Content *)". The byte positions of the cache header are not used to find
+   them: a file that the kernel wrote without the front end carries positions that are not right (owner's $onWork,
+   2026-11-26: 82 of 216 such files were found by the header positions). Only the end of the file is read (more of it
+   when the options are not in it, up to 16 MB); the whole file only when it is changed.
+   <|"Status" -> "OK" | "DryRunOK" | "Failed", "Changed" -> n, "Path", ...|>; with dryRun True nothing is written. *)
+iNBFileReadBytes[abs_String, from_Integer, n_Integer] := Module[{strm, b},
+  strm = Quiet @ Check[OpenRead[abs, BinaryFormat -> True], $Failed];
+  If[Head[strm] =!= InputStream, Return[$Failed]];
+  b = WithCleanup[
+    Quiet @ Check[If[from > 0, SetStreamPosition[strm, from]]; ReadByteArray[strm, n], $Failed],
+    Quiet @ Close[strm]];
+  If[Head[b] === ByteArray, b, If[b === EndOfFile, ByteArray[{}], $Failed]]];
+iNBFileUnhide[path_String, dryRun_ : False] :=
+  Module[{abs = ExpandFileName[path], size, tail = 262144, a = 0, sb, seg = "", mEnd = 0, cl = {}, from, hits, all, out, strm, tmp, ok,
+      new = "Visible->True ", dates = {$Failed, $Failed}},
+    If[! FileExistsQ[abs], Return[<|"Status" -> "Failed", "Reason" -> "FileNotFound", "Path" -> abs|>]];
+    size = Quiet @ Check[FileByteCount[abs], 0];
+    If[! IntegerQ[size] || size <= 0, Return[<|"Status" -> "OK", "Changed" -> 0, "Note" -> "Empty", "Path" -> abs|>]];
+    (* the end of the file, as far back as the line that closes the list of cells *)
+    While[True,
+      a = Max[0, size - tail];                    (* bytes before the part that is read *)
+      sb = iNBFileReadBytes[abs, a, size - a];
+      If[Head[sb] =!= ByteArray || Length[sb] === 0, Return[<|"Status" -> "Failed", "Reason" -> "ReadFailed", "Path" -> abs|>]];
+      seg = ByteArrayToString[sb, "ISO8859-1"];   (* one character for one byte *)
+      mEnd = With[{m = StringPosition[seg, "(* End of Notebook Content *)"]}, If[m === {}, StringLength[seg], m[[-1, 1]]]];
+      cl = Select[StringPosition[seg, RegularExpression["\\n\\},(?=\\r?\\n)"]], #[[1]] < mEnd &];
+      If[cl =!= {} || a === 0 || tail >= 16777216, Break[]];
+      tail = 8*tail];
+    If[cl === {}, Return[<|"Status" -> "OK", "Changed" -> 0, "Note" -> "OptionsNotFound", "Path" -> abs|>]];
+    from = cl[[-1, 1]];                           (* the place of that line in the part that was read *)
+    hits = ({#[[1]] + from - 1, #[[2]] + from - 1} &) /@
+      StringPosition[StringTake[seg, {from, mEnd}], RegularExpression["(?<=\\n)Visible->False(?=\\s*[,\\r\\n\\]])"]];
+    If[hits === {}, Return[<|"Status" -> "OK", "Changed" -> 0, "Path" -> abs|>]];
+    If[TrueQ[dryRun], Return[<|"Status" -> "DryRunOK", "Changed" -> Length[hits], "Path" -> abs|>]];
+    (* The repair is not a change of what the notebook says: the times of the file are kept. The parse cache of
+       NBOnWorkTasks is keyed by the time of the last change (an exact match); a new time for 216 notebooks at once
+       would make the next list of the owner's tasks read all of them again (minutes). *)
+    dates = (Quiet @ Check[FileDate[abs, #], $Failed] &) /@ {"Modification", "Creation"};
+    all = iNBFileReadBytes[abs, 0, size];
+    If[Head[all] =!= ByteArray || Length[all] =!= size, Return[<|"Status" -> "Failed", "Reason" -> "ReadFailed", "Path" -> abs|>]];
+    (* the bytes are put in place: no text of the file goes through an encoding *)
+    out = all;
+    Scan[Function[h, With[{p = a + h[[1]]},      (* the 1-based place of "V" in the file *)
+        out = Join[out[[1 ;; p - 1]], ByteArray[ToCharacterCode[new]], out[[p + StringLength[new] ;;]]]]], hits];
+    If[Head[out] =!= ByteArray || Length[out] =!= size,
+      Return[<|"Status" -> "Failed", "Reason" -> "LengthChanged", "Path" -> abs|>]];
+    tmp = abs <> ".tmp-" <> ToString[$ProcessID] <> "-unhide";
+    strm = Quiet @ Check[OpenWrite[tmp, BinaryFormat -> True], $Failed];
+    If[Head[strm] =!= OutputStream, Return[<|"Status" -> "Failed", "Reason" -> "WriteFailed", "Path" -> abs|>]];
+    WithCleanup[BinaryWrite[strm, out], Quiet @ Close[strm]];
+    ok = TrueQ @ Quiet @ Check[RenameFile[tmp, abs, OverwriteTarget -> True]; True, False];
+    If[! ok, Quiet @ DeleteFile[tmp]];
+    If[ok,
+      If[DateObjectQ[dates[[2]]], Quiet @ Check[SetFileDate[abs, dates[[2]], "Creation"], Null]];
+      If[DateObjectQ[dates[[1]]], Quiet @ Check[SetFileDate[abs, dates[[1]], "Modification"], Null]]];
+    If[ok, <|"Status" -> "OK", "Changed" -> Length[hits], "Path" -> abs,
+        "TimeKept" -> (DateObjectQ[dates[[1]]] && Quiet @ Check[FileDate[abs, "Modification"], $Failed] === dates[[1]])|>,
+      <|"Status" -> "Failed", "Reason" -> "RenameFailed", "Path" -> abs|>]];
+iNBFileUnhide[___] := <|"Status" -> "Failed", "Reason" -> "BadArguments"|>;
+
+(* the notebook files of a folder that carry the option (a repair of what was written before 2026-11-26). A notebook
+   that is open in the front end is left alone (the front end would write its own state over the file).
+   dryRun True (the default): only counted. *)
+iNBFileUnhideFolder[dir_String, dryRun_ : True, depth_ : Infinity] :=
+  Module[{files, open, res, of},
+    If[! DirectoryQ[dir], Return[<|"Status" -> "Failed", "Reason" -> "NoDirectory", "Directory" -> dir|>]];
+    files = Select[FileNames["*.nb", dir, depth], ! StringContainsQ[FileNameTake[#], ".tmp-"] &];
+    open = With[{l = Quiet @ Check[Notebooks[], {}]},
+      If[ListQ[l], ToLowerCase /@ ExpandFileName /@ Select[(Quiet @ Check[NotebookFileName[#], $Failed] &) /@ l, StringQ], {}]];
+    res = Function[f, If[MemberQ[open, ToLowerCase[ExpandFileName[f]]],
+        <|"Status" -> "Skipped", "Reason" -> "NotebookIsOpen", "Changed" -> 0, "Path" -> f|>, iNBFileUnhide[f, TrueQ[dryRun]]]] /@ files;
+    of = Function[st, Select[res, Lookup[#, "Status", ""] === st &]];
+    <|"Status" -> "OK", "Directory" -> ExpandFileName[dir], "DryRun" -> TrueQ[dryRun], "Files" -> Length[files],
+      "Hidden" -> Count[res, r_ /; Lookup[r, "Changed", 0] > 0],
+      "Changed" -> If[TrueQ[dryRun], 0, Count[of["OK"], r_ /; Lookup[r, "Changed", 0] > 0]],
+      "TimeNotKept" -> Count[of["OK"], r_ /; Lookup[r, "Changed", 0] > 0 && ! TrueQ[Lookup[r, "TimeKept", False]]],
+      "SkippedOpen" -> Length[of["Skipped"]], "Failed" -> Length[of["Failed"]],
+      "Paths" -> (Lookup[#, "Path", ""] & /@ Select[res, Lookup[#, "Changed", 0] > 0 &]),
+      "FailedPaths" -> (Lookup[#, "Path", ""] & /@ of["Failed"])|>];
+
 iNBNormalizeNotebookCache[abs_String] :=
   Module[{absExp, allNbs, openedNb, openedHere = False, nb},
     absExp = ExpandFileName[abs];
@@ -11739,7 +11835,8 @@ iNBNormalizeNotebookCache[abs_String] :=
         SetOptions[nb, NotebookEventActions -> Inherited],
         Null];
       Quiet @ NotebookSave[nb];
-      If[openedHere, Quiet @ NotebookClose[nb]]];
+      (* 2026-11-26: opened hidden here, so the file now says Visible->False; put right in the file (iNBFileUnhide) *)
+      If[openedHere, Quiet @ NotebookClose[nb]; Quiet @ iNBFileUnhide[absExp]]];
     Null
   ];
 
@@ -12335,7 +12432,8 @@ NBRepairNotebookCache[path_String] :=
 
     Quiet @ NotebookSave[nb];
 
-    If[openedHere, Quiet @ NotebookClose[nb]];
+    (* 2026-11-26: a notebook opened hidden here was saved with Visible->False; put right in the file *)
+    If[openedHere, Quiet @ NotebookClose[nb]; Quiet @ iNBFileUnhide[absExp]];
     <|"Status" -> "OK", "Path" -> absExp,
       "WasAlreadyOpen" -> (openedNb =!= None),
       "Dirtied" -> TrueQ[dummyDirtied]|>
@@ -12429,6 +12527,8 @@ NBRepairNotebookCacheStrict[path_String] :=
 
     (* \:65b0\:30ce\:30fc\:30c8\:3092\:9589\:3058\:308b *)
     Quiet @ NotebookClose[newNb, Interrupt -> False];
+    (* 2026-11-26: the new notebook was made hidden and saved so; put right in the file *)
+    If[TrueQ[saveResult], Quiet @ iNBFileUnhide[absExp]];
 
     If[TrueQ[saveResult],
       <|"Status" -> "OK", "Path" -> absExp,
